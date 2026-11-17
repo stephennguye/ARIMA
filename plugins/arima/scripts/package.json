@@ -1,0 +1,7 @@
+{
+  "name": "@arima/scripts",
+  "version": "0.1.0-dev",
+  "private": true,
+  "type": "module",
+  "description": "ARIMA CLI tools. Source in src/, committed bundles in dist/."
+}

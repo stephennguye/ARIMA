@@ -1,0 +1,14 @@
+node_modules
+coverage
+plugins/arima/scripts/dist
+package-lock.json
+# Docs, spec, schemas, templates and YAML are hand-written; only code is auto-formatted.
+docs
+examples
+evals
+plugins/arima/schemas
+plugins/arima/templates
+plugins/arima/profiles
+*.md
+*.yaml
+*.json
