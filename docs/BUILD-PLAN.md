@@ -81,8 +81,15 @@ Spec references use §N (e.g. §4.1 = spec section 4.1).
   - Extra flags beyond the plan: --project, --phase (default 4), --attempt, --milestone, --rework-reason, --session, --agent.
 
 ### T-07 Preflight, lock and kill switch (§7.2 step 1, §11.1)
-- [ ] `arima-preflight`: config valid, no other run holds `.arima/run.lock`, kill switch off (Notion root-page checkbox, or `PAUSE` file on the state branch when Notion is unreachable), budget remaining > 0, required env vars present.
+- [x] `arima-preflight`: config valid, no other run holds `.arima/run.lock`, kill switch off (Notion root-page checkbox, or `PAUSE` file on the state branch when Notion is unreachable), budget remaining > 0, required env vars present.
 - **Accept:** each failing condition returns a distinct exit code and an event; tests for each.
+- **Notes (done 2026-11-17):**
+  - Kill switch design: a standalone Notion root page has no checkbox property, so the 'Pause ARIMA' switch is a to_do block on the root page (text exactly 'Pause ARIMA'), read and toggled through blocks.children.list / blocks.update; /arima:pause (T-12) will create it on first use. Either the Notion switch or .arima/PAUSE being on pauses ARIMA (fail closed); if Notion is unreachable the PAUSE file alone decides and the result carries a warning (spec §11.3, §7.12).
+  - Added notion/port.ts: a narrow NotionPort (list/update/append to-do blocks) over a structurally-typed SDK client. The SDK exposes blocks.delete; the port does not, so delete is impossible by construction. T-09/T-10 extend this port. lib/throttle.ts (~3 req/s) is ready for them; the SDK already retries 429 (configured to 5 retries).
+  - Run lock: .arima/run.lock holds pid, run id, host and start time; it is stale if its process is gone (same host) or older than max_run_minutes + 30. arima-preflight --acquire <run-id> takes it after all checks pass; 'release --run-id' frees it only for its owner.
+  - Exit codes: 0 ok, 2 usage, 10 config, 11 lock, 12 kill switch, 13 budget, 14 env. Checks run in a fixed order; every failure is a preflight.fail event; exit code is the first failure's. Env check reports variable names only.
+  - Beyond the plan: budget threshold alerts (50/80/100%) are emitted once as budget.alert events from preflight (spec §13.5) - daily ones once per day.
+  - Not verified against real Notion (mocked SDK only); the real check happens with the T-09 manual run.
 
 ### T-08 State branch persistence (§3.2 Local state, D-09)
 - [ ] `arima-state pull|push`: maintains `.arima/` on the orphan branch `arima-state` via a dedicated git worktree; never touches `main`; push is a single commit per run with the run ID in the message.
