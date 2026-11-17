@@ -275,6 +275,7 @@ export const DATABASES: DbSpec[] = [
     props: [
       t('Title'),
       select('Type', [
+        'Project brief',
         'PRD',
         'URS',
         'SRS',

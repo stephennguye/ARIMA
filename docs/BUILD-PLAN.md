@@ -137,10 +137,18 @@ Spec references use §N (e.g. §4.1 = spec section 4.1).
   - claude plugin validate ./plugins/arima --strict passes. NOT DONE: loading the agent in a live session (needs a model call): try 'claude --plugin-dir plugins/arima --agent arima:orchestrator' interactively. The docs list no command that enumerates loaded agents.
 
 ### T-12 Skills: `/arima:init`, `/arima:status`, `/arima:pause` (§6.0, §14)
-- [ ] `skills/init/SKILL.md`: checks the brief against `templates/project-brief.md` and asks for gaps; runs `arima-config validate`; asks for the duplicated template root page ID and runs `arima-notion map`; writes brief, charter skeleton and budget plan via the outbox; creates the G0 page with an evidence-pack checklist; commits state.
-- [ ] `skills/status/SKILL.md`: prints phase, gates, open questions, budget used vs caps from mirror + ledger.
-- [ ] `skills/pause/SKILL.md`: sets/clears the kill switch (Notion checkbox and `PAUSE` file).
+- [x] `skills/init/SKILL.md`: checks the brief against `templates/project-brief.md` and asks for gaps; runs `arima-config validate`; asks for the duplicated template root page ID and runs `arima-notion map`; writes brief, charter skeleton and budget plan via the outbox; creates the G0 page with an evidence-pack checklist; commits state.
+- [x] `skills/status/SKILL.md`: prints phase, gates, open questions, budget used vs caps from mirror + ledger.
+- [x] `skills/pause/SKILL.md`: sets/clears the kill switch (Notion checkbox and `PAUSE` file).
 - **Accept:** the v0.1 "Done when" scenario passes end to end on the sample project.
+- **Notes (done 2026-11-17):**
+  - The v0.1 'Done when' scenario is covered by an end-to-end test (test/init.test.ts): sample brief + example config + mocked Notion + a real git repo -> config validated, workspace mapped, Project brief / Charter skeleton / Budget plan written, G0-G4 pages opened (Not ready, checklist as to-do blocks), outbox empty, one valid ledger row and the event log committed to the arima-state branch, lock released. Not yet run against a real Notion workspace (pending T-09 manual run).
+  - To keep the skills thin and testable the logic lives in scripts: arima-init (brief check, preflight+lock, map, mirror, flush leftover outbox, plan only what is missing, push, ledger row, state commit), arima-status, arima-pause. The skills (skills/init, status, pause) are short playbooks that call them and interpret exit codes. init and pause are user-invoked only (disable-model-invocation); allowed-tools list exact script paths, never bare Bash.
+  - Interactive init has no model-cost data, so its ledger row is role orchestrator, item none, subtype 'interactive', cost_usd 0 (this was the open question about init and the ledger). Init is re-runnable: existing rows are skipped, leftover outbox entries from an interrupted run are flushed first (fixed a duplicate-entry bug the retry test found).
+  - Gate pages are created for the profile's enforced gates with Status 'Not ready'; Approvers is human-only so init never writes it and tells the user to set it. G0 cannot become Ready for review in v0.1 because the feasibility note and compliance screen come from agents arriving in v0.3.
+  - The example arima.yaml/team.yaml are shipped inside the plugin (templates/*.example.yaml) because examples/ is not part of an installed plugin; a test keeps them identical to examples/. Added 'Project brief' to the Documents type options.
+  - Brief check (src/brief.ts) matches the seven required §8.2 headings loosely ('Goals & KPIs', 'Must have features') and treats 'None' as content.
+  - claude plugin validate ./plugins/arima --strict passes with the three skills listed (arima:init, arima:status, arima:pause). Skill invocation in a live session not exercised (needs a model call).
 
 ### T-13 Hooks, minimal (§11)
 - [ ] `hooks/hooks.json`: PostToolUse and Stop/SubagentStop handlers append events; PreToolUse guard blocks reading or editing secret files (`.env*`, key files, `ARIMA_*` token files) and any Notion delete tool.
