@@ -13,10 +13,17 @@ Spec references use §N (e.g. §4.1 = spec section 4.1).
 **Done when:** on a fresh sample project, `/arima:init` with `examples/brief.md` validates config, maps the Notion workspace, writes the brief and charter skeleton to Notion, opens the G0 page, and `.arima/` on the `arima-state` branch holds a valid ledger row and event log. `/arima:status` and `/arima:pause` work.
 
 ### T-01 Tooling and CI for this repo
-- [ ] `package.json` at repo root (workspace) with TypeScript strict, ESM, Node 22 engines, Vitest, ESLint, Prettier, esbuild.
-- [ ] Source in `plugins/arima/scripts/src/`, bundles in `plugins/arima/scripts/dist/` (ADR-0001). `npm run build` bundles each entry point.
-- [ ] GitHub Actions workflow for this repo: install, lint, typecheck, test, build, fail if `dist/` differs from a fresh build.
+- [x] `package.json` at repo root (workspace) with TypeScript strict, ESM, Node 22 engines, Vitest, ESLint, Prettier, esbuild.
+- [x] Source in `plugins/arima/scripts/src/`, bundles in `plugins/arima/scripts/dist/` (ADR-0001). `npm run build` bundles each entry point.
+- [x] GitHub Actions workflow for this repo: install, lint, typecheck, test, build, fail if `dist/` differs from a fresh build.
 - **Accept:** `npm test` and `npm run build` pass on a clean clone in WSL 2; CI is green.
+- **Notes (done 2026-11-18):**
+  - Root `package.json` declares the workspace `plugins/arima/scripts`; `npm run build` bundles every `src/bin/*.ts` to `dist/<name>.mjs` (esbuild pinned exactly for reproducible output; `.gitattributes` forces LF).
+  - `npm run check:dist` rebuilds and fails on any `dist/` diff; CI runs it on ubuntu and windows, Node 22 and 24.
+  - Developed on native Windows with Node 24 (WSL not used); code and scripts avoid Windows-only paths.
+  - Version rule: never push to `main`. `.githooks/pre-push` (enabled by `npm install` via `prepare`) blocks it locally and GitHub branch protection blocks it remotely.
+  - `npm audit` reports a high ReDoS in dev-only `picomatch` (transitive of vitest/typescript-eslint); not shipped in bundles. Revisit when upstream releases a fix.
+  - Runtime deps (`@notionhq/client`, `ajv`, `ajv-formats`, `yaml`) are added in the tasks that first use them.
 
 ### T-02 Config schemas and validator (§4.1, §4.2, §4.4)
 - [ ] Review and complete `schemas/arima.schema.json` and `schemas/team.schema.json` (drafts provided).
