@@ -10,7 +10,7 @@ import { appendLedgerRow } from '../src/ledger.js';
 import type { LedgerRow } from '../src/ledger.js';
 import { Throttle } from '../src/lib/throttle.js';
 import { PAUSE_TODO_TEXT, createNotionPort } from '../src/notion/port.js';
-import type { NotionClientLike, NotionPort, TodoBlock } from '../src/notion/port.js';
+import type { NotionClientLike, PauseSwitchPort, TodoBlock } from '../src/notion/port.js';
 import { PREFLIGHT_EXIT, runPreflight } from '../src/preflight.js';
 import { acquireRunLock, lockStatus, releaseRunLock, runLockFile } from '../src/runlock.js';
 import { project, tempDir } from './helpers.js';
@@ -19,7 +19,7 @@ const NOW = new Date(2026, 10, 17, 2, 0);
 const TODAY = '2026-11-17';
 const GOOD_ENV = { ARIMA_NOTION_TOKEN: 'x', ARIMA_GITHUB_TOKEN: 'y' };
 
-class FakeNotion implements NotionPort {
+class FakeNotion implements PauseSwitchPort {
   todos: TodoBlock[] = [{ id: 'b1', text: PAUSE_TODO_TEXT, checked: false }];
   fail = false;
   calls = 0;
@@ -320,6 +320,7 @@ describe('kill switch helpers', () => {
 });
 
 describe('Notion port (mocked SDK client)', () => {
+  const unused = (): Promise<never> => Promise.reject(new Error('not used in this test'));
   const makeClient = (
     pages: { results: unknown[]; has_more: boolean; next_cursor: string | null }[],
   ) => {
@@ -341,6 +342,8 @@ describe('Notion port (mocked SDK client)', () => {
           return Promise.resolve({});
         },
       },
+      databases: { create: unused, retrieve: unused },
+      dataSources: { retrieve: unused, update: unused },
     };
     return { client, calls };
   };
@@ -410,7 +413,7 @@ describe('arima-preflight CLI', () => {
     argv: string[],
     cwd: string,
     env: NodeJS.ProcessEnv = GOOD_ENV,
-    notion: NotionPort = new FakeNotion(),
+    notion: PauseSwitchPort = new FakeNotion(),
   ) => {
     let out = '';
     let err = '';

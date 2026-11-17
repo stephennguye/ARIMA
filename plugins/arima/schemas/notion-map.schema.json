@@ -1,0 +1,52 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/stephennguye/ARIMA/schemas/notion-map.schema.json",
+  "title": "notion-map.json",
+  "description": "Every Notion database and property id of a project's duplicated template, written by `arima-notion map` (spec §9.3). Agents never look databases up by name.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "template_schema_version", "root_page_id", "generated_at", "databases"],
+  "properties": {
+    "schema_version": { "const": 1 },
+    "template_schema_version": { "type": "integer", "minimum": 1 },
+    "root_page_id": { "type": "string", "minLength": 1 },
+    "generated_at": { "type": "string", "format": "date-time" },
+    "databases": {
+      "type": "object",
+      "propertyNames": {
+        "enum": ["gates", "requirements", "epics", "stories", "test_cases", "bugs", "milestones", "documents", "decisions", "questions", "meetings", "digests", "releases", "incidents", "change_requests", "risks", "lessons", "cost_log", "human_tasks"]
+      },
+      "minProperties": 19,
+      "maxProperties": 19,
+      "additionalProperties": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["database_id", "data_source_id", "title", "properties"],
+        "properties": {
+          "database_id": { "type": "string", "minLength": 1 },
+          "data_source_id": { "type": "string", "minLength": 1 },
+          "title": { "type": "string", "minLength": 1 },
+          "properties": {
+            "type": "object",
+            "minProperties": 1,
+            "additionalProperties": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["id", "type"],
+              "properties": {
+                "id": { "type": "string", "minLength": 1 },
+                "type": { "type": "string", "minLength": 1 },
+                "human_only": { "const": true, "description": "No agent may write this property (spec §9.3)" },
+                "human_only_values": {
+                  "type": "array",
+                  "items": { "type": "string" },
+                  "description": "Only these values are human-only; an agent may set the others"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

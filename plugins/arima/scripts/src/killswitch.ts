@@ -1,7 +1,7 @@
 import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 import { PAUSE_TODO_TEXT } from './notion/port.js';
-import type { NotionPort } from './notion/port.js';
+import type { PauseSwitchPort } from './notion/port.js';
 
 export type NotionPauseState = boolean | 'unreachable' | 'unchecked' | 'missing';
 
@@ -34,7 +34,7 @@ export function setPauseFile(projectDir: string, on: boolean, reason = 'paused b
  */
 export async function checkKillSwitch(
   projectDir: string,
-  notion: { port: NotionPort; rootPageId: string } | null,
+  notion: { port: PauseSwitchPort; rootPageId: string } | null,
 ): Promise<KillSwitchState> {
   const file = existsSync(pauseFile(projectDir));
   let remote: NotionPauseState = 'unchecked';
@@ -71,7 +71,7 @@ export async function checkKillSwitch(
 
 /** Turns the Notion switch on or off, creating the to-do on first use. Never deletes anything. */
 export async function setNotionSwitch(
-  port: NotionPort,
+  port: PauseSwitchPort,
   rootPageId: string,
   on: boolean,
 ): Promise<void> {
