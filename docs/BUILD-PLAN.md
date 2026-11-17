@@ -36,8 +36,11 @@ Spec references use §N (e.g. §4.1 = spec section 4.1).
 - **Accept:** unit tests cover each schema error and each cross-field rule; `examples/` validates clean.
 
 ### T-03 Profiles (§4.3)
-- [ ] Loader for `profiles/*.yaml` (drafts provided) resolving gates, approvers, required artifacts and rules for the configured profile.
+- [x] Loader for `profiles/*.yaml` (drafts provided) resolving gates, approvers, required artifacts and rules for the configured profile.
 - **Accept:** tests prove client-project requires G0–G4 and solo-lite only G1, G3; regulated requires pentest and DPIA always.
+- **Notes (done 2026-11-17):**
+  - Built before T-02 because T-02's approver rule needs the profile loader (order swap).
+  - Added profile.schema.json; loader in scripts/src/profiles.ts validates each profile at load. Shared helpers: lib/paths.ts (plugin root, works from src and dist), lib/schema.ts (Ajv 2020 + formats), lib/yaml-source.ts (JSON pointer to line number).
 
 ### T-04 ID issuer (§2)
 - [ ] `arima-ids next <PREFIX>` issues the next ID (REQ-014, US-112, DEC-0120, …) with the zero-padding from §2; counters in `.arima/state/ids.json`; file lock; never reuses an ID.
