@@ -5,6 +5,7 @@ import { afterEach } from 'vitest';
 
 export const REPO_ROOT = path.resolve(import.meta.dirname, '../../../..');
 export const EXAMPLES = path.join(REPO_ROOT, 'examples');
+export const PLUGIN_ROOT = path.join(REPO_ROOT, 'plugins/arima');
 
 const made: string[] = [];
 
@@ -48,4 +49,24 @@ export function project(
     overrides.team ?? apply(example('team.yaml'), edits.team),
   );
   return dir;
+}
+
+/** Bundles src/bin/<name>.ts into a temp dir (like `npm run build`) and returns the .mjs path. */
+export async function buildBin(name: string): Promise<string> {
+  const { build } = await import('esbuild');
+  const outdir = tempDir('arima-bin-');
+  await build({
+    entryPoints: [path.join(REPO_ROOT, 'plugins/arima/scripts/src/bin', `${name}.ts`)],
+    outdir,
+    outExtension: { '.js': '.mjs' },
+    bundle: true,
+    platform: 'node',
+    target: 'node22',
+    format: 'esm',
+    logLevel: 'silent',
+    banner: {
+      js: "import { createRequire as __cr } from 'node:module'; const require = __cr(import.meta.url);",
+    },
+  });
+  return path.join(outdir, `${name}.mjs`);
 }

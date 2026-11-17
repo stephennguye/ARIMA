@@ -1,0 +1,17 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/stephennguye/ARIMA/schemas/ids.schema.json",
+  "title": "ids.json",
+  "description": "Last issued number per ID prefix (spec §2). Counters only ever increase, so an ID is never reused.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "counters"],
+  "properties": {
+    "schema_version": { "const": 1 },
+    "counters": {
+      "type": "object",
+      "propertyNames": { "enum": ["REQ", "NFR", "EP", "US", "TC", "BUG", "ADR", "RISK", "DEC", "Q", "MS", "CR", "INC", "LES"] },
+      "additionalProperties": { "type": "integer", "minimum": 0 }
+    }
+  }
+}
