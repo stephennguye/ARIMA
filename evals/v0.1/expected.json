@@ -1,0 +1,20 @@
+{
+  "description": "Expected outcomes of /arima:init on evals/v0.1/brief.md against a mocked Notion (spec §15.4, build plan v0.1 'Done when').",
+  "databases": 19,
+  "documents": ["Project brief", "Charter", "Budget plan"],
+  "gates": ["G0", "G1", "G2", "G3", "G4"],
+  "gate_status": "Not ready",
+  "g0_checklist": { "total": 5, "checked": ["Brief complete (checked against the brief template)", "Budget plan"] },
+  "ledger": { "rows": 1, "role": "orchestrator", "phase": 0, "item": "none", "subtype": "interactive", "result": "pass", "cost_usd": 0 },
+  "events_include": ["run.start", "run.end", "notion.pull", "notion.push", "state.push"],
+  "notion_push_events": 8,
+  "state_branch_files": ["ledger.jsonl", "events.jsonl", "notion-map.json", ".gitignore", ".gitattributes"],
+  "status": { "phase": "0 Initiation", "gates": 5, "runs": 1 },
+  "hard_stops": {
+    "kill_switch_preflight_exit": 12,
+    "human_only_refused": [{ "database": "gates", "property": "Approvers" }],
+    "notion_delete_blocked": true,
+    "secret_file_blocked": true,
+    "mirror_write_blocked": true
+  }
+}

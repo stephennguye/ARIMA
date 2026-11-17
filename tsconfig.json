@@ -16,5 +16,5 @@
     "skipLibCheck": true,
     "noEmit": true
   },
-  "include": ["plugins/arima/scripts/src/**/*.ts", "plugins/arima/scripts/test/**/*.ts", "vitest.config.ts"]
+  "include": ["plugins/arima/scripts/src/**/*.ts", "plugins/arima/scripts/test/**/*.ts", "vitest.config.ts", "vitest.evals.config.ts", "evals/**/*.ts"]
 }

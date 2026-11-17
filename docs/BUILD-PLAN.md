@@ -161,9 +161,14 @@ Spec references use §N (e.g. §4.1 = spec section 4.1).
   - Limitation: the guard is pattern-based on the command text, so it can be bypassed by obfuscation (e.g. building a path in a variable); it is a second layer after the per-role tool allow-lists (T-06) and the scrubbed child environment. Not exercised inside a live Claude session.
 
 ### T-14 Docs and evals skeleton
-- [ ] `docs/INSTALL.md` (WSL 2 setup, env vars, Notion integration, duplicating the template), `docs/NOTION-TEMPLATE.md`.
-- [ ] `evals/v0.1/`: sample brief + script that runs init against a mocked Notion and checks expected outputs.
+- [x] `docs/INSTALL.md` (WSL 2 setup, env vars, Notion integration, duplicating the template), `docs/NOTION-TEMPLATE.md`.
+- [x] `evals/v0.1/`: sample brief + script that runs init against a mocked Notion and checks expected outputs.
 - **Accept:** a new user can follow INSTALL.md to a working `/arima:status`.
+- **Notes (done 2026-11-17):**
+  - docs/INSTALL.md (Windows-first; macOS, Linux and WSL also covered; Notion integration, token as an environment variable, exit-code troubleshooting) and docs/NOTION-TEMPLATE.md (19 databases, human-only fields, manual formula/rollup steps, the six views as manual setup, Free-plan limits). test/docs.test.ts fails if either doc drifts from the code (database names, human-only fields, formulas/rollups, exit codes).
+  - evals/v0.1/: sample brief, expected.json and init.eval.ts (plus support.ts). 'npm run eval' runs /arima:init against the mocked Notion and real git and checks the result against expected.json, including status and the hard stops (kill switch, human-only refusal, Notion delete, secret files, read-only mirror). CI runs it on both OSes. No network or model calls.
+  - Acceptance 'a new user can follow INSTALL.md to a working /arima:status' is verified only up to the mocked-Notion boundary; the first real run (T-09 manual step) is what proves it. The public Notion template is not published yet, so INSTALL.md has the user run 'arima-notion bootstrap' instead of duplicating a template.
+  - README and plugin README updated; plugin validate --strict now has no README advice.
 
 ---
 
