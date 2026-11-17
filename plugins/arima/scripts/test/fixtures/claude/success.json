@@ -1,0 +1,17 @@
+{
+  "type": "result",
+  "subtype": "success",
+  "is_error": false,
+  "duration_ms": 412000,
+  "duration_api_ms": 301000,
+  "num_turns": 14,
+  "result": "Implemented US-112 and opened a PR.",
+  "session_id": "11111111-1111-4111-8111-111111111111",
+  "total_cost_usd": 1.87,
+  "usage": {
+    "input_tokens": 182000,
+    "output_tokens": 21000,
+    "cache_read_input_tokens": 940000,
+    "cache_creation_input_tokens": 61000
+  }
+}
