@@ -1,0 +1,29 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/stephennguye/ARIMA/schemas/outbox.schema.json",
+  "title": "Outbox entry",
+  "description": "A proposed Notion change written by an agent to .arima/outbox/; only the orchestrator applies it (spec §3.3, D-07). There is deliberately no delete operation.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["id", "created_at", "run_id", "role", "op", "database"],
+  "properties": {
+    "id": { "type": "string", "description": "Unique outbox entry id" },
+    "created_at": { "type": "string", "format": "date-time" },
+    "run_id": { "type": "string" },
+    "role": { "type": "string" },
+    "op": { "enum": ["create", "update", "append_content", "retire"] },
+    "database": {
+      "enum": ["gates", "requirements", "epics", "stories", "test_cases", "bugs", "milestones", "documents", "decisions", "questions", "meetings", "digests", "releases", "incidents", "change_requests", "risks", "lessons", "cost_log", "human_tasks"]
+    },
+    "item_id": { "type": "string", "description": "ARIMA ID of the target (required for update, append_content, retire)" },
+    "properties": { "type": "object", "description": "Property name -> value, using names from notion-map.json" },
+    "content_markdown": { "type": "string", "description": "Page body for create / append_content" },
+    "base_last_edited": { "type": "string", "format": "date-time", "description": "Notion last_edited_time the agent saw; a newer human edit wins (§3.3)" }
+  },
+  "allOf": [
+    {
+      "if": { "properties": { "op": { "enum": ["update", "append_content", "retire"] } } },
+      "then": { "required": ["item_id"] }
+    }
+  ]
+}

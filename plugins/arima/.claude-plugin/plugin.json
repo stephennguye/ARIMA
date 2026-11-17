@@ -1,0 +1,12 @@
+{
+  "name": "arima",
+  "displayName": "ARIMA",
+  "version": "0.1.0-dev",
+  "description": "Gated, agent-run software lifecycle (phases 0-8) for web apps: role agents, Notion project management, GitHub engineering, daily autonomous runs with human approval gates.",
+  "author": {
+    "name": "Stephen Nguyen"
+  },
+  "repository": "https://github.com/stephennguye/ARIMA",
+  "license": "Apache-2.0",
+  "keywords": ["sdlc", "agents", "notion", "github", "project-management", "web"]
+}

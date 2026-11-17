@@ -1,0 +1,25 @@
+# Solo-lite profile. Spec §4.3 and §8.1 ("S" column).
+schema_version: 1
+name: solo-lite
+gates:
+  G1: { approvers: [po], require: all }
+  G3: { approvers: [po], require: all }
+rules:
+  urs_separate: false
+  srs: inside_prd
+  dpia: if_personal_data
+  master_test_plan: false
+  rtm_coverage_at_g3: none
+  code_review: { reviewers: 1, mode: agent, human_pr_approval: true }
+  security_signoff_g3: agent_report
+  human_pentest: none
+  evidence_pack: none
+  change_requests: informal
+artifacts:
+  required: [project-brief, budget-plan, prd, nfr, backlog, adrs, openapi, data-model, milestone-plan,
+             dor-dod, conventions, test-cases, code-tests, pull-requests, bug-reports, milestone-review,
+             digest, decision-log, questions, lessons, runbook-rollback, release-record, incidents,
+             changelog, ledger-events]
+  conditional: { dpia: personal_data }
+  recommended: []
+  human_only: []

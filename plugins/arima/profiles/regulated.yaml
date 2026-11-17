@@ -1,0 +1,33 @@
+# Regulated profile. Spec §4.3 and §8.1 ("R" column). Adds rigor, not certification.
+schema_version: 1
+name: regulated
+gates:
+  G0: { approvers: [sponsor], require: all }
+  G1: { approvers: [sponsor, po, legal], require: all }
+  G2: { approvers: [po, sponsor], require: all }
+  G3: { approvers: [sponsor, po, legal], require: all }   # named compliance sign-off
+  G4: { approvers: [sponsor], require: all }
+rules:
+  urs_separate: true
+  srs: separate_formally_reviewed
+  dpia: always
+  master_test_plan: true
+  rtm_coverage_at_g3: all_requirements
+  code_review: { reviewers: 2, mode: independent, human_pr_approval: true }
+  security_signoff_g3: human_security_reviewer
+  human_pentest: required
+  evidence_pack: notion_page_plus_pdf_export
+  change_requests: impact_analysis_plus_sponsor_signoff
+artifacts:
+  required: [project-brief, charter, budget-plan, feasibility-note, compliance-screen, risk-register,
+             prd, urs, srs, nfr, glossary, personas-journeys-sitemap, wireframes, security-requirements,
+             dpia, backlog, requirement-review-log, sad, adrs, openapi, data-model, infra-diagram,
+             prototype, threat-model, master-test-plan, env-matrix, milestone-plan, dor-dod, conventions,
+             test-cases, code-tests, pull-requests, bug-reports, milestone-review, digest, decision-log,
+             questions, meeting-minutes, lessons, test-reports, security-report, pentest-report, uat,
+             go-no-go-minutes, runbook-rollback, release-record, user-guide-faq, support-kb,
+             hypercare-closure, ops-manual, incidents, change-requests, slo-cost-reports, sbom, rtm,
+             changelog, ledger-events]
+  conditional: {}
+  recommended: []
+  human_only: [sow]

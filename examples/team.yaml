@@ -1,0 +1,20 @@
+# Example team config (spec §4.2, D-17, D-32). Solo builder on a client project.
+schema_version: 1
+people:
+  me:         { name: "Your Name", notion_user: "<notion user id>", github: "your-handle" }
+  client_rep: { name: "Client Contact", notion_user: "<notion user id>", access: guest }
+roles:
+  sponsor:   { type: human, person: client_rep }
+  po:        { type: human, person: me }
+  pjm:       { type: agent, agent: orchestrator }
+  ba:        { type: agent }
+  ux:        { type: agent }
+  architect: { type: agent }
+  tech_lead: { type: agent }
+  developer: { type: agent, count: 3 }
+  qa:        { type: agent }
+  security:  { type: agent }
+  devops:    { type: agent }
+  support:   { type: agent, agent: devops }
+  legal:     { type: human, person: me }
+human_task_sla_hours: 24
