@@ -151,8 +151,14 @@ Spec references use §N (e.g. §4.1 = spec section 4.1).
   - claude plugin validate ./plugins/arima --strict passes with the three skills listed (arima:init, arima:status, arima:pause). Skill invocation in a live session not exercised (needs a model call).
 
 ### T-13 Hooks, minimal (§11)
-- [ ] `hooks/hooks.json`: PostToolUse and Stop/SubagentStop handlers append events; PreToolUse guard blocks reading or editing secret files (`.env*`, key files, `ARIMA_*` token files) and any Notion delete tool.
+- [x] `hooks/hooks.json`: PostToolUse and Stop/SubagentStop handlers append events; PreToolUse guard blocks reading or editing secret files (`.env*`, key files, `ARIMA_*` token files) and any Notion delete tool.
 - **Accept:** hook tests with fixture payloads; blocked actions produce an event and a clear message.
+- **Notes (done 2026-11-17):**
+  - hooks/hooks.json (format checked against the current docs: top-level 'hooks' key, matcher groups, exit code 2 blocks with stderr shown to the model): PreToolUse '*' runs the guard; PostToolUse (Write|Edit|MultiEdit|NotebookEdit|Bash) logs tool.used; Stop and SubagentStop log agent.stop (new event type added to event.schema.json). All four call one bundled script, arima-hook, with the payload on stdin.
+  - The guard blocks: Read/Edit/Write/Grep/Glob on secret files (.env and .env.*, *.pem/*.key/*.p12, ssh/aws credentials, ~/.config/arima/env, ARIMA_*TOKEN files; .env.example/.sample/.template are allowed); Bash commands that touch those files, expand a secret-looking variable, list the environment, or call the Notion API with DELETE/in_trash/archived; any Notion MCP tool whose name says delete/archive/remove/trash; and agent writes to the read-only Notion mirror, ledger, event log and notion-map (also via shell redirects/rm). A block exits 2, prints the rule and reason, and logs a tool.blocked event.
+  - Scoped to ARIMA projects: with no arima.yaml up the tree (or via ARIMA_PROJECT_DIR) every hook is a no-op, so installing the plugin does not change behaviour in other repos. arima-run-agent now sets ARIMA_PROJECT_DIR/RUN_ID/ROLE/ITEM so hooks in a developer worktree log to the right .arima/ with run, role and item.
+  - Hooks never log a secret (details replaced with a 'withheld' note) and never block on malformed input or their own logging errors. Tested with fixture payloads (blocked and allowed lists), against the real bundled script over stdin, and for hooks.json structure. claude plugin validate --strict lists all four hooks.
+  - Limitation: the guard is pattern-based on the command text, so it can be bypassed by obfuscation (e.g. building a path in a variable); it is a second layer after the per-role tool allow-lists (T-06) and the scrubbed child environment. Not exercised inside a live Claude session.
 
 ### T-14 Docs and evals skeleton
 - [ ] `docs/INSTALL.md` (WSL 2 setup, env vars, Notion integration, duplicating the template), `docs/NOTION-TEMPLATE.md`.

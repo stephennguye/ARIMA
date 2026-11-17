@@ -18,7 +18,7 @@
         "question.raised", "question.answered", "decision.made", "decision.vetoed",
         "tool.used", "tool.blocked",
         "state.push", "state.pull",
-        "budget.alert", "hardstop.hit"
+        "budget.alert", "hardstop.hit", "agent.stop"
       ]
     },
     "actor": { "type": "string", "description": "Role name, \"human:<person>\" or \"system\"" },

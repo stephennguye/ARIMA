@@ -88,9 +88,15 @@ export function childEnv(
     runId: string;
     projectKey: string;
     config: AgentConfig;
+    /** Lets the hooks find .arima/ from a worktree (spec §11.3 audit). */
+    projectDir?: string;
   },
 ): NodeJS.ProcessEnv {
   const env: NodeJS.ProcessEnv = { ...base };
+  if (o.projectDir !== undefined) env['ARIMA_PROJECT_DIR'] = o.projectDir;
+  env['ARIMA_RUN_ID'] = o.runId;
+  env['ARIMA_ROLE'] = o.role;
+  env['ARIMA_ITEM'] = o.item;
   if (!mayHoldNotionToken(o.role)) delete env[o.config.notionTokenEnv];
   if (!mayHoldGithubToken(o.role) && o.config.githubTokenEnv !== undefined) {
     delete env[o.config.githubTokenEnv];
@@ -245,6 +251,7 @@ export async function runAgent(o: RunAgentOptions): Promise<RunAgentOutcome> {
     phase: o.phase,
     runId,
     projectKey: o.config.projectKey,
+    projectDir: path.resolve(o.projectDir),
     config: o.config,
   });
   const bin = o.claudeBin ?? process.env['ARIMA_CLAUDE_BIN'] ?? 'claude';
