@@ -26,14 +26,19 @@ Spec references use §N (e.g. §4.1 = spec section 4.1).
   - Runtime deps (`@notionhq/client`, `ajv`, `ajv-formats`, `yaml`) are added in the tasks that first use them.
 
 ### T-02 Config schemas and validator (§4.1, §4.2, §4.4)
-- [ ] Review and complete `schemas/arima.schema.json` and `schemas/team.schema.json` (drafts provided).
-- [ ] CLI `arima-config validate [--project <dir>]`: loads `arima.yaml` + `team.yaml`, validates schemas, then cross-field rules:
+- [x] Review and complete `schemas/arima.schema.json` and `schemas/team.schema.json` (drafts provided).
+- [x] CLI `arima-config validate [--project <dir>]`: loads `arima.yaml` + `team.yaml`, validates schemas, then cross-field rules:
   - every gate approver role in the active profile maps to a `human` role (§4.2);
   - `developer.count` ≤ `parallelism.max_developer_agents`;
   - every `person:` reference exists in `people`;
   - `runtime.allow_usage_credits: true` requires a note in the digest config (warn only).
-- [ ] Clear, line-referenced error messages; non-zero exit on failure.
+- [x] Clear, line-referenced error messages; non-zero exit on failure.
 - **Accept:** unit tests cover each schema error and each cross-field rule; `examples/` validates clean.
+- **Notes (done 2026-11-17):**
+  - Strict Ajv mode exposed a draft-schema defect (properties without type); fixed in arima.schema.json.
+  - Errors are file:line-referenced via the YAML AST (lib/yaml-source.ts); Ajv oneOf noise is collapsed to one error per role.
+  - Cross-field rules need the profile loader, so T-03 was built first. usage-credits rule warns only; there is no digest-config field yet, so the message points at Q-22.
+  - CLI exit codes: 0 valid, 1 invalid, 2 usage; --json for machine output.
 
 ### T-03 Profiles (§4.3)
 - [x] Loader for `profiles/*.yaml` (drafts provided) resolving gates, approvers, required artifacts and rules for the configured profile.
