@@ -1,0 +1,9 @@
+node_modules/
+coverage/
+*.log
+.env
+.env.*
+# ARIMA runtime state lives on the arima-state branch of each app repo, never here
+.arima/
+# local scratch
+tmp/

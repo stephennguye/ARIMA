@@ -1,0 +1,56 @@
+# Example project config (spec §4.1, §4.4). Copy into an app repo and edit.
+schema_version: 1
+project:
+  key: TAS
+  name: "Tasty App"
+  client: "Acme Co"
+  platforms: [web]
+  docs_language: en
+profile: client-project
+autonomy:
+  mode: autonomous
+  question_policy: block_story
+  hard_stops: [G0, G1, G2, G3, G4, prod_deploy, secrets_change, budget_exceeded,
+               notion_delete, prod_data_migration, new_paid_service]
+schedule:
+  timezone: Asia/Ho_Chi_Minh
+  daily_run: "02:00"
+  digest_ready_by: "07:00"
+  max_run_minutes: 240
+budget:
+  currency: USD
+  project_cap: 500
+  daily_cap: 15
+  per_story_default: 3
+  per_run_cap: 2
+  by_size: { S: 1, M: 3, L: 6 }
+  alert_thresholds: [0.5, 0.8, 1.0]
+models:
+  tiers: { strong: "<model id>", standard: "<model id>", fast: "<model id>" }
+  by_role: { orchestrator: standard, ba: strong, ux: standard, architect: strong,
+             tech_lead: strong, developer: standard, qa: standard, security: strong, devops: standard }
+parallelism:
+  max_developer_agents: 3
+review:
+  max_prs_awaiting_human: 5
+notion:
+  root_page_id: "<duplicated template root page id>"
+  token_env: ARIMA_NOTION_TOKEN
+github:
+  repo: "your-handle/tasty-app"
+  default_branch: main
+  state_branch: arima-state
+  machine_account: "your-arima-bot"
+  machine_token_env: ARIMA_GITHUB_TOKEN
+environments:
+  staging:    { url: "https://staging.example.com", deploy: auto }
+  production: { url: "https://app.example.com", deploy: gated }
+runtime:
+  host: local
+  shell: wsl2
+  scheduler: windows-task-scheduler
+  auth: seat
+  allow_usage_credits: false
+telemetry:
+  otel_enabled: false
+  endpoint_env: OTEL_EXPORTER_OTLP_ENDPOINT

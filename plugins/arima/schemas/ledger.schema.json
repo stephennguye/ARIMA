@@ -1,0 +1,43 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/stephennguye/ARIMA/schemas/ledger.schema.json",
+  "title": "Run ledger row",
+  "description": "One line of .arima/ledger.jsonl per headless run (spec §13.2).",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["run_id", "date", "project", "phase", "item", "role", "attempt", "is_rework", "subtype", "num_turns", "duration_ms", "tokens", "cost_usd", "budget_usd", "result"],
+  "properties": {
+    "run_id": { "type": "string", "pattern": "^r-[0-9]{8}-[0-9]{4}-[0-9]{2,}$" },
+    "session_id": { "type": "string" },
+    "date": { "type": "string", "format": "date" },
+    "started_at": { "type": "string", "format": "date-time" },
+    "project": { "type": "string", "pattern": "^[A-Z]{3,6}$" },
+    "phase": { "type": "integer", "minimum": 0, "maximum": 8 },
+    "milestone": { "type": ["string", "null"], "pattern": "^MS-[0-9]{2,}$" },
+    "item": { "type": "string", "description": "Item ID (US-112, BUG-045, ...) or \"none\" for orchestrator overhead" },
+    "role": { "enum": ["orchestrator", "ba", "ux", "architect", "tech-lead", "developer", "qa", "security", "devops"] },
+    "model_tier": { "enum": ["strong", "standard", "fast"] },
+    "attempt": { "type": "integer", "minimum": 1 },
+    "is_rework": { "type": "boolean" },
+    "rework_reason": { "type": ["string", "null"], "enum": [null, "failed_review", "failed_qa", "vetoed", "bug", "other"] },
+    "subtype": { "type": "string", "description": "Result subtype from claude -p, e.g. success, error_max_turns, error_max_budget_usd, or usage_limit_pause" },
+    "num_turns": { "type": "integer", "minimum": 0 },
+    "duration_ms": { "type": "integer", "minimum": 0 },
+    "duration_api_ms": { "type": "integer", "minimum": 0 },
+    "tokens": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["input", "output", "cache_read", "cache_creation"],
+      "properties": {
+        "input": { "type": "integer", "minimum": 0 },
+        "output": { "type": "integer", "minimum": 0 },
+        "cache_read": { "type": "integer", "minimum": 0 },
+        "cache_creation": { "type": "integer", "minimum": 0 }
+      }
+    },
+    "cost_usd": { "type": "number", "minimum": 0, "description": "Estimated; on a seat this is consumption, not spend (§13.6). For resumed sessions, the difference from the previous result." },
+    "budget_usd": { "type": "number", "minimum": 0 },
+    "ci_minutes": { "type": "number", "minimum": 0 },
+    "result": { "enum": ["pass", "fail", "error", "paused", "blocked"] }
+  }
+}

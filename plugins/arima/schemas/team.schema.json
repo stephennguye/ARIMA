@@ -1,0 +1,78 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/stephennguye/ARIMA/schemas/team.schema.json",
+  "title": "team.yaml",
+  "description": "Who fills each role (spec §4.2). Cross-field rules (approver roles must be human, person references must exist, developer.count <= parallelism) are checked in code, task T-02.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "people", "roles", "human_task_sla_hours"],
+  "properties": {
+    "schema_version": { "const": 1 },
+    "people": {
+      "type": "object",
+      "minProperties": 1,
+      "propertyNames": { "pattern": "^[a-z][a-z0-9_]*$" },
+      "additionalProperties": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["name", "notion_user"],
+        "properties": {
+          "name": { "type": "string", "minLength": 1 },
+          "notion_user": { "type": "string", "minLength": 1 },
+          "github": { "type": "string" },
+          "access": { "enum": ["member", "guest"], "default": "member", "description": "guest = client representative in the Client portal (D-17)" }
+        }
+      }
+    },
+    "roles": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["sponsor", "po", "pjm", "ba", "ux", "architect", "tech_lead", "developer", "qa", "security", "devops", "support", "legal"],
+      "properties": {
+        "sponsor": { "$ref": "#/$defs/role" },
+        "po": { "$ref": "#/$defs/role" },
+        "pjm": { "$ref": "#/$defs/role" },
+        "ba": { "$ref": "#/$defs/role" },
+        "ux": { "$ref": "#/$defs/role" },
+        "architect": { "$ref": "#/$defs/role" },
+        "tech_lead": { "$ref": "#/$defs/role" },
+        "developer": { "$ref": "#/$defs/role" },
+        "qa": { "$ref": "#/$defs/role" },
+        "security": { "$ref": "#/$defs/role" },
+        "devops": { "$ref": "#/$defs/role" },
+        "support": { "$ref": "#/$defs/role" },
+        "legal": { "$ref": "#/$defs/role" }
+      }
+    },
+    "human_task_sla_hours": {
+      "type": "integer",
+      "minimum": 1,
+      "description": "Weekday hours before a reminder; escalation to the sponsor at twice this (D-32)"
+    }
+  },
+  "$defs": {
+    "role": {
+      "oneOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["type", "person"],
+          "properties": {
+            "type": { "const": "human" },
+            "person": { "type": "string", "pattern": "^[a-z][a-z0-9_]*$" }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["type"],
+          "properties": {
+            "type": { "const": "agent" },
+            "agent": { "enum": ["orchestrator", "ba", "ux", "architect", "tech-lead", "developer", "qa", "security", "devops"] },
+            "count": { "type": "integer", "minimum": 1, "maximum": 10 }
+          }
+        }
+      ]
+    }
+  }
+}

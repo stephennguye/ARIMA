@@ -1,0 +1,32 @@
+# Client-project profile (default, D-01). Spec §4.3 and §8.1 ("C" column).
+schema_version: 1
+name: client-project
+gates:
+  G0: { approvers: [sponsor], require: all }
+  G1: { approvers: [sponsor, po], require: all }
+  G2: { approvers: [po, sponsor], require: all }   # client approves the UI
+  G3: { approvers: [sponsor, po], require: all }
+  G4: { approvers: [sponsor], require: all }
+rules:
+  urs_separate: true
+  srs: separate
+  dpia: if_personal_data
+  master_test_plan: true
+  rtm_coverage_at_g3: must_requirements     # 100% of Must requirements have a passing test
+  code_review: { reviewers: 1, mode: agent_against_tl_rules, human_pr_approval: true }   # D-21
+  security_signoff_g3: agent_report_plus_human_ack
+  human_pentest: recommended
+  evidence_pack: notion_page                # D-28
+  change_requests: impact_analysis
+artifacts:
+  required: [project-brief, charter, budget-plan, feasibility-note, compliance-screen, risk-register,
+             prd, urs, srs, nfr, glossary, personas-journeys-sitemap, wireframes, security-requirements,
+             backlog, requirement-review-log, sad, adrs, openapi, data-model, infra-diagram, prototype,
+             threat-model, master-test-plan, env-matrix, milestone-plan, dor-dod, conventions, test-cases,
+             code-tests, pull-requests, bug-reports, milestone-review, digest, decision-log, questions,
+             meeting-minutes, lessons, test-reports, security-report, uat, go-no-go-minutes,
+             runbook-rollback, release-record, user-guide-faq, support-kb, hypercare-closure, ops-manual,
+             incidents, change-requests, slo-cost-reports, sbom, rtm, changelog, ledger-events]
+  conditional: { dpia: personal_data }
+  recommended: [pentest-report]
+  human_only: [sow]

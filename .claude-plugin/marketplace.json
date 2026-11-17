@@ -1,0 +1,17 @@
+{
+  "name": "arima",
+  "owner": {
+    "name": "Stephen Nguyen",
+    "url": "https://github.com/stephennguye"
+  },
+  "description": "ARIMA: a gated, agent-run software lifecycle for web apps, with Notion for project management and GitHub for engineering.",
+  "plugins": [
+    {
+      "name": "arima",
+      "source": "./plugins/arima",
+      "description": "Runs phases 0-8 of a client-grade SDLC with role agents, daily autonomous runs and human approval gates.",
+      "category": "development",
+      "tags": ["sdlc", "agents", "notion", "project-management", "web"]
+    }
+  ]
+}
