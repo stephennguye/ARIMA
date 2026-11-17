@@ -115,10 +115,18 @@ Spec references use §N (e.g. §4.1 = spec section 4.1).
   - Root page version: a paragraph 'ARIMA template schema_version: 1'; map errors if the template is newer than the plugin.
 
 ### T-10 Notion sync: mirror and outbox (§3.3)
-- [ ] `arima-notion pull`: mirrors all mapped databases to `.arima/mirror/<db>.json` (read-only for agents).
-- [ ] Outbox: agents write proposed changes as files in `.arima/outbox/` (validated by `schemas/outbox.schema.json`); `arima-notion push` applies them, refuses human-only fields, stamps "Last written by run", detects conflicting human edits (last edited time) and keeps the human edit, retries on 429, throttles to ~3 req/s.
-- [ ] No delete operation exists in the code path.
+- [x] `arima-notion pull`: mirrors all mapped databases to `.arima/mirror/<db>.json` (read-only for agents).
+- [x] Outbox: agents write proposed changes as files in `.arima/outbox/` (validated by `schemas/outbox.schema.json`); `arima-notion push` applies them, refuses human-only fields, stamps "Last written by run", detects conflicting human edits (last edited time) and keeps the human edit, retries on 429, throttles to ~3 req/s.
+- [x] No delete operation exists in the code path.
 - **Accept:** tests for apply, human-only refusal, conflict detection and retry; delete is impossible by construction.
+- **Notes (done 2026-11-17):**
+  - arima-notion pull mirrors every mapped database to .arima/mirror/<db>.json (plain values, row id = title text, last_edited_time kept); arima-notion push applies .arima/outbox/. Entries move to outbox/applied, outbox/rejected or outbox/conflicts with a .result.json beside them; transient failures stay in place and are retried next run (spec §7.12), a permanent 4xx rejects just that entry.
+  - Delete is impossible by construction: the outbox schema allows only create, update, append_content, retire; the NotionPort exposes no delete/archive/trash call; retire sets the Status from RETIRE_STATUS (Retired/Cancelled/Superseded/Withdrawn/Closed/Rejected), and databases with no such status reject retire.
+  - Human-only fields (from notion-map.json) are refused whole-entry with a notion.refused event: Approvers, Decided by, Veto, Answer, Prod deploy approval etc., and the Approved/Rejected values of Gates.Status. The audit property 'Last written by run' is stamped on every write and cannot be set by an agent.
+  - Human edits win: conflict if the page's current last_edited_time is later than the entry's base_last_edited (or, if absent, than the row in the mirror agents last saw) and is not ARIMA's own write in this push; the entry goes to outbox/conflicts and a notion.conflict event is logged for the orchestrator to re-read and re-apply or raise a question.
+  - Rate limits: every API call goes through Throttle (~3 req/s) and withBackoff (429: wait Retry-After, else exponential, 5 retries); the SDK's own retry is switched off so retry behaviour is ours and tested.
+  - Creates are idempotent: an existing row with the same title and the same run id counts as already applied. Relations are written as ARIMA IDs and resolved to page ids from the mirror. enqueue() in notion/outbox.ts validates and writes entries for scripts; agents may also write the JSON directly.
+  - Mirror read-only for agents is enforced by role tool rules (T-06) and the T-13 hook, not by file permissions (would break atomic rewrites on Windows). Still tested only against the in-memory fake; real-API behaviour is covered by the pending T-09 manual run.
 
 ### T-11 Orchestrator agent, minimal (§5.2)
 - [ ] `agents/orchestrator.md` with mission, tools, must-nots and escalation rules from §5.2, trimmed to v0.1 abilities (init, status, pause).

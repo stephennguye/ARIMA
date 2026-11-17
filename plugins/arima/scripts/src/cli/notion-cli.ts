@@ -6,25 +6,25 @@ import { writeFileAtomic } from '../lib/atomic-file.js';
 import { describeError, getValidator } from '../lib/schema.js';
 import { bootstrapTemplate } from '../notion/build.js';
 import { mapWorkspace } from '../notion/mapper.js';
+import { notionMapFile, pullMirror, readNotionMap } from '../notion/mirror.js';
+import { pushOutbox } from '../notion/outbox.js';
 import { createNotionPortFromToken } from '../notion/port.js';
 import type { NotionPort } from '../notion/port.js';
 import type { Io } from './config-cli.js';
 
 export const USAGE = `Usage: arima-notion bootstrap --parent <page-id> [--token-env NAME]
        arima-notion map [--root <page-id>] [--migrate] [--project <dir>] [--token-env NAME]
+       arima-notion pull [--project <dir>]     mirror every mapped database to .arima/mirror/
+       arima-notion push [--project <dir>]     apply .arima/outbox/ to Notion (orchestrator only)
 bootstrap builds the 19 ARIMA databases under a page (run once, to build the public template).
 map finds them under a duplicated template, verifies every property, writes .arima/notion-map.json.
 The Notion integration token is read from the environment (default ARIMA_NOTION_TOKEN); it is never printed.
-Exit codes: 0 ok, 1 verification failed or Notion error, 2 usage`;
+Exit codes: 0 ok, 1 verification failed, Notion error, or outbox entries rejected/in conflict/deferred, 2 usage`;
 
 export interface NotionCliDeps {
   portFactory?: (token: string) => NotionPort;
   env?: NodeJS.ProcessEnv;
   now?: Date;
-}
-
-export function notionMapFile(projectDir: string): string {
-  return path.join(projectDir, '.arima', 'notion-map.json');
 }
 
 function rootFromConfig(projectDir: string): { root?: string; tokenEnv?: string } {
@@ -51,7 +51,7 @@ export async function runNotionCli(
   deps: NotionCliDeps = {},
 ): Promise<number> {
   const [command, ...rest] = argv;
-  if (command !== 'bootstrap' && command !== 'map') {
+  if (command !== 'bootstrap' && command !== 'map' && command !== 'pull' && command !== 'push') {
     io.err(`${USAGE}\n`);
     return 2;
   }
@@ -112,6 +112,32 @@ export async function runNotionCli(
         'views are not created by the API; set them up as described in docs/NOTION-TEMPLATE.md\n',
       );
       return 0;
+    }
+
+    if (command === 'pull') {
+      const mirrors = await pullMirror(projectDir, port, readNotionMap(projectDir), {
+        ...(deps.now ? { now: deps.now } : {}),
+      });
+      let rows = 0;
+      for (const m of mirrors.values()) rows += m.rows.length;
+      io.out(`mirrored ${mirrors.size} databases, ${rows} rows, to .arima/mirror/\n`);
+      return 0;
+    }
+
+    if (command === 'push') {
+      const report = await pushOutbox(projectDir, port, readNotionMap(projectDir), {
+        ...(deps.now ? { now: deps.now } : {}),
+      });
+      io.out(
+        `outbox: ${report.applied.length} applied, ${report.rejected.length} rejected, ${report.conflicts.length} in conflict (human edit kept), ${report.deferred.length} deferred\n`,
+      );
+      for (const r of report.rejected) io.out(`rejected ${r.id}: ${r.reason}\n`);
+      for (const c of report.conflicts)
+        io.out(
+          `conflict ${c}: a human edited the page after the agent read it; their edit was kept\n`,
+        );
+      for (const d of report.deferred) io.out(`deferred ${d}: will be retried next run\n`);
+      return report.rejected.length + report.conflicts.length + report.deferred.length > 0 ? 1 : 0;
     }
 
     const root = values.root ?? cfg.root;

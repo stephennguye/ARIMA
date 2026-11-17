@@ -343,7 +343,8 @@ describe('Notion port (mocked SDK client)', () => {
         },
       },
       databases: { create: unused, retrieve: unused },
-      dataSources: { retrieve: unused, update: unused },
+      dataSources: { retrieve: unused, update: unused, query: unused },
+      pages: { retrieve: unused, create: unused, update: unused },
     };
     return { client, calls };
   };
