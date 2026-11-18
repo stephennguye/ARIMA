@@ -7,7 +7,9 @@ import { getValidator } from '../src/lib/schema.js';
 import { VERSION_MARKER, bootstrapTemplate } from '../src/notion/build.js';
 import { mapWorkspace } from '../src/notion/mapper.js';
 import { createNotionPort } from '../src/notion/port.js';
+import { toApiProperty } from '../src/notion/props.js';
 import { DATABASES, LAST_WRITTEN_BY_RUN, expandedSpec } from '../src/notion/schema.js';
+import type { PropSpec } from '../src/notion/schema.js';
 import { FakeNotion } from './fake-notion.js';
 import { project, tempDir } from './helpers.js';
 
@@ -470,5 +472,31 @@ describe('arima-notion CLI', () => {
     expect((await run([], tempDir(), fake)).code).toBe(2);
     expect((await run(['bootstrap'], tempDir(), fake)).code).toBe(2);
     expect((await run(['map'], tempDir(), fake)).code).toBe(2);
+  });
+});
+
+describe('Requirements.Coverage formula (real API: a formula on a select rollup is text)', () => {
+  const COVERAGE = 'if(contains(prop("Test results"), "Pass"), "Covered", "Not covered")';
+  const coverage = () =>
+    expandedSpec()
+      .find((s) => s.title === 'Requirements')
+      ?.props.find((p) => p.name === 'Coverage');
+
+  it('uses contains() on the rollup, not .some(current == ...)', () => {
+    expect(coverage()).toMatchObject({ type: 'formula', formula: COVERAGE });
+    expect(JSON.stringify(coverage())).not.toContain('.some(');
+  });
+
+  it('the property body sent to Notion carries exactly that expression', () => {
+    expect(toApiProperty(coverage() as PropSpec)).toEqual({ formula: { expression: COVERAGE } });
+  });
+
+  it('docs/NOTION-TEMPLATE.md shows the same formula for the manual step', () => {
+    const doc = readFileSync(
+      path.join(import.meta.dirname, '..', '..', '..', '..', 'docs', 'NOTION-TEMPLATE.md'),
+      'utf8',
+    );
+    expect(doc).toContain(COVERAGE);
+    expect(doc).not.toContain('.some(current');
   });
 });

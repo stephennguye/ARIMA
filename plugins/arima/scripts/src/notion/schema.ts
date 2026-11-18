@@ -160,7 +160,7 @@ export const DATABASES: DbSpec[] = [
       {
         name: 'Coverage',
         type: 'formula',
-        formula: 'if(prop("Test results").some(current == "Pass"), "Covered", "Not covered")',
+        formula: 'if(contains(prop("Test results"), "Pass"), "Covered", "Not covered")',
       },
       rel('Stories', 'stories', 'Requirements'),
       rel('Test Cases', 'test_cases', 'Requirements'),
