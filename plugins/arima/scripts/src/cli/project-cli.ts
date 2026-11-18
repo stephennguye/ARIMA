@@ -48,7 +48,7 @@ const bad = (io: Io, usage: string, message: string): number => {
 };
 
 export const INIT_USAGE = `Usage: arima-init --brief <file> [--project <dir>] [--root <notion-page-id>] [--skip-state] [--json]
-Exit codes: 0 ok, 2 usage, 3 brief has gaps, 4 Notion workspace does not match the template, 5 Notion writes failed, 10-14 preflight failed (see arima-preflight)`;
+Exit codes: 0 ok, 2 usage, 3 brief has gaps, 4 Notion workspace does not match the template, 5 Notion writes failed, 6 brief contains a secret, 10-14 preflight failed (see arima-preflight)`;
 
 /** `arima-init`: the deterministic core of /arima:init. */
 export async function runInitCli(

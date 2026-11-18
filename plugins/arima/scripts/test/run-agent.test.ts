@@ -1,6 +1,6 @@
 import { existsSync, mkdirSync, readFileSync, readdirSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
-import { afterEach, describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { runAgentCli } from '../src/cli/run-agent-cli.js';
 import { validateProject } from '../src/config.js';
 import { readEvents } from '../src/events.js';
@@ -63,12 +63,11 @@ function go(
     claudeBin: STUB,
     env: {
       ...process.env,
-      STUB_MODE: mode,
-      STUB_RECORD: s.record,
       ARIMA_NOTION_TOKEN: 'placeholder-not-a-real-token',
       ARIMA_GITHUB_TOKEN: 'placeholder-not-a-real-token',
-      ...extraEnv,
     },
+    // The child gets an allow-list of the environment; these steer the stub CLI.
+    extraEnv: { STUB_MODE: mode, STUB_RECORD: s.record, ...extraEnv },
     now: new Date(2026, 10, 17, 6, 3),
     ...over,
   });
@@ -357,9 +356,14 @@ describe('arima-run-agent CLI', () => {
     return { code, out, err };
   };
 
+  beforeEach(() => {
+    process.env['ARIMA_PASSTHROUGH_ENV'] = 'STUB_MODE';
+  });
+
   afterEach(() => {
     delete process.env['ARIMA_CLAUDE_BIN'];
     delete process.env['STUB_MODE'];
+    delete process.env['ARIMA_PASSTHROUGH_ENV'];
   });
 
   it('runs end to end against the stub and prints a JSON summary', async () => {

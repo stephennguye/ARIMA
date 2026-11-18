@@ -102,6 +102,7 @@ Run the scripts directly to see exact messages. Preflight and init share these e
 | 3 | The brief has gaps | Fill the sections the message lists (write "None" where there is nothing) |
 | 4 | The Notion workspace does not match the template | `arima-notion map --migrate` adds missing properties; anything else you must fix in Notion |
 | 5 | Some Notion writes did not apply | Run `/arima:init` again; it finishes what is missing |
+| 6 | The brief looks like it contains a secret (a token, key or password) | Remove it from the brief and keep credentials out of it; it would be published to Notion |
 | 10 | `arima.yaml` or `team.yaml` is invalid | The message gives `file:line`; `arima-config validate` re-checks |
 | 11 | Another run holds `.arima/run.lock` | Wait for it; a lock from a crashed run is replaced automatically after `max_run_minutes` plus 30 |
 | 12 | The kill switch is on | `/arima:pause --resume`; also untick "Pause ARIMA" on the Notion root page |

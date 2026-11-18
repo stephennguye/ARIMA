@@ -1,5 +1,6 @@
 // Stand-in for the `claude` CLI. Behaviour is chosen by STUB_MODE; what it was called with is
 // written to STUB_RECORD so tests can assert on flags, env and prompt. No network, no cost.
+import { spawn } from 'node:child_process';
 import { readFileSync, writeFileSync } from 'node:fs';
 
 const mode = process.env.STUB_MODE ?? 'success';
@@ -84,6 +85,15 @@ switch (mode) {
   case 'hang':
     setInterval(() => undefined, 1000);
     break;
+  case 'hang_tree': {
+    // Starts a grandchild that would outlive a plain kill of this process.
+    const grandchild = spawn(process.execPath, ['-e', 'setInterval(() => {}, 1000)'], {
+      stdio: 'ignore',
+    });
+    writeFileSync(process.env.STUB_PIDFILE, String(grandchild.pid));
+    setInterval(() => undefined, 1000);
+    break;
+  }
   case 'echo_resume':
     console.log(
       JSON.stringify({

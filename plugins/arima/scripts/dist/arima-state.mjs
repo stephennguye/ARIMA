@@ -15493,10 +15493,22 @@ var SECRET_PATTERNS = [
   { name: "github fine-grained token", re: /\bgithub_pat_[A-Za-z0-9_]{20,}/ },
   { name: "anthropic key", re: /\bsk-ant-[A-Za-z0-9_-]{20,}/ },
   { name: "aws access key", re: /\bAKIA[0-9A-Z]{16}\b/ },
-  { name: "private key block", re: /-----BEGIN [A-Z ]*PRIVATE KEY-----/ }
+  { name: "private key block", re: /-----BEGIN [A-Z ]*PRIVATE KEY-----/ },
+  { name: "slack token", re: /\bxox[abprs]-[A-Za-z0-9-]{10,}/ },
+  { name: "stripe key", re: /\b[sr]k_(?:live|test)_[A-Za-z0-9]{16,}/ },
+  { name: "google api key", re: /\bAIza[0-9A-Za-z_-]{35}\b/ },
+  { name: "json web token", re: /\beyJ[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}/ },
+  { name: "npm token", re: /\bnpm_[A-Za-z0-9]{36}\b/ },
+  { name: "bearer token", re: /\bBearer\s+[A-Za-z0-9._~+/-]{24,}=*/ },
+  {
+    // key = "long random-looking value" for names that usually hold credentials
+    name: "credential assignment",
+    re: /(?<![A-Za-z])(?:api[_-]?key|secret(?:[_-]?key)?|access[_-]?token|auth[_-]?token|token|passwd|password|private[_-]?key)["']?\s*[:=]\s*["']?[A-Za-z0-9/+_=.-]{20,}/i
+  }
 ];
 function findSecrets(text) {
-  return SECRET_PATTERNS.filter((p) => p.re.test(text)).map((p) => p.name);
+  const unescaped = text.replace(/\\[nrt]/g, " ").replace(/\\"/g, '"');
+  return SECRET_PATTERNS.filter((p) => p.re.test(text) || p.re.test(unescaped)).map((p) => p.name);
 }
 function assertNoSecrets(text, where) {
   const found = findSecrets(text);

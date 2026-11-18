@@ -10,6 +10,7 @@ import path from 'node:path';
 import { appendEvent } from '../events.js';
 import { writeFileAtomic } from '../lib/atomic-file.js';
 import { describeError, getValidator } from '../lib/schema.js';
+import { findSecrets } from '../lib/secrets.js';
 import { findRow, pullMirror, readMirror, writeMirror } from './mirror.js';
 import type { MirrorFile, MirrorRow } from './mirror.js';
 import type { MapDatabase, NotionMap } from './mapper.js';
@@ -33,6 +34,13 @@ export interface OutboxEntry {
 
 export const outboxDir = (projectDir: string): string => path.join(projectDir, '.arima', 'outbox');
 
+/** Kinds of secret found in the parts of an entry that would be written to Notion. */
+function secretsIn(entry: OutboxEntry): string[] {
+  return findSecrets(
+    JSON.stringify({ p: entry.properties ?? {}, c: entry.content_markdown ?? '' }),
+  );
+}
+
 export interface PushReport {
   applied: string[];
   rejected: { id: string; reason: string }[];
@@ -49,6 +57,12 @@ export function enqueue(projectDir: string, entry: OutboxEntry): string {
   if (!validate(entry)) {
     throw new Error(
       `Invalid outbox entry: ${(validate.errors ?? []).map(describeError).join('; ')}`,
+    );
+  }
+  const leaked = secretsIn(entry);
+  if (leaked.length > 0) {
+    throw new Error(
+      `Refusing outbox entry ${entry.id}: it looks like it contains a secret (${leaked.join(', ')})`,
     );
   }
   const dir = outboxDir(projectDir);
@@ -245,6 +259,16 @@ export async function pushOutbox(
       return { kind: 'rejected', reason: `database "${entry.database}" is not in notion-map.json` };
     const mirror = mirrors.get(entry.database) as MirrorFile;
 
+    // Secrets never go to Notion (spec §11.3), whoever wrote the entry.
+    const leaked = secretsIn(entry);
+    if (leaked.length > 0) {
+      return {
+        kind: 'rejected',
+        refused: true,
+        reason: `the entry looks like it contains a secret (${leaked.join(', ')}); secrets must never be written to Notion (spec §11.3)`,
+      };
+    }
+
     // Property checks: known, writable, not human-only.
     const props = entry.properties ?? {};
     for (const [name, value] of Object.entries(props)) {
@@ -336,9 +360,19 @@ export async function pushOutbox(
     }
 
     // A human edit since the agent looked wins.
+    // The mirror the orchestrator itself holds is the baseline; an entry may only make the check
+    // STRICTER (an earlier base), never looser, so an agent cannot hide a human edit by claiming a
+    // late "last seen" time.
+    const mirrored = baseline
+      .get(entry.database)
+      ?.rows.find((r) => r.page_id === row.page_id)?.last_edited_time;
+    const claimed = entry.base_last_edited;
     const basis =
-      entry.base_last_edited ??
-      baseline.get(entry.database)?.rows.find((r) => r.page_id === row.page_id)?.last_edited_time;
+      mirrored !== undefined && claimed !== undefined
+        ? Date.parse(claimed) < Date.parse(mirrored)
+          ? claimed
+          : mirrored
+        : (mirrored ?? claimed);
     const current = await port.getPageLastEdited(row.page_id);
     if (
       basis !== undefined &&

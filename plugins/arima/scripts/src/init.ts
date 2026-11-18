@@ -6,6 +6,7 @@ import type { ArimaConfig, TeamConfig } from './config.js';
 import { appendEvent } from './events.js';
 import { ensureNotionSwitch } from './killswitch.js';
 import { GATE_CRITERIA, GATE_PHASE } from './gates.js';
+import { findSecrets } from './lib/secrets.js';
 import { appendLedgerRow, buildLedgerRow } from './ledger.js';
 import { mapAndWrite } from './notion/map-file.js';
 import { findRow, pullMirror, readMirror } from './notion/mirror.js';
@@ -20,7 +21,14 @@ import { issueRunId } from './runid.js';
 import { StateError, pushState } from './state.js';
 
 /** Exit codes of `arima-init`; preflight failures keep their own codes (10-14). */
-export const INIT_EXIT = { ok: 0, usage: 2, briefGaps: 3, mapFailed: 4, pushFailed: 5 } as const;
+export const INIT_EXIT = {
+  ok: 0,
+  usage: 2,
+  briefGaps: 3,
+  mapFailed: 4,
+  pushFailed: 5,
+  briefSecret: 6,
+} as const;
 
 export interface InitOptions {
   projectDir: string;
@@ -190,7 +198,17 @@ export async function runInit(o: InitOptions): Promise<InitResult> {
   };
 
   // 1. brief
-  const brief = checkBrief(readFileSync(o.briefFile, 'utf8'));
+  const briefText = readFileSync(o.briefFile, 'utf8');
+  // The brief is published to Notion and read by agents, so a pasted credential must stop here.
+  const leaked = findSecrets(briefText);
+  if (leaked.length > 0) {
+    result.problems = [
+      `the brief looks like it contains a secret (${leaked.join(', ')}); remove it and keep credentials out of the brief`,
+    ];
+    result.exitCode = INIT_EXIT.briefSecret;
+    return result;
+  }
+  const brief = checkBrief(briefText);
   if (!brief.ok) {
     result.gaps = describeGaps(brief);
     result.exitCode = INIT_EXIT.briefGaps;

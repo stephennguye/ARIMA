@@ -39,6 +39,7 @@ Pass `--root <page id>` only if the ID is not yet in `arima.yaml`. Read the exit
 | 14 | An environment variable is missing | Name it (never its value) and stop. |
 | 4 | The Notion workspace does not match the template | Show the listed problems. If they are missing properties, offer `node "${CLAUDE_PLUGIN_ROOT}/scripts/dist/arima-notion.mjs" map --migrate`, and run init again. Anything else needs the user to fix the workspace. |
 | 5 | Some Notion writes did not apply | Run init again; it is safe to repeat and finishes what is missing. |
+| 6 | The brief looks like it contains a secret | Tell the user to remove it (never repeat it back), then run init again. |
 | 2 | Usage or missing token | Report what the message says. |
 
 Do not work around a failure by editing state files or skipping a check.

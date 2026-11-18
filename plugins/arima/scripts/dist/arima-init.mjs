@@ -18691,10 +18691,22 @@ var SECRET_PATTERNS = [
   { name: "github fine-grained token", re: /\bgithub_pat_[A-Za-z0-9_]{20,}/ },
   { name: "anthropic key", re: /\bsk-ant-[A-Za-z0-9_-]{20,}/ },
   { name: "aws access key", re: /\bAKIA[0-9A-Z]{16}\b/ },
-  { name: "private key block", re: /-----BEGIN [A-Z ]*PRIVATE KEY-----/ }
+  { name: "private key block", re: /-----BEGIN [A-Z ]*PRIVATE KEY-----/ },
+  { name: "slack token", re: /\bxox[abprs]-[A-Za-z0-9-]{10,}/ },
+  { name: "stripe key", re: /\b[sr]k_(?:live|test)_[A-Za-z0-9]{16,}/ },
+  { name: "google api key", re: /\bAIza[0-9A-Za-z_-]{35}\b/ },
+  { name: "json web token", re: /\beyJ[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}/ },
+  { name: "npm token", re: /\bnpm_[A-Za-z0-9]{36}\b/ },
+  { name: "bearer token", re: /\bBearer\s+[A-Za-z0-9._~+/-]{24,}=*/ },
+  {
+    // key = "long random-looking value" for names that usually hold credentials
+    name: "credential assignment",
+    re: /(?<![A-Za-z])(?:api[_-]?key|secret(?:[_-]?key)?|access[_-]?token|auth[_-]?token|token|passwd|password|private[_-]?key)["']?\s*[:=]\s*["']?[A-Za-z0-9/+_=.-]{20,}/i
+  }
 ];
 function findSecrets(text2) {
-  return SECRET_PATTERNS.filter((p) => p.re.test(text2)).map((p) => p.name);
+  const unescaped = text2.replace(/\\[nrt]/g, " ").replace(/\\"/g, '"');
+  return SECRET_PATTERNS.filter((p) => p.re.test(text2) || p.re.test(unescaped)).map((p) => p.name);
 }
 function assertNoSecrets(text2, where) {
   const found = findSecrets(text2);
@@ -20146,12 +20158,23 @@ import {
 } from "node:fs";
 import path12 from "node:path";
 var outboxDir = (projectDir) => path12.join(projectDir, ".arima", "outbox");
+function secretsIn(entry) {
+  return findSecrets(
+    JSON.stringify({ p: entry.properties ?? {}, c: entry.content_markdown ?? "" })
+  );
+}
 var UUID = /^[0-9a-f]{8}-?[0-9a-f]{4}-?[0-9a-f]{4}-?[0-9a-f]{4}-?[0-9a-f]{12}$/i;
 function enqueue(projectDir, entry) {
   const validate = getValidator("outbox");
   if (!validate(entry)) {
     throw new Error(
       `Invalid outbox entry: ${(validate.errors ?? []).map(describeError).join("; ")}`
+    );
+  }
+  const leaked = secretsIn(entry);
+  if (leaked.length > 0) {
+    throw new Error(
+      `Refusing outbox entry ${entry.id}: it looks like it contains a secret (${leaked.join(", ")})`
     );
   }
   const dir = outboxDir(projectDir);
@@ -20290,6 +20313,14 @@ async function pushOutbox(projectDir, port, map, opts = {}) {
     if (db === void 0)
       return { kind: "rejected", reason: `database "${entry.database}" is not in notion-map.json` };
     const mirror = mirrors.get(entry.database);
+    const leaked = secretsIn(entry);
+    if (leaked.length > 0) {
+      return {
+        kind: "rejected",
+        refused: true,
+        reason: `the entry looks like it contains a secret (${leaked.join(", ")}); secrets must never be written to Notion (spec \xA711.3)`
+      };
+    }
     const props = entry.properties ?? {};
     for (const [name, value] of Object.entries(props)) {
       const def = db.properties[name];
@@ -20373,7 +20404,9 @@ async function pushOutbox(projectDir, port, map, opts = {}) {
         return { kind: "rejected", reason: `${db.title} has no Status property` };
       if (row.properties["Status"] === status) return { kind: "applied", pageId: row.page_id };
     }
-    const basis = entry.base_last_edited ?? baseline.get(entry.database)?.rows.find((r) => r.page_id === row.page_id)?.last_edited_time;
+    const mirrored = baseline.get(entry.database)?.rows.find((r) => r.page_id === row.page_id)?.last_edited_time;
+    const claimed = entry.base_last_edited;
+    const basis = mirrored !== void 0 && claimed !== void 0 ? Date.parse(claimed) < Date.parse(mirrored) ? claimed : mirrored : mirrored ?? claimed;
     const current = await port.getPageLastEdited(row.page_id);
     if (basis !== void 0 && Date.parse(current) > Date.parse(basis) && current !== ownWrites.get(row.page_id)) {
       return { kind: "conflict", humanEditedAt: current };
@@ -20894,7 +20927,14 @@ async function issueRunId(projectDir, now = /* @__PURE__ */ new Date()) {
 }
 
 // plugins/arima/scripts/src/init.ts
-var INIT_EXIT = { ok: 0, usage: 2, briefGaps: 3, mapFailed: 4, pushFailed: 5 };
+var INIT_EXIT = {
+  ok: 0,
+  usage: 2,
+  briefGaps: 3,
+  mapFailed: 4,
+  pushFailed: 5,
+  briefSecret: 6
+};
 var fmt = (n) => `$${n}`;
 function charter(name, arima, team, brief) {
   const a = arima;
@@ -20995,7 +21035,16 @@ async function runInit(o) {
     warnings: [],
     nextSteps: []
   };
-  const brief = checkBrief(readFileSync11(o.briefFile, "utf8"));
+  const briefText = readFileSync11(o.briefFile, "utf8");
+  const leaked = findSecrets(briefText);
+  if (leaked.length > 0) {
+    result.problems = [
+      `the brief looks like it contains a secret (${leaked.join(", ")}); remove it and keep credentials out of the brief`
+    ];
+    result.exitCode = INIT_EXIT.briefSecret;
+    return result;
+  }
+  const brief = checkBrief(briefText);
   if (!brief.ok) {
     result.gaps = describeGaps(brief);
     result.exitCode = INIT_EXIT.briefGaps;
@@ -21240,7 +21289,7 @@ ${usage}
   return 2;
 };
 var INIT_USAGE = `Usage: arima-init --brief <file> [--project <dir>] [--root <notion-page-id>] [--skip-state] [--json]
-Exit codes: 0 ok, 2 usage, 3 brief has gaps, 4 Notion workspace does not match the template, 5 Notion writes failed, 10-14 preflight failed (see arima-preflight)`;
+Exit codes: 0 ok, 2 usage, 3 brief has gaps, 4 Notion workspace does not match the template, 5 Notion writes failed, 6 brief contains a secret, 10-14 preflight failed (see arima-preflight)`;
 async function runInitCli(argv, io, deps = {}) {
   let v;
   try {

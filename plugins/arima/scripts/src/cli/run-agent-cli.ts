@@ -3,15 +3,33 @@ import { parseArgs } from 'node:util';
 import { validateProject } from '../config.js';
 import type { Io } from './config-cli.js';
 import { isRole, ROLES } from '../roles.js';
-import { EXIT, agentConfigFrom, runAgent } from '../run-agent.js';
+import { DispatchRefused, EXIT, agentConfigFrom, runAgent } from '../run-agent.js';
 
 export const USAGE = `Usage: arima-run-agent --role <role> --item <ID|none> --budget <usd> --max-turns <n> --prompt-file <file>
          [--cwd <worktree>] [--project <dir>] [--phase <0-8>] [--attempt <n>] [--milestone MS-NN]
          [--rework-reason failed_review|failed_qa|vetoed|bug|other] [--session <id>] [--agent <name>]
 Roles: ${ROLES.join(' ')}
-Exit codes: 0 pass, 1 failed/error, 2 usage or config, 3 blocked (turn or budget cap), 75 paused (usage limit)`;
+Exit codes: 0 pass, 1 failed/error, 2 usage or config, 3 blocked (turn or budget cap), 12 kill switch is on, 13 budget used up, 75 paused (usage limit)`;
 
 const REWORK = ['failed_review', 'failed_qa', 'vetoed', 'bug', 'other'] as const;
+
+/**
+ * Variables named in ARIMA_PASSTHROUGH_ENV (comma separated) are passed to the child as given, on
+ * top of the allow-list. An explicit, visible opt-in for the human running the command; the tests
+ * use it to steer the stub CLI.
+ */
+function passthroughEnv(): Record<string, string> {
+  const out: Record<string, string> = {};
+  const names = (process.env['ARIMA_PASSTHROUGH_ENV'] ?? '')
+    .split(',')
+    .map((s) => s.trim())
+    .filter(Boolean);
+  for (const name of names) {
+    const v = process.env[name];
+    if (v !== undefined) out[name] = v;
+  }
+  return out;
+}
 
 /** Runs `arima-run-agent`; prints one JSON summary line on stdout. */
 export async function runAgentCli(argv: string[], io: Io): Promise<number> {
@@ -95,6 +113,7 @@ export async function runAgentCli(argv: string[], io: Io): Promise<number> {
       phase,
       attempt,
       config: agentConfigFrom(config.arima, role),
+      extraEnv: passthroughEnv(),
       ...(values['cwd'] !== undefined ? { cwd: path.resolve(io.cwd, values['cwd']) } : {}),
       ...(values['milestone'] !== undefined ? { milestone: values['milestone'] } : {}),
       ...(rework !== undefined ? { reworkReason: rework as (typeof REWORK)[number] } : {}),
@@ -113,6 +132,6 @@ export async function runAgentCli(argv: string[], io: Io): Promise<number> {
     return outcome.exitCode;
   } catch (e) {
     io.err(`${e instanceof Error ? e.message : String(e)}\n`);
-    return EXIT.usage;
+    return e instanceof DispatchRefused ? e.exitCode : EXIT.usage;
   }
 }

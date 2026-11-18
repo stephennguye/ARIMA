@@ -19488,10 +19488,22 @@ var SECRET_PATTERNS = [
   { name: "github fine-grained token", re: /\bgithub_pat_[A-Za-z0-9_]{20,}/ },
   { name: "anthropic key", re: /\bsk-ant-[A-Za-z0-9_-]{20,}/ },
   { name: "aws access key", re: /\bAKIA[0-9A-Z]{16}\b/ },
-  { name: "private key block", re: /-----BEGIN [A-Z ]*PRIVATE KEY-----/ }
+  { name: "private key block", re: /-----BEGIN [A-Z ]*PRIVATE KEY-----/ },
+  { name: "slack token", re: /\bxox[abprs]-[A-Za-z0-9-]{10,}/ },
+  { name: "stripe key", re: /\b[sr]k_(?:live|test)_[A-Za-z0-9]{16,}/ },
+  { name: "google api key", re: /\bAIza[0-9A-Za-z_-]{35}\b/ },
+  { name: "json web token", re: /\beyJ[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}/ },
+  { name: "npm token", re: /\bnpm_[A-Za-z0-9]{36}\b/ },
+  { name: "bearer token", re: /\bBearer\s+[A-Za-z0-9._~+/-]{24,}=*/ },
+  {
+    // key = "long random-looking value" for names that usually hold credentials
+    name: "credential assignment",
+    re: /(?<![A-Za-z])(?:api[_-]?key|secret(?:[_-]?key)?|access[_-]?token|auth[_-]?token|token|passwd|password|private[_-]?key)["']?\s*[:=]\s*["']?[A-Za-z0-9/+_=.-]{20,}/i
+  }
 ];
 function findSecrets(text2) {
-  return SECRET_PATTERNS.filter((p) => p.re.test(text2)).map((p) => p.name);
+  const unescaped = text2.replace(/\\[nrt]/g, " ").replace(/\\"/g, '"');
+  return SECRET_PATTERNS.filter((p) => p.re.test(text2) || p.re.test(unescaped)).map((p) => p.name);
 }
 function assertNoSecrets(text2, where) {
   const found = findSecrets(text2);
@@ -19729,6 +19741,11 @@ import {
 } from "node:fs";
 import path7 from "node:path";
 var outboxDir = (projectDir) => path7.join(projectDir, ".arima", "outbox");
+function secretsIn(entry) {
+  return findSecrets(
+    JSON.stringify({ p: entry.properties ?? {}, c: entry.content_markdown ?? "" })
+  );
+}
 var UUID = /^[0-9a-f]{8}-?[0-9a-f]{4}-?[0-9a-f]{4}-?[0-9a-f]{4}-?[0-9a-f]{12}$/i;
 function listPending(projectDir, report) {
   const dir = outboxDir(projectDir);
@@ -19858,6 +19875,14 @@ async function pushOutbox(projectDir, port, map, opts = {}) {
     if (db === void 0)
       return { kind: "rejected", reason: `database "${entry.database}" is not in notion-map.json` };
     const mirror = mirrors.get(entry.database);
+    const leaked = secretsIn(entry);
+    if (leaked.length > 0) {
+      return {
+        kind: "rejected",
+        refused: true,
+        reason: `the entry looks like it contains a secret (${leaked.join(", ")}); secrets must never be written to Notion (spec \xA711.3)`
+      };
+    }
     const props = entry.properties ?? {};
     for (const [name, value] of Object.entries(props)) {
       const def = db.properties[name];
@@ -19941,7 +19966,9 @@ async function pushOutbox(projectDir, port, map, opts = {}) {
         return { kind: "rejected", reason: `${db.title} has no Status property` };
       if (row.properties["Status"] === status) return { kind: "applied", pageId: row.page_id };
     }
-    const basis = entry.base_last_edited ?? baseline.get(entry.database)?.rows.find((r) => r.page_id === row.page_id)?.last_edited_time;
+    const mirrored = baseline.get(entry.database)?.rows.find((r) => r.page_id === row.page_id)?.last_edited_time;
+    const claimed = entry.base_last_edited;
+    const basis = mirrored !== void 0 && claimed !== void 0 ? Date.parse(claimed) < Date.parse(mirrored) ? claimed : mirrored : mirrored ?? claimed;
     const current = await port.getPageLastEdited(row.page_id);
     if (basis !== void 0 && Date.parse(current) > Date.parse(basis) && current !== ownWrites.get(row.page_id)) {
       return { kind: "conflict", humanEditedAt: current };

@@ -1,7 +1,9 @@
-import { spawn } from 'node:child_process';
+import { execFileSync, spawn } from 'node:child_process';
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
+import { budgetStatus } from './budget.js';
 import { appendEvent } from './events.js';
+import { pauseFile } from './killswitch.js';
 import { buildLedgerRow, appendLedgerRow, parseClaudeResult, readLedger } from './ledger.js';
 import type { ClaudeResult, LedgerRow, Role, RunContext, RunResult } from './ledger.js';
 import { pluginRoot } from './lib/paths.js';
@@ -27,6 +29,21 @@ export interface AgentConfig {
   tier?: 'strong' | 'standard' | 'fast' | undefined;
   notionTokenEnv: string;
   githubTokenEnv?: string | undefined;
+  /** runtime.auth: with 'api_key' the ANTHROPIC_* variables are passed to the child. */
+  auth?: 'seat' | 'api_key' | undefined;
+  /** Caps re-checked before every dispatch (spec §13.5). Optional so callers may omit them. */
+  projectCap?: number | undefined;
+  dailyCap?: number | undefined;
+}
+
+/** A dispatch the wrapper refuses because a hard stop is on. `exitCode` matches arima-preflight. */
+export class DispatchRefused extends Error {
+  constructor(
+    message: string,
+    readonly exitCode: number,
+  ) {
+    super(message);
+  }
 }
 
 export interface RunAgentOptions {
@@ -47,8 +64,10 @@ export interface RunAgentOptions {
   config: AgentConfig;
   /** Executable to run instead of `claude` (tests, or a non-PATH install). */
   claudeBin?: string;
-  /** Environment for the child; defaults to process.env. */
+  /** The environment the child is built FROM (an allow-list is applied); defaults to process.env. */
   env?: NodeJS.ProcessEnv;
+  /** Variables passed to the child as given, on top of the allow-list (tests, explicit opt-ins). */
+  extraEnv?: Record<string, string>;
   now?: Date;
 }
 
@@ -76,9 +95,86 @@ export function isUsageLimit(
   return USAGE_LIMIT_RE.test(stderr) || USAGE_LIMIT_RE.test(stdout);
 }
 
+/** Kills a process and everything it started (a hung claude can have children). */
+export function killTree(pid: number | undefined): void {
+  if (pid === undefined) return;
+  try {
+    if (process.platform === 'win32') {
+      execFileSync('taskkill', ['/pid', String(pid), '/T', '/F'], { stdio: 'ignore' });
+    } else {
+      process.kill(-pid, 'SIGKILL');
+    }
+  } catch {
+    /* already gone */
+  }
+}
+
 const safe = (s: string): string => s.replace(/[^A-Za-z0-9._-]/g, '_');
 
-/** Environment for the child run: least privilege plus OTEL attribution (spec §11.3, §13.1). */
+/** Variables every child run may inherit: how to find programs, the home folder, locale, proxies. */
+const PASS_THROUGH = new Set(
+  [
+    'PATH',
+    'PATHEXT',
+    'SystemRoot',
+    'windir',
+    'COMSPEC',
+    'HOME',
+    'USERPROFILE',
+    'HOMEDRIVE',
+    'HOMEPATH',
+    'APPDATA',
+    'LOCALAPPDATA',
+    'ProgramData',
+    'ProgramFiles',
+    'ProgramFiles(x86)',
+    'ProgramW6432',
+    'CommonProgramFiles',
+    'CommonProgramFiles(x86)',
+    'ALLUSERSPROFILE',
+    'PUBLIC',
+    'SystemDrive',
+    'TEMP',
+    'TMP',
+    'TMPDIR',
+    'USERNAME',
+    'USER',
+    'LOGNAME',
+    'SHELL',
+    'LANG',
+    'LANGUAGE',
+    'TERM',
+    'COLORTERM',
+    'TZ',
+    'NO_COLOR',
+    'FORCE_COLOR',
+    'OS',
+    'PROCESSOR_ARCHITECTURE',
+    'NUMBER_OF_PROCESSORS',
+    'SSL_CERT_FILE',
+    'SSL_CERT_DIR',
+    'NODE_EXTRA_CA_CERTS',
+    'HTTP_PROXY',
+    'HTTPS_PROXY',
+    'NO_PROXY',
+    'XDG_CONFIG_HOME',
+    'XDG_DATA_HOME',
+    'XDG_CACHE_HOME',
+    'XDG_RUNTIME_DIR',
+    'DISPLAY',
+  ].map((n) => n.toLowerCase()),
+);
+const PASS_THROUGH_PREFIXES = ['lc_', 'claude_', 'otel_'];
+
+function isPassThrough(name: string): boolean {
+  const n = name.toLowerCase();
+  return PASS_THROUGH.has(n) || PASS_THROUGH_PREFIXES.some((p) => n.startsWith(p));
+}
+
+/**
+ * Environment for the child run (spec §11.3, §13.1): an allow-list, role-specific tokens, ARIMA's
+ * own control variables, and OTEL attribution.
+ */
 export function childEnv(
   base: NodeJS.ProcessEnv,
   o: {
@@ -92,15 +188,32 @@ export function childEnv(
     projectDir?: string;
   },
 ): NodeJS.ProcessEnv {
-  const env: NodeJS.ProcessEnv = { ...base };
+  // An ALLOW-LIST, not a block-list: a run gets what it needs to work and nothing else, so cloud
+  // keys, database URLs and other tokens in the parent environment never reach an agent.
+  const env: NodeJS.ProcessEnv = {};
+  for (const [name, value] of Object.entries(base)) {
+    if (value !== undefined && isPassThrough(name)) env[name] = value;
+  }
+  if (o.config.auth === 'api_key') {
+    for (const [name, value] of Object.entries(base)) {
+      if (value !== undefined && /^ANTHROPIC_/i.test(name)) env[name] = value;
+    }
+  }
+  if (mayHoldNotionToken(o.role)) {
+    const v = base[o.config.notionTokenEnv];
+    if (v !== undefined) env[o.config.notionTokenEnv] = v;
+  }
+  if (mayHoldGithubToken(o.role) && o.config.githubTokenEnv !== undefined) {
+    const v = base[o.config.githubTokenEnv];
+    if (v !== undefined) {
+      env[o.config.githubTokenEnv] = v;
+      env['GH_TOKEN'] = v; // what the gh CLI reads
+    }
+  }
   if (o.projectDir !== undefined) env['ARIMA_PROJECT_DIR'] = o.projectDir;
   env['ARIMA_RUN_ID'] = o.runId;
   env['ARIMA_ROLE'] = o.role;
   env['ARIMA_ITEM'] = o.item;
-  if (!mayHoldNotionToken(o.role)) delete env[o.config.notionTokenEnv];
-  if (!mayHoldGithubToken(o.role) && o.config.githubTokenEnv !== undefined) {
-    delete env[o.config.githubTokenEnv];
-  }
   const attrs = [
     `arima.project=${safe(o.projectKey)}`,
     `arima.phase=${o.phase}`,
@@ -160,6 +273,8 @@ function runProcess(
       env: opts.env,
       stdio: ['pipe', 'pipe', 'pipe'],
       windowsHide: true,
+      // POSIX: its own process group, so a timeout can kill the whole tree.
+      detached: process.platform !== 'win32',
     });
     let stdout = '';
     let stderr = '';
@@ -173,7 +288,7 @@ function runProcess(
     };
     const timer = setTimeout(() => {
       timedOut = true;
-      child.kill('SIGKILL');
+      killTree(child.pid);
     }, opts.timeoutMs);
     child.stdout.on('data', (d: Buffer) => (stdout += d.toString('utf8')));
     child.stderr.on('data', (d: Buffer) => (stderr += d.toString('utf8')));
@@ -213,6 +328,47 @@ function writeRunReport(projectDir: string, runId: string, body: Record<string, 
   writeFileSync(path.join(dir, `${runId}.json`), `${text}\n`, 'utf8');
 }
 
+const localDay = (d: Date): string =>
+  `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+
+/**
+ * A second layer under the daily preflight (spec §13.5: budgets are checked "before each
+ * dispatch"): refuses to start a run while the kill switch file is present or the daily or project
+ * budget is used up. Records a hardstop.hit event when it refuses.
+ */
+async function assertMayDispatch(o: RunAgentOptions, now: Date): Promise<void> {
+  const refuse = async (stop: string, message: string, exitCode: number): Promise<never> => {
+    await appendEvent(o.projectDir, {
+      type: 'hardstop.hit',
+      actor: 'system',
+      ...(o.item !== 'none' ? { item: o.item } : {}),
+      data: { stop, role: o.role, message },
+    });
+    throw new DispatchRefused(message, exitCode);
+  };
+  if (existsSync(pauseFile(o.projectDir))) {
+    await refuse(
+      'kill_switch',
+      'refusing to start a run: the kill switch is on (.arima/PAUSE)',
+      12,
+    );
+  }
+  if (o.config.projectCap !== undefined && o.config.dailyCap !== undefined) {
+    const s = budgetStatus(
+      o.projectDir,
+      { projectCap: o.config.projectCap, dailyCap: o.config.dailyCap, alertThresholds: [] },
+      localDay(now),
+    );
+    if (!s.ok) {
+      await refuse(
+        'budget_exceeded',
+        `refusing to start a run: the ${s.exhausted.join(' and ')} budget is used up (project ${s.projectSpent}/${s.projectCap}, today ${s.daySpent}/${s.dailyCap})`,
+        13,
+      );
+    }
+  }
+}
+
 /**
  * Runs one headless Claude Code session for one role and one item, then records exactly one
  * ledger row plus start/end (or paused) events, whatever happened (spec §7.2 step 5, §13).
@@ -234,6 +390,7 @@ export async function runAgent(o: RunAgentOptions): Promise<RunAgentOutcome> {
     (existsSync(path.join(root, 'agents', `${o.role}.md`)) ? `arima:${o.role}` : undefined);
 
   const now = o.now ?? new Date();
+  await assertMayDispatch(o, now);
   const runId = await issueRunId(o.projectDir, now);
   const startedAt = now.toISOString();
   const attempt = o.attempt ?? 1;
@@ -254,6 +411,7 @@ export async function runAgent(o: RunAgentOptions): Promise<RunAgentOutcome> {
     projectDir: path.resolve(o.projectDir),
     config: o.config,
   });
+  Object.assign(env, o.extraEnv ?? {});
   const bin = o.claudeBin ?? process.env['ARIMA_CLAUDE_BIN'] ?? 'claude';
   const t0 = Date.now();
   const spawned = await runProcess(bin, buildClaudeArgs(o, agentName, scriptsGlob), {
@@ -378,6 +536,9 @@ export function agentConfigFrom(arima: Record<string, unknown>, role: Role): Age
     maxRunMinutes: Number(get('schedule.max_run_minutes')),
     model,
     tier: tier === 'strong' || tier === 'standard' || tier === 'fast' ? tier : undefined,
+    auth: get('runtime.auth') === 'api_key' ? 'api_key' : 'seat',
+    projectCap: Number(get('budget.project_cap')),
+    dailyCap: Number(get('budget.daily_cap')),
     notionTokenEnv: String(get('notion.token_env')),
     githubTokenEnv: typeof githubEnv === 'string' ? githubEnv : undefined,
   };

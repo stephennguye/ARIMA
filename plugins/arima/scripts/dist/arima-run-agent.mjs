@@ -3264,8 +3264,8 @@ var require_utils = __commonJS({
       }
       return ind;
     }
-    function removeDotSegments(path12) {
-      let input = path12;
+    function removeDotSegments(path13) {
+      let input = path13;
       const output = [];
       let nextSlash = -1;
       let len = 0;
@@ -3339,11 +3339,11 @@ var require_utils = __commonJS({
       }
       return output.join("");
     }
-    function removeDotSegmentsRelative(path12) {
-      if (path12 === "" || path12[0] === "/") {
-        return removeDotSegments(path12);
+    function removeDotSegmentsRelative(path13) {
+      if (path13 === "" || path13[0] === "/") {
+        return removeDotSegments(path13);
       }
-      const segments = path12.split("/");
+      const segments = path13.split("/");
       const last = segments.length - 1;
       const output = [];
       let trailingDirectory = false;
@@ -3706,8 +3706,8 @@ var require_schemes = __commonJS({
       }
       if (wsComponent.resourceName) {
         const queryIndex = wsComponent.resourceName.indexOf("?");
-        const path12 = queryIndex === -1 ? wsComponent.resourceName : wsComponent.resourceName.slice(0, queryIndex);
-        wsComponent.path = path12 && path12 !== "/" ? path12 : void 0;
+        const path13 = queryIndex === -1 ? wsComponent.resourceName : wsComponent.resourceName.slice(0, queryIndex);
+        wsComponent.path = path13 && path13 !== "/" ? path13 : void 0;
         wsComponent.query = queryIndex === -1 ? void 0 : wsComponent.resourceName.slice(queryIndex + 1);
         wsComponent.resourceName = void 0;
       }
@@ -8158,17 +8158,17 @@ var require_visit = __commonJS({
     visit.BREAK = BREAK;
     visit.SKIP = SKIP;
     visit.REMOVE = REMOVE;
-    function visit_(key, node, visitor, path12) {
-      const ctrl = callVisitor(key, node, visitor, path12);
+    function visit_(key, node, visitor, path13) {
+      const ctrl = callVisitor(key, node, visitor, path13);
       if (identity.isNode(ctrl) || identity.isPair(ctrl)) {
-        replaceNode(key, path12, ctrl);
-        return visit_(key, ctrl, visitor, path12);
+        replaceNode(key, path13, ctrl);
+        return visit_(key, ctrl, visitor, path13);
       }
       if (typeof ctrl !== "symbol") {
         if (identity.isCollection(node)) {
-          path12 = Object.freeze(path12.concat(node));
+          path13 = Object.freeze(path13.concat(node));
           for (let i = 0; i < node.items.length; ++i) {
-            const ci = visit_(i, node.items[i], visitor, path12);
+            const ci = visit_(i, node.items[i], visitor, path13);
             if (typeof ci === "number")
               i = ci - 1;
             else if (ci === BREAK)
@@ -8179,13 +8179,13 @@ var require_visit = __commonJS({
             }
           }
         } else if (identity.isPair(node)) {
-          path12 = Object.freeze(path12.concat(node));
-          const ck = visit_("key", node.key, visitor, path12);
+          path13 = Object.freeze(path13.concat(node));
+          const ck = visit_("key", node.key, visitor, path13);
           if (ck === BREAK)
             return BREAK;
           else if (ck === REMOVE)
             node.key = null;
-          const cv = visit_("value", node.value, visitor, path12);
+          const cv = visit_("value", node.value, visitor, path13);
           if (cv === BREAK)
             return BREAK;
           else if (cv === REMOVE)
@@ -8206,17 +8206,17 @@ var require_visit = __commonJS({
     visitAsync.BREAK = BREAK;
     visitAsync.SKIP = SKIP;
     visitAsync.REMOVE = REMOVE;
-    async function visitAsync_(key, node, visitor, path12) {
-      const ctrl = await callVisitor(key, node, visitor, path12);
+    async function visitAsync_(key, node, visitor, path13) {
+      const ctrl = await callVisitor(key, node, visitor, path13);
       if (identity.isNode(ctrl) || identity.isPair(ctrl)) {
-        replaceNode(key, path12, ctrl);
-        return visitAsync_(key, ctrl, visitor, path12);
+        replaceNode(key, path13, ctrl);
+        return visitAsync_(key, ctrl, visitor, path13);
       }
       if (typeof ctrl !== "symbol") {
         if (identity.isCollection(node)) {
-          path12 = Object.freeze(path12.concat(node));
+          path13 = Object.freeze(path13.concat(node));
           for (let i = 0; i < node.items.length; ++i) {
-            const ci = await visitAsync_(i, node.items[i], visitor, path12);
+            const ci = await visitAsync_(i, node.items[i], visitor, path13);
             if (typeof ci === "number")
               i = ci - 1;
             else if (ci === BREAK)
@@ -8227,13 +8227,13 @@ var require_visit = __commonJS({
             }
           }
         } else if (identity.isPair(node)) {
-          path12 = Object.freeze(path12.concat(node));
-          const ck = await visitAsync_("key", node.key, visitor, path12);
+          path13 = Object.freeze(path13.concat(node));
+          const ck = await visitAsync_("key", node.key, visitor, path13);
           if (ck === BREAK)
             return BREAK;
           else if (ck === REMOVE)
             node.key = null;
-          const cv = await visitAsync_("value", node.value, visitor, path12);
+          const cv = await visitAsync_("value", node.value, visitor, path13);
           if (cv === BREAK)
             return BREAK;
           else if (cv === REMOVE)
@@ -8260,23 +8260,23 @@ var require_visit = __commonJS({
       }
       return visitor;
     }
-    function callVisitor(key, node, visitor, path12) {
+    function callVisitor(key, node, visitor, path13) {
       if (typeof visitor === "function")
-        return visitor(key, node, path12);
+        return visitor(key, node, path13);
       if (identity.isMap(node))
-        return visitor.Map?.(key, node, path12);
+        return visitor.Map?.(key, node, path13);
       if (identity.isSeq(node))
-        return visitor.Seq?.(key, node, path12);
+        return visitor.Seq?.(key, node, path13);
       if (identity.isPair(node))
-        return visitor.Pair?.(key, node, path12);
+        return visitor.Pair?.(key, node, path13);
       if (identity.isScalar(node))
-        return visitor.Scalar?.(key, node, path12);
+        return visitor.Scalar?.(key, node, path13);
       if (identity.isAlias(node))
-        return visitor.Alias?.(key, node, path12);
+        return visitor.Alias?.(key, node, path13);
       return void 0;
     }
-    function replaceNode(key, path12, node) {
-      const parent = path12[path12.length - 1];
+    function replaceNode(key, path13, node) {
+      const parent = path13[path13.length - 1];
       if (identity.isCollection(parent)) {
         parent.items[key] = node;
       } else if (identity.isPair(parent)) {
@@ -8888,10 +8888,10 @@ var require_Collection = __commonJS({
     var createNode = require_createNode();
     var identity = require_identity();
     var Node = require_Node();
-    function collectionFromPath(schema, path12, value) {
+    function collectionFromPath(schema, path13, value) {
       let v = value;
-      for (let i = path12.length - 1; i >= 0; --i) {
-        const k = path12[i];
+      for (let i = path13.length - 1; i >= 0; --i) {
+        const k = path13[i];
         if (typeof k === "number" && Number.isInteger(k) && k >= 0) {
           const a = [];
           a[k] = v;
@@ -8910,7 +8910,7 @@ var require_Collection = __commonJS({
         sourceObjects: /* @__PURE__ */ new Map()
       });
     }
-    var isEmptyPath = (path12) => path12 == null || typeof path12 === "object" && !!path12[Symbol.iterator]().next().done;
+    var isEmptyPath = (path13) => path13 == null || typeof path13 === "object" && !!path13[Symbol.iterator]().next().done;
     var Collection = class extends Node.NodeBase {
       constructor(type, schema) {
         super(type);
@@ -8940,11 +8940,11 @@ var require_Collection = __commonJS({
        * be a Pair instance or a `{ key, value }` object, which may not have a key
        * that already exists in the map.
        */
-      addIn(path12, value) {
-        if (isEmptyPath(path12))
+      addIn(path13, value) {
+        if (isEmptyPath(path13))
           this.add(value);
         else {
-          const [key, ...rest] = path12;
+          const [key, ...rest] = path13;
           const node = this.get(key, true);
           if (identity.isCollection(node))
             node.addIn(rest, value);
@@ -8958,8 +8958,8 @@ var require_Collection = __commonJS({
        * Removes a value from the collection.
        * @returns `true` if the item was found and removed.
        */
-      deleteIn(path12) {
-        const [key, ...rest] = path12;
+      deleteIn(path13) {
+        const [key, ...rest] = path13;
         if (rest.length === 0)
           return this.delete(key);
         const node = this.get(key, true);
@@ -8973,8 +8973,8 @@ var require_Collection = __commonJS({
        * scalar values from their surrounding node; to disable set `keepScalar` to
        * `true` (collections are always returned intact).
        */
-      getIn(path12, keepScalar) {
-        const [key, ...rest] = path12;
+      getIn(path13, keepScalar) {
+        const [key, ...rest] = path13;
         const node = this.get(key, true);
         if (rest.length === 0)
           return !keepScalar && identity.isScalar(node) ? node.value : node;
@@ -8992,8 +8992,8 @@ var require_Collection = __commonJS({
       /**
        * Checks if the collection includes a value with the key `key`.
        */
-      hasIn(path12) {
-        const [key, ...rest] = path12;
+      hasIn(path13) {
+        const [key, ...rest] = path13;
         if (rest.length === 0)
           return this.has(key);
         const node = this.get(key, true);
@@ -9003,8 +9003,8 @@ var require_Collection = __commonJS({
        * Sets a value in this collection. For `!!set`, `value` needs to be a
        * boolean to add/remove the item from the set.
        */
-      setIn(path12, value) {
-        const [key, ...rest] = path12;
+      setIn(path13, value) {
+        const [key, ...rest] = path13;
         if (rest.length === 0) {
           this.set(key, value);
         } else {
@@ -11519,9 +11519,9 @@ var require_Document = __commonJS({
           this.contents.add(value);
       }
       /** Adds a value to the document. */
-      addIn(path12, value) {
+      addIn(path13, value) {
         if (assertCollection(this.contents))
-          this.contents.addIn(path12, value);
+          this.contents.addIn(path13, value);
       }
       /**
        * Create a new `Alias` node, ensuring that the target `node` has the required anchor.
@@ -11596,14 +11596,14 @@ var require_Document = __commonJS({
        * Removes a value from the document.
        * @returns `true` if the item was found and removed.
        */
-      deleteIn(path12) {
-        if (Collection.isEmptyPath(path12)) {
+      deleteIn(path13) {
+        if (Collection.isEmptyPath(path13)) {
           if (this.contents == null)
             return false;
           this.contents = null;
           return true;
         }
-        return assertCollection(this.contents) ? this.contents.deleteIn(path12) : false;
+        return assertCollection(this.contents) ? this.contents.deleteIn(path13) : false;
       }
       /**
        * Returns item at `key`, or `undefined` if not found. By default unwraps
@@ -11618,10 +11618,10 @@ var require_Document = __commonJS({
        * scalar values from their surrounding node; to disable set `keepScalar` to
        * `true` (collections are always returned intact).
        */
-      getIn(path12, keepScalar) {
-        if (Collection.isEmptyPath(path12))
+      getIn(path13, keepScalar) {
+        if (Collection.isEmptyPath(path13))
           return !keepScalar && identity.isScalar(this.contents) ? this.contents.value : this.contents;
-        return identity.isCollection(this.contents) ? this.contents.getIn(path12, keepScalar) : void 0;
+        return identity.isCollection(this.contents) ? this.contents.getIn(path13, keepScalar) : void 0;
       }
       /**
        * Checks if the document includes a value with the key `key`.
@@ -11632,10 +11632,10 @@ var require_Document = __commonJS({
       /**
        * Checks if the document includes a value at `path`.
        */
-      hasIn(path12) {
-        if (Collection.isEmptyPath(path12))
+      hasIn(path13) {
+        if (Collection.isEmptyPath(path13))
           return this.contents !== void 0;
-        return identity.isCollection(this.contents) ? this.contents.hasIn(path12) : false;
+        return identity.isCollection(this.contents) ? this.contents.hasIn(path13) : false;
       }
       /**
        * Sets a value in this document. For `!!set`, `value` needs to be a
@@ -11652,13 +11652,13 @@ var require_Document = __commonJS({
        * Sets a value in this document. For `!!set`, `value` needs to be a
        * boolean to add/remove the item from the set.
        */
-      setIn(path12, value) {
-        if (Collection.isEmptyPath(path12)) {
+      setIn(path13, value) {
+        if (Collection.isEmptyPath(path13)) {
           this.contents = value;
         } else if (this.contents == null) {
-          this.contents = Collection.collectionFromPath(this.schema, Array.from(path12), value);
+          this.contents = Collection.collectionFromPath(this.schema, Array.from(path13), value);
         } else if (assertCollection(this.contents)) {
-          this.contents.setIn(path12, value);
+          this.contents.setIn(path13, value);
         }
       }
       /**
@@ -13619,9 +13619,9 @@ var require_cst_visit = __commonJS({
     visit.BREAK = BREAK;
     visit.SKIP = SKIP;
     visit.REMOVE = REMOVE;
-    visit.itemAtPath = (cst, path12) => {
+    visit.itemAtPath = (cst, path13) => {
       let item = cst;
-      for (const [field, index] of path12) {
+      for (const [field, index] of path13) {
         const tok = item?.[field];
         if (tok && "items" in tok) {
           item = tok.items[index];
@@ -13630,23 +13630,23 @@ var require_cst_visit = __commonJS({
       }
       return item;
     };
-    visit.parentCollection = (cst, path12) => {
-      const parent = visit.itemAtPath(cst, path12.slice(0, -1));
-      const field = path12[path12.length - 1][0];
+    visit.parentCollection = (cst, path13) => {
+      const parent = visit.itemAtPath(cst, path13.slice(0, -1));
+      const field = path13[path13.length - 1][0];
       const coll = parent?.[field];
       if (coll && "items" in coll)
         return coll;
       throw new Error("Parent collection not found");
     };
-    function _visit(path12, item, visitor) {
-      let ctrl = visitor(item, path12);
+    function _visit(path13, item, visitor) {
+      let ctrl = visitor(item, path13);
       if (typeof ctrl === "symbol")
         return ctrl;
       for (const field of ["key", "value"]) {
         const token = item[field];
         if (token && "items" in token) {
           for (let i = 0; i < token.items.length; ++i) {
-            const ci = _visit(Object.freeze(path12.concat([[field, i]])), token.items[i], visitor);
+            const ci = _visit(Object.freeze(path13.concat([[field, i]])), token.items[i], visitor);
             if (typeof ci === "number")
               i = ci - 1;
             else if (ci === BREAK)
@@ -13657,10 +13657,10 @@ var require_cst_visit = __commonJS({
             }
           }
           if (typeof ctrl === "function" && field === "key")
-            ctrl = ctrl(item, path12);
+            ctrl = ctrl(item, path13);
         }
       }
-      return typeof ctrl === "function" ? ctrl(item, path12) : ctrl;
+      return typeof ctrl === "function" ? ctrl(item, path13) : ctrl;
     }
     exports.visit = visit;
   }
@@ -15411,8 +15411,2894 @@ var require_dist2 = __commonJS({
   }
 });
 
+// node_modules/@notionhq/client/build/src/api-endpoints/agent-skills.js
+var require_agent_skills = __commonJS({
+  "node_modules/@notionhq/client/build/src/api-endpoints/agent-skills.js"(exports) {
+    "use strict";
+    Object.defineProperty(exports, "__esModule", { value: true });
+    exports.uploadSkill = exports.getSkillDirectory = exports.getPluginDirectory = exports.listSkillsPlugins = void 0;
+    exports.listSkillsPlugins = {
+      method: "get",
+      pathParams: [],
+      queryParams: ["page_size", "start_cursor"],
+      bodyParams: [],
+      path: () => `ai/plugins`
+    };
+    exports.getPluginDirectory = {
+      method: "get",
+      pathParams: ["id"],
+      queryParams: [],
+      bodyParams: [],
+      path: (p) => `ai/plugins/${p.id}`
+    };
+    exports.getSkillDirectory = {
+      method: "get",
+      pathParams: ["id"],
+      queryParams: [],
+      bodyParams: [],
+      path: (p) => `ai/skills/${p.id}`
+    };
+    exports.uploadSkill = {
+      method: "post",
+      pathParams: ["id"],
+      queryParams: [],
+      bodyParams: [],
+      formDataParams: ["file"],
+      path: (p) => `ai/skills/${p.id}/upload`
+    };
+  }
+});
+
+// node_modules/@notionhq/client/build/src/api-endpoints/agents.js
+var require_agents = __commonJS({
+  "node_modules/@notionhq/client/build/src/api-endpoints/agents.js"(exports) {
+    "use strict";
+    Object.defineProperty(exports, "__esModule", { value: true });
+    exports.startExternalAgentStubSession = exports.sendExternalAgentStubSessionMessage = exports.queryThreads = exports.queryThreadMessages = exports.listThreads = exports.sendThreadMessage = exports.listThreadMessages = exports.listExternalAgentStubSessionEvents = exports.listAgents = exports.updateExternalAgentStubVault = exports.deleteExternalAgentStubVault = exports.createExternalAgentStubVault = exports.continueThread = exports.chatWithAgent = exports.cancelSession = exports.querySessionEvents = exports.querySessions = exports.retrieveSession = exports.updateSession = exports.agentBatch = exports.updateAgentCreditLimit = exports.updateAgentStatus = exports.getInsights = exports.deleteAgent = exports.getAgent = exports.queryAgents = exports.updateSessionStream = void 0;
+    exports.updateSessionStream = {
+      method: "post",
+      pathParams: [],
+      queryParams: [],
+      bodyParams: [
+        "message",
+        "agent_id",
+        "session_id",
+        "attachments",
+        "metadata",
+        "prompt_context",
+        "actions",
+        "continue_from"
+      ],
+      headers: { Accept: "text/event-stream" },
+      path: () => `sessions`
+    };
+    exports.queryAgents = {
+      method: "post",
+      pathParams: [],
+      queryParams: [],
+      bodyParams: [
+        "query",
+        "filter",
+        "sorts",
+        "start_cursor",
+        "page_size",
+        "verbose",
+        "include_deleted"
+      ],
+      path: () => `agents/query`
+    };
+    exports.getAgent = {
+      method: "get",
+      pathParams: ["agent_id"],
+      queryParams: ["verbose"],
+      bodyParams: [],
+      path: (p) => `agents/${p.agent_id}`
+    };
+    exports.deleteAgent = {
+      method: "delete",
+      pathParams: ["agent_id"],
+      queryParams: [],
+      bodyParams: [],
+      path: (p) => `agents/${p.agent_id}`
+    };
+    exports.getInsights = {
+      method: "get",
+      pathParams: ["agent_id"],
+      queryParams: ["start_time", "end_time"],
+      bodyParams: [],
+      path: (p) => `agents/${p.agent_id}/insights`
+    };
+    exports.updateAgentStatus = {
+      method: "patch",
+      pathParams: ["agent_id"],
+      queryParams: [],
+      bodyParams: ["status"],
+      path: (p) => `agents/${p.agent_id}/status`
+    };
+    exports.updateAgentCreditLimit = {
+      method: "patch",
+      pathParams: ["agent_id"],
+      queryParams: [],
+      bodyParams: ["credit_limit"],
+      path: (p) => `agents/${p.agent_id}/credit_limit`
+    };
+    exports.agentBatch = {
+      method: "post",
+      pathParams: [],
+      queryParams: [],
+      bodyParams: ["operations"],
+      path: () => `agents/batch`
+    };
+    exports.updateSession = {
+      method: "post",
+      pathParams: [],
+      queryParams: [],
+      bodyParams: [
+        "message",
+        "agent_id",
+        "session_id",
+        "attachments",
+        "metadata",
+        "prompt_context",
+        "actions",
+        "continue_from"
+      ],
+      path: () => `sessions`
+    };
+    exports.retrieveSession = {
+      method: "get",
+      pathParams: ["session_id"],
+      queryParams: [],
+      bodyParams: [],
+      path: (p) => `sessions/${p.session_id}`
+    };
+    exports.querySessions = {
+      method: "post",
+      pathParams: [],
+      queryParams: [],
+      bodyParams: ["query", "filter", "sorts", "start_cursor", "page_size"],
+      path: () => `sessions/query`
+    };
+    exports.querySessionEvents = {
+      method: "post",
+      pathParams: ["session_id"],
+      queryParams: [],
+      bodyParams: ["filter", "sorts", "start_cursor", "page_size"],
+      path: (p) => `sessions/${p.session_id}/events/query`
+    };
+    exports.cancelSession = {
+      method: "post",
+      pathParams: ["session_id"],
+      queryParams: [],
+      bodyParams: ["event_id"],
+      path: (p) => `sessions/${p.session_id}/cancel`
+    };
+    exports.chatWithAgent = {
+      method: "post",
+      pathParams: ["agent_id"],
+      queryParams: ["verbose"],
+      bodyParams: [
+        "message",
+        "attachments",
+        "metadata",
+        "prompt_context",
+        "thread_id"
+      ],
+      path: (p) => `agents/${p.agent_id}/chat`
+    };
+    exports.continueThread = {
+      method: "post",
+      pathParams: ["thread_id"],
+      queryParams: [],
+      bodyParams: ["action_id", "option_id", "input"],
+      path: (p) => `threads/${p.thread_id}/continue`
+    };
+    exports.createExternalAgentStubVault = {
+      method: "post",
+      pathParams: ["agent_id"],
+      queryParams: [],
+      bodyParams: ["name", "credential", "target"],
+      path: (p) => `external_agent_stub/${p.agent_id}/vaults`
+    };
+    exports.deleteExternalAgentStubVault = {
+      method: "delete",
+      pathParams: ["agent_id", "vault_id"],
+      queryParams: [],
+      bodyParams: [],
+      path: (p) => `external_agent_stub/${p.agent_id}/vaults/${p.vault_id}`
+    };
+    exports.updateExternalAgentStubVault = {
+      method: "patch",
+      pathParams: ["agent_id", "vault_id"],
+      queryParams: [],
+      bodyParams: ["expected_version", "credential"],
+      path: (p) => `external_agent_stub/${p.agent_id}/vaults/${p.vault_id}`
+    };
+    exports.listAgents = {
+      method: "get",
+      pathParams: [],
+      queryParams: [
+        "name",
+        "agent_type",
+        "agent_ids",
+        "created_by",
+        "start_cursor",
+        "page_size",
+        "verbose"
+      ],
+      bodyParams: [],
+      path: () => `agents`
+    };
+    exports.listExternalAgentStubSessionEvents = {
+      method: "get",
+      pathParams: ["agent_id", "session_id"],
+      queryParams: ["cursor"],
+      bodyParams: [],
+      path: (p) => `external_agent_stub/${p.agent_id}/sessions/${p.session_id}/events`
+    };
+    exports.listThreadMessages = {
+      method: "get",
+      pathParams: ["thread_id"],
+      queryParams: ["verbose", "role", "start_cursor", "page_size"],
+      bodyParams: [],
+      path: (p) => `threads/${p.thread_id}/messages`
+    };
+    exports.sendThreadMessage = {
+      method: "post",
+      pathParams: ["thread_id"],
+      queryParams: [],
+      bodyParams: ["message", "attachments", "metadata", "prompt_context"],
+      path: (p) => `threads/${p.thread_id}/messages`
+    };
+    exports.listThreads = {
+      method: "get",
+      pathParams: ["agent_id"],
+      queryParams: [
+        "id",
+        "title",
+        "status",
+        "activity",
+        "created_by",
+        "last_used_by",
+        "sort_by",
+        "sort_direction",
+        "start_cursor",
+        "page_size"
+      ],
+      bodyParams: [],
+      path: (p) => `agents/${p.agent_id}/threads`
+    };
+    exports.queryThreadMessages = {
+      method: "post",
+      pathParams: ["thread_id"],
+      queryParams: [],
+      bodyParams: ["verbose", "start_cursor", "page_size"],
+      path: (p) => `threads/${p.thread_id}/messages/query`
+    };
+    exports.queryThreads = {
+      method: "post",
+      pathParams: ["agent_id"],
+      queryParams: [],
+      bodyParams: ["query", "filter", "sorts", "start_cursor", "page_size"],
+      path: (p) => `agents/${p.agent_id}/threads/query`
+    };
+    exports.sendExternalAgentStubSessionMessage = {
+      method: "post",
+      pathParams: ["agent_id", "session_id"],
+      queryParams: [],
+      bodyParams: ["message", "client_message_id"],
+      path: (p) => `external_agent_stub/${p.agent_id}/sessions/${p.session_id}/messages`
+    };
+    exports.startExternalAgentStubSession = {
+      method: "post",
+      pathParams: ["agent_id"],
+      queryParams: [],
+      bodyParams: [
+        "spec_version",
+        "client_reference_id",
+        "configs",
+        "model",
+        "cwd",
+        "locale",
+        "system_prompt"
+      ],
+      path: (p) => `external_agent_stub/${p.agent_id}/sessions`
+    };
+  }
+});
+
+// node_modules/@notionhq/client/build/src/api-endpoints/async-tasks.js
+var require_async_tasks = __commonJS({
+  "node_modules/@notionhq/client/build/src/api-endpoints/async-tasks.js"(exports) {
+    "use strict";
+    Object.defineProperty(exports, "__esModule", { value: true });
+    exports.getAsyncTask = void 0;
+    exports.getAsyncTask = {
+      method: "get",
+      pathParams: ["task_id"],
+      queryParams: [],
+      bodyParams: [],
+      path: (p) => `async_tasks/${p.task_id}`
+    };
+  }
+});
+
+// node_modules/@notionhq/client/build/src/api-endpoints/blocks.js
+var require_blocks = __commonJS({
+  "node_modules/@notionhq/client/build/src/api-endpoints/blocks.js"(exports) {
+    "use strict";
+    Object.defineProperty(exports, "__esModule", { value: true });
+    exports.appendBlockChildren = exports.listBlockChildren = exports.deleteBlock = exports.updateBlock = exports.getBlock = void 0;
+    exports.getBlock = {
+      method: "get",
+      pathParams: ["block_id"],
+      queryParams: [],
+      bodyParams: [],
+      path: (p) => `blocks/${p.block_id}`
+    };
+    exports.updateBlock = {
+      method: "patch",
+      pathParams: ["block_id"],
+      queryParams: [],
+      bodyParams: [
+        "archived",
+        "embed",
+        "type",
+        "in_trash",
+        "bookmark",
+        "image",
+        "video",
+        "pdf",
+        "file",
+        "audio",
+        "code",
+        "equation",
+        "divider",
+        "breadcrumb",
+        "tab",
+        "table_of_contents",
+        "link_to_page",
+        "table_row",
+        "heading_1",
+        "heading_2",
+        "heading_3",
+        "heading_4",
+        "paragraph",
+        "bulleted_list_item",
+        "numbered_list_item",
+        "quote",
+        "to_do",
+        "toggle",
+        "template",
+        "callout",
+        "synced_block",
+        "table",
+        "column"
+      ],
+      path: (p) => `blocks/${p.block_id}`
+    };
+    exports.deleteBlock = {
+      method: "delete",
+      pathParams: ["block_id"],
+      queryParams: [],
+      bodyParams: [],
+      path: (p) => `blocks/${p.block_id}`
+    };
+    exports.listBlockChildren = {
+      method: "get",
+      pathParams: ["block_id"],
+      queryParams: ["start_cursor", "page_size"],
+      bodyParams: [],
+      path: (p) => `blocks/${p.block_id}/children`
+    };
+    exports.appendBlockChildren = {
+      method: "patch",
+      pathParams: ["block_id"],
+      queryParams: [],
+      bodyParams: ["after", "children", "position", "notifications"],
+      path: (p) => `blocks/${p.block_id}/children`
+    };
+  }
+});
+
+// node_modules/@notionhq/client/build/src/api-endpoints/comments.js
+var require_comments = __commonJS({
+  "node_modules/@notionhq/client/build/src/api-endpoints/comments.js"(exports) {
+    "use strict";
+    Object.defineProperty(exports, "__esModule", { value: true });
+    exports.deleteComment = exports.updateComment = exports.getComment = exports.listComments = exports.createComment = void 0;
+    exports.createComment = {
+      method: "post",
+      pathParams: [],
+      queryParams: [],
+      bodyParams: [
+        "attachments",
+        "display_name",
+        "markdown_version",
+        "parent",
+        "rich_text",
+        "markdown",
+        "discussion_id"
+      ],
+      path: () => `comments`
+    };
+    exports.listComments = {
+      method: "get",
+      pathParams: [],
+      queryParams: ["block_id", "start_cursor", "page_size"],
+      bodyParams: [],
+      path: () => `comments`
+    };
+    exports.getComment = {
+      method: "get",
+      pathParams: ["comment_id"],
+      queryParams: [],
+      bodyParams: [],
+      path: (p) => `comments/${p.comment_id}`
+    };
+    exports.updateComment = {
+      method: "patch",
+      pathParams: ["comment_id"],
+      queryParams: [],
+      bodyParams: ["markdown_version", "rich_text", "markdown"],
+      path: (p) => `comments/${p.comment_id}`
+    };
+    exports.deleteComment = {
+      method: "delete",
+      pathParams: ["comment_id"],
+      queryParams: [],
+      bodyParams: [],
+      path: (p) => `comments/${p.comment_id}`
+    };
+  }
+});
+
+// node_modules/@notionhq/client/build/src/api-endpoints/common.js
+var require_common = __commonJS({
+  "node_modules/@notionhq/client/build/src/api-endpoints/common.js"(exports) {
+    "use strict";
+    Object.defineProperty(exports, "__esModule", { value: true });
+  }
+});
+
+// node_modules/@notionhq/client/build/src/api-endpoints/custom-emojis.js
+var require_custom_emojis = __commonJS({
+  "node_modules/@notionhq/client/build/src/api-endpoints/custom-emojis.js"(exports) {
+    "use strict";
+    Object.defineProperty(exports, "__esModule", { value: true });
+    exports.listCustomEmojis = void 0;
+    exports.listCustomEmojis = {
+      method: "get",
+      pathParams: [],
+      queryParams: ["start_cursor", "page_size", "name"],
+      bodyParams: [],
+      path: () => `custom_emojis`
+    };
+  }
+});
+
+// node_modules/@notionhq/client/build/src/api-endpoints/data-sources.js
+var require_data_sources = __commonJS({
+  "node_modules/@notionhq/client/build/src/api-endpoints/data-sources.js"(exports) {
+    "use strict";
+    Object.defineProperty(exports, "__esModule", { value: true });
+    exports.listDataSourceTemplates = exports.createDataSource = exports.queryDataSource = exports.updateDataSource = exports.getDataSource = void 0;
+    exports.getDataSource = {
+      method: "get",
+      pathParams: ["data_source_id"],
+      queryParams: [],
+      bodyParams: [],
+      path: (p) => `data_sources/${p.data_source_id}`
+    };
+    exports.updateDataSource = {
+      method: "patch",
+      pathParams: ["data_source_id"],
+      queryParams: [],
+      bodyParams: ["archived", "title", "icon", "properties", "in_trash", "parent"],
+      path: (p) => `data_sources/${p.data_source_id}`
+    };
+    exports.queryDataSource = {
+      method: "post",
+      pathParams: ["data_source_id"],
+      queryParams: ["filter_properties"],
+      bodyParams: [
+        "in_trash",
+        "archived",
+        "sorts",
+        "filter",
+        "start_cursor",
+        "page_size",
+        "is_archived",
+        "result_type"
+      ],
+      path: (p) => `data_sources/${p.data_source_id}/query`
+    };
+    exports.createDataSource = {
+      method: "post",
+      pathParams: [],
+      queryParams: [],
+      bodyParams: ["parent", "properties", "title", "icon"],
+      path: () => `data_sources`
+    };
+    exports.listDataSourceTemplates = {
+      method: "get",
+      pathParams: ["data_source_id"],
+      queryParams: ["name", "start_cursor", "page_size"],
+      bodyParams: [],
+      path: (p) => `data_sources/${p.data_source_id}/templates`
+    };
+  }
+});
+
+// node_modules/@notionhq/client/build/src/api-endpoints/databases.js
+var require_databases = __commonJS({
+  "node_modules/@notionhq/client/build/src/api-endpoints/databases.js"(exports) {
+    "use strict";
+    Object.defineProperty(exports, "__esModule", { value: true });
+    exports.createDatabase = exports.updateDatabase = exports.getDatabase = void 0;
+    exports.getDatabase = {
+      method: "get",
+      pathParams: ["database_id"],
+      queryParams: [],
+      bodyParams: [],
+      path: (p) => `databases/${p.database_id}`
+    };
+    exports.updateDatabase = {
+      method: "patch",
+      pathParams: ["database_id"],
+      queryParams: [],
+      bodyParams: [
+        "parent",
+        "title",
+        "description",
+        "is_inline",
+        "icon",
+        "cover",
+        "in_trash",
+        "is_locked",
+        "show_data_source_title"
+      ],
+      path: (p) => `databases/${p.database_id}`
+    };
+    exports.createDatabase = {
+      method: "post",
+      pathParams: [],
+      queryParams: [],
+      bodyParams: [
+        "parent",
+        "title",
+        "description",
+        "is_inline",
+        "initial_data_source",
+        "database_type",
+        "icon",
+        "cover",
+        "show_data_source_title"
+      ],
+      path: () => `databases`
+    };
+  }
+});
+
+// node_modules/@notionhq/client/build/src/api-endpoints/file-uploads.js
+var require_file_uploads = __commonJS({
+  "node_modules/@notionhq/client/build/src/api-endpoints/file-uploads.js"(exports) {
+    "use strict";
+    Object.defineProperty(exports, "__esModule", { value: true });
+    exports.getFileUpload = exports.completeFileUpload = exports.sendFileUpload = exports.listFileUploads = exports.createFileUpload = void 0;
+    exports.createFileUpload = {
+      method: "post",
+      pathParams: [],
+      queryParams: [],
+      bodyParams: [
+        "mode",
+        "filename",
+        "content_type",
+        "number_of_parts",
+        "external_url"
+      ],
+      path: () => `file_uploads`
+    };
+    exports.listFileUploads = {
+      method: "get",
+      pathParams: [],
+      queryParams: ["status", "start_cursor", "page_size"],
+      bodyParams: [],
+      path: () => `file_uploads`
+    };
+    exports.sendFileUpload = {
+      method: "post",
+      pathParams: ["file_upload_id"],
+      queryParams: [],
+      bodyParams: [],
+      formDataParams: ["file", "part_number"],
+      path: (p) => `file_uploads/${p.file_upload_id}/send`
+    };
+    exports.completeFileUpload = {
+      method: "post",
+      pathParams: ["file_upload_id"],
+      queryParams: [],
+      bodyParams: [],
+      path: (p) => `file_uploads/${p.file_upload_id}/complete`
+    };
+    exports.getFileUpload = {
+      method: "get",
+      pathParams: ["file_upload_id"],
+      queryParams: [],
+      bodyParams: [],
+      path: (p) => `file_uploads/${p.file_upload_id}`
+    };
+  }
+});
+
+// node_modules/@notionhq/client/build/src/api-endpoints/meeting-notes.js
+var require_meeting_notes = __commonJS({
+  "node_modules/@notionhq/client/build/src/api-endpoints/meeting-notes.js"(exports) {
+    "use strict";
+    Object.defineProperty(exports, "__esModule", { value: true });
+    exports.queryMeetingNotes = exports.createMeetingNote = void 0;
+    exports.createMeetingNote = {
+      method: "post",
+      pathParams: [],
+      queryParams: [],
+      bodyParams: ["title", "language", "options", "source", "parent"],
+      path: () => `blocks/meeting_notes`
+    };
+    exports.queryMeetingNotes = {
+      method: "post",
+      pathParams: [],
+      queryParams: [],
+      bodyParams: ["filter", "sort", "limit"],
+      path: () => `blocks/meeting_notes/query`
+    };
+  }
+});
+
+// node_modules/@notionhq/client/build/src/api-endpoints/oauth.js
+var require_oauth = __commonJS({
+  "node_modules/@notionhq/client/build/src/api-endpoints/oauth.js"(exports) {
+    "use strict";
+    Object.defineProperty(exports, "__esModule", { value: true });
+    exports.oauthIntrospect = exports.oauthRevoke = exports.oauthToken = void 0;
+    exports.oauthToken = {
+      method: "post",
+      pathParams: [],
+      queryParams: [],
+      bodyParams: [
+        "grant_type",
+        "code",
+        "redirect_uri",
+        "external_account",
+        "refresh_token"
+      ],
+      path: () => `oauth/token`
+    };
+    exports.oauthRevoke = {
+      method: "post",
+      pathParams: [],
+      queryParams: [],
+      bodyParams: ["token"],
+      path: () => `oauth/revoke`
+    };
+    exports.oauthIntrospect = {
+      method: "post",
+      pathParams: [],
+      queryParams: [],
+      bodyParams: ["token"],
+      path: () => `oauth/introspect`
+    };
+  }
+});
+
+// node_modules/@notionhq/client/build/src/api-endpoints/pages.js
+var require_pages = __commonJS({
+  "node_modules/@notionhq/client/build/src/api-endpoints/pages.js"(exports) {
+    "use strict";
+    Object.defineProperty(exports, "__esModule", { value: true });
+    exports.updatePageMarkdown = exports.getPageMarkdown = exports.getPageProperty = exports.movePage = exports.updatePage = exports.getPage = exports.createPage = void 0;
+    exports.createPage = {
+      method: "post",
+      pathParams: [],
+      queryParams: ["filter_properties"],
+      bodyParams: [
+        "parent",
+        "properties",
+        "icon",
+        "cover",
+        "content",
+        "children",
+        "markdown",
+        "allow_async",
+        "markdown_version",
+        "template",
+        "position",
+        "notifications"
+      ],
+      path: () => `pages`
+    };
+    exports.getPage = {
+      method: "get",
+      pathParams: ["page_id"],
+      queryParams: ["filter_properties"],
+      bodyParams: [],
+      path: (p) => `pages/${p.page_id}`
+    };
+    exports.updatePage = {
+      method: "patch",
+      pathParams: ["page_id"],
+      queryParams: ["filter_properties"],
+      bodyParams: [
+        "archived",
+        "properties",
+        "icon",
+        "cover",
+        "is_locked",
+        "template",
+        "erase_content",
+        "notifications",
+        "in_trash",
+        "is_archived"
+      ],
+      path: (p) => `pages/${p.page_id}`
+    };
+    exports.movePage = {
+      method: "post",
+      pathParams: ["page_id"],
+      queryParams: [],
+      bodyParams: ["parent"],
+      path: (p) => `pages/${p.page_id}/move`
+    };
+    exports.getPageProperty = {
+      method: "get",
+      pathParams: ["page_id", "property_id"],
+      queryParams: ["start_cursor", "page_size"],
+      bodyParams: [],
+      path: (p) => `pages/${p.page_id}/properties/${p.property_id}`
+    };
+    exports.getPageMarkdown = {
+      method: "get",
+      pathParams: ["page_id"],
+      queryParams: ["include_transcript", "markdown_version"],
+      bodyParams: [],
+      path: (p) => `pages/${p.page_id}/markdown`
+    };
+    exports.updatePageMarkdown = {
+      method: "patch",
+      pathParams: ["page_id"],
+      queryParams: [],
+      bodyParams: [
+        "allow_async",
+        "markdown_version",
+        "type",
+        "insert_content",
+        "replace_content_range",
+        "update_content",
+        "replace_content"
+      ],
+      path: (p) => `pages/${p.page_id}/markdown`
+    };
+  }
+});
+
+// node_modules/@notionhq/client/build/src/api-endpoints/search.js
+var require_search = __commonJS({
+  "node_modules/@notionhq/client/build/src/api-endpoints/search.js"(exports) {
+    "use strict";
+    Object.defineProperty(exports, "__esModule", { value: true });
+    exports.search = void 0;
+    exports.search = {
+      method: "post",
+      pathParams: [],
+      queryParams: ["filter_properties"],
+      bodyParams: ["sort", "query", "start_cursor", "page_size", "filter"],
+      path: () => `search`
+    };
+  }
+});
+
+// node_modules/@notionhq/client/build/src/api-endpoints/users.js
+var require_users = __commonJS({
+  "node_modules/@notionhq/client/build/src/api-endpoints/users.js"(exports) {
+    "use strict";
+    Object.defineProperty(exports, "__esModule", { value: true });
+    exports.listUsers = exports.getUser = exports.getSelf = void 0;
+    exports.getSelf = {
+      method: "get",
+      pathParams: [],
+      queryParams: [],
+      bodyParams: [],
+      path: () => `users/me`
+    };
+    exports.getUser = {
+      method: "get",
+      pathParams: ["user_id"],
+      queryParams: [],
+      bodyParams: [],
+      path: (p) => `users/${p.user_id}`
+    };
+    exports.listUsers = {
+      method: "get",
+      pathParams: [],
+      queryParams: ["start_cursor", "page_size"],
+      bodyParams: [],
+      path: () => `users`
+    };
+  }
+});
+
+// node_modules/@notionhq/client/build/src/api-endpoints/views.js
+var require_views = __commonJS({
+  "node_modules/@notionhq/client/build/src/api-endpoints/views.js"(exports) {
+    "use strict";
+    Object.defineProperty(exports, "__esModule", { value: true });
+    exports.deleteViewQuery = exports.getViewQueryResults = exports.createViewQuery = exports.deleteView = exports.updateView = exports.getView = exports.createView = exports.listDatabaseViews = void 0;
+    exports.listDatabaseViews = {
+      method: "get",
+      pathParams: [],
+      queryParams: ["database_id", "data_source_id", "start_cursor", "page_size"],
+      bodyParams: [],
+      path: () => `views`
+    };
+    exports.createView = {
+      method: "post",
+      pathParams: [],
+      queryParams: [],
+      bodyParams: [],
+      path: () => `views`
+    };
+    exports.getView = {
+      method: "get",
+      pathParams: ["view_id"],
+      queryParams: [],
+      bodyParams: [],
+      path: (p) => `views/${p.view_id}`
+    };
+    exports.updateView = {
+      method: "patch",
+      pathParams: ["view_id"],
+      queryParams: [],
+      bodyParams: [],
+      path: (p) => `views/${p.view_id}`
+    };
+    exports.deleteView = {
+      method: "delete",
+      pathParams: ["view_id"],
+      queryParams: [],
+      bodyParams: [],
+      path: (p) => `views/${p.view_id}`
+    };
+    exports.createViewQuery = {
+      method: "post",
+      pathParams: ["view_id"],
+      queryParams: [],
+      bodyParams: [],
+      path: (p) => `views/${p.view_id}/queries`
+    };
+    exports.getViewQueryResults = {
+      method: "get",
+      pathParams: ["view_id", "query_id"],
+      queryParams: ["start_cursor", "page_size"],
+      bodyParams: [],
+      path: (p) => `views/${p.view_id}/queries/${p.query_id}`
+    };
+    exports.deleteViewQuery = {
+      method: "delete",
+      pathParams: ["view_id", "query_id"],
+      queryParams: [],
+      bodyParams: [],
+      path: (p) => `views/${p.view_id}/queries/${p.query_id}`
+    };
+  }
+});
+
+// node_modules/@notionhq/client/build/src/api-endpoints/webhooks.js
+var require_webhooks = __commonJS({
+  "node_modules/@notionhq/client/build/src/api-endpoints/webhooks.js"(exports) {
+    "use strict";
+    Object.defineProperty(exports, "__esModule", { value: true });
+  }
+});
+
+// node_modules/@notionhq/client/build/src/api-endpoints.js
+var require_api_endpoints = __commonJS({
+  "node_modules/@notionhq/client/build/src/api-endpoints.js"(exports) {
+    "use strict";
+    var __createBinding = exports && exports.__createBinding || (Object.create ? (function(o, m, k, k2) {
+      if (k2 === void 0) k2 = k;
+      var desc = Object.getOwnPropertyDescriptor(m, k);
+      if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+        desc = { enumerable: true, get: function() {
+          return m[k];
+        } };
+      }
+      Object.defineProperty(o, k2, desc);
+    }) : (function(o, m, k, k2) {
+      if (k2 === void 0) k2 = k;
+      o[k2] = m[k];
+    }));
+    var __exportStar = exports && exports.__exportStar || function(m, exports2) {
+      for (var p in m) if (p !== "default" && !Object.prototype.hasOwnProperty.call(exports2, p)) __createBinding(exports2, m, p);
+    };
+    Object.defineProperty(exports, "__esModule", { value: true });
+    __exportStar(require_agent_skills(), exports);
+    __exportStar(require_agents(), exports);
+    __exportStar(require_async_tasks(), exports);
+    __exportStar(require_blocks(), exports);
+    __exportStar(require_comments(), exports);
+    __exportStar(require_common(), exports);
+    __exportStar(require_custom_emojis(), exports);
+    __exportStar(require_data_sources(), exports);
+    __exportStar(require_databases(), exports);
+    __exportStar(require_file_uploads(), exports);
+    __exportStar(require_meeting_notes(), exports);
+    __exportStar(require_oauth(), exports);
+    __exportStar(require_pages(), exports);
+    __exportStar(require_search(), exports);
+    __exportStar(require_users(), exports);
+    __exportStar(require_views(), exports);
+    __exportStar(require_webhooks(), exports);
+  }
+});
+
+// node_modules/@notionhq/client/build/src/utils.js
+var require_utils2 = __commonJS({
+  "node_modules/@notionhq/client/build/src/utils.js"(exports) {
+    "use strict";
+    Object.defineProperty(exports, "__esModule", { value: true });
+    exports.assertNever = assertNever;
+    exports.pick = pick;
+    exports.isObject = isObject;
+    exports.getEndpointRequestOptions = getEndpointRequestOptions;
+    exports.getUnknownParams = getUnknownParams;
+    function assertNever(value) {
+      throw new Error(`Unexpected value should never occur: ${value}`);
+    }
+    function pick(base, keys) {
+      const entries = keys.map((key) => [key, base === null || base === void 0 ? void 0 : base[key]]);
+      return Object.fromEntries(entries);
+    }
+    function isObject(o) {
+      return typeof o === "object" && o !== null;
+    }
+    function getEndpointRequestOptions(args, endpointHeaders) {
+      var _a;
+      const headers = ((_a = args === null || args === void 0 ? void 0 : args.betas) === null || _a === void 0 ? void 0 : _a.length) ? { ...endpointHeaders, "Notion-Beta": args.betas.join(", ") } : endpointHeaders;
+      return { auth: args === null || args === void 0 ? void 0 : args.auth, ...headers && { headers } };
+    }
+    function getUnknownParams(args, endpoint) {
+      var _a;
+      const knownKeys = /* @__PURE__ */ new Set([
+        ...endpoint.pathParams,
+        ...endpoint.queryParams,
+        ...endpoint.bodyParams,
+        ...(_a = endpoint.formDataParams) !== null && _a !== void 0 ? _a : [],
+        "auth",
+        "betas"
+      ]);
+      return Object.keys(args).filter((k) => !knownKeys.has(k));
+    }
+  }
+});
+
+// node_modules/@notionhq/client/build/src/api-endpoint-methods.js
+var require_api_endpoint_methods = __commonJS({
+  "node_modules/@notionhq/client/build/src/api-endpoint-methods.js"(exports) {
+    "use strict";
+    var __createBinding = exports && exports.__createBinding || (Object.create ? (function(o, m, k, k2) {
+      if (k2 === void 0) k2 = k;
+      var desc = Object.getOwnPropertyDescriptor(m, k);
+      if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+        desc = { enumerable: true, get: function() {
+          return m[k];
+        } };
+      }
+      Object.defineProperty(o, k2, desc);
+    }) : (function(o, m, k, k2) {
+      if (k2 === void 0) k2 = k;
+      o[k2] = m[k];
+    }));
+    var __setModuleDefault = exports && exports.__setModuleDefault || (Object.create ? (function(o, v) {
+      Object.defineProperty(o, "default", { enumerable: true, value: v });
+    }) : function(o, v) {
+      o["default"] = v;
+    });
+    var __importStar = exports && exports.__importStar || /* @__PURE__ */ (function() {
+      var ownKeys = function(o) {
+        ownKeys = Object.getOwnPropertyNames || function(o2) {
+          var ar = [];
+          for (var k in o2) if (Object.prototype.hasOwnProperty.call(o2, k)) ar[ar.length] = k;
+          return ar;
+        };
+        return ownKeys(o);
+      };
+      return function(mod) {
+        if (mod && mod.__esModule) return mod;
+        var result = {};
+        if (mod != null) {
+          for (var k = ownKeys(mod), i = 0; i < k.length; i++) if (k[i] !== "default") __createBinding(result, mod, k[i]);
+        }
+        __setModuleDefault(result, mod);
+        return result;
+      };
+    })();
+    Object.defineProperty(exports, "__esModule", { value: true });
+    exports.createEndpointMethods = createEndpointMethods;
+    var endpoints = __importStar(require_api_endpoints());
+    var utils_1 = require_utils2();
+    function createEndpointMethods(client) {
+      function method(definition, query) {
+        return (args) => {
+          client.warnUnknownParams(args, definition);
+          return client.request({
+            path: definition.path(args),
+            method: definition.method,
+            query: query(args),
+            body: (0, utils_1.pick)(args, definition.bodyParams),
+            ...(0, utils_1.getEndpointRequestOptions)(args, definition.headers)
+          });
+        };
+      }
+      function optionalMethod(definition, query) {
+        return (args) => {
+          const requestArgs = args !== null && args !== void 0 ? args : {};
+          client.warnUnknownParams(requestArgs, definition);
+          return client.request({
+            path: definition.path(),
+            method: definition.method,
+            query: query(requestArgs),
+            body: (0, utils_1.pick)(requestArgs, definition.bodyParams),
+            ...(0, utils_1.getEndpointRequestOptions)(requestArgs, definition.headers)
+          });
+        };
+      }
+      return {
+        users: {
+          /** Retrieve your token's bot user */
+          me: optionalMethod(endpoints.getSelf, (args) => (0, utils_1.pick)(args, endpoints.getSelf.queryParams)),
+          /** Retrieve a user */
+          retrieve: method(endpoints.getUser, (args) => (0, utils_1.pick)(args, endpoints.getUser.queryParams)),
+          /** List all users */
+          list: optionalMethod(endpoints.listUsers, (args) => (0, utils_1.pick)(args, endpoints.listUsers.queryParams))
+        },
+        pages: {
+          /** Create a page */
+          create: method(endpoints.createPage, (args) => (0, utils_1.pick)(args, endpoints.createPage.queryParams)),
+          /** Retrieve a page */
+          retrieve: method(endpoints.getPage, (args) => (0, utils_1.pick)(args, endpoints.getPage.queryParams)),
+          /** Update page */
+          update: method(endpoints.updatePage, (args) => (0, utils_1.pick)(args, endpoints.updatePage.queryParams)),
+          /** Move a page */
+          move: method(endpoints.movePage, (args) => (0, utils_1.pick)(args, endpoints.movePage.queryParams)),
+          properties: {
+            /** Retrieve a page property item */
+            retrieve: method(endpoints.getPageProperty, (args) => (0, utils_1.pick)(args, endpoints.getPageProperty.queryParams))
+          }
+        },
+        asyncTasks: {
+          /** Retrieve an async task */
+          retrieve: method(endpoints.getAsyncTask, (args) => (0, utils_1.pick)(args, endpoints.getAsyncTask.queryParams))
+        },
+        blocks: {
+          /** Retrieve a block */
+          retrieve: method(endpoints.getBlock, (args) => (0, utils_1.pick)(args, endpoints.getBlock.queryParams)),
+          /** Update a block */
+          update: method(endpoints.updateBlock, (args) => (0, utils_1.pick)(args, endpoints.updateBlock.queryParams)),
+          /** Delete a block */
+          delete: method(endpoints.deleteBlock, (args) => (0, utils_1.pick)(args, endpoints.deleteBlock.queryParams)),
+          children: {
+            /** Retrieve block children */
+            list: method(endpoints.listBlockChildren, (args) => (0, utils_1.pick)(args, endpoints.listBlockChildren.queryParams)),
+            /** Append block children */
+            append: method(endpoints.appendBlockChildren, (args) => (0, utils_1.pick)(args, endpoints.appendBlockChildren.queryParams))
+          },
+          meetingNotes: {
+            /** Create a meeting note */
+            create: method(endpoints.createMeetingNote, (args) => (0, utils_1.pick)(args, endpoints.createMeetingNote.queryParams))
+          }
+        },
+        dataSources: {
+          /** Retrieve a data source */
+          retrieve: method(endpoints.getDataSource, (args) => (0, utils_1.pick)(args, endpoints.getDataSource.queryParams)),
+          /** Update a data source */
+          update: method(endpoints.updateDataSource, (args) => (0, utils_1.pick)(args, endpoints.updateDataSource.queryParams)),
+          /** Query a data source */
+          query: method(endpoints.queryDataSource, (args) => (0, utils_1.pick)(args, endpoints.queryDataSource.queryParams)),
+          /** Create a data source */
+          create: method(endpoints.createDataSource, (args) => (0, utils_1.pick)(args, endpoints.createDataSource.queryParams)),
+          /** List templates in a data source */
+          listTemplates: method(endpoints.listDataSourceTemplates, (args) => (0, utils_1.pick)(args, endpoints.listDataSourceTemplates.queryParams))
+        },
+        databases: {
+          /** Retrieve a database */
+          retrieve: method(endpoints.getDatabase, (args) => (0, utils_1.pick)(args, endpoints.getDatabase.queryParams)),
+          /** Update a database */
+          update: method(endpoints.updateDatabase, (args) => (0, utils_1.pick)(args, endpoints.updateDatabase.queryParams)),
+          /** Create a database */
+          create: method(endpoints.createDatabase, (args) => (0, utils_1.pick)(args, endpoints.createDatabase.queryParams))
+        },
+        /** Search by title */
+        search: optionalMethod(endpoints.search, (args) => (0, utils_1.pick)(args, endpoints.search.queryParams)),
+        comments: {
+          /** Create a comment */
+          create: method(endpoints.createComment, (args) => (0, utils_1.pick)(args, endpoints.createComment.queryParams)),
+          /** List comments */
+          list: method(endpoints.listComments, (args) => (0, utils_1.pick)(args, endpoints.listComments.queryParams)),
+          /** Retrieve a comment */
+          retrieve: method(endpoints.getComment, (args) => (0, utils_1.pick)(args, endpoints.getComment.queryParams)),
+          /** Update a comment */
+          update: method(endpoints.updateComment, (args) => (0, utils_1.pick)(args, endpoints.updateComment.queryParams)),
+          /** Delete a comment */
+          delete: method(endpoints.deleteComment, (args) => (0, utils_1.pick)(args, endpoints.deleteComment.queryParams))
+        },
+        fileUploads: {
+          /** Create a file upload */
+          create: optionalMethod(endpoints.createFileUpload, (args) => (0, utils_1.pick)(args, endpoints.createFileUpload.queryParams))
+        },
+        views: {
+          /** List views */
+          list: optionalMethod(endpoints.listDatabaseViews, (args) => (0, utils_1.pick)(args, endpoints.listDatabaseViews.queryParams)),
+          /** Retrieve a view */
+          retrieve: method(endpoints.getView, (args) => (0, utils_1.pick)(args, endpoints.getView.queryParams)),
+          /** Delete a view */
+          delete: method(endpoints.deleteView, (args) => (0, utils_1.pick)(args, endpoints.deleteView.queryParams)),
+          queries: {
+            /** Get view query results */
+            results: method(endpoints.getViewQueryResults, (args) => (0, utils_1.pick)(args, endpoints.getViewQueryResults.queryParams)),
+            /** Delete a view query */
+            delete: method(endpoints.deleteViewQuery, (args) => (0, utils_1.pick)(args, endpoints.deleteViewQuery.queryParams))
+          }
+        },
+        agents: {
+          /** Query agents */
+          query: optionalMethod(endpoints.queryAgents, (args) => (0, utils_1.pick)(args, endpoints.queryAgents.queryParams)),
+          /** Get agent */
+          retrieve: method(endpoints.getAgent, (args) => (0, utils_1.pick)(args, endpoints.getAgent.queryParams)),
+          /** Delete agent */
+          delete: method(endpoints.deleteAgent, (args) => (0, utils_1.pick)(args, endpoints.deleteAgent.queryParams)),
+          /** Get agent insights */
+          retrieveInsights: method(endpoints.getInsights, (args) => (0, utils_1.pick)(args, endpoints.getInsights.queryParams)),
+          /** Update agent status */
+          updateStatus: method(endpoints.updateAgentStatus, (args) => (0, utils_1.pick)(args, endpoints.updateAgentStatus.queryParams)),
+          /** Update agent credit limit */
+          updateCreditLimit: method(endpoints.updateAgentCreditLimit, (args) => (0, utils_1.pick)(args, endpoints.updateAgentCreditLimit.queryParams)),
+          /** Apply many agent operations */
+          batch: method(endpoints.agentBatch, (args) => (0, utils_1.pick)(args, endpoints.agentBatch.queryParams))
+        },
+        plugins: {
+          /** List skills plugins */
+          list: optionalMethod(endpoints.listSkillsPlugins, (args) => (0, utils_1.pick)(args, endpoints.listSkillsPlugins.queryParams)),
+          /** Get a plugin directory */
+          retrieve: method(endpoints.getPluginDirectory, (args) => (0, utils_1.pick)(args, endpoints.getPluginDirectory.queryParams))
+        },
+        skills: {
+          /** Get a skill directory */
+          retrieve: method(endpoints.getSkillDirectory, (args) => (0, utils_1.pick)(args, endpoints.getSkillDirectory.queryParams))
+        },
+        sessions: {
+          /** Update a session */
+          update: method(endpoints.updateSession, (args) => (0, utils_1.pick)(args, endpoints.updateSession.queryParams)),
+          /** Retrieve a session */
+          retrieve: method(endpoints.retrieveSession, (args) => (0, utils_1.pick)(args, endpoints.retrieveSession.queryParams)),
+          /** Query sessions */
+          query: optionalMethod(endpoints.querySessions, (args) => (0, utils_1.pick)(args, endpoints.querySessions.queryParams)),
+          /** Query session events */
+          queryEvents: method(endpoints.querySessionEvents, (args) => (0, utils_1.pick)(args, endpoints.querySessionEvents.queryParams)),
+          /** Cancel a session */
+          cancel: method(endpoints.cancelSession, (args) => (0, utils_1.pick)(args, endpoints.cancelSession.queryParams))
+        }
+      };
+    }
+  }
+});
+
+// node_modules/@notionhq/client/build/src/logging.js
+var require_logging = __commonJS({
+  "node_modules/@notionhq/client/build/src/logging.js"(exports) {
+    "use strict";
+    Object.defineProperty(exports, "__esModule", { value: true });
+    exports.LogLevel = void 0;
+    exports.makeConsoleLogger = makeConsoleLogger;
+    exports.logLevelSeverity = logLevelSeverity;
+    var utils_1 = require_utils2();
+    var LogLevel;
+    (function(LogLevel2) {
+      LogLevel2["DEBUG"] = "debug";
+      LogLevel2["INFO"] = "info";
+      LogLevel2["WARN"] = "warn";
+      LogLevel2["ERROR"] = "error";
+    })(LogLevel || (exports.LogLevel = LogLevel = {}));
+    function makeConsoleLogger(name) {
+      return (level, message, extraInfo) => {
+        console[level](`${name} ${level}:`, message, extraInfo);
+      };
+    }
+    function logLevelSeverity(level) {
+      switch (level) {
+        case LogLevel.DEBUG:
+          return 20;
+        case LogLevel.INFO:
+          return 40;
+        case LogLevel.WARN:
+          return 60;
+        case LogLevel.ERROR:
+          return 80;
+        default:
+          return (0, utils_1.assertNever)(level);
+      }
+    }
+  }
+});
+
+// node_modules/@notionhq/client/build/src/errors.js
+var require_errors3 = __commonJS({
+  "node_modules/@notionhq/client/build/src/errors.js"(exports) {
+    "use strict";
+    Object.defineProperty(exports, "__esModule", { value: true });
+    exports.APIResponseError = exports.UnknownHTTPResponseError = exports.BrowserTokenNotAllowedError = exports.InvalidPathParameterError = exports.RequestTimeoutError = exports.ClientErrorCode = exports.APIErrorCode = void 0;
+    exports.isNotionClientError = isNotionClientError;
+    exports.validateRequestPath = validateRequestPath;
+    exports.getResponseHeader = getResponseHeader;
+    exports.isHTTPResponseError = isHTTPResponseError;
+    exports.buildRequestError = buildRequestError;
+    var utils_1 = require_utils2();
+    var APIErrorCode;
+    (function(APIErrorCode2) {
+      APIErrorCode2["Unauthorized"] = "unauthorized";
+      APIErrorCode2["RestrictedResource"] = "restricted_resource";
+      APIErrorCode2["ObjectNotFound"] = "object_not_found";
+      APIErrorCode2["RateLimited"] = "rate_limited";
+      APIErrorCode2["InvalidJSON"] = "invalid_json";
+      APIErrorCode2["InvalidRequestURL"] = "invalid_request_url";
+      APIErrorCode2["InvalidRequest"] = "invalid_request";
+      APIErrorCode2["InvalidBeta"] = "invalid_beta";
+      APIErrorCode2["ValidationError"] = "validation_error";
+      APIErrorCode2["ConflictError"] = "conflict_error";
+      APIErrorCode2["InternalServerError"] = "internal_server_error";
+      APIErrorCode2["ServiceOverload"] = "service_overload";
+      APIErrorCode2["ServiceUnavailable"] = "service_unavailable";
+      APIErrorCode2["GatewayTimeout"] = "gateway_timeout";
+    })(APIErrorCode || (exports.APIErrorCode = APIErrorCode = {}));
+    var ClientErrorCode;
+    (function(ClientErrorCode2) {
+      ClientErrorCode2["RequestTimeout"] = "notionhq_client_request_timeout";
+      ClientErrorCode2["ResponseError"] = "notionhq_client_response_error";
+      ClientErrorCode2["InvalidPathParameter"] = "notionhq_client_invalid_path_parameter";
+    })(ClientErrorCode || (exports.ClientErrorCode = ClientErrorCode = {}));
+    var NotionClientErrorBase = class extends Error {
+    };
+    function isNotionClientError(error) {
+      return (0, utils_1.isObject)(error) && error instanceof NotionClientErrorBase;
+    }
+    function isNotionClientErrorWithCode(error, codes) {
+      return isNotionClientError(error) && error.code in codes;
+    }
+    var RequestTimeoutError = class _RequestTimeoutError extends NotionClientErrorBase {
+      constructor(message = "Request to Notion API has timed out") {
+        super(message);
+        this.code = ClientErrorCode.RequestTimeout;
+        this.name = "RequestTimeoutError";
+      }
+      static isRequestTimeoutError(error) {
+        return isNotionClientErrorWithCode(error, {
+          [ClientErrorCode.RequestTimeout]: true
+        });
+      }
+      static rejectAfterTimeout(promise, timeoutMS) {
+        return new Promise((resolve, reject) => {
+          const timeoutId = setTimeout(() => {
+            reject(new _RequestTimeoutError());
+          }, timeoutMS);
+          promise.then(resolve).catch(reject).then(() => clearTimeout(timeoutId));
+        });
+      }
+    };
+    exports.RequestTimeoutError = RequestTimeoutError;
+    var InvalidPathParameterError = class extends NotionClientErrorBase {
+      constructor(message = "Path parameter contains invalid characters that could alter the request path") {
+        super(message);
+        this.code = ClientErrorCode.InvalidPathParameter;
+        this.name = "InvalidPathParameterError";
+      }
+      static isInvalidPathParameterError(error) {
+        return isNotionClientErrorWithCode(error, {
+          [ClientErrorCode.InvalidPathParameter]: true
+        });
+      }
+    };
+    exports.InvalidPathParameterError = InvalidPathParameterError;
+    var BrowserTokenNotAllowedError = class extends Error {
+      constructor(message = "It looks like you're running in a browser. Using a Notion token here is blocked by default: anyone who can load the page can read the token and act as your connection. Keep the token on a server instead. If only you can open this page and you accept the risk, pass `dangerouslyAllowBrowser: true` to the Client. See https://developers.notion.com/guides/get-started/handling-api-keys#calling-the-api-from-a-browser") {
+        super(message);
+        this.name = "BrowserTokenNotAllowedError";
+      }
+    };
+    exports.BrowserTokenNotAllowedError = BrowserTokenNotAllowedError;
+    function validateRequestPath(path13) {
+      if (path13.includes("..")) {
+        throw new InvalidPathParameterError(`Request path "${path13}" contains path traversal sequence ".."`);
+      }
+      if (/%2e/i.test(path13)) {
+        let decoded;
+        try {
+          decoded = decodeURIComponent(path13);
+        } catch {
+          return;
+        }
+        if (decoded.includes("..")) {
+          throw new InvalidPathParameterError(`Request path "${path13}" contains encoded path traversal sequence`);
+        }
+      }
+    }
+    function getResponseHeader(headers, name) {
+      if (!(0, utils_1.isObject)(headers)) {
+        return void 0;
+      }
+      const get = headers["get"];
+      if (typeof get === "function") {
+        const value = get.call(headers, name);
+        return typeof value === "string" ? value : void 0;
+      }
+      const lowerName = name.toLowerCase();
+      for (const [key, value] of Object.entries(headers)) {
+        if (key.toLowerCase() !== lowerName) {
+          continue;
+        }
+        if (typeof value === "string") {
+          return value;
+        }
+        if (Array.isArray(value) && typeof value[0] === "string") {
+          return value[0];
+        }
+      }
+      return void 0;
+    }
+    var HTTPResponseError = class extends NotionClientErrorBase {
+      constructor(args) {
+        super(args.message);
+        this.name = "HTTPResponseError";
+        const { code: code2, status, headers, rawBodyText, additional_data, request_id } = args;
+        this.code = code2;
+        this.status = status;
+        this.headers = headers;
+        this.body = rawBodyText;
+        this.additional_data = additional_data;
+        this.request_id = request_id !== null && request_id !== void 0 ? request_id : getResponseHeader(headers, "x-notion-request-id");
+        this.ray_id = getResponseHeader(headers, "cf-ray");
+      }
+    };
+    var httpResponseErrorCodes = {
+      [ClientErrorCode.ResponseError]: true,
+      [APIErrorCode.Unauthorized]: true,
+      [APIErrorCode.RestrictedResource]: true,
+      [APIErrorCode.ObjectNotFound]: true,
+      [APIErrorCode.RateLimited]: true,
+      [APIErrorCode.InvalidJSON]: true,
+      [APIErrorCode.InvalidRequestURL]: true,
+      [APIErrorCode.InvalidRequest]: true,
+      [APIErrorCode.InvalidBeta]: true,
+      [APIErrorCode.ValidationError]: true,
+      [APIErrorCode.ConflictError]: true,
+      [APIErrorCode.InternalServerError]: true,
+      [APIErrorCode.ServiceOverload]: true,
+      [APIErrorCode.ServiceUnavailable]: true,
+      [APIErrorCode.GatewayTimeout]: true
+    };
+    function isHTTPResponseError(error) {
+      if (!isNotionClientErrorWithCode(error, httpResponseErrorCodes)) {
+        return false;
+      }
+      return true;
+    }
+    var UnknownHTTPResponseError = class extends HTTPResponseError {
+      constructor(args) {
+        var _a;
+        const ray_id = getResponseHeader(args.headers, "cf-ray");
+        const request_id = getResponseHeader(args.headers, "x-notion-request-id");
+        super({
+          ...args,
+          code: ClientErrorCode.ResponseError,
+          message: (_a = args.message) !== null && _a !== void 0 ? _a : buildUnknownResponseMessage({
+            status: args.status,
+            contentType: getResponseHeader(args.headers, "content-type"),
+            ray_id,
+            request_id
+          }),
+          additional_data: void 0,
+          request_id
+        });
+        this.name = "UnknownHTTPResponseError";
+      }
+      static isUnknownHTTPResponseError(error) {
+        return isNotionClientErrorWithCode(error, {
+          [ClientErrorCode.ResponseError]: true
+        });
+      }
+    };
+    exports.UnknownHTTPResponseError = UnknownHTTPResponseError;
+    var apiErrorCodes = {
+      [APIErrorCode.Unauthorized]: true,
+      [APIErrorCode.RestrictedResource]: true,
+      [APIErrorCode.ObjectNotFound]: true,
+      [APIErrorCode.RateLimited]: true,
+      [APIErrorCode.InvalidJSON]: true,
+      [APIErrorCode.InvalidRequestURL]: true,
+      [APIErrorCode.InvalidRequest]: true,
+      [APIErrorCode.InvalidBeta]: true,
+      [APIErrorCode.ValidationError]: true,
+      [APIErrorCode.ConflictError]: true,
+      [APIErrorCode.InternalServerError]: true,
+      [APIErrorCode.ServiceOverload]: true,
+      [APIErrorCode.ServiceUnavailable]: true,
+      [APIErrorCode.GatewayTimeout]: true
+    };
+    var APIResponseError = class extends HTTPResponseError {
+      constructor() {
+        super(...arguments);
+        this.name = "APIResponseError";
+      }
+      static isAPIResponseError(error) {
+        return isNotionClientErrorWithCode(error, apiErrorCodes);
+      }
+    };
+    exports.APIResponseError = APIResponseError;
+    function buildRequestError(response, bodyText) {
+      const apiErrorResponseBody = parseAPIErrorResponseBody(bodyText);
+      if (apiErrorResponseBody !== void 0) {
+        return new APIResponseError({
+          code: apiErrorResponseBody.code,
+          message: apiErrorResponseBody.message,
+          headers: response.headers,
+          status: response.status,
+          rawBodyText: bodyText,
+          additional_data: apiErrorResponseBody.additional_data,
+          request_id: apiErrorResponseBody.request_id
+        });
+      }
+      return new UnknownHTTPResponseError({
+        message: void 0,
+        headers: response.headers,
+        status: response.status,
+        rawBodyText: bodyText
+      });
+    }
+    function buildUnknownResponseMessage(args) {
+      const { status, contentType, ray_id, request_id } = args;
+      const base = `Request to Notion API failed with status: ${status}`;
+      if (ray_id === void 0 || request_id !== void 0) {
+        return base;
+      }
+      const contentTypeNote = contentType !== void 0 ? ` (content-type: ${contentType})` : "";
+      const blockedRequestNote = status === 403 ? " This may mean the request was blocked by a network security rule." : "";
+      return `${base}. The response was returned by Notion's edge proxy before reaching the Notion API${contentTypeNote}.${blockedRequestNote} Cloudflare Ray ID: ${ray_id}. Include this ID when contacting Notion support.`;
+    }
+    function parseAPIErrorResponseBody(body) {
+      if (typeof body !== "string") {
+        return;
+      }
+      let parsed;
+      try {
+        parsed = JSON.parse(body);
+      } catch (parseError) {
+        return;
+      }
+      if (!(0, utils_1.isObject)(parsed) || typeof parsed["message"] !== "string" || !isAPIErrorCode(parsed["code"])) {
+        return;
+      }
+      const additional_data = parsed["additional_data"];
+      const request_id = parsed["request_id"];
+      return {
+        ...parsed,
+        code: parsed["code"],
+        message: parsed["message"],
+        additional_data,
+        request_id
+      };
+    }
+    function isAPIErrorCode(code2) {
+      return typeof code2 === "string" && code2 in apiErrorCodes;
+    }
+  }
+});
+
+// node_modules/@notionhq/client/build/src/constants.js
+var require_constants = __commonJS({
+  "node_modules/@notionhq/client/build/src/constants.js"(exports) {
+    "use strict";
+    Object.defineProperty(exports, "__esModule", { value: true });
+    exports.MIN_VIEW_COLUMN_WIDTH = exports.DEFAULT_MAX_RETRY_DELAY_MS = exports.DEFAULT_INITIAL_RETRY_DELAY_MS = exports.DEFAULT_MAX_RETRIES = exports.DEFAULT_TIMEOUT_MS = exports.DEFAULT_BASE_URL = void 0;
+    exports.DEFAULT_BASE_URL = "https://api.notion.com";
+    exports.DEFAULT_TIMEOUT_MS = 6e4;
+    exports.DEFAULT_MAX_RETRIES = 2;
+    exports.DEFAULT_INITIAL_RETRY_DELAY_MS = 1e3;
+    exports.DEFAULT_MAX_RETRY_DELAY_MS = 6e4;
+    exports.MIN_VIEW_COLUMN_WIDTH = 32;
+  }
+});
+
+// node_modules/@notionhq/client/build/package.json
+var require_package = __commonJS({
+  "node_modules/@notionhq/client/build/package.json"(exports, module) {
+    module.exports = {
+      name: "@notionhq/client",
+      version: "5.31.1",
+      description: "A simple and easy to use client for the Notion API",
+      engines: {
+        node: ">=22"
+      },
+      devEngines: {
+        packageManager: {
+          name: "npm",
+          version: ">=11.10.0"
+        }
+      },
+      homepage: "https://developers.notion.com/docs/getting-started",
+      bugs: {
+        url: "https://github.com/makenotion/notion-sdk-js/issues"
+      },
+      repository: {
+        type: "git",
+        url: "https://github.com/makenotion/notion-sdk-js/"
+      },
+      keywords: [
+        "notion",
+        "notionapi",
+        "rest",
+        "notion-api"
+      ],
+      main: "./build/src",
+      types: "./build/src/index.d.ts",
+      scripts: {
+        prepare: "husky && npm run build",
+        prepublishOnly: "npm run checkLoggedIn && npm run lint && npm run test",
+        build: "tsc",
+        prettier: "prettier --write .",
+        lint: "prettier --check . && eslint . --ext .ts,.js && cspell '**/*'",
+        test: "jest ./test",
+        "check:compatibility": "node build/test/checkCompatibility.js",
+        "check-links": "bash scripts/check-links.sh",
+        prebuild: "npm run clean",
+        clean: "rm -rf ./build",
+        checkLoggedIn: "./scripts/verifyLoggedIn.sh"
+      },
+      "lint-staged": {
+        "*.{ts,js,json,md}": "prettier --write",
+        "*.{ts,js}": "eslint --fix"
+      },
+      author: "",
+      license: "MIT",
+      files: [
+        "build/package.json",
+        "build/src/**"
+      ],
+      devDependencies: {
+        "@eslint/js": "10.0.1",
+        "@types/jest": "30.0.0",
+        "@typescript-eslint/eslint-plugin": "8.72.1",
+        "@typescript-eslint/parser": "8.72.1",
+        cspell: "10.4.0",
+        eslint: "10.13.0",
+        globals: "17.13.0",
+        husky: "9.1.7",
+        jest: "30.5.2",
+        "lint-staged": "17.6.0",
+        prettier: "3.9.10",
+        "ts-jest": "29.4.15",
+        typescript: "6.0.3"
+      }
+    };
+  }
+});
+
+// node_modules/@notionhq/client/build/src/Client.js
+var require_Client = __commonJS({
+  "node_modules/@notionhq/client/build/src/Client.js"(exports) {
+    "use strict";
+    var __classPrivateFieldSet = exports && exports.__classPrivateFieldSet || function(receiver, state, value, kind, f) {
+      if (kind === "m") throw new TypeError("Private method is not writable");
+      if (kind === "a" && !f) throw new TypeError("Private accessor was defined without a setter");
+      if (typeof state === "function" ? receiver !== state || !f : !state.has(receiver)) throw new TypeError("Cannot write private member to an object whose class did not declare it");
+      return kind === "a" ? f.call(receiver, value) : f ? f.value = value : state.set(receiver, value), value;
+    };
+    var __classPrivateFieldGet = exports && exports.__classPrivateFieldGet || function(receiver, state, kind, f) {
+      if (kind === "a" && !f) throw new TypeError("Private accessor was defined without a getter");
+      if (typeof state === "function" ? receiver !== state || !f : !state.has(receiver)) throw new TypeError("Cannot read private member from an object whose class did not declare it");
+      return kind === "m" ? f : kind === "a" ? f.call(receiver) : f ? f.value : state.get(receiver);
+    };
+    var _Client_endpointMethods;
+    var _Client_auth;
+    var _Client_logLevel;
+    var _Client_logger;
+    var _Client_prefixUrl;
+    var _Client_timeoutMs;
+    var _Client_notionVersion;
+    var _Client_fetch;
+    var _Client_agent;
+    var _Client_userAgent;
+    var _Client_maxRetries;
+    var _Client_initialRetryDelayMs;
+    var _Client_maxRetryDelayMs;
+    var _Client_dangerouslyAllowBrowser;
+    Object.defineProperty(exports, "__esModule", { value: true });
+    var api_endpoint_methods_1 = require_api_endpoint_methods();
+    var logging_1 = require_logging();
+    var errors_1 = require_errors3();
+    var utils_1 = require_utils2();
+    var constants_1 = require_constants();
+    var api_endpoints_1 = require_api_endpoints();
+    var meeting_notes_1 = require_meeting_notes();
+    var package_json_1 = require_package();
+    var START_CURSOR_PARAM_NAME = "start_cursor";
+    function isBrowserEnvironment() {
+      var _a;
+      const browserGlobals = globalThis;
+      if (((_a = browserGlobals.window) === null || _a === void 0 ? void 0 : _a.document) !== void 0) {
+        return true;
+      }
+      const workerGlobalScope = browserGlobals.WorkerGlobalScope;
+      return typeof workerGlobalScope === "function" && globalThis instanceof workerGlobalScope && typeof browserGlobals.importScripts === "function";
+    }
+    var Client2 = class _Client {
+      constructor(options) {
+        var _a, _b, _c, _d, _e, _f, _g, _h, _j, _k, _l, _m, _o;
+        _Client_endpointMethods.set(this, (0, api_endpoint_methods_1.createEndpointMethods)({
+          request: (args) => this.request(args),
+          warnUnknownParams: (args, endpoint) => this.warnUnknownParams(args, endpoint)
+        }));
+        _Client_auth.set(this, void 0);
+        _Client_logLevel.set(this, void 0);
+        _Client_logger.set(this, void 0);
+        _Client_prefixUrl.set(this, void 0);
+        _Client_timeoutMs.set(this, void 0);
+        _Client_notionVersion.set(this, void 0);
+        _Client_fetch.set(this, void 0);
+        _Client_agent.set(this, void 0);
+        _Client_userAgent.set(this, void 0);
+        _Client_maxRetries.set(this, void 0);
+        _Client_initialRetryDelayMs.set(this, void 0);
+        _Client_maxRetryDelayMs.set(this, void 0);
+        _Client_dangerouslyAllowBrowser.set(this, void 0);
+        this.plugins = {
+          list: __classPrivateFieldGet(this, _Client_endpointMethods, "f").plugins.list,
+          retrieve: (args) => __classPrivateFieldGet(this, _Client_endpointMethods, "f").plugins.retrieve({
+            ...args,
+            // Plugin IDs can be tag IDs containing URL delimiters, not just UUIDs.
+            id: encodeURIComponent(args.id)
+          })
+        };
+        this.skills = __classPrivateFieldGet(this, _Client_endpointMethods, "f").skills;
+        this.agents = __classPrivateFieldGet(this, _Client_endpointMethods, "f").agents;
+        this.sessions = {
+          /**
+           * Retrieve a session
+           */
+          retrieve: __classPrivateFieldGet(this, _Client_endpointMethods, "f").sessions.retrieve,
+          /**
+           * Update a session
+           */
+          update: __classPrivateFieldGet(this, _Client_endpointMethods, "f").sessions.update,
+          /**
+           * Open a session stream
+           */
+          stream: (args) => {
+            this.warnUnknownParams(args, api_endpoints_1.updateSessionStream);
+            return this.streamRequest({
+              path: api_endpoints_1.updateSessionStream.path(),
+              method: api_endpoints_1.updateSessionStream.method,
+              query: (0, utils_1.pick)(args, api_endpoints_1.updateSessionStream.queryParams),
+              body: (0, utils_1.pick)(args, api_endpoints_1.updateSessionStream.bodyParams),
+              ...(0, utils_1.getEndpointRequestOptions)(args, api_endpoints_1.updateSessionStream.headers)
+            }, parseSessionStreamEvent);
+          },
+          /**
+           * Cancel a session
+           */
+          cancel: __classPrivateFieldGet(this, _Client_endpointMethods, "f").sessions.cancel,
+          /**
+           * Query sessions
+           */
+          query: __classPrivateFieldGet(this, _Client_endpointMethods, "f").sessions.query,
+          /**
+           * Query session events
+           */
+          queryEvents: __classPrivateFieldGet(this, _Client_endpointMethods, "f").sessions.queryEvents
+        };
+        this.asyncTasks = __classPrivateFieldGet(this, _Client_endpointMethods, "f").asyncTasks;
+        this.blocks = {
+          /**
+           * Retrieve block
+           */
+          retrieve: __classPrivateFieldGet(this, _Client_endpointMethods, "f").blocks.retrieve,
+          /**
+           * Update block
+           */
+          update: __classPrivateFieldGet(this, _Client_endpointMethods, "f").blocks.update,
+          /**
+           * Delete block
+           */
+          delete: __classPrivateFieldGet(this, _Client_endpointMethods, "f").blocks.delete,
+          children: __classPrivateFieldGet(this, _Client_endpointMethods, "f").blocks.children,
+          meetingNotes: {
+            /**
+             * Create a meeting note
+             */
+            create: __classPrivateFieldGet(this, _Client_endpointMethods, "f").blocks.meetingNotes.create,
+            /**
+             * Query meeting notes
+             */
+            query: (args) => {
+              return this.request({
+                path: meeting_notes_1.queryMeetingNotes.path(),
+                method: meeting_notes_1.queryMeetingNotes.method,
+                query: (0, utils_1.pick)(args, meeting_notes_1.queryMeetingNotes.queryParams),
+                body: (0, utils_1.pick)(args, meeting_notes_1.queryMeetingNotes.bodyParams),
+                ...(0, utils_1.getEndpointRequestOptions)(args)
+              });
+            }
+          }
+        };
+        this.databases = __classPrivateFieldGet(this, _Client_endpointMethods, "f").databases;
+        this.dataSources = __classPrivateFieldGet(this, _Client_endpointMethods, "f").dataSources;
+        this.pages = {
+          /**
+           * Create a page
+           */
+          create: __classPrivateFieldGet(this, _Client_endpointMethods, "f").pages.create,
+          /**
+           * Retrieve a page
+           */
+          retrieve: __classPrivateFieldGet(this, _Client_endpointMethods, "f").pages.retrieve,
+          /**
+           * Update page properties
+           */
+          update: __classPrivateFieldGet(this, _Client_endpointMethods, "f").pages.update,
+          /**
+           * Move a page
+           */
+          move: __classPrivateFieldGet(this, _Client_endpointMethods, "f").pages.move,
+          /**
+           * Retrieve a page as markdown
+           */
+          retrieveMarkdown: (args) => {
+            return this.request({
+              path: api_endpoints_1.getPageMarkdown.path(args),
+              method: api_endpoints_1.getPageMarkdown.method,
+              query: (0, utils_1.pick)(args, api_endpoints_1.getPageMarkdown.queryParams),
+              body: (0, utils_1.pick)(args, api_endpoints_1.getPageMarkdown.bodyParams),
+              ...(0, utils_1.getEndpointRequestOptions)(args)
+            });
+          },
+          /**
+           * Update a page's content as markdown
+           */
+          updateMarkdown: (args) => {
+            return this.request({
+              path: api_endpoints_1.updatePageMarkdown.path(args),
+              method: api_endpoints_1.updatePageMarkdown.method,
+              query: (0, utils_1.pick)(args, api_endpoints_1.updatePageMarkdown.queryParams),
+              body: (0, utils_1.pick)(args, api_endpoints_1.updatePageMarkdown.bodyParams),
+              ...(0, utils_1.getEndpointRequestOptions)(args)
+            });
+          },
+          properties: __classPrivateFieldGet(this, _Client_endpointMethods, "f").pages.properties
+        };
+        this.users = __classPrivateFieldGet(this, _Client_endpointMethods, "f").users;
+        this.customEmojis = {
+          /**
+           * List custom emojis
+           */
+          list: (args) => {
+            this.warnUnknownParams(args !== null && args !== void 0 ? args : {}, api_endpoints_1.listCustomEmojis);
+            return this.request({
+              path: api_endpoints_1.listCustomEmojis.path(),
+              method: api_endpoints_1.listCustomEmojis.method,
+              query: (0, utils_1.pick)(args !== null && args !== void 0 ? args : {}, api_endpoints_1.listCustomEmojis.queryParams),
+              body: (0, utils_1.pick)(args !== null && args !== void 0 ? args : {}, api_endpoints_1.listCustomEmojis.bodyParams),
+              ...(0, utils_1.getEndpointRequestOptions)(args)
+            });
+          }
+        };
+        this.comments = __classPrivateFieldGet(this, _Client_endpointMethods, "f").comments;
+        this.fileUploads = {
+          /**
+           * Create a file upload
+           */
+          create: __classPrivateFieldGet(this, _Client_endpointMethods, "f").fileUploads.create,
+          /**
+           * Retrieve a file upload
+           */
+          retrieve: (args) => {
+            this.warnUnknownParams(args, api_endpoints_1.getFileUpload);
+            return this.request({
+              path: api_endpoints_1.getFileUpload.path(args),
+              method: api_endpoints_1.getFileUpload.method,
+              query: (0, utils_1.pick)(args, api_endpoints_1.getFileUpload.queryParams),
+              ...(0, utils_1.getEndpointRequestOptions)(args)
+            });
+          },
+          /**
+           * List file uploads
+           */
+          list: (args) => {
+            this.warnUnknownParams(args, api_endpoints_1.listFileUploads);
+            return this.request({
+              path: api_endpoints_1.listFileUploads.path(),
+              method: api_endpoints_1.listFileUploads.method,
+              query: (0, utils_1.pick)(args, api_endpoints_1.listFileUploads.queryParams),
+              ...(0, utils_1.getEndpointRequestOptions)(args)
+            });
+          },
+          /**
+           * Send a file upload
+           *
+           * Requires a `file_upload_id`, obtained from the `id` of the Create File
+           * Upload API response.
+           *
+           * The `file` parameter contains the raw file contents or Blob/File object
+           * under `file.data`, and an optional `file.filename` string.
+           *
+           * Supply a stringified `part_number` parameter when using file uploads
+           * in multi-part mode.
+           *
+           * This endpoint sends HTTP multipart/form-data instead of JSON parameters.
+           */
+          send: (args) => {
+            this.warnUnknownParams(args, api_endpoints_1.sendFileUpload);
+            return this.request({
+              path: api_endpoints_1.sendFileUpload.path(args),
+              method: api_endpoints_1.sendFileUpload.method,
+              query: (0, utils_1.pick)(args, api_endpoints_1.sendFileUpload.queryParams),
+              formDataParams: (0, utils_1.pick)(args, api_endpoints_1.sendFileUpload.formDataParams),
+              ...(0, utils_1.getEndpointRequestOptions)(args)
+            });
+          },
+          /**
+           * Complete a file upload
+           */
+          complete: (args) => {
+            this.warnUnknownParams(args, api_endpoints_1.completeFileUpload);
+            return this.request({
+              path: api_endpoints_1.completeFileUpload.path(args),
+              method: api_endpoints_1.completeFileUpload.method,
+              query: (0, utils_1.pick)(args, api_endpoints_1.completeFileUpload.queryParams),
+              ...(0, utils_1.getEndpointRequestOptions)(args)
+            });
+          }
+        };
+        this.views = {
+          /**
+           * Create a view
+           */
+          create: (args) => {
+            return this.request({
+              path: api_endpoints_1.createView.path(),
+              method: api_endpoints_1.createView.method,
+              query: (0, utils_1.pick)(args, api_endpoints_1.createView.queryParams),
+              body: (0, utils_1.pick)(args, [
+                "data_source_id",
+                "name",
+                "type",
+                "database_id",
+                "view_id",
+                "filter",
+                "sorts",
+                "quick_filters",
+                "create_database",
+                "configuration",
+                "position",
+                "placement"
+              ]),
+              ...(0, utils_1.getEndpointRequestOptions)(args)
+            });
+          },
+          /**
+           * Retrieve a view
+           */
+          retrieve: __classPrivateFieldGet(this, _Client_endpointMethods, "f").views.retrieve,
+          /**
+           * Update a view
+           */
+          update: (args) => {
+            return this.request({
+              path: api_endpoints_1.updateView.path(args),
+              method: api_endpoints_1.updateView.method,
+              query: (0, utils_1.pick)(args, api_endpoints_1.updateView.queryParams),
+              body: (0, utils_1.pick)(args, [
+                "name",
+                "filter",
+                "sorts",
+                "quick_filters",
+                "configuration"
+              ]),
+              ...(0, utils_1.getEndpointRequestOptions)(args)
+            });
+          },
+          /**
+           * Delete a view
+           */
+          delete: __classPrivateFieldGet(this, _Client_endpointMethods, "f").views.delete,
+          /**
+           * List views for a database
+           */
+          list: __classPrivateFieldGet(this, _Client_endpointMethods, "f").views.list,
+          queries: {
+            /**
+             * Create a view query
+             */
+            create: (args) => {
+              return this.request({
+                path: api_endpoints_1.createViewQuery.path(args),
+                method: api_endpoints_1.createViewQuery.method,
+                query: (0, utils_1.pick)(args, api_endpoints_1.createViewQuery.queryParams),
+                body: (0, utils_1.pick)(args, ["page_size"]),
+                ...(0, utils_1.getEndpointRequestOptions)(args)
+              });
+            },
+            /**
+             * Get view query results
+             */
+            results: __classPrivateFieldGet(this, _Client_endpointMethods, "f").views.queries.results,
+            /**
+             * Delete a view query
+             */
+            delete: __classPrivateFieldGet(this, _Client_endpointMethods, "f").views.queries.delete
+          }
+        };
+        this.search = __classPrivateFieldGet(this, _Client_endpointMethods, "f").search;
+        this.oauth = {
+          /**
+           * Get token
+           */
+          token: (args) => {
+            return this.request({
+              path: api_endpoints_1.oauthToken.path(),
+              method: api_endpoints_1.oauthToken.method,
+              query: (0, utils_1.pick)(args, api_endpoints_1.oauthToken.queryParams),
+              body: (0, utils_1.pick)(args, api_endpoints_1.oauthToken.bodyParams),
+              ...getOAuthRequestOptions(args)
+            });
+          },
+          /**
+           * Introspect token
+           */
+          introspect: (args) => {
+            return this.request({
+              path: api_endpoints_1.oauthIntrospect.path(),
+              method: api_endpoints_1.oauthIntrospect.method,
+              query: (0, utils_1.pick)(args, api_endpoints_1.oauthIntrospect.queryParams),
+              body: (0, utils_1.pick)(args, api_endpoints_1.oauthIntrospect.bodyParams),
+              ...getOAuthRequestOptions(args)
+            });
+          },
+          /**
+           * Revoke token
+           */
+          revoke: (args) => {
+            return this.request({
+              path: api_endpoints_1.oauthRevoke.path(),
+              method: api_endpoints_1.oauthRevoke.method,
+              query: (0, utils_1.pick)(args, api_endpoints_1.oauthRevoke.queryParams),
+              body: (0, utils_1.pick)(args, api_endpoints_1.oauthRevoke.bodyParams),
+              ...getOAuthRequestOptions(args)
+            });
+          }
+        };
+        __classPrivateFieldSet(this, _Client_auth, options === null || options === void 0 ? void 0 : options.auth, "f");
+        __classPrivateFieldSet(this, _Client_logLevel, (_a = options === null || options === void 0 ? void 0 : options.logLevel) !== null && _a !== void 0 ? _a : logging_1.LogLevel.WARN, "f");
+        __classPrivateFieldSet(this, _Client_logger, (_b = options === null || options === void 0 ? void 0 : options.logger) !== null && _b !== void 0 ? _b : (0, logging_1.makeConsoleLogger)(package_json_1.name), "f");
+        __classPrivateFieldSet(this, _Client_prefixUrl, `${(_c = options === null || options === void 0 ? void 0 : options.baseUrl) !== null && _c !== void 0 ? _c : constants_1.DEFAULT_BASE_URL}/v1/`, "f");
+        __classPrivateFieldSet(this, _Client_timeoutMs, (_d = options === null || options === void 0 ? void 0 : options.timeoutMs) !== null && _d !== void 0 ? _d : constants_1.DEFAULT_TIMEOUT_MS, "f");
+        __classPrivateFieldSet(this, _Client_notionVersion, (_e = options === null || options === void 0 ? void 0 : options.notionVersion) !== null && _e !== void 0 ? _e : _Client.defaultNotionVersion, "f");
+        __classPrivateFieldSet(this, _Client_fetch, (_f = options === null || options === void 0 ? void 0 : options.fetch) !== null && _f !== void 0 ? _f : fetch.bind(globalThis), "f");
+        __classPrivateFieldSet(this, _Client_agent, options === null || options === void 0 ? void 0 : options.agent, "f");
+        __classPrivateFieldSet(this, _Client_userAgent, `notionhq-client/${package_json_1.version}`, "f");
+        if ((options === null || options === void 0 ? void 0 : options.retry) === false) {
+          __classPrivateFieldSet(this, _Client_maxRetries, 0, "f");
+          __classPrivateFieldSet(this, _Client_initialRetryDelayMs, 0, "f");
+          __classPrivateFieldSet(this, _Client_maxRetryDelayMs, 0, "f");
+        } else {
+          __classPrivateFieldSet(this, _Client_maxRetries, (_h = (_g = options === null || options === void 0 ? void 0 : options.retry) === null || _g === void 0 ? void 0 : _g.maxRetries) !== null && _h !== void 0 ? _h : constants_1.DEFAULT_MAX_RETRIES, "f");
+          __classPrivateFieldSet(this, _Client_initialRetryDelayMs, (_k = (_j = options === null || options === void 0 ? void 0 : options.retry) === null || _j === void 0 ? void 0 : _j.initialRetryDelayMs) !== null && _k !== void 0 ? _k : constants_1.DEFAULT_INITIAL_RETRY_DELAY_MS, "f");
+          __classPrivateFieldSet(this, _Client_maxRetryDelayMs, (_m = (_l = options === null || options === void 0 ? void 0 : options.retry) === null || _l === void 0 ? void 0 : _l.maxRetryDelayMs) !== null && _m !== void 0 ? _m : constants_1.DEFAULT_MAX_RETRY_DELAY_MS, "f");
+        }
+        __classPrivateFieldSet(this, _Client_dangerouslyAllowBrowser, (_o = options === null || options === void 0 ? void 0 : options.dangerouslyAllowBrowser) !== null && _o !== void 0 ? _o : false, "f");
+        if ((options === null || options === void 0 ? void 0 : options.auth) !== void 0) {
+          this.assertTokenAllowedHere();
+        }
+      }
+      /**
+       * Sends a request.
+       */
+      async request(args) {
+        const { path: path13, method, query, body, formDataParams, auth } = args;
+        (0, errors_1.validateRequestPath)(path13);
+        this.log(logging_1.LogLevel.INFO, "request start", { method, path: path13 });
+        const url = this.buildRequestUrl(path13, query);
+        const bodyAsJsonString = this.serializeBody(body);
+        const headers = this.buildRequestHeaders(args.headers, auth, bodyAsJsonString);
+        const formData = this.buildFormData(formDataParams, headers);
+        return this.executeWithRetry({
+          url,
+          method,
+          path: path13,
+          headers,
+          body: bodyAsJsonString !== null && bodyAsJsonString !== void 0 ? bodyAsJsonString : formData
+        }, (request) => this.executeSingleRequest(request));
+      }
+      /**
+       * Opens an SSE response and yields each parsed event as it arrives.
+       */
+      async *streamRequest(args, parseEvent) {
+        var _a;
+        const { path: path13, method, query, body, auth } = args;
+        (0, errors_1.validateRequestPath)(path13);
+        this.log(logging_1.LogLevel.INFO, "stream request start", { method, path: path13 });
+        const url = this.buildRequestUrl(path13, query);
+        const bodyAsJsonString = this.serializeBody(body);
+        const headers = this.buildRequestHeaders(args.headers, auth, bodyAsJsonString);
+        const response = await this.executeWithRetry({
+          url,
+          method,
+          path: path13,
+          headers,
+          body: bodyAsJsonString
+        }, (request) => this.executeSingleStreamRequest(request));
+        this.log(logging_1.LogLevel.INFO, "stream request opened", { method, path: path13 });
+        if (response.body === void 0 || response.body === null) {
+          for (const frame of takeSseFrames({
+            content: await response.text(),
+            complete: true
+          }).frames) {
+            yield parseEvent(frame);
+          }
+          return;
+        }
+        const reader = response.body.getReader();
+        const decoder = new TextDecoder();
+        let remaining = "";
+        let complete = false;
+        try {
+          while (!complete) {
+            const { done, value } = await reader.read();
+            if (done) {
+              complete = true;
+              continue;
+            }
+            if (value === void 0) {
+              throw new Error("SSE response body ended without a data chunk.");
+            }
+            const frames = takeSseFrames({
+              content: `${remaining}${decoder.decode(value, { stream: true })}`,
+              complete: false
+            });
+            remaining = frames.remaining;
+            for (const frame of frames.frames) {
+              yield parseEvent(frame);
+            }
+          }
+          for (const frame of takeSseFrames({
+            content: `${remaining}${decoder.decode()}`,
+            complete: true
+          }).frames) {
+            yield parseEvent(frame);
+          }
+        } finally {
+          try {
+            if (!complete) {
+              await ((_a = reader.cancel) === null || _a === void 0 ? void 0 : _a.call(reader));
+            }
+          } finally {
+            reader.releaseLock();
+          }
+        }
+      }
+      /**
+       * Builds the full URL with query parameters.
+       */
+      buildRequestUrl(path13, query) {
+        const url = new URL(`${__classPrivateFieldGet(this, _Client_prefixUrl, "f")}${path13}`);
+        if (query) {
+          for (const [key, value] of Object.entries(query)) {
+            if (value !== void 0 && value !== null) {
+              if (Array.isArray(value)) {
+                for (const val of value) {
+                  url.searchParams.append(key, decodeURIComponent(val));
+                }
+              } else {
+                url.searchParams.append(key, String(value));
+              }
+            }
+          }
+        }
+        return url;
+      }
+      /**
+       * Serializes the request body to JSON string if non-empty.
+       */
+      serializeBody(body) {
+        if (!body) {
+          return void 0;
+        }
+        const serializedBody = { ...body };
+        if (serializedBody[START_CURSOR_PARAM_NAME] === null) {
+          delete serializedBody[START_CURSOR_PARAM_NAME];
+        }
+        if (Object.entries(serializedBody).length === 0) {
+          return void 0;
+        }
+        return JSON.stringify(serializedBody);
+      }
+      /**
+       * Builds the request headers including auth and content-type.
+       */
+      buildRequestHeaders(customHeaders, auth, bodyAsJsonString) {
+        const authorizationHeader = this.buildAuthHeader(auth);
+        const headers = {
+          ...customHeaders,
+          ...authorizationHeader,
+          "Notion-Version": __classPrivateFieldGet(this, _Client_notionVersion, "f")
+        };
+        if (!isBrowserEnvironment()) {
+          headers["user-agent"] = __classPrivateFieldGet(this, _Client_userAgent, "f");
+        }
+        if (bodyAsJsonString !== void 0) {
+          headers["content-type"] = "application/json";
+        }
+        return headers;
+      }
+      /**
+       * Builds the authorization header based on auth type.
+       */
+      buildAuthHeader(auth) {
+        if (auth !== void 0) {
+          this.assertTokenAllowedHere();
+        }
+        if (typeof auth === "object") {
+          const unencodedCredential = `${auth.client_id}:${auth.client_secret}`;
+          const encodedCredential = Buffer.from(unencodedCredential).toString("base64");
+          return { authorization: `Basic ${encodedCredential}` };
+        }
+        return this.authAsHeaders(auth);
+      }
+      /**
+       * Builds FormData from form parameters if provided.
+       * Also removes content-type header to let fetch set the boundary.
+       */
+      buildFormData(formDataParams, headers) {
+        if (!formDataParams) {
+          return void 0;
+        }
+        delete headers["content-type"];
+        const formData = new FormData();
+        for (const [key, value] of Object.entries(formDataParams)) {
+          if (typeof value === "string") {
+            formData.append(key, value);
+          } else if (typeof value === "object") {
+            formData.append(key, typeof value.data === "object" ? value.data : new Blob([value.data]), value.filename);
+          }
+        }
+        return formData;
+      }
+      /**
+       * Executes the request with retry logic.
+       */
+      async executeWithRetry(args, execute) {
+        const { url, method, path: path13, headers, body } = args;
+        let attempt = 0;
+        while (true) {
+          try {
+            return await execute({
+              url,
+              method,
+              path: path13,
+              headers,
+              body
+            });
+          } catch (error) {
+            if (!(0, errors_1.isNotionClientError)(error)) {
+              throw error;
+            }
+            this.logRequestError(error, attempt);
+            if (attempt < __classPrivateFieldGet(this, _Client_maxRetries, "f") && this.canRetry(error, method)) {
+              const delayMs = this.calculateRetryDelay(error, attempt);
+              this.log(logging_1.LogLevel.INFO, "retrying request", {
+                method,
+                path: path13,
+                attempt: attempt + 1,
+                delayMs
+              });
+              await this.sleep(delayMs);
+              attempt++;
+              continue;
+            }
+            throw error;
+          }
+        }
+      }
+      /**
+       * Executes a single HTTP request (no retry).
+       */
+      async executeSingleRequest(args) {
+        const { url, method, path: path13, headers, body } = args;
+        const response = await errors_1.RequestTimeoutError.rejectAfterTimeout(__classPrivateFieldGet(this, _Client_fetch, "f").call(this, url.toString(), {
+          method: method.toUpperCase(),
+          headers,
+          body,
+          agent: __classPrivateFieldGet(this, _Client_agent, "f")
+        }), __classPrivateFieldGet(this, _Client_timeoutMs, "f"));
+        const responseText = await response.text();
+        if (!response.ok) {
+          throw (0, errors_1.buildRequestError)(response, responseText);
+        }
+        const responseJson = JSON.parse(responseText);
+        this.log(logging_1.LogLevel.INFO, "request success", {
+          method,
+          path: path13,
+          ...this.extractRequestId(responseJson)
+        });
+        return responseJson;
+      }
+      /**
+       * Opens an SSE response without consuming its body. Retry orchestration is
+       * shared with JSON requests so only the initial, retryable HTTP failures are
+       * retried; once a stream has opened, its events are never replayed.
+       */
+      async executeSingleStreamRequest(args) {
+        const { url, method, body } = args;
+        const response = await errors_1.RequestTimeoutError.rejectAfterTimeout(__classPrivateFieldGet(this, _Client_fetch, "f").call(this, url.toString(), {
+          method: method.toUpperCase(),
+          headers: args.headers,
+          body,
+          agent: __classPrivateFieldGet(this, _Client_agent, "f")
+        }), __classPrivateFieldGet(this, _Client_timeoutMs, "f"));
+        if (!response.ok) {
+          throw (0, errors_1.buildRequestError)(response, await response.text());
+        }
+        return response;
+      }
+      /**
+       * Logs a request error with appropriate detail level.
+       */
+      logRequestError(error, attempt) {
+        this.log(logging_1.LogLevel.WARN, "request fail", {
+          code: error.code,
+          message: error.message,
+          attempt,
+          ...this.extractRequestId(error)
+        });
+        if ((0, errors_1.isHTTPResponseError)(error)) {
+          this.log(logging_1.LogLevel.DEBUG, "failed response body", {
+            body: error.body
+          });
+        }
+      }
+      /**
+       * Extracts request_id from an object if present.
+       */
+      extractRequestId(obj) {
+        if (obj && typeof obj === "object" && "request_id" in obj && typeof obj.request_id === "string") {
+          return { requestId: obj.request_id };
+        }
+        return {};
+      }
+      /**
+       * Determines if an error can be retried based on its error code and method.
+       * Rate limits (429) and service overloads (529) are always retryable since
+       * the server explicitly asks us to retry. Server errors (500, 503) are only
+       * retried for idempotent methods (GET, DELETE) to avoid duplicate side
+       * effects.
+       */
+      canRetry(error, method) {
+        if (!errors_1.APIResponseError.isAPIResponseError(error)) {
+          return false;
+        }
+        if (error.code === errors_1.APIErrorCode.RateLimited || error.code === errors_1.APIErrorCode.ServiceOverload) {
+          return true;
+        }
+        const isIdempotent = method === "get" || method === "delete";
+        if (isIdempotent) {
+          return error.code === errors_1.APIErrorCode.InternalServerError || error.code === errors_1.APIErrorCode.ServiceUnavailable;
+        }
+        return false;
+      }
+      /**
+       * Calculates the delay before the next retry attempt.
+       * Uses retry-after header if present, otherwise exponential back-off with
+       * jitter.
+       */
+      calculateRetryDelay(error, attempt) {
+        if (errors_1.APIResponseError.isAPIResponseError(error)) {
+          const retryAfterMs = this.parseRetryAfterHeader(error.headers);
+          if (retryAfterMs !== void 0) {
+            return Math.min(retryAfterMs, __classPrivateFieldGet(this, _Client_maxRetryDelayMs, "f"));
+          }
+        }
+        const baseDelay = __classPrivateFieldGet(this, _Client_initialRetryDelayMs, "f") * Math.pow(2, attempt);
+        const jitter = Math.random();
+        return Math.min(baseDelay * jitter + baseDelay / 2, __classPrivateFieldGet(this, _Client_maxRetryDelayMs, "f"));
+      }
+      /**
+       * Parses the retry-after header value.
+       * Supports both delta-seconds (e.g., "120") and HTTP-date formats.
+       * Returns the delay in milliseconds, or undefined if not present or invalid.
+       */
+      parseRetryAfterHeader(headers) {
+        const retryAfterValue = (0, errors_1.getResponseHeader)(headers, "retry-after");
+        if (!retryAfterValue) {
+          return void 0;
+        }
+        const seconds = parseInt(retryAfterValue, 10);
+        if (!isNaN(seconds) && seconds >= 0) {
+          return seconds * 1e3;
+        }
+        const date = Date.parse(retryAfterValue);
+        if (!isNaN(date)) {
+          const delayMs = date - Date.now();
+          return delayMs > 0 ? delayMs : 0;
+        }
+        return void 0;
+      }
+      sleep(ms) {
+        return new Promise((resolve) => setTimeout(resolve, ms));
+      }
+      /**
+       * Logs a warning when the caller passes parameters that are not recognized
+       * by the endpoint definition. This helps catch typos and renamed parameters
+       * (e.g. `archived` vs `in_trash` for `databases.update`) that would
+       * otherwise be silently dropped by `pick()`.
+       */
+      warnUnknownParams(args, endpoint) {
+        var _a;
+        if (!args || typeof args !== "object") {
+          return;
+        }
+        const unknownKeys = (0, utils_1.getUnknownParams)(args, endpoint);
+        if (unknownKeys.length > 0) {
+          this.log(logging_1.LogLevel.WARN, "unknown parameters were ignored", {
+            unknownParams: unknownKeys,
+            knownParams: [
+              ...endpoint.pathParams,
+              ...endpoint.queryParams,
+              ...endpoint.bodyParams,
+              ...(_a = endpoint.formDataParams) !== null && _a !== void 0 ? _a : []
+            ]
+          });
+        }
+      }
+      /**
+       * Emits a log message to the console.
+       *
+       * @param level The level for this message
+       * @param args Arguments to send to the console
+       */
+      log(level, message, extraInfo) {
+        if ((0, logging_1.logLevelSeverity)(level) >= (0, logging_1.logLevelSeverity)(__classPrivateFieldGet(this, _Client_logLevel, "f"))) {
+          __classPrivateFieldGet(this, _Client_logger, "f").call(this, level, message, extraInfo);
+        }
+      }
+      /**
+       * Blocks a token or client secret inside a browser unless the caller opted
+       * in. Covers both the constructor `auth` and per-request `auth`, since a
+       * page that asks the visitor to type a token usually uses the latter. A
+       * client without a token stays usable, for example behind a proxy that
+       * adds the token on a server.
+       */
+      assertTokenAllowedHere() {
+        if (__classPrivateFieldGet(this, _Client_dangerouslyAllowBrowser, "f") || !isBrowserEnvironment()) {
+          return;
+        }
+        throw new errors_1.BrowserTokenNotAllowedError();
+      }
+      /**
+       * Transforms an API key or access token into a headers object suitable for an HTTP request.
+       *
+       * This method uses the instance's value as the default when the input is undefined. If neither are defined, it returns
+       * an empty object
+       *
+       * @param auth API key or access token
+       * @returns headers key-value object
+       */
+      authAsHeaders(auth) {
+        const headers = {};
+        const authHeaderValue = auth !== null && auth !== void 0 ? auth : __classPrivateFieldGet(this, _Client_auth, "f");
+        if (authHeaderValue !== void 0) {
+          headers["authorization"] = `Bearer ${authHeaderValue}`;
+        }
+        return headers;
+      }
+    };
+    _Client_endpointMethods = /* @__PURE__ */ new WeakMap(), _Client_auth = /* @__PURE__ */ new WeakMap(), _Client_logLevel = /* @__PURE__ */ new WeakMap(), _Client_logger = /* @__PURE__ */ new WeakMap(), _Client_prefixUrl = /* @__PURE__ */ new WeakMap(), _Client_timeoutMs = /* @__PURE__ */ new WeakMap(), _Client_notionVersion = /* @__PURE__ */ new WeakMap(), _Client_fetch = /* @__PURE__ */ new WeakMap(), _Client_agent = /* @__PURE__ */ new WeakMap(), _Client_userAgent = /* @__PURE__ */ new WeakMap(), _Client_maxRetries = /* @__PURE__ */ new WeakMap(), _Client_initialRetryDelayMs = /* @__PURE__ */ new WeakMap(), _Client_maxRetryDelayMs = /* @__PURE__ */ new WeakMap(), _Client_dangerouslyAllowBrowser = /* @__PURE__ */ new WeakMap();
+    Client2.defaultNotionVersion = "2025-09-03";
+    exports.default = Client2;
+    var sessionStreamEventTypes = /* @__PURE__ */ new Set([
+      "session.snapshot",
+      "event.provisional",
+      "event.committed",
+      "stream.timeout",
+      "stream.end",
+      "stream.error"
+    ]);
+    function takeSseFrames(args) {
+      const frames = [];
+      let remaining = args.content.replace(/\r\n/g, "\n");
+      let boundary = remaining.indexOf("\n\n");
+      while (boundary !== -1) {
+        const frame = parseSseFrame(remaining.slice(0, boundary));
+        if (frame !== void 0) {
+          frames.push(frame);
+        }
+        remaining = remaining.slice(boundary + 2);
+        boundary = remaining.indexOf("\n\n");
+      }
+      if (args.complete && remaining !== "") {
+        const frame = parseSseFrame(remaining);
+        if (frame !== void 0) {
+          frames.push(frame);
+        }
+        remaining = "";
+      }
+      return { frames, remaining };
+    }
+    function parseSseFrame(content) {
+      let eventName;
+      const dataLines = [];
+      for (const line of content.split("\n")) {
+        if (line.startsWith(":")) {
+          continue;
+        }
+        const colonIndex = line.indexOf(":");
+        if (colonIndex === -1) {
+          continue;
+        }
+        const field = line.slice(0, colonIndex);
+        const valueStart = line.charAt(colonIndex + 1) === " " ? colonIndex + 2 : colonIndex + 1;
+        const value = line.slice(valueStart);
+        if (field === "event") {
+          eventName = value;
+        } else if (field === "data") {
+          dataLines.push(value);
+        }
+      }
+      if (dataLines.length === 0) {
+        return void 0;
+      }
+      if (eventName === void 0) {
+        throw new Error("Session stream event is missing its SSE event name.");
+      }
+      return { eventName, data: dataLines.join("\n") };
+    }
+    function parseSessionStreamEvent(frame) {
+      const event = JSON.parse(frame.data);
+      if (typeof event !== "object" || event === null || !sessionStreamEventTypes.has(event.type) || event.type !== frame.eventName) {
+        throw new Error("Session stream event does not match its SSE event name.");
+      }
+      return event;
+    }
+    function getOAuthRequestOptions(args) {
+      return {
+        ...(0, utils_1.getEndpointRequestOptions)(args),
+        auth: { client_id: args.client_id, client_secret: args.client_secret }
+      };
+    }
+  }
+});
+
+// node_modules/@notionhq/client/build/src/helpers.js
+var require_helpers = __commonJS({
+  "node_modules/@notionhq/client/build/src/helpers.js"(exports) {
+    "use strict";
+    Object.defineProperty(exports, "__esModule", { value: true });
+    exports.iteratePaginatedAPI = iteratePaginatedAPI;
+    exports.collectPaginatedAPI = collectPaginatedAPI;
+    exports.iterateDataSourceTemplates = iterateDataSourceTemplates;
+    exports.collectDataSourceTemplates = collectDataSourceTemplates;
+    exports.iterateAllDataSourceRows = iterateAllDataSourceRows;
+    exports.collectAllDataSourceRows = collectAllDataSourceRows;
+    exports.isFullBlock = isFullBlock;
+    exports.isFullPage = isFullPage;
+    exports.isFullDataSource = isFullDataSource;
+    exports.isFullDatabase = isFullDatabase;
+    exports.isFullPageOrDataSource = isFullPageOrDataSource;
+    exports.isFullUser = isFullUser;
+    exports.isFullComment = isFullComment;
+    exports.isFullView = isFullView;
+    exports.isTextRichTextItemResponse = isTextRichTextItemResponse;
+    exports.isEquationRichTextItemResponse = isEquationRichTextItemResponse;
+    exports.isMentionRichTextItemResponse = isMentionRichTextItemResponse;
+    exports.extractNotionId = extractNotionId;
+    exports.extractDatabaseId = extractDatabaseId;
+    exports.extractPageId = extractPageId;
+    exports.extractBlockId = extractBlockId;
+    async function* iteratePaginatedAPI(listFn, firstPageArgs) {
+      let nextCursor = firstPageArgs.start_cursor;
+      do {
+        const response = await listFn({
+          ...firstPageArgs,
+          start_cursor: nextCursor
+        });
+        yield* response.results;
+        nextCursor = response.next_cursor;
+      } while (nextCursor);
+    }
+    async function collectPaginatedAPI(listFn, firstPageArgs) {
+      const results = [];
+      for await (const item of iteratePaginatedAPI(listFn, firstPageArgs)) {
+        results.push(item);
+      }
+      return results;
+    }
+    async function* iterateDataSourceTemplates(client, args) {
+      let nextCursor = args.start_cursor;
+      do {
+        const response = await client.dataSources.listTemplates({
+          ...args,
+          start_cursor: nextCursor
+        });
+        yield* response.templates;
+        nextCursor = response.next_cursor;
+      } while (nextCursor);
+    }
+    async function collectDataSourceTemplates(client, args) {
+      const results = [];
+      for await (const template of iterateDataSourceTemplates(client, args)) {
+        results.push(template);
+      }
+      return results;
+    }
+    async function* iterateAllDataSourceRows(client, args) {
+      var _a, _b;
+      const seenRowIds = /* @__PURE__ */ new Set();
+      let windowStart = void 0;
+      for (; ; ) {
+        let limitReached = false;
+        let lastCreatedTime = void 0;
+        let cursor = void 0;
+        do {
+          const response = await client.dataSources.query({
+            ...args,
+            sorts: [{ timestamp: "created_time", direction: "ascending" }],
+            filter: createdTimeLowerBound(args.filter, windowStart),
+            start_cursor: cursor
+          });
+          for (const row of response.results) {
+            if (isFullPageOrDataSource(row)) {
+              lastCreatedTime = row.created_time;
+            }
+            if (!seenRowIds.has(row.id)) {
+              seenRowIds.add(row.id);
+              yield row;
+            }
+          }
+          if (((_a = response.request_status) === null || _a === void 0 ? void 0 : _a.type) === "incomplete") {
+            limitReached = true;
+          }
+          cursor = (_b = response.next_cursor) !== null && _b !== void 0 ? _b : void 0;
+        } while (cursor);
+        if (!limitReached) {
+          return;
+        }
+        if (lastCreatedTime === void 0 || lastCreatedTime === windowStart) {
+          throw new Error(`iterateAllDataSourceRows cannot make progress: the per-query result limit was reached but the created_time window could not advance past ${String(lastCreatedTime)}. More rows share this timestamp than the limit allows. Add a filter to narrow the query.`);
+        }
+        windowStart = lastCreatedTime;
+      }
+    }
+    async function collectAllDataSourceRows(client, args) {
+      const rows = [];
+      for await (const row of iterateAllDataSourceRows(client, args)) {
+        rows.push(row);
+      }
+      return rows;
+    }
+    function createdTimeLowerBound(filter, windowStart) {
+      if (windowStart === void 0) {
+        return filter;
+      }
+      const bound = {
+        timestamp: "created_time",
+        created_time: { on_or_after: windowStart }
+      };
+      if (filter === void 0) {
+        return bound;
+      }
+      if ("and" in filter) {
+        return { and: [...filter.and, bound] };
+      }
+      return { and: [filter, bound] };
+    }
+    function isFullBlock(response) {
+      return response.object === "block" && "type" in response;
+    }
+    function isFullPage(response) {
+      return response.object === "page" && "url" in response;
+    }
+    function isFullDataSource(response) {
+      return response.object === "data_source" && "title" in response;
+    }
+    function isFullDatabase(response) {
+      return response.object === "database" && "title" in response;
+    }
+    function isFullPageOrDataSource(response) {
+      if (response.object === "data_source") {
+        return isFullDataSource(response);
+      } else {
+        return isFullPage(response);
+      }
+    }
+    function isFullUser(response) {
+      return "type" in response;
+    }
+    function isFullComment(response) {
+      return "created_by" in response;
+    }
+    function isFullView(response) {
+      return "type" in response;
+    }
+    function isTextRichTextItemResponse(richText) {
+      return richText.type === "text";
+    }
+    function isEquationRichTextItemResponse(richText) {
+      return richText.type === "equation";
+    }
+    function isMentionRichTextItemResponse(richText) {
+      return richText.type === "mention";
+    }
+    function extractNotionId(urlOrId) {
+      if (!urlOrId || typeof urlOrId !== "string") {
+        return null;
+      }
+      const trimmed = urlOrId.trim();
+      const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+      if (uuidRegex.test(trimmed)) {
+        return trimmed.toLowerCase();
+      }
+      const compactUuidRegex = /^[0-9a-f]{32}$/i;
+      if (compactUuidRegex.test(trimmed)) {
+        return formatUuid(trimmed);
+      }
+      const pathMatch = trimmed.match(/\/(?:[^/?#]*-)?([0-9a-f]{32})(?:[/?#]|$)/i);
+      if (pathMatch && pathMatch[1]) {
+        return formatUuid(pathMatch[1]);
+      }
+      const queryMatch = trimmed.match(/[?&](?:p|page_id|database_id)=([0-9a-f]{32})/i);
+      if (queryMatch && queryMatch[1]) {
+        return formatUuid(queryMatch[1]);
+      }
+      const anyMatch = trimmed.match(/([0-9a-f]{32})/i);
+      if (anyMatch && anyMatch[1]) {
+        return formatUuid(anyMatch[1]);
+      }
+      return null;
+    }
+    function formatUuid(compactId) {
+      const clean = compactId.toLowerCase();
+      return `${clean.slice(0, 8)}-${clean.slice(8, 12)}-${clean.slice(12, 16)}-${clean.slice(16, 20)}-${clean.slice(20, 32)}`;
+    }
+    function extractDatabaseId(databaseUrl) {
+      return extractNotionId(databaseUrl);
+    }
+    function extractPageId(pageUrl) {
+      return extractNotionId(pageUrl);
+    }
+    function extractBlockId(urlWithBlock) {
+      if (!urlWithBlock || typeof urlWithBlock !== "string") {
+        return null;
+      }
+      const blockMatch = urlWithBlock.match(/#(?:block-)?([0-9a-f]{32})/i);
+      if (blockMatch && blockMatch[1]) {
+        return formatUuid(blockMatch[1]);
+      }
+      return null;
+    }
+  }
+});
+
+// node_modules/@notionhq/client/build/src/webhooks.js
+var require_webhooks2 = __commonJS({
+  "node_modules/@notionhq/client/build/src/webhooks.js"(exports) {
+    "use strict";
+    Object.defineProperty(exports, "__esModule", { value: true });
+    exports.verifyWebhookSignature = verifyWebhookSignature;
+    exports.signWebhookPayload = signWebhookPayload;
+    var SIGNATURE_PREFIX = "sha256=";
+    var SHA256_HEX_LENGTH = 64;
+    async function verifyWebhookSignature(args) {
+      const { body, signature, verificationToken } = args;
+      if (typeof signature !== "string") {
+        return false;
+      }
+      if (!signature.startsWith(SIGNATURE_PREFIX)) {
+        return false;
+      }
+      const providedHex = signature.slice(SIGNATURE_PREFIX.length).toLowerCase();
+      if (providedHex.length !== SHA256_HEX_LENGTH) {
+        return false;
+      }
+      if (!/^[0-9a-f]+$/.test(providedHex)) {
+        return false;
+      }
+      const key = await importHmacKey(verificationToken, "verify");
+      return globalThis.crypto.subtle.verify("HMAC", key, hexToBytes(providedHex), bodyToBytes(body));
+    }
+    async function signWebhookPayload(args) {
+      const key = await importHmacKey(args.verificationToken, "sign");
+      const signature = await globalThis.crypto.subtle.sign("HMAC", key, bodyToBytes(args.body));
+      return `${SIGNATURE_PREFIX}${bytesToHex(new Uint8Array(signature))}`;
+    }
+    async function importHmacKey(token, usage) {
+      return globalThis.crypto.subtle.importKey("raw", new TextEncoder().encode(token), { name: "HMAC", hash: "SHA-256" }, false, [usage]);
+    }
+    function bodyToBytes(body) {
+      return typeof body === "string" ? new TextEncoder().encode(body) : Uint8Array.from(body);
+    }
+    function bytesToHex(bytes) {
+      let hex = "";
+      for (const byte of bytes) {
+        hex += byte.toString(16).padStart(2, "0");
+      }
+      return hex;
+    }
+    function hexToBytes(hex) {
+      const bytes = new Uint8Array(hex.length / 2);
+      for (let i = 0; i < bytes.length; i++) {
+        bytes[i] = Number.parseInt(hex.slice(i * 2, i * 2 + 2), 16);
+      }
+      return bytes;
+    }
+  }
+});
+
+// node_modules/@notionhq/client/build/src/meeting-notes.js
+var require_meeting_notes2 = __commonJS({
+  "node_modules/@notionhq/client/build/src/meeting-notes.js"(exports) {
+    "use strict";
+    Object.defineProperty(exports, "__esModule", { value: true });
+    exports.meetingNotesFilterableProperties = void 0;
+    exports.meetingNotesFilterableProperties = [
+      "title",
+      "created_time",
+      "last_edited_time",
+      "created_by",
+      "last_edited_by",
+      "attendees"
+    ];
+  }
+});
+
+// node_modules/@notionhq/client/build/src/index.js
+var require_src = __commonJS({
+  "node_modules/@notionhq/client/build/src/index.js"(exports) {
+    "use strict";
+    var __importDefault = exports && exports.__importDefault || function(mod) {
+      return mod && mod.__esModule ? mod : { "default": mod };
+    };
+    Object.defineProperty(exports, "__esModule", { value: true });
+    exports.meetingNotesFilterableProperties = exports.signWebhookPayload = exports.verifyWebhookSignature = exports.extractBlockId = exports.extractPageId = exports.extractDatabaseId = exports.extractNotionId = exports.isFullPageOrDataSource = exports.isFullView = exports.isFullComment = exports.isFullUser = exports.isFullPage = exports.isFullDatabase = exports.isFullDataSource = exports.isFullBlock = exports.collectAllDataSourceRows = exports.iterateAllDataSourceRows = exports.iterateDataSourceTemplates = exports.collectDataSourceTemplates = exports.iteratePaginatedAPI = exports.collectPaginatedAPI = exports.MIN_VIEW_COLUMN_WIDTH = exports.DEFAULT_MAX_RETRY_DELAY_MS = exports.DEFAULT_INITIAL_RETRY_DELAY_MS = exports.DEFAULT_MAX_RETRIES = exports.DEFAULT_TIMEOUT_MS = exports.DEFAULT_BASE_URL = exports.isHTTPResponseError = exports.isNotionClientError = exports.BrowserTokenNotAllowedError = exports.InvalidPathParameterError = exports.RequestTimeoutError = exports.UnknownHTTPResponseError = exports.APIResponseError = exports.ClientErrorCode = exports.APIErrorCode = exports.LogLevel = exports.Client = void 0;
+    var Client_1 = require_Client();
+    Object.defineProperty(exports, "Client", { enumerable: true, get: function() {
+      return __importDefault(Client_1).default;
+    } });
+    var logging_1 = require_logging();
+    Object.defineProperty(exports, "LogLevel", { enumerable: true, get: function() {
+      return logging_1.LogLevel;
+    } });
+    var errors_1 = require_errors3();
+    Object.defineProperty(exports, "APIErrorCode", { enumerable: true, get: function() {
+      return errors_1.APIErrorCode;
+    } });
+    Object.defineProperty(exports, "ClientErrorCode", { enumerable: true, get: function() {
+      return errors_1.ClientErrorCode;
+    } });
+    Object.defineProperty(exports, "APIResponseError", { enumerable: true, get: function() {
+      return errors_1.APIResponseError;
+    } });
+    Object.defineProperty(exports, "UnknownHTTPResponseError", { enumerable: true, get: function() {
+      return errors_1.UnknownHTTPResponseError;
+    } });
+    Object.defineProperty(exports, "RequestTimeoutError", { enumerable: true, get: function() {
+      return errors_1.RequestTimeoutError;
+    } });
+    Object.defineProperty(exports, "InvalidPathParameterError", { enumerable: true, get: function() {
+      return errors_1.InvalidPathParameterError;
+    } });
+    Object.defineProperty(exports, "BrowserTokenNotAllowedError", { enumerable: true, get: function() {
+      return errors_1.BrowserTokenNotAllowedError;
+    } });
+    Object.defineProperty(exports, "isNotionClientError", { enumerable: true, get: function() {
+      return errors_1.isNotionClientError;
+    } });
+    Object.defineProperty(exports, "isHTTPResponseError", { enumerable: true, get: function() {
+      return errors_1.isHTTPResponseError;
+    } });
+    var constants_1 = require_constants();
+    Object.defineProperty(exports, "DEFAULT_BASE_URL", { enumerable: true, get: function() {
+      return constants_1.DEFAULT_BASE_URL;
+    } });
+    Object.defineProperty(exports, "DEFAULT_TIMEOUT_MS", { enumerable: true, get: function() {
+      return constants_1.DEFAULT_TIMEOUT_MS;
+    } });
+    Object.defineProperty(exports, "DEFAULT_MAX_RETRIES", { enumerable: true, get: function() {
+      return constants_1.DEFAULT_MAX_RETRIES;
+    } });
+    Object.defineProperty(exports, "DEFAULT_INITIAL_RETRY_DELAY_MS", { enumerable: true, get: function() {
+      return constants_1.DEFAULT_INITIAL_RETRY_DELAY_MS;
+    } });
+    Object.defineProperty(exports, "DEFAULT_MAX_RETRY_DELAY_MS", { enumerable: true, get: function() {
+      return constants_1.DEFAULT_MAX_RETRY_DELAY_MS;
+    } });
+    Object.defineProperty(exports, "MIN_VIEW_COLUMN_WIDTH", { enumerable: true, get: function() {
+      return constants_1.MIN_VIEW_COLUMN_WIDTH;
+    } });
+    var helpers_1 = require_helpers();
+    Object.defineProperty(exports, "collectPaginatedAPI", { enumerable: true, get: function() {
+      return helpers_1.collectPaginatedAPI;
+    } });
+    Object.defineProperty(exports, "iteratePaginatedAPI", { enumerable: true, get: function() {
+      return helpers_1.iteratePaginatedAPI;
+    } });
+    Object.defineProperty(exports, "collectDataSourceTemplates", { enumerable: true, get: function() {
+      return helpers_1.collectDataSourceTemplates;
+    } });
+    Object.defineProperty(exports, "iterateDataSourceTemplates", { enumerable: true, get: function() {
+      return helpers_1.iterateDataSourceTemplates;
+    } });
+    Object.defineProperty(exports, "iterateAllDataSourceRows", { enumerable: true, get: function() {
+      return helpers_1.iterateAllDataSourceRows;
+    } });
+    Object.defineProperty(exports, "collectAllDataSourceRows", { enumerable: true, get: function() {
+      return helpers_1.collectAllDataSourceRows;
+    } });
+    Object.defineProperty(exports, "isFullBlock", { enumerable: true, get: function() {
+      return helpers_1.isFullBlock;
+    } });
+    Object.defineProperty(exports, "isFullDataSource", { enumerable: true, get: function() {
+      return helpers_1.isFullDataSource;
+    } });
+    Object.defineProperty(exports, "isFullDatabase", { enumerable: true, get: function() {
+      return helpers_1.isFullDatabase;
+    } });
+    Object.defineProperty(exports, "isFullPage", { enumerable: true, get: function() {
+      return helpers_1.isFullPage;
+    } });
+    Object.defineProperty(exports, "isFullUser", { enumerable: true, get: function() {
+      return helpers_1.isFullUser;
+    } });
+    Object.defineProperty(exports, "isFullComment", { enumerable: true, get: function() {
+      return helpers_1.isFullComment;
+    } });
+    Object.defineProperty(exports, "isFullView", { enumerable: true, get: function() {
+      return helpers_1.isFullView;
+    } });
+    Object.defineProperty(exports, "isFullPageOrDataSource", { enumerable: true, get: function() {
+      return helpers_1.isFullPageOrDataSource;
+    } });
+    Object.defineProperty(exports, "extractNotionId", { enumerable: true, get: function() {
+      return helpers_1.extractNotionId;
+    } });
+    Object.defineProperty(exports, "extractDatabaseId", { enumerable: true, get: function() {
+      return helpers_1.extractDatabaseId;
+    } });
+    Object.defineProperty(exports, "extractPageId", { enumerable: true, get: function() {
+      return helpers_1.extractPageId;
+    } });
+    Object.defineProperty(exports, "extractBlockId", { enumerable: true, get: function() {
+      return helpers_1.extractBlockId;
+    } });
+    var webhooks_1 = require_webhooks2();
+    Object.defineProperty(exports, "verifyWebhookSignature", { enumerable: true, get: function() {
+      return webhooks_1.verifyWebhookSignature;
+    } });
+    Object.defineProperty(exports, "signWebhookPayload", { enumerable: true, get: function() {
+      return webhooks_1.signWebhookPayload;
+    } });
+    var meeting_notes_1 = require_meeting_notes2();
+    Object.defineProperty(exports, "meetingNotesFilterableProperties", { enumerable: true, get: function() {
+      return meeting_notes_1.meetingNotesFilterableProperties;
+    } });
+  }
+});
+
 // plugins/arima/scripts/src/cli/run-agent-cli.ts
-import path11 from "node:path";
+import path12 from "node:path";
 import { parseArgs } from "node:util";
 
 // plugins/arima/scripts/src/config.ts
@@ -15880,9 +18766,9 @@ function mayHoldNotionToken(role) {
 }
 
 // plugins/arima/scripts/src/run-agent.ts
-import { spawn } from "node:child_process";
+import { execFileSync, spawn } from "node:child_process";
 import { existsSync as existsSync5, mkdirSync as mkdirSync4, readFileSync as readFileSync6, writeFileSync as writeFileSync2 } from "node:fs";
-import path10 from "node:path";
+import path11 from "node:path";
 
 // plugins/arima/scripts/src/events.ts
 import path6 from "node:path";
@@ -15942,10 +18828,22 @@ var SECRET_PATTERNS = [
   { name: "github fine-grained token", re: /\bgithub_pat_[A-Za-z0-9_]{20,}/ },
   { name: "anthropic key", re: /\bsk-ant-[A-Za-z0-9_-]{20,}/ },
   { name: "aws access key", re: /\bAKIA[0-9A-Z]{16}\b/ },
-  { name: "private key block", re: /-----BEGIN [A-Z ]*PRIVATE KEY-----/ }
+  { name: "private key block", re: /-----BEGIN [A-Z ]*PRIVATE KEY-----/ },
+  { name: "slack token", re: /\bxox[abprs]-[A-Za-z0-9-]{10,}/ },
+  { name: "stripe key", re: /\b[sr]k_(?:live|test)_[A-Za-z0-9]{16,}/ },
+  { name: "google api key", re: /\bAIza[0-9A-Za-z_-]{35}\b/ },
+  { name: "json web token", re: /\beyJ[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}/ },
+  { name: "npm token", re: /\bnpm_[A-Za-z0-9]{36}\b/ },
+  { name: "bearer token", re: /\bBearer\s+[A-Za-z0-9._~+/-]{24,}=*/ },
+  {
+    // key = "long random-looking value" for names that usually hold credentials
+    name: "credential assignment",
+    re: /(?<![A-Za-z])(?:api[_-]?key|secret(?:[_-]?key)?|access[_-]?token|auth[_-]?token|token|passwd|password|private[_-]?key)["']?\s*[:=]\s*["']?[A-Za-z0-9/+_=.-]{20,}/i
+  }
 ];
 function findSecrets(text) {
-  return SECRET_PATTERNS.filter((p) => p.re.test(text)).map((p) => p.name);
+  const unescaped = text.replace(/\\[nrt]/g, " ").replace(/\\"/g, '"');
+  return SECRET_PATTERNS.filter((p) => p.re.test(text) || p.re.test(unescaped)).map((p) => p.name);
 }
 function assertNoSecrets(text, where) {
   const found = findSecrets(text);
@@ -16075,15 +18973,45 @@ function readLedger(projectDir) {
   return readJsonl(ledgerFile(projectDir), "ledger");
 }
 
+// plugins/arima/scripts/src/budget.ts
+var round = (n) => Math.round(n * 1e6) / 1e6;
+function budgetStatus(projectDir, limits, today) {
+  const rows = readLedger(projectDir);
+  const projectSpent = round(rows.reduce((s, r) => s + r.cost_usd, 0));
+  const daySpent = round(rows.filter((r) => r.date === today).reduce((s, r) => s + r.cost_usd, 0));
+  const exhausted = [];
+  if (projectSpent >= limits.projectCap) exhausted.push("project");
+  if (daySpent >= limits.dailyCap) exhausted.push("daily");
+  return {
+    projectSpent,
+    projectCap: limits.projectCap,
+    daySpent,
+    dailyCap: limits.dailyCap,
+    ok: exhausted.length === 0,
+    exhausted
+  };
+}
+
+// plugins/arima/scripts/src/killswitch.ts
+import path8 from "node:path";
+
+// plugins/arima/scripts/src/notion/port.ts
+var import_client = __toESM(require_src(), 1);
+
+// plugins/arima/scripts/src/killswitch.ts
+function pauseFile(projectDir) {
+  return path8.join(projectDir, ".arima", "PAUSE");
+}
+
 // plugins/arima/scripts/src/runid.ts
 import { existsSync as existsSync4, mkdirSync as mkdirSync3, readFileSync as readFileSync5 } from "node:fs";
-import path9 from "node:path";
+import path10 from "node:path";
 
 // plugins/arima/scripts/src/lib/atomic-file.ts
 import { mkdirSync as mkdirSync2, renameSync, unlinkSync as unlinkSync2, writeFileSync } from "node:fs";
-import path8 from "node:path";
+import path9 from "node:path";
 function writeFileAtomic(file, content) {
-  mkdirSync2(path8.dirname(file), { recursive: true });
+  mkdirSync2(path9.dirname(file), { recursive: true });
   const tmp = `${file}.${process.pid}.tmp`;
   writeFileSync(tmp, content, "utf8");
   for (let attempt = 0; ; attempt++) {
@@ -16110,8 +19038,8 @@ var pad = (n, w = 2) => String(n).padStart(w, "0");
 async function issueRunId(projectDir, now = /* @__PURE__ */ new Date()) {
   const day = `${now.getFullYear()}${pad(now.getMonth() + 1)}${pad(now.getDate())}`;
   const hhmm = `${pad(now.getHours())}${pad(now.getMinutes())}`;
-  const file = path9.join(projectDir, ".arima", "state", "run-seq.json");
-  mkdirSync3(path9.dirname(file), { recursive: true });
+  const file = path10.join(projectDir, ".arima", "state", "run-seq.json");
+  mkdirSync3(path10.dirname(file), { recursive: true });
   return withFileLock(`${file}.lock`, () => {
     let state = { day, last: 0 };
     if (existsSync4(file)) {
@@ -16128,6 +19056,13 @@ async function issueRunId(projectDir, now = /* @__PURE__ */ new Date()) {
 
 // plugins/arima/scripts/src/run-agent.ts
 var EXIT = { ok: 0, failed: 1, usage: 2, blocked: 3, paused: 75 };
+var DispatchRefused = class extends Error {
+  constructor(message, exitCode) {
+    super(message);
+    this.exitCode = exitCode;
+  }
+  exitCode;
+};
 var USAGE_LIMIT_RE = /usage limit|limit reached|hit your (?:\w+ )?limit|limit (?:will )?resets?|5-hour limit|weekly limit|session limit/i;
 function isUsageLimit(result, stderr, stdout) {
   if (result !== void 0) {
@@ -16135,17 +19070,100 @@ function isUsageLimit(result, stderr, stdout) {
   }
   return USAGE_LIMIT_RE.test(stderr) || USAGE_LIMIT_RE.test(stdout);
 }
+function killTree(pid) {
+  if (pid === void 0) return;
+  try {
+    if (process.platform === "win32") {
+      execFileSync("taskkill", ["/pid", String(pid), "/T", "/F"], { stdio: "ignore" });
+    } else {
+      process.kill(-pid, "SIGKILL");
+    }
+  } catch {
+  }
+}
 var safe = (s) => s.replace(/[^A-Za-z0-9._-]/g, "_");
+var PASS_THROUGH = new Set(
+  [
+    "PATH",
+    "PATHEXT",
+    "SystemRoot",
+    "windir",
+    "COMSPEC",
+    "HOME",
+    "USERPROFILE",
+    "HOMEDRIVE",
+    "HOMEPATH",
+    "APPDATA",
+    "LOCALAPPDATA",
+    "ProgramData",
+    "ProgramFiles",
+    "ProgramFiles(x86)",
+    "ProgramW6432",
+    "CommonProgramFiles",
+    "CommonProgramFiles(x86)",
+    "ALLUSERSPROFILE",
+    "PUBLIC",
+    "SystemDrive",
+    "TEMP",
+    "TMP",
+    "TMPDIR",
+    "USERNAME",
+    "USER",
+    "LOGNAME",
+    "SHELL",
+    "LANG",
+    "LANGUAGE",
+    "TERM",
+    "COLORTERM",
+    "TZ",
+    "NO_COLOR",
+    "FORCE_COLOR",
+    "OS",
+    "PROCESSOR_ARCHITECTURE",
+    "NUMBER_OF_PROCESSORS",
+    "SSL_CERT_FILE",
+    "SSL_CERT_DIR",
+    "NODE_EXTRA_CA_CERTS",
+    "HTTP_PROXY",
+    "HTTPS_PROXY",
+    "NO_PROXY",
+    "XDG_CONFIG_HOME",
+    "XDG_DATA_HOME",
+    "XDG_CACHE_HOME",
+    "XDG_RUNTIME_DIR",
+    "DISPLAY"
+  ].map((n) => n.toLowerCase())
+);
+var PASS_THROUGH_PREFIXES = ["lc_", "claude_", "otel_"];
+function isPassThrough(name) {
+  const n = name.toLowerCase();
+  return PASS_THROUGH.has(n) || PASS_THROUGH_PREFIXES.some((p) => n.startsWith(p));
+}
 function childEnv(base, o) {
-  const env = { ...base };
+  const env = {};
+  for (const [name, value] of Object.entries(base)) {
+    if (value !== void 0 && isPassThrough(name)) env[name] = value;
+  }
+  if (o.config.auth === "api_key") {
+    for (const [name, value] of Object.entries(base)) {
+      if (value !== void 0 && /^ANTHROPIC_/i.test(name)) env[name] = value;
+    }
+  }
+  if (mayHoldNotionToken(o.role)) {
+    const v = base[o.config.notionTokenEnv];
+    if (v !== void 0) env[o.config.notionTokenEnv] = v;
+  }
+  if (mayHoldGithubToken(o.role) && o.config.githubTokenEnv !== void 0) {
+    const v = base[o.config.githubTokenEnv];
+    if (v !== void 0) {
+      env[o.config.githubTokenEnv] = v;
+      env["GH_TOKEN"] = v;
+    }
+  }
   if (o.projectDir !== void 0) env["ARIMA_PROJECT_DIR"] = o.projectDir;
   env["ARIMA_RUN_ID"] = o.runId;
   env["ARIMA_ROLE"] = o.role;
   env["ARIMA_ITEM"] = o.item;
-  if (!mayHoldNotionToken(o.role)) delete env[o.config.notionTokenEnv];
-  if (!mayHoldGithubToken(o.role) && o.config.githubTokenEnv !== void 0) {
-    delete env[o.config.githubTokenEnv];
-  }
   const attrs = [
     `arima.project=${safe(o.projectKey)}`,
     `arima.phase=${o.phase}`,
@@ -16184,7 +19202,9 @@ function runProcess(bin, args, opts) {
       cwd: opts.cwd,
       env: opts.env,
       stdio: ["pipe", "pipe", "pipe"],
-      windowsHide: true
+      windowsHide: true,
+      // POSIX: its own process group, so a timeout can kill the whole tree.
+      detached: process.platform !== "win32"
     });
     let stdout = "";
     let stderr = "";
@@ -16198,7 +19218,7 @@ function runProcess(bin, args, opts) {
     };
     const timer = setTimeout(() => {
       timedOut = true;
-      child.kill("SIGKILL");
+      killTree(child.pid);
     }, opts.timeoutMs);
     child.stdout.on("data", (d) => stdout += d.toString("utf8"));
     child.stderr.on("data", (d) => stderr += d.toString("utf8"));
@@ -16224,7 +19244,7 @@ function exitFor(result) {
   }
 }
 function writeRunReport(projectDir, runId, body) {
-  const dir = path10.join(projectDir, ".arima", "runs");
+  const dir = path11.join(projectDir, ".arima", "runs");
   mkdirSync4(dir, { recursive: true });
   let text = JSON.stringify(body, null, 2);
   if (findSecrets(text).length > 0) {
@@ -16234,8 +19254,41 @@ function writeRunReport(projectDir, runId, body) {
       2
     );
   }
-  writeFileSync2(path10.join(dir, `${runId}.json`), `${text}
+  writeFileSync2(path11.join(dir, `${runId}.json`), `${text}
 `, "utf8");
+}
+var localDay = (d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+async function assertMayDispatch(o, now) {
+  const refuse = async (stop, message, exitCode) => {
+    await appendEvent(o.projectDir, {
+      type: "hardstop.hit",
+      actor: "system",
+      ...o.item !== "none" ? { item: o.item } : {},
+      data: { stop, role: o.role, message }
+    });
+    throw new DispatchRefused(message, exitCode);
+  };
+  if (existsSync5(pauseFile(o.projectDir))) {
+    await refuse(
+      "kill_switch",
+      "refusing to start a run: the kill switch is on (.arima/PAUSE)",
+      12
+    );
+  }
+  if (o.config.projectCap !== void 0 && o.config.dailyCap !== void 0) {
+    const s = budgetStatus(
+      o.projectDir,
+      { projectCap: o.config.projectCap, dailyCap: o.config.dailyCap, alertThresholds: [] },
+      localDay(now)
+    );
+    if (!s.ok) {
+      await refuse(
+        "budget_exceeded",
+        `refusing to start a run: the ${s.exhausted.join(" and ")} budget is used up (project ${s.projectSpent}/${s.projectCap}, today ${s.daySpent}/${s.dailyCap})`,
+        13
+      );
+    }
+  }
 }
 async function runAgent(o) {
   if (o.budgetUsd <= 0 || o.maxTurns <= 0) throw new Error("budget and max-turns must be positive");
@@ -16246,11 +19299,12 @@ async function runAgent(o) {
   }
   if (!existsSync5(o.promptFile)) throw new Error(`prompt file not found: ${o.promptFile}`);
   const prompt = readFileSync6(o.promptFile, "utf8");
-  const cwd = path10.resolve(o.cwd ?? o.projectDir);
+  const cwd = path11.resolve(o.cwd ?? o.projectDir);
   const root = pluginRoot();
-  const scriptsGlob = path10.join(root, "scripts", "dist").replace(/\\/g, "/");
-  const agentName = o.agent ?? (existsSync5(path10.join(root, "agents", `${o.role}.md`)) ? `arima:${o.role}` : void 0);
+  const scriptsGlob = path11.join(root, "scripts", "dist").replace(/\\/g, "/");
+  const agentName = o.agent ?? (existsSync5(path11.join(root, "agents", `${o.role}.md`)) ? `arima:${o.role}` : void 0);
   const now = o.now ?? /* @__PURE__ */ new Date();
+  await assertMayDispatch(o, now);
   const runId = await issueRunId(o.projectDir, now);
   const startedAt = now.toISOString();
   const attempt = o.attempt ?? 1;
@@ -16267,9 +19321,10 @@ async function runAgent(o) {
     phase: o.phase,
     runId,
     projectKey: o.config.projectKey,
-    projectDir: path10.resolve(o.projectDir),
+    projectDir: path11.resolve(o.projectDir),
     config: o.config
   });
+  Object.assign(env, o.extraEnv ?? {});
   const bin = o.claudeBin ?? process.env["ARIMA_CLAUDE_BIN"] ?? "claude";
   const t0 = Date.now();
   const spawned = await runProcess(bin, buildClaudeArgs(o, agentName, scriptsGlob), {
@@ -16373,6 +19428,9 @@ function agentConfigFrom(arima, role) {
     maxRunMinutes: Number(get("schedule.max_run_minutes")),
     model,
     tier: tier === "strong" || tier === "standard" || tier === "fast" ? tier : void 0,
+    auth: get("runtime.auth") === "api_key" ? "api_key" : "seat",
+    projectCap: Number(get("budget.project_cap")),
+    dailyCap: Number(get("budget.daily_cap")),
     notionTokenEnv: String(get("notion.token_env")),
     githubTokenEnv: typeof githubEnv === "string" ? githubEnv : void 0
   };
@@ -16383,8 +19441,17 @@ var USAGE = `Usage: arima-run-agent --role <role> --item <ID|none> --budget <usd
          [--cwd <worktree>] [--project <dir>] [--phase <0-8>] [--attempt <n>] [--milestone MS-NN]
          [--rework-reason failed_review|failed_qa|vetoed|bug|other] [--session <id>] [--agent <name>]
 Roles: ${ROLES.join(" ")}
-Exit codes: 0 pass, 1 failed/error, 2 usage or config, 3 blocked (turn or budget cap), 75 paused (usage limit)`;
+Exit codes: 0 pass, 1 failed/error, 2 usage or config, 3 blocked (turn or budget cap), 12 kill switch is on, 13 budget used up, 75 paused (usage limit)`;
 var REWORK = ["failed_review", "failed_qa", "vetoed", "bug", "other"];
+function passthroughEnv() {
+  const out = {};
+  const names = (process.env["ARIMA_PASSTHROUGH_ENV"] ?? "").split(",").map((s) => s.trim()).filter(Boolean);
+  for (const name of names) {
+    const v = process.env[name];
+    if (v !== void 0) out[name] = v;
+  }
+  return out;
+}
 async function runAgentCli(argv, io) {
   let values;
   try {
@@ -16442,7 +19509,7 @@ ${USAGE}
 `);
     return EXIT.usage;
   }
-  const projectDir = path11.resolve(io.cwd, values["project"] ?? ".");
+  const projectDir = path12.resolve(io.cwd, values["project"] ?? ".");
   const config = validateProject(projectDir);
   if (!config.ok || config.arima === void 0) {
     for (const e of config.errors) io.err(`${e.file}:${e.line}: ${e.message}
@@ -16457,11 +19524,12 @@ ${USAGE}
       item,
       budgetUsd: budget,
       maxTurns,
-      promptFile: path11.resolve(io.cwd, promptFile),
+      promptFile: path12.resolve(io.cwd, promptFile),
       phase,
       attempt,
       config: agentConfigFrom(config.arima, role),
-      ...values["cwd"] !== void 0 ? { cwd: path11.resolve(io.cwd, values["cwd"]) } : {},
+      extraEnv: passthroughEnv(),
+      ...values["cwd"] !== void 0 ? { cwd: path12.resolve(io.cwd, values["cwd"]) } : {},
       ...values["milestone"] !== void 0 ? { milestone: values["milestone"] } : {},
       ...rework !== void 0 ? { reworkReason: rework } : {},
       ...values["session"] !== void 0 ? { sessionId: values["session"] } : {},
@@ -16481,7 +19549,7 @@ ${USAGE}
   } catch (e) {
     io.err(`${e instanceof Error ? e.message : String(e)}
 `);
-    return EXIT.usage;
+    return e instanceof DispatchRefused ? e.exitCode : EXIT.usage;
   }
 }
 
