@@ -7,7 +7,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "command -v node >/dev/null 2>&1 || { echo \"ARIMA guard cannot run because Node.js was not found, so this action is blocked to be safe. Install Node.js 22 or newer.\" >&2; exit 2; }; node \"${CLAUDE_PLUGIN_ROOT}/scripts/dist/arima-hook.mjs\" pre-tool-use",
+            "command": "sh \"${CLAUDE_PLUGIN_ROOT}/hooks/guard.sh\" pre-tool-use",
             "timeout": 10
           }
         ]

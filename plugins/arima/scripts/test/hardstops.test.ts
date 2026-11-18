@@ -321,11 +321,9 @@ describe('hooks.json launcher', () => {
     hooks: Record<string, { hooks: { command: string }[] }[]>;
   };
 
-  it('the guard checks that Node exists and blocks if it does not', () => {
+  it('the guard runs through the launcher script (behaviour is tested in guard-hardening.test.ts)', () => {
     const cmd = json.hooks['PreToolUse']?.[0]?.hooks[0]?.command ?? '';
-    expect(cmd).toContain('command -v node');
-    expect(cmd).toContain('exit 2');
-    expect(cmd.indexOf('command -v node')).toBeLessThan(cmd.indexOf('arima-hook.mjs'));
+    expect(cmd).toBe('sh "${CLAUDE_PLUGIN_ROOT}/hooks/guard.sh" pre-tool-use');
   });
 
   it('has a description', () => {

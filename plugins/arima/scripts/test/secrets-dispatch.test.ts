@@ -28,7 +28,7 @@ describe('secret scanner', () => {
     ['google', `AIza${'a'.repeat(35)}`],
     ['jwt', `eyJ${'a'.repeat(12)}.${'b'.repeat(12)}.${'c'.repeat(12)}`],
     ['npm', `npm_${'a'.repeat(36)}`],
-    ['bearer', `Authorization: Bearer ${'a'.repeat(30)}`],
+    ['bearer', 'Authorization: Bearer Zk3pQ9vXw2LmN8aR5tY7uB1cD4eF6gH0'],
     ['assignment', 'DATABASE_API_KEY=abcdefghijklmnopqrstuvwxyz12'],
     ['yaml password', 'password: "correct-horse-battery-staple-1"'],
     ['notion', `ntn_${'a'.repeat(30)}`],

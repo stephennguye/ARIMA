@@ -58,9 +58,9 @@ var require_code = __commonJS({
     };
     exports.Name = Name;
     var _Code = class extends _CodeOrName {
-      constructor(code2) {
+      constructor(code3) {
         super();
-        this._items = typeof code2 === "string" ? [code2] : code2;
+        this._items = typeof code3 === "string" ? [code3] : code3;
       }
       toString() {
         return this.str;
@@ -87,13 +87,13 @@ var require_code = __commonJS({
     exports._Code = _Code;
     exports.nil = new _Code("");
     function _(strs, ...args) {
-      const code2 = [strs[0]];
+      const code3 = [strs[0]];
       let i = 0;
       while (i < args.length) {
-        addCodeArg(code2, args[i]);
-        code2.push(strs[++i]);
+        addCodeArg(code3, args[i]);
+        code3.push(strs[++i]);
       }
-      return new _Code(code2);
+      return new _Code(code3);
     }
     exports._ = _;
     var plus = new _Code("+");
@@ -109,13 +109,13 @@ var require_code = __commonJS({
       return new _Code(expr);
     }
     exports.str = str;
-    function addCodeArg(code2, arg) {
+    function addCodeArg(code3, arg) {
       if (arg instanceof _Code)
-        code2.push(...arg._items);
+        code3.push(...arg._items);
       else if (arg instanceof Name)
-        code2.push(arg);
+        code3.push(arg);
       else
-        code2.push(interpolate(arg));
+        code3.push(interpolate(arg));
     }
     exports.addCodeArg = addCodeArg;
     function optimize(expr) {
@@ -299,7 +299,7 @@ var require_scope = __commonJS({
         }, usedValues, getCode);
       }
       _reduceValues(values, valueCode, usedValues = {}, getCode) {
-        let code2 = code_1.nil;
+        let code3 = code_1.nil;
         for (const prefix in values) {
           const vs = values[prefix];
           if (!vs)
@@ -312,16 +312,16 @@ var require_scope = __commonJS({
             let c = valueCode(name);
             if (c) {
               const def = this.opts.es5 ? exports.varKinds.var : exports.varKinds.const;
-              code2 = (0, code_1._)`${code2}${def} ${name} = ${c};${this.opts._n}`;
+              code3 = (0, code_1._)`${code3}${def} ${name} = ${c};${this.opts._n}`;
             } else if (c = getCode === null || getCode === void 0 ? void 0 : getCode(name)) {
-              code2 = (0, code_1._)`${code2}${c}${this.opts._n}`;
+              code3 = (0, code_1._)`${code3}${c}${this.opts._n}`;
             } else {
               throw new ValueError(name);
             }
             nameSet.set(name, UsedValueState.Completed);
           });
         }
-        return code2;
+        return code3;
       }
     };
     exports.ValueScope = ValueScope;
@@ -481,9 +481,9 @@ var require_codegen = __commonJS({
       }
     };
     var AnyCode = class extends Node {
-      constructor(code2) {
+      constructor(code3) {
         super();
-        this.code = code2;
+        this.code = code3;
       }
       render({ _n }) {
         return `${this.code};` + _n;
@@ -505,7 +505,7 @@ var require_codegen = __commonJS({
         this.nodes = nodes;
       }
       render(opts) {
-        return this.nodes.reduce((code2, n) => code2 + n.render(opts), "");
+        return this.nodes.reduce((code3, n) => code3 + n.render(opts), "");
       }
       optimizeNodes() {
         const { nodes } = this;
@@ -553,10 +553,10 @@ var require_codegen = __commonJS({
         this.condition = condition;
       }
       render(opts) {
-        let code2 = `if(${this.condition})` + super.render(opts);
+        let code3 = `if(${this.condition})` + super.render(opts);
         if (this.else)
-          code2 += "else " + this.else.render(opts);
-        return code2;
+          code3 += "else " + this.else.render(opts);
+        return code3;
       }
       optimizeNodes() {
         super.optimizeNodes();
@@ -677,12 +677,12 @@ var require_codegen = __commonJS({
     Return.kind = "return";
     var Try = class extends BlockNode {
       render(opts) {
-        let code2 = "try" + super.render(opts);
+        let code3 = "try" + super.render(opts);
         if (this.catch)
-          code2 += this.catch.render(opts);
+          code3 += this.catch.render(opts);
         if (this.finally)
-          code2 += this.finally.render(opts);
-        return code2;
+          code3 += this.finally.render(opts);
+        return code3;
       }
       optimizeNodes() {
         var _a, _b;
@@ -799,18 +799,18 @@ var require_codegen = __commonJS({
       }
       // returns code for object literal for the passed argument list of key-value pairs
       object(...keyValues) {
-        const code2 = ["{"];
+        const code3 = ["{"];
         for (const [key, value] of keyValues) {
-          if (code2.length > 1)
-            code2.push(",");
-          code2.push(key);
+          if (code3.length > 1)
+            code3.push(",");
+          code3.push(key);
           if (key !== value || this.opts.es5) {
-            code2.push(":");
-            (0, code_1.addCodeArg)(code2, value);
+            code3.push(":");
+            (0, code_1.addCodeArg)(code3, value);
           }
         }
-        code2.push("}");
-        return new code_1._Code(code2);
+        code3.push("}");
+        return new code_1._Code(code3);
       }
       // `if` clause (or statement if `thenBody` and, optionally, `elseBody` are passed)
       if(condition, thenBody, elseBody) {
@@ -3129,22 +3129,22 @@ var require_utils = __commonJS({
     }
     function stringArrayToHexStripped(input) {
       let acc = "";
-      let code2 = 0;
+      let code3 = 0;
       let i = 0;
       for (i = 0; i < input.length; i++) {
-        code2 = input[i].charCodeAt(0);
-        if (code2 === 48) {
+        code3 = input[i].charCodeAt(0);
+        if (code3 === 48) {
           continue;
         }
-        if (!(code2 >= 48 && code2 <= 57 || code2 >= 65 && code2 <= 70 || code2 >= 97 && code2 <= 102)) {
+        if (!(code3 >= 48 && code3 <= 57 || code3 >= 65 && code3 <= 70 || code3 >= 97 && code3 <= 102)) {
           return "";
         }
         acc += input[i];
         break;
       }
       for (i += 1; i < input.length; i++) {
-        code2 = input[i].charCodeAt(0);
-        if (!(code2 >= 48 && code2 <= 57 || code2 >= 65 && code2 <= 70 || code2 >= 97 && code2 <= 102)) {
+        code3 = input[i].charCodeAt(0);
+        if (!(code3 >= 48 && code3 <= 57 || code3 >= 65 && code3 <= 70 || code3 >= 97 && code3 <= 102)) {
           return "";
         }
         acc += input[i];
@@ -3417,15 +3417,15 @@ var require_utils = __commonJS({
         if (isPathCharacter(ch)) {
           output += ch;
         } else {
-          const code2 = input.charCodeAt(i);
-          if (code2 < 128) {
-            output += isEscapeSafe(code2) ? ch : BYTE_HEX[code2];
-          } else if (code2 < 55296 || code2 > 57343) {
-            output += percentEncodeNonAscii(code2);
-          } else if (code2 <= 56319 && i + 1 < input.length) {
+          const code3 = input.charCodeAt(i);
+          if (code3 < 128) {
+            output += isEscapeSafe(code3) ? ch : BYTE_HEX[code3];
+          } else if (code3 < 55296 || code3 > 57343) {
+            output += percentEncodeNonAscii(code3);
+          } else if (code3 <= 56319 && i + 1 < input.length) {
             const low = input.charCodeAt(i + 1);
             if (low >= 56320 && low <= 57343) {
-              output += percentEncodeNonAscii(65536 + (code2 - 55296 << 10) + (low - 56320));
+              output += percentEncodeNonAscii(65536 + (code3 - 55296 << 10) + (low - 56320));
               i++;
             } else {
               output += percentEncodeNonAscii(65533);
@@ -3456,15 +3456,15 @@ var require_utils = __commonJS({
         if (isPathCharacter(ch) && (ch !== ":" || !firstSegment)) {
           output += ch;
         } else {
-          const code2 = input.charCodeAt(i);
-          if (code2 < 128) {
-            output += BYTE_HEX[code2];
-          } else if (code2 < 55296 || code2 > 57343) {
-            output += percentEncodeNonAscii(code2);
-          } else if (code2 <= 56319 && i + 1 < input.length) {
+          const code3 = input.charCodeAt(i);
+          if (code3 < 128) {
+            output += BYTE_HEX[code3];
+          } else if (code3 < 55296 || code3 > 57343) {
+            output += percentEncodeNonAscii(code3);
+          } else if (code3 <= 56319 && i + 1 < input.length) {
             const low = input.charCodeAt(i + 1);
             if (low >= 56320 && low <= 57343) {
-              output += percentEncodeNonAscii(65536 + (code2 - 55296 << 10) + (low - 56320));
+              output += percentEncodeNonAscii(65536 + (code3 - 55296 << 10) + (low - 56320));
               i++;
             } else {
               output += percentEncodeNonAscii(65533);
@@ -3491,15 +3491,15 @@ var require_utils = __commonJS({
         if (isAllowed(ch)) {
           output += ch;
         } else {
-          const code2 = input.charCodeAt(i);
-          if (code2 < 128) {
-            output += BYTE_HEX[code2];
-          } else if (code2 < 55296 || code2 > 57343) {
-            output += percentEncodeNonAscii(code2);
-          } else if (code2 <= 56319 && i + 1 < input.length) {
+          const code3 = input.charCodeAt(i);
+          if (code3 < 128) {
+            output += BYTE_HEX[code3];
+          } else if (code3 < 55296 || code3 > 57343) {
+            output += percentEncodeNonAscii(code3);
+          } else if (code3 <= 56319 && i + 1 < input.length) {
             const low = input.charCodeAt(i + 1);
             if (low >= 56320 && low <= 57343) {
-              output += percentEncodeNonAscii(65536 + (code2 - 55296 << 10) + (low - 56320));
+              output += percentEncodeNonAscii(65536 + (code3 - 55296 << 10) + (low - 56320));
               i++;
             } else {
               output += percentEncodeNonAscii(65533);
@@ -3544,15 +3544,15 @@ var require_utils = __commonJS({
         if (isQueryFragmentCharacter(ch)) {
           output += ch;
         } else {
-          const code2 = input.charCodeAt(i);
-          if (code2 < 128) {
-            output += isEscapeSafe(code2) ? ch : BYTE_HEX[code2];
-          } else if (code2 < 55296 || code2 > 57343) {
-            output += percentEncodeNonAscii(code2);
-          } else if (code2 <= 56319 && i + 1 < input.length) {
+          const code3 = input.charCodeAt(i);
+          if (code3 < 128) {
+            output += isEscapeSafe(code3) ? ch : BYTE_HEX[code3];
+          } else if (code3 < 55296 || code3 > 57343) {
+            output += percentEncodeNonAscii(code3);
+          } else if (code3 <= 56319 && i + 1 < input.length) {
             const low = input.charCodeAt(i + 1);
             if (low >= 56320 && low <= 57343) {
-              output += percentEncodeNonAscii(65536 + (code2 - 55296 << 10) + (low - 56320));
+              output += percentEncodeNonAscii(65536 + (code3 - 55296 << 10) + (low - 56320));
               i++;
             } else {
               output += percentEncodeNonAscii(65533);
@@ -6829,8 +6829,8 @@ var require_format = __commonJS({
             }
           }
           function getFormat(fmtDef) {
-            const code2 = fmtDef instanceof RegExp ? (0, codegen_1.regexpCode)(fmtDef) : opts.code.formats ? (0, codegen_1._)`${opts.code.formats}${(0, codegen_1.getProperty)(schema)}` : void 0;
-            const fmt = gen.scopeValue("formats", { key: schema, ref: fmtDef, code: code2 });
+            const code3 = fmtDef instanceof RegExp ? (0, codegen_1.regexpCode)(fmtDef) : opts.code.formats ? (0, codegen_1._)`${opts.code.formats}${(0, codegen_1.getProperty)(schema)}` : void 0;
+            const fmt = gen.scopeValue("formats", { key: schema, ref: fmtDef, code: code3 });
             if (typeof fmtDef == "object" && !(fmtDef instanceof RegExp)) {
               return [fmtDef.type || "string", fmtDef.validate, (0, codegen_1._)`${fmt}.validate`];
             }
@@ -8131,28 +8131,77 @@ async function withFileLock(lockPath, fn, { timeoutMs = 15e3, staleMs = 3e4, ret
 }
 
 // plugins/arima/scripts/src/lib/secrets.ts
-var SECRET_PATTERNS = [
-  { name: "notion token", re: /\b(?:ntn_|secret_)[A-Za-z0-9]{20,}/ },
-  { name: "github token", re: /\bgh[pousr]_[A-Za-z0-9]{20,}/ },
-  { name: "github fine-grained token", re: /\bgithub_pat_[A-Za-z0-9_]{20,}/ },
-  { name: "anthropic key", re: /\bsk-ant-[A-Za-z0-9_-]{20,}/ },
-  { name: "aws access key", re: /\bAKIA[0-9A-Z]{16}\b/ },
-  { name: "private key block", re: /-----BEGIN [A-Z ]*PRIVATE KEY-----/ },
-  { name: "slack token", re: /\bxox[abprs]-[A-Za-z0-9-]{10,}/ },
-  { name: "stripe key", re: /\b[sr]k_(?:live|test)_[A-Za-z0-9]{16,}/ },
-  { name: "google api key", re: /\bAIza[0-9A-Za-z_-]{35}\b/ },
-  { name: "json web token", re: /\beyJ[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}/ },
-  { name: "npm token", re: /\bnpm_[A-Za-z0-9]{36}\b/ },
-  { name: "bearer token", re: /\bBearer\s+[A-Za-z0-9._~+/-]{24,}=*/ },
+import { createHash } from "node:crypto";
+function entropy(s) {
+  if (s.length === 0) return 0;
+  const counts = /* @__PURE__ */ new Map();
+  for (const ch of s) counts.set(ch, (counts.get(ch) ?? 0) + 1);
+  let h = 0;
+  for (const n of counts.values()) {
+    const p = n / s.length;
+    h -= p * Math.log2(p);
+  }
+  return h;
+}
+var PLACEHOLDER = /example|placeholder|your[-_]|replace|change[-_]?me|dummy|sample|redacted|xxxx|\*\*\*|<[^>]+>/i;
+var looksRandom = (s, bits) => s.length >= 16 && /[0-9]/.test(s) && /[A-Za-z]/.test(s) && entropy(s) >= bits && !PLACEHOLDER.test(s);
+var PATTERNS = [
+  { name: "notion token", re: /\b(?:ntn_|secret_)[A-Za-z0-9]{20,}/g },
+  { name: "github token", re: /\bgh[pousr]_[A-Za-z0-9]{20,}/g },
+  { name: "github fine-grained token", re: /\bgithub_pat_[A-Za-z0-9_]{20,}/g },
+  {
+    name: "anthropic key",
+    re: /\bsk-ant-([A-Za-z0-9_-]{20,})/g,
+    accept: (_m, g) => looksRandom(g[0] ?? "", 3.4)
+  },
+  { name: "aws access key", re: /\bAKIA[0-9A-Z]{16}\b/g, accept: (m) => !/EXAMPLE/.test(m) },
+  { name: "private key block", re: /-----BEGIN [A-Z ]*PRIVATE KEY-----/g },
+  { name: "slack token", re: /\bxox[abprs]-[A-Za-z0-9-]{10,}/g },
+  { name: "stripe key", re: /\b[sr]k_(?:live|test)_[A-Za-z0-9]{16,}/g },
+  { name: "google api key", re: /\bAIza[0-9A-Za-z_-]{35}\b/g },
+  {
+    name: "json web token",
+    re: /\beyJ[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}/g
+  },
+  { name: "npm token", re: /\bnpm_[A-Za-z0-9]{36}\b/g },
+  {
+    name: "bearer token",
+    re: /\bBearer\s+([A-Za-z0-9._~+/-]{24,})=*/g,
+    accept: (_m, g) => !PLACEHOLDER.test(g[0] ?? "") && entropy(g[0] ?? "") >= 3.3
+  },
   {
     // key = "long random-looking value" for names that usually hold credentials
     name: "credential assignment",
-    re: /(?<![A-Za-z])(?:api[_-]?key|secret(?:[_-]?key)?|access[_-]?token|auth[_-]?token|token|passwd|password|private[_-]?key)["']?\s*[:=]\s*["']?[A-Za-z0-9/+_=.-]{20,}/i
+    re: /(?<![A-Za-z])(?:api[_-]?key|secret(?:[_-]?key)?|access[_-]?token|auth[_-]?token|token|passwd|password|private[_-]?key)["']?\s*[:=]\s*["']?([A-Za-z0-9/+_=.-]{20,})/gi,
+    accept: (_m, g) => looksRandom(g[0] ?? "", 3.5)
   }
 ];
-function findSecrets(text) {
+function fingerprint(match) {
+  return `sha256:${createHash("sha256").update(match).digest("hex").slice(0, 16)}`;
+}
+function scan(text) {
   const unescaped = text.replace(/\\[nrt]/g, " ").replace(/\\"/g, '"');
-  return SECRET_PATTERNS.filter((p) => p.re.test(text) || p.re.test(unescaped)).map((p) => p.name);
+  const out = [];
+  const seen = /* @__PURE__ */ new Set();
+  for (const p of PATTERNS) {
+    for (const t of text === unescaped ? [text] : [text, unescaped]) {
+      for (const m of t.matchAll(new RegExp(p.re.source, p.re.flags))) {
+        const groups = m.slice(1).map((x) => x ?? "");
+        if (p.accept && !p.accept(m[0], groups)) continue;
+        const f = fingerprint(m[0]);
+        if (seen.has(`${p.name}|${f}`)) continue;
+        seen.add(`${p.name}|${f}`);
+        out.push({ rule: p.name, fingerprint: f });
+      }
+    }
+  }
+  return out;
+}
+function scanSecrets(text, allowed = /* @__PURE__ */ new Set()) {
+  return scan(text).filter((f) => !allowed.has(f.fingerprint));
+}
+function findSecrets(text, allowed = /* @__PURE__ */ new Set()) {
+  return [...new Set(scanSecrets(text, allowed).map((f) => f.rule))];
 }
 function assertNoSecrets(text, where) {
   const found = findSecrets(text);
@@ -8244,28 +8293,40 @@ async function appendEvent(projectDir, event) {
 }
 
 // plugins/arima/scripts/src/hooks.ts
-var norm = (p) => p.replace(/\\/g, "/");
+function canon(p) {
+  let s = p.replace(/\0/g, "").replace(/\\/g, "/");
+  s = s.replace(/::\$[A-Za-z_]+$/, "").replace(/[. ]+$/, "");
+  s = path5.posix.normalize(s);
+  return s.toLowerCase();
+}
 function isSecretPath(p) {
-  const f = norm(p);
+  const f = canon(p);
   const base = f.split("/").pop() ?? "";
-  if (/^\.env(\.(?!example$|sample$|template$|dist$)[^/]+)?$/i.test(base)) return true;
-  if (/\.(pem|key|p12|pfx|keystore|jks|ppk)$/i.test(base)) return true;
-  if (/^id_(rsa|dsa|ecdsa|ed25519)(\.pub)?$/i.test(base) && !base.endsWith(".pub")) return true;
-  if (/(^|\/)\.ssh\//.test(f) || /(^|\/)\.aws\/credentials$/.test(f) || /(^|\/)\.gnupg\//.test(f))
+  if (/^\.env(\.(?!example$|sample$|template$|dist$)[^/]+)?$/.test(base)) return true;
+  if (/\.(pem|key|p12|pfx|keystore|jks|ppk)$/.test(base)) return true;
+  if (/^id_(rsa|dsa|ecdsa|ed25519)$/.test(base)) return true;
+  if (/(^|\/)\.(ssh|gnupg)\//.test(f)) return true;
+  if (/(^|\/)\.aws\/(credentials|config)$/.test(f)) return true;
+  if (/(^|\/)\.config\/arima\/env$/.test(f) || /^arima_[a-z0-9_]*(token|key|secret)/.test(base))
     return true;
-  if (/(^|\/)\.config\/arima\/env$/.test(f) || /^ARIMA_[A-Z0-9_]*(TOKEN|KEY|SECRET)/.test(base))
-    return true;
-  if (/(^|\/)(credentials|secrets?)\.(json|ya?ml|toml|txt)$/i.test(base)) return true;
+  if (/(^|\/)\.claude\/\.credentials\.json$/.test(f) || base === ".credentials.json") return true;
+  if (/(^|\/)\.config\/gh\/hosts\.yml$/.test(f)) return true;
+  if (/(^|\/)\.(npmrc|git-credentials|netrc|pypirc)$/.test(f)) return true;
+  if (/(^|\/)\.docker\/config\.json$/.test(f) || /(^|\/)\.kube\/config$/.test(f)) return true;
+  if (/^\/proc\/[^/]+\/environ$/.test(f)) return true;
+  if (/(^|\/)(credentials|secrets?)\.(json|ya?ml|toml|txt)$/.test(f)) return true;
   return false;
 }
-var PROTECTED_STATE = /(^|\/)\.arima\/(mirror\/|ledger\.jsonl$|events\.jsonl$|notion-map\.json$|PAUSE$|run\.lock$|state\/|runs\/)/;
 function isProtectedStatePath(p) {
-  return PROTECTED_STATE.test(norm(p));
+  const f = canon(p);
+  if (!/(^|\/)\.arima(\/|$)/.test(f)) return false;
+  return !/(^|\/)\.arima\/outbox\/[^/]+\.json$/.test(f);
 }
 function isProtectedConfigPath(p, role) {
-  const f = norm(p);
+  const f = canon(p);
   if (/(^|\/)(arima|team)\.yaml$/.test(f)) return true;
-  if (/(^|\/)\.claude\//.test(f) || /(^|\/)\.githooks\//.test(f)) return true;
+  if (/(^|\/)\.(claude|githooks|husky|git)(\/|$)/.test(f)) return true;
+  if (/(^|\/)(\.mcp\.json|\.npmrc|claude\.md)$/.test(f)) return true;
   if (/(^|\/)\.github\//.test(f)) return role !== "devops";
   return false;
 }
@@ -8279,117 +8340,263 @@ function pathsOf(input) {
   }
   return out;
 }
-var SECRET_WORDS = "(?:TOKEN|SECRET|API_?KEY|PASSWORD|PASSWD|CREDENTIAL)";
-var WRITE_VERBS = /(?:>>?|\btee\b|\brm\b|\bmv\b|\bcp\b|\bdel\b|\btruncate\b|\bsed\s+-i|\bSet-Content\b|\bAdd-Content\b|\bOut-File\b|\bRemove-Item\b|\bClear-Content\b)/;
+function globsReachSecrets(input, tool) {
+  const globs = [];
+  if (tool === "Glob" && typeof input["pattern"] === "string") globs.push(input["pattern"]);
+  if (tool === "Grep" && typeof input["glob"] === "string") globs.push(input["glob"]);
+  return globs.some(
+    (g) => [g.replace(/[*?]+/g, ""), g.replace(/[*?]+/g, ".x")].some((v) => isSecretPath(v))
+  );
+}
+function parseCommands(input) {
+  const out = [];
+  let words = [];
+  let cur = "";
+  let has = false;
+  let dyn = false;
+  const endWord = () => {
+    if (has) words.push(cur);
+    cur = "";
+    has = false;
+  };
+  const endCmd = () => {
+    endWord();
+    if (words.length > 0) out.push({ words, dynamic: dyn });
+    words = [];
+    dyn = false;
+  };
+  for (let i = 0; i < input.length; i++) {
+    const c = input[i];
+    if (c === "'") {
+      const end = input.indexOf("'", i + 1);
+      cur += input.slice(i + 1, end < 0 ? input.length : end);
+      has = true;
+      i = end < 0 ? input.length : end;
+    } else if (c === '"') {
+      has = true;
+      i++;
+      while (i < input.length && input[i] !== '"') {
+        if (input[i] === "\\" && i + 1 < input.length) {
+          cur += input[i + 1];
+          i += 2;
+          continue;
+        }
+        if (input[i] === "$" || input[i] === "`") dyn = true;
+        cur += input[i];
+        i++;
+      }
+    } else if (c === "\\" && i + 1 < input.length) {
+      if (input[i + 1] !== "\n") {
+        cur += input[i + 1];
+        has = true;
+      }
+      i++;
+    } else if (c === "$" || c === "`") {
+      dyn = true;
+      cur += c;
+      has = true;
+    } else if (/\s/.test(c) && c !== "\n") {
+      endWord();
+    } else if (c === "\n" || c === ";" || c === "&" || c === "|" || c === "(" || c === ")") {
+      endCmd();
+    } else {
+      cur += c;
+      has = true;
+    }
+  }
+  endCmd();
+  return out;
+}
+var WRAPPERS = /* @__PURE__ */ new Set([
+  "env",
+  "command",
+  "sudo",
+  "nohup",
+  "exec",
+  "time",
+  "nice",
+  "xargs",
+  "builtin"
+]);
+var SHELLS = /* @__PURE__ */ new Set(["bash", "sh", "zsh", "dash", "ksh", "cmd", "powershell", "pwsh"]);
+function headOf(words) {
+  let i = 0;
+  for (; ; ) {
+    const w = words[i];
+    if (w === void 0) return void 0;
+    if (/^[A-Za-z_][A-Za-z0-9_]*=/.test(w)) {
+      i++;
+      continue;
+    }
+    const base = (w.split(/[\\/]/).pop() ?? w).toLowerCase().replace(/\.(exe|cmd|bat)$/, "");
+    if (WRAPPERS.has(base)) {
+      i++;
+      while (words[i]?.startsWith("-") || /^[A-Za-z_][A-Za-z0-9_]*=/.test(words[i] ?? "")) i++;
+      continue;
+    }
+    return { head: base, rest: words.slice(i + 1) };
+  }
+}
+function expandCommands(command, depth = 0) {
+  const out = [];
+  for (const s of parseCommands(command)) {
+    out.push(s);
+    const h = headOf(s.words);
+    if (h === void 0 || depth >= 3) continue;
+    if (SHELLS.has(h.head)) {
+      const i = h.rest.findIndex((a) => /^(-c|-lc|\/c|\/k|-command|-c)$/i.test(a));
+      const body = i >= 0 ? h.rest.slice(i + 1).join(" ") : "";
+      if (body !== "") out.push(...expandCommands(body, depth + 1));
+    } else if (h.head === "eval") {
+      out.push(...expandCommands(h.rest.join(" "), depth + 1));
+    }
+  }
+  return out;
+}
+var AGENT_BRANCH = /^(feat|fix|hotfix|chore|docs)\/[A-Za-z0-9][A-Za-z0-9._/-]*$/;
 var PROTECTED_BRANCHES = ["main", "master", "trunk"];
-function words(command) {
-  return [...command.matchAll(/"([^"]*)"|'([^']*)'|(\S+)/g)].map((m) => m[1] ?? m[2] ?? m[3] ?? "");
-}
-function simpleCommands(command) {
-  return command.split(/&&|\|\||;|\|/).map((c) => words(c.trim())).filter((w) => w.length > 0);
-}
-function gitSubcommand(w) {
-  if (w[0] !== "git") return void 0;
-  let i = 1;
+var SAFE_NAME = /^[A-Za-z0-9._-]+$/;
+function gitCommand(h) {
+  if (h.head !== "git") return void 0;
+  const w = h.rest;
+  const globalC = [];
+  let i = 0;
   while (i < w.length) {
     const t = w[i];
-    if (t === "-C" || t === "-c") i += 2;
+    if (t === "-c") {
+      globalC.push(w[i + 1] ?? "");
+      i += 2;
+    } else if (t === "-C" || t === "--git-dir" || t === "--work-tree" || t === "--namespace" || t === "--exec-path")
+      i += 2;
     else if (t.startsWith("-")) i += 1;
     else break;
   }
   const sub = w[i];
-  return sub === void 0 ? void 0 : { sub, rest: w.slice(i + 1) };
+  return sub === void 0 ? void 0 : { sub, args: w.slice(i + 1), globalC };
 }
-function guardVcs(command, ctx) {
-  const protectedBranches = /* @__PURE__ */ new Set([
-    ...PROTECTED_BRANCHES,
-    ...ctx.defaultBranch ? [ctx.defaultBranch] : []
-  ]);
-  for (const w of simpleCommands(command)) {
-    const g = gitSubcommand(w);
-    if (g !== void 0) {
-      if (g.rest.includes("--no-verify") || g.sub === "commit" && g.rest.includes("-n")) {
-        return { rule: "vcs", reason: "skipping git hooks (--no-verify) is not allowed" };
+var DANGEROUS_GIT_KEY = /^(core\.(hookspath|sshcommand|fsmonitor|editor|pager|askpass)|alias\.|credential\.|url\..*insteadof|remote\..*\.(url|pushurl|push)|safe\.)/i;
+function guardGit(g, dynamic, ctx) {
+  const vcs = (reason) => ({ rule: "vcs", reason });
+  if (g.globalC.some((kv) => DANGEROUS_GIT_KEY.test(kv.split("=")[0] ?? ""))) {
+    return vcs(
+      "overriding git settings on the command line (hooks, aliases, credentials, remotes) is not allowed"
+    );
+  }
+  if (g.args.includes("--no-verify")) return vcs("skipping git hooks (--no-verify) is not allowed");
+  if (g.args.some((a) => a === "--output" || a.startsWith("--output="))) {
+    return vcs("git options that write to an arbitrary file (--output) are not allowed");
+  }
+  switch (g.sub) {
+    case "commit":
+      if (g.args.some((a) => /^-[a-zA-Z]*n[a-zA-Z]*$/.test(a) && !a.startsWith("--"))) {
+        return vcs("skipping git hooks (-n / --no-verify) is not allowed");
       }
-      if (g.sub === "config" && g.rest.some((a) => /core\.hookspath|hooks/i.test(a))) {
-        return { rule: "vcs", reason: "changing where git hooks run from is not allowed" };
+      if (dynamic) return vcs("commit arguments must be literal text, not shell substitutions");
+      return void 0;
+    case "config":
+      if (g.args.some(
+        (a) => /hookspath|alias\.|sshcommand|insteadof|credential|remote\..*\.(url|pushurl|push)|core\.fsmonitor/i.test(
+          a
+        )
+      )) {
+        return vcs(
+          "changing where git hooks run from, aliases, credentials or remotes is not allowed"
+        );
       }
-      if (g.sub === "push") {
-        const opts = g.rest.filter((a) => a.startsWith("-"));
-        if (opts.some(
-          (a) => /^(-f|--force|--force-with-lease.*|--delete|-d|--mirror|--all|--prune)$/.test(a)
-        )) {
-          return {
-            rule: "vcs",
-            reason: "force pushes, deleting remote branches and mirror pushes are not allowed"
-          };
-        }
-        const args = g.rest.filter((a) => !a.startsWith("-"));
-        const refspecs = args.slice(1);
-        if (refspecs.length === 0) {
-          return {
-            rule: "vcs",
-            reason: "push needs an explicit remote and branch (git push -u origin <your-branch>), so it cannot land on the default branch by accident"
-          };
-        }
-        for (const spec of refspecs) {
-          if (spec.startsWith(":") || spec.startsWith("+")) {
-            return {
-              rule: "vcs",
-              reason: "deleting or force-updating a remote branch is not allowed"
-            };
-          }
-          const [source = "", target = source] = spec.split(":");
-          const strip = (b) => b.replace(/^refs\/heads\//, "");
-          if (protectedBranches.has(strip(target)) || protectedBranches.has(strip(source))) {
-            return {
-              rule: "vcs",
-              reason: `pushing to ${strip(target) || strip(source)} is not allowed; push your feature branch and open a pull request`
-            };
-          }
+      return void 0;
+    case "push": {
+      if (dynamic) return vcs("push arguments must be literal text, not shell substitutions");
+      const flags = g.args.filter((a) => a.startsWith("-"));
+      const positional = g.args.filter((a) => !a.startsWith("-"));
+      const strict = ctx.role !== void 0;
+      const allowedFlags = flags.every((f) => f === "-u" || f === "--set-upstream");
+      if (!allowedFlags)
+        return vcs(
+          "push flags other than -u are not allowed (no force, delete, mirror, tags, receive-pack...)"
+        );
+      if (positional.length !== 2) {
+        return vcs(
+          "push needs an explicit remote and branch (git push -u origin <your-branch>), so it cannot land on the default branch by accident"
+        );
+      }
+      const [remote = "", spec = ""] = positional;
+      if (!SAFE_NAME.test(remote)) return vcs("the push remote must be a plain remote name");
+      if (spec.startsWith(":") || spec.startsWith("+"))
+        return vcs("deleting or force-updating a remote branch is not allowed");
+      const protectedNames = /* @__PURE__ */ new Set([
+        ...PROTECTED_BRANCHES,
+        ...ctx.defaultBranch ? [ctx.defaultBranch] : []
+      ]);
+      const strip = (b) => b.replace(/^refs\/heads\//, "");
+      const [source = "", target = source] = spec.split(":");
+      for (const b of [source, target]) {
+        if (protectedNames.has(strip(b).toLowerCase())) {
+          return vcs(
+            `pushing to ${strip(b)} is not allowed; push your feature branch and open a pull request`
+          );
         }
       }
-      continue;
+      if (strict) {
+        const okSource = source === "HEAD" || AGENT_BRANCH.test(source);
+        const okTarget = AGENT_BRANCH.test(target) && !target.includes("..");
+        if (!okSource || !okTarget) {
+          return vcs(
+            "an agent may push only a branch named feat/..., fix/..., hotfix/..., chore/... or docs/... (spec \xA710.2)"
+          );
+        }
+      }
+      return void 0;
     }
-    if (w[0] === "gh") {
-      const rest = w.slice(1);
-      const [a, b] = [rest[0], rest[1]];
-      if (a === "pr" && b === "merge") {
-        return {
-          rule: "vcs",
-          reason: "merging is done only by ARIMA's merge script after human approval (spec \xA710.3)"
-        };
-      }
-      if (a === "api") {
-        const method = rest.findIndex((x) => x === "-X" || x === "--method");
-        const verb = method >= 0 ? (rest[method + 1] ?? "").toUpperCase() : "GET";
-        const hasBody = rest.some((x) => /^(-f|-F|--field|--raw-field|--input)$/.test(x));
-        if (verb !== "GET" || hasBody) {
-          return {
-            rule: "vcs",
-            reason: "`gh api` calls that change anything are not allowed (they could merge, delete or change settings)"
-          };
-        }
-      }
-      if (a === "workflow" && b === "run") {
-        return {
-          rule: "vcs",
-          reason: "starting workflows (which can deploy) is not allowed for agents"
-        };
-      }
-      if (a === "release" || a === "secret" || a === "repo" || a === "auth" || a === "ssh-key" || a === "gpg-key") {
-        return {
-          rule: "vcs",
-          reason: `\`gh ${a}\` can publish, delete or change credentials and settings; it is not allowed for agents`
-        };
-      }
+    case "remote":
+      return ctx.role !== void 0 && /^(add|set-url|set-head|rename|remove|rm|prune)$/.test(g.args[0] ?? "") ? vcs("changing git remotes is not allowed for agents") : void 0;
+    default:
+      return void 0;
+  }
+}
+function guardGh(h, ctx) {
+  if (h.head !== "gh") return void 0;
+  const vcs = (reason) => ({ rule: "vcs", reason });
+  const w = [];
+  for (let i = 0; i < h.rest.length; i++) {
+    const t = h.rest[i];
+    if (t === "--repo" || t === "-R" || t === "--hostname") i++;
+    else if (!t.startsWith("--repo=") && !t.startsWith("--hostname=")) w.push(t);
+  }
+  const [a, b] = [w[0], w[1]];
+  if (a === "pr" && b === "merge")
+    return vcs("merging is done only by ARIMA's merge script after human approval (spec \xA710.3)");
+  if (a === "api") {
+    if (ctx.role !== void 0)
+      return vcs("agents do not use `gh api`: it can merge, delete or change settings");
+    const rest = w.slice(1);
+    const mIdx = rest.findIndex((x) => /^(-X|--method)/i.test(x));
+    let verb = "GET";
+    if (mIdx >= 0) {
+      const m = /^(?:-X|--method)=?(.*)$/i.exec(rest[mIdx]);
+      verb = ((m?.[1] ? m[1] : rest[mIdx + 1]) ?? "").toUpperCase();
     }
+    const hasBody = rest.some((x) => /^(-f|-F|--field|--raw-field|--input)/.test(x));
+    if (verb !== "GET" || hasBody)
+      return vcs("`gh api` calls that change anything are not allowed");
+  }
+  if (a === "workflow" && b === "run")
+    return vcs("starting workflows (which can deploy) is not allowed for agents");
+  if (a !== void 0 && /^(release|secret|repo|auth|ssh-key|gpg-key)$/.test(a)) {
+    return vcs(
+      `\`gh ${a}\` can publish, delete or change credentials and settings; it is not allowed for agents`
+    );
   }
   return void 0;
 }
+var SECRET_WORDS = "(?:TOKEN|SECRET|API_?KEY|SECRET_KEY|PRIVATE_KEY|ACCESS_KEY|PASSWORD|PASSWD|CREDENTIALS?)";
+var WRITE_VERBS = /(?:>>?|\btee\b|\brm\b|\bmv\b|\bcp\b|\bdel\b|\btruncate\b|\bunlink\b|\bln\b|\bdd\b|\binstall\b|\bsed\s+-i|\bperl\s+-p?i|\bSet-Content\b|\bAdd-Content\b|\bOut-File\b|\bRemove-Item\b|\bClear-Content\b|\bNew-Item\b|\bCopy-Item\b|\bMove-Item\b|-delete\b|\bfind\b.*-exec|\bri\b|\bsc\b|\bni\b|\bcurl\b.*\s-o\b|unlinkSync|rmSync|os\.remove|shutil\.)/i;
+function withoutMessages(command) {
+  return command.replace(/(?:-m|--message)(?:=|\s+)(?:"(?:[^"\\]|\\.)*"|'[^']*'|\S+)/g, "-m MSG");
+}
 function guardBash(command, ctx = {}) {
-  const c = command;
-  if (/(^|[\s"'=:/\\])\.env(\.(?!example\b|sample\b|template\b|dist\b)[A-Za-z0-9_-]+)?(?=$|[\s"';|&)<>])/.test(
+  const c = withoutMessages(command);
+  const lc = c.toLowerCase();
+  if (/(^|[\s"'=:/\\])\.env(\.(?!example\b|sample\b|template\b|dist\b)[a-z0-9_-]+)?(?=$|[\s"';|&)<>])/i.test(
     c
   )) {
     return {
@@ -8397,40 +8604,59 @@ function guardBash(command, ctx = {}) {
       reason: "the command touches a .env file, which can hold secrets"
     };
   }
-  if (/\.(pem|key|p12|pfx|keystore|ppk)(?=$|[\s"';|&)])/i.test(c) || /(^|[\s"'/\\])id_(rsa|dsa|ecdsa|ed25519)(?=$|[\s"';|&)])/.test(c)) {
+  if (/\.(pem|key|p12|pfx|keystore|ppk)(?=$|[\s"';|&)])/i.test(c) || /(^|[\s"'/\\])id_(rsa|dsa|ecdsa|ed25519)(?=$|[\s"';|&)])/i.test(c)) {
     return { rule: "secret-file", reason: "the command touches a private key or certificate file" };
   }
-  if (/\.config[/\\]arima[/\\]env\b/.test(c) || /[/\\]\.ssh[/\\]/.test(c) || /\.aws[/\\]credentials/.test(c)) {
+  if (/\.config[/\\]arima[/\\]env\b/i.test(c) || /[/\\]\.ssh[/\\]/.test(c) || /\.aws[/\\]credentials/i.test(c) || /\.credentials\.json/i.test(c) || /\.config[/\\]gh[/\\]hosts\.yml/i.test(c) || /(^|[\s"'/\\])\.(npmrc|git-credentials|netrc|pypirc)(?=$|[\s"';|&)])/i.test(c) || /\.docker[/\\]config\.json|\.kube[/\\]config/i.test(c) || /\/proc\/[^\s/]+\/environ/.test(c)) {
     return { rule: "secret-file", reason: "the command touches a credentials file" };
   }
-  if (new RegExp(`\\$\\{?[A-Za-z0-9_]*${SECRET_WORDS}[A-Za-z0-9_]*\\}?`, "i").test(c) || new RegExp(`\\$env:[A-Za-z0-9_]*${SECRET_WORDS}`, "i").test(c) || /\$\{?ARIMA_[A-Za-z0-9_]*\}?/.test(c)) {
+  if (new RegExp(`\\$\\{?[A-Za-z0-9_]*${SECRET_WORDS}\\}?(?![A-Za-z0-9_])`, "i").test(c) || new RegExp(`\\$env:[A-Za-z0-9_]*${SECRET_WORDS}(?![A-Za-z0-9_])`, "i").test(c) || new RegExp(`%[A-Za-z0-9_]*${SECRET_WORDS}%`, "i").test(c) || /\$\{?ARIMA_[A-Za-z0-9_]*\}?/.test(c) || /GetEnvironmentVariable\s*\(\s*["'][^"']*(TOKEN|SECRET|KEY|PASSWORD)/i.test(c) || /process\.env\b.*(TOKEN|SECRET|KEY|PASSWORD)|environ\b.*(TOKEN|SECRET|KEY|PASSWORD)/i.test(c) || /\bARIMA_[A-Z0-9_]*(TOKEN|KEY|SECRET)/.test(c)) {
     return {
       rule: "secret-env",
-      reason: "the command expands an environment variable that holds a secret"
+      reason: "the command refers to an environment variable that holds a secret"
     };
   }
-  if (/\bprintenv\b/.test(c) || /\bGet-ChildItem\s+env:/i.test(c) || /\bdir\s+env:/i.test(c) || /^\s*(env|set)\s*($|\|)/.test(c)) {
+  if (/\bprintenv\b/i.test(c) || /\bGet-ChildItem\s+env:|\bgci\s+env:|\bdir\s+env:|\bls\s+env:/i.test(c) || /^\s*(env|set|export\s+-p|declare\s+-p|compgen\s+-e)\s*($|\|)/i.test(c)) {
     return { rule: "secret-env", reason: "listing the environment would expose secrets" };
   }
-  if (/api\.notion\.com/i.test(c) && /(-X\s*DELETE|--request\s+DELETE|in_trash|archived)/i.test(c)) {
+  if (/api\.notion\.com/i.test(c) && /(-X\s*=?\s*DELETE|--request[\s=]+DELETE|in_trash|archived)/i.test(c)) {
     return {
       rule: "notion-delete",
       reason: "deleting or archiving in Notion is never allowed; retire items by status instead (spec \xA79.3)"
     };
   }
-  if (/\.arima[/\\](mirror|ledger\.jsonl|events\.jsonl|PAUSE|run\.lock)/.test(c) && WRITE_VERBS.test(c)) {
+  if (/\.arima[/\\]/i.test(lc) && WRITE_VERBS.test(c)) {
     return {
       rule: "protected-state",
-      reason: "the Notion mirror, the logs, the lock and the kill switch are written only by ARIMA scripts; propose Notion changes through .arima/outbox/"
+      reason: "ARIMA state (mirror, logs, lock, kill switch) is written only by ARIMA scripts; propose Notion changes through .arima/outbox/"
     };
   }
-  if (ctx.role !== void 0 && /arima-(pause|init)\.mjs/.test(c)) {
+  if (/rm\s+(-[a-z]*r[a-z]*f?|-[a-z]*f[a-z]*r)[a-z]*\s+\.?\/?\.arima\b/i.test(c) || /\bgit\s+(-C\s+\S*\.arima\b)/i.test(c)) {
+    return {
+      rule: "protected-state",
+      reason: "ARIMA state must not be deleted or edited directly"
+    };
+  }
+  if (ctx.role !== void 0 && /arima-(pause|init)\.mjs/i.test(c)) {
     return {
       rule: "kill-switch",
       reason: "only a human may pause, resume or initialise ARIMA; agents escalate instead"
     };
   }
-  return guardVcs(c, ctx);
+  if (ctx.role !== void 0 && /--allow-status-writes/.test(c)) {
+    return {
+      rule: "protected-state",
+      reason: "only a human may let the outbox write Status fields; agents propose, the state machine decides"
+    };
+  }
+  for (const s of expandCommands(command)) {
+    const h = headOf(s.words);
+    if (h === void 0) continue;
+    const git = gitCommand(h);
+    const hit = git ? guardGit(git, s.dynamic, ctx) : guardGh(h, ctx);
+    if (hit !== void 0) return hit;
+  }
+  return void 0;
 }
 function guardTool(tool, input, ctx = {}) {
   if (/^mcp__.*notion/i.test(tool) && /(delete|archive|remove|trash)/i.test(tool)) {
@@ -8444,21 +8670,27 @@ function guardTool(tool, input, ctx = {}) {
       if (isSecretPath(p)) {
         return {
           rule: "secret-file",
-          reason: `${path5.basename(norm(p))} may hold secrets; ARIMA agents must not read or change secret files (spec \xA711.3)`
+          reason: `${path5.basename(p.replace(/\\/g, "/"))} may hold secrets; ARIMA agents must not read or change secret files (spec \xA711.3)`
         };
       }
       if (WRITE_TOOLS.has(tool) && isProtectedStatePath(p)) {
         return {
           rule: "protected-state",
-          reason: `${norm(p)} is written only by ARIMA scripts; propose Notion changes through .arima/outbox/ instead`
+          reason: `${canon(p)} is written only by ARIMA scripts; propose Notion changes through .arima/outbox/ instead`
         };
       }
       if (WRITE_TOOLS.has(tool) && ctx.role !== void 0 && isProtectedConfigPath(p, ctx.role)) {
         return {
           rule: "protected-config",
-          reason: `${norm(p)} decides who may approve work or what the guards do; agents never edit it (spec \xA75.7)`
+          reason: `${canon(p)} decides who may approve work, what the guards do, or what code runs; agents never edit it (spec \xA75.7)`
         };
       }
+    }
+    if (globsReachSecrets(input, tool)) {
+      return {
+        rule: "secret-file",
+        reason: "that search pattern would reach files that may hold secrets (spec \xA711.3)"
+      };
     }
   }
   if (tool === "Bash" && typeof input["command"] === "string")
@@ -8512,7 +8744,7 @@ function isReadOnlyBash(command) {
   if (first === "git")
     return /^git\s+(-C\s+\S+\s+)?(status|diff|log|show|branch(\s+--list)?|rev-parse|ls-files|remote(\s+-v)?)\b/.test(
       command.trim()
-    );
+    ) && !/--output/.test(command);
   return false;
 }
 function actorFor(env) {
@@ -8522,7 +8754,7 @@ function actorFor(env) {
 function describe(tool, input) {
   const data = { tool };
   const p = pathsOf(input)[0];
-  if (p !== void 0) data["path"] = norm(p);
+  if (p !== void 0) data["path"] = p.replace(/\\/g, "/");
   if (typeof input["command"] === "string") data["command"] = input["command"];
   if (findSecrets(JSON.stringify(data)).length > 0)
     return { tool, note: "details withheld: looked like a secret" };
@@ -8531,23 +8763,21 @@ function describe(tool, input) {
   return data;
 }
 async function log(projectDir, type, env, data) {
-  try {
-    await appendEvent(projectDir, {
-      type,
-      actor: actorFor(env),
-      ...env["ARIMA_RUN_ID"] ? { run_id: env["ARIMA_RUN_ID"] } : {},
-      ...env["ARIMA_ITEM"] && env["ARIMA_ITEM"] !== "none" ? { item: env["ARIMA_ITEM"] } : {},
-      data
-    });
-  } catch {
-  }
+  const write = appendEvent(projectDir, {
+    type,
+    actor: actorFor(env),
+    ...env["ARIMA_RUN_ID"] ? { run_id: env["ARIMA_RUN_ID"] } : {},
+    ...env["ARIMA_ITEM"] && env["ARIMA_ITEM"] !== "none" ? { item: env["ARIMA_ITEM"] } : {},
+    data
+  }).catch(() => void 0);
+  await Promise.race([write, new Promise((resolve) => setTimeout(resolve, 1500))]);
 }
-async function handleHook(kind, input, env = process.env) {
+async function handleHook(kind2, input, env = process.env) {
   const projectDir = findProjectDir(input, env);
   if (projectDir === void 0) return { exitCode: 0 };
   const tool = input.tool_name ?? "";
   const toolInput = input.tool_input ?? {};
-  if (kind === "pre-tool-use") {
+  if (kind2 === "pre-tool-use") {
     try {
       const ctx = {
         role: env["ARIMA_ROLE"],
@@ -8571,13 +8801,13 @@ async function handleHook(kind, input, env = process.env) {
       };
     }
   }
-  if (kind === "post-tool-use") {
+  if (kind2 === "post-tool-use") {
     const changesState = WRITE_TOOLS.has(tool) || tool === "Bash" && typeof toolInput["command"] === "string" && !isReadOnlyBash(toolInput["command"]);
     if (changesState) await log(projectDir, "tool.used", env, describe(tool, toolInput));
     return { exitCode: 0 };
   }
   await log(projectDir, "agent.stop", env, {
-    kind: kind === "stop" ? "session" : "subagent",
+    kind: kind2 === "stop" ? "session" : "subagent",
     ...input.agent_type ? { agent_type: input.agent_type } : {}
   });
   return { exitCode: 0 };
@@ -8586,8 +8816,8 @@ async function handleHook(kind, input, env = process.env) {
 // plugins/arima/scripts/src/cli/hook-cli.ts
 var KINDS = ["pre-tool-use", "post-tool-use", "stop", "subagent-stop"];
 async function runHookCli(argv, io) {
-  const kind = argv[0];
-  if (!KINDS.includes(kind ?? "")) {
+  const kind2 = argv[0];
+  if (!KINDS.includes(kind2 ?? "")) {
     io.err(`Usage: arima-hook <${KINDS.join("|")}> (payload JSON on stdin)
 `);
     return 1;
@@ -8600,7 +8830,7 @@ async function runHookCli(argv, io) {
     );
     return 2;
   };
-  const failsClosed = () => kind === "pre-tool-use" && findProjectDir({ cwd: io.cwd ?? process.cwd() }, env) !== void 0;
+  const failsClosed = () => kind2 === "pre-tool-use" && findProjectDir({ cwd: io.cwd ?? process.cwd() }, env) !== void 0;
   let input;
   try {
     const parsed = io.stdin.trim() === "" ? {} : JSON.parse(io.stdin);
@@ -8611,7 +8841,7 @@ async function runHookCli(argv, io) {
     return failsClosed() ? closed("unreadable payload") : 0;
   }
   try {
-    const out = await handleHook(kind, input, env);
+    const out = await handleHook(kind2, input, env);
     if (out.stderr) io.err(`${out.stderr}
 `);
     return out.exitCode;
@@ -8621,9 +8851,24 @@ async function runHookCli(argv, io) {
 }
 
 // plugins/arima/scripts/src/bin/arima-hook.ts
-var chunks = [];
-for await (const c of process.stdin) chunks.push(c);
-process.exitCode = await runHookCli(process.argv.slice(2), {
-  stdin: Buffer.concat(chunks).toString("utf8"),
-  err: (s) => process.stderr.write(s)
-});
+var kind = process.argv[2] ?? "";
+function failureExit() {
+  try {
+    return kind === "pre-tool-use" && findProjectDir({ cwd: process.cwd() }) !== void 0 ? 2 : 0;
+  } catch {
+    return kind === "pre-tool-use" ? 2 : 0;
+  }
+}
+var code2;
+try {
+  const chunks = [];
+  for await (const c of process.stdin) chunks.push(c);
+  code2 = await runHookCli(process.argv.slice(2), {
+    stdin: Buffer.concat(chunks).toString("utf8"),
+    err: (s) => process.stderr.write(s)
+  });
+} catch {
+  process.stderr.write("ARIMA guard crashed, so this action is blocked to be safe.\n");
+  code2 = failureExit();
+}
+process.stderr.write("", () => process.exit(code2));

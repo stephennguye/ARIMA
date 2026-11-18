@@ -19115,7 +19115,7 @@ function budgetStatus(projectDir, limits, today) {
 }
 
 // plugins/arima/scripts/src/state.ts
-var MAX_SCAN_BYTES = 5 * 1024 * 1024;
+var MAX_SCAN_BYTES = 64 * 1024 * 1024;
 
 // plugins/arima/scripts/src/preflight.ts
 var PREFLIGHT_EXIT = {

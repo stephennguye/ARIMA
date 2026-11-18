@@ -401,7 +401,7 @@ describe('hooks/hooks.json', () => {
         for (const h of g.hooks) {
           expect(h.type).toBe('command');
           expect(h.command, event).toMatch(
-            /node "\$\{CLAUDE_PLUGIN_ROOT\}\/scripts\/dist\/arima-hook\.mjs" (pre-tool-use|post-tool-use|stop|subagent-stop)$/,
+            /^(node "\$\{CLAUDE_PLUGIN_ROOT\}\/scripts\/dist\/arima-hook\.mjs" (post-tool-use|stop|subagent-stop)|sh "\$\{CLAUDE_PLUGIN_ROOT\}\/hooks\/guard\.sh" pre-tool-use)$/,
           );
           expect(h.timeout).toBeGreaterThan(0);
         }

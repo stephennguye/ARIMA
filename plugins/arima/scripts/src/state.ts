@@ -15,7 +15,7 @@ import {
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { appendEvent } from './events.js';
-import { findSecrets } from './lib/secrets.js';
+import { parseAllowlist, scanSecrets } from './lib/secrets.js';
 
 export class StateError extends Error {}
 
@@ -36,7 +36,7 @@ export interface StateOptions {
 const DEFAULT_BRANCH = 'arima-state';
 const STATE_GITIGNORE = '*.lock\n*.tmp\nrun.lock\n';
 const STATE_GITATTRIBUTES = '* -text\n';
-const MAX_SCAN_BYTES = 5 * 1024 * 1024;
+const MAX_SCAN_BYTES = 64 * 1024 * 1024;
 
 function git(cwd: string, args: string[], input?: string): string {
   try {
@@ -242,17 +242,37 @@ export interface PushResult {
   warnings: string[];
 }
 
-/** Files (relative to `.arima/`) that look like they contain a credential. */
-function scanStaged(r: Resolved): string[] {
+/** One thing in a staged file that stops the commit. */
+interface StagedProblem {
+  file: string;
+  rule: string;
+  fingerprint?: string;
+}
+
+/**
+ * Staged files (relative to `.arima/`) that look like they contain a credential, or are too big
+ * to scan. A human may allow a reviewed false alarm by adding its fingerprint to
+ * `.arima/secret-allowlist.txt` (agents cannot write that file).
+ */
+function scanStaged(r: Resolved): StagedProblem[] {
   const names = git(r.stateDir, ['diff', '--cached', '--name-only', '--diff-filter=AM'])
     .split('\n')
     .filter(Boolean);
-  const bad: string[] = [];
+  const allowFile = path.join(r.stateDir, 'secret-allowlist.txt');
+  const allowed = existsSync(allowFile)
+    ? parseAllowlist(readFileSync(allowFile, 'utf8'))
+    : new Set<string>();
+  const bad: StagedProblem[] = [];
   for (const name of names) {
     const file = path.join(r.stateDir, name);
     try {
-      if (statSync(file).size > MAX_SCAN_BYTES) continue;
-      if (findSecrets(readFileSync(file, 'utf8')).length > 0) bad.push(name);
+      if (statSync(file).size > MAX_SCAN_BYTES) {
+        bad.push({ file: name, rule: 'file too large to scan for secrets' });
+        continue;
+      }
+      for (const f of scanSecrets(readFileSync(file, 'utf8'), allowed)) {
+        bad.push({ file: name, rule: f.rule, fingerprint: f.fingerprint });
+      }
     } catch {
       /* deleted or unreadable: nothing to scan */
     }
@@ -287,8 +307,11 @@ export async function pushState(o: StateOptions & { runId: string }): Promise<Pu
   const bad = scanStaged(r);
   if (bad.length > 0) {
     git(r.stateDir, ['reset', '-q']);
+    const lines = bad.map(
+      (p) => `  ${p.file}: ${p.rule}${p.fingerprint ? ` (${p.fingerprint})` : ''}`,
+    );
     throw new StateError(
-      `refusing to commit state: ${bad.length} file(s) look like they contain a secret: ${bad.join(', ')}`,
+      `refusing to commit state: ${bad.length} finding(s) that look like secrets:\n${lines.join('\n')}\nIf you have reviewed a finding and it is NOT a secret, add its fingerprint on its own line to .arima/secret-allowlist.txt and run again.`,
     );
   }
   git(r.stateDir, [
