@@ -47,7 +47,7 @@ environments:
   production: { url: "https://app.example.com", deploy: gated }
 runtime:
   host: local
-  shell: wsl2
+  shell: native               # native | wsl2; prefer wsl2 or Linux for unattended runs
   scheduler: windows-task-scheduler
   auth: seat
   allow_usage_credits: false

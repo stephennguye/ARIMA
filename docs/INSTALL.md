@@ -12,7 +12,7 @@ This takes you from nothing to a working `/arima:status` on a new project. It as
 | Claude Code | current | `claude --version` |
 | A Notion account | Free plan is enough for one project | |
 
-ARIMA runs on **Windows (PowerShell or Git Bash), macOS and Linux**. WSL 2 also works and is what the spec recommends once scheduled runs arrive in v0.2, because Claude Code's sandboxed command execution is supported there. Nothing in v0.1 needs WSL.
+ARIMA runs on **Windows (PowerShell or Git Bash), macOS and Linux**. Native Windows is fine for interactive use. **Unattended scheduled runs should use WSL 2 or Linux** (spec issue S6, decision D-36): Claude Code's sandboxed command execution is supported there and not on native Windows, and without a sandbox the local safety layers are advisory for the developer and QA roles. Nothing in v0.1 needs WSL.
 
 Sign in to Claude Code once, interactively (`claude`). ARIMA's headless runs draw on that account's usage limits; they never use an API key unless you configure one (`runtime.auth` in `arima.yaml`).
 

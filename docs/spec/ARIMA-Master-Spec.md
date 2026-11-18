@@ -4,10 +4,11 @@ Nov 17, 2026 · @Stephen
 
 ## 0. Document control
 
-This spec is the single source of truth for how ARIMA behaves; the Claude Code build package is generated from it. Version 0.3 is a draft: 33 decisions are recorded, and the 3 remaining questions in section 16 each have a working default.
+This spec is the single source of truth for how ARIMA behaves; the Claude Code build package is generated from it. Version 0.4 is a draft: 36 decisions are recorded, and the 3 remaining questions in section 16 each have a working default.
 
 | Version | Date | Change |
 | --- | --- | --- |
+| 0.4 | 2026-11-18 | Notion access is the public API, not MCP (D-34, supersedes D-02); solo-first build order (D-35); Docker Sandbox for unattended runs where available (D-36); stale "Notion MCP" wording, Q-07 wording and the `shell` example corrected |
 | 0.3 | 2026-11-17 | Scope narrowed to web apps only (D-33): mobile platforms, app stores and mobile testing removed |
 | 0.2 | 2026-11-17 | 21 open questions resolved (D-12 to D-32): runtime, billing, Notion and GitHub Free constraints, approvals, sizing, design, license, hypercare |
 | 0.1 | 2026-11-17 | First draft from the design conversation: client-project profile, Notion + GitHub, autonomous daily runs, web + mobile |
@@ -298,7 +299,7 @@ Until ARIMA is stable, it runs on your Windows PC inside WSL 2 and draws on your
 # added to arima.yaml
 runtime:
   host: local                 # local | github-actions
-  shell: wsl2                 # wsl2 | native
+  shell: native               # native | wsl2 (use wsl2 or Linux for unattended runs until a sandbox is in place)
   scheduler: windows-task-scheduler
   auth: seat                  # seat | api_key
   allow_usage_credits: false  # true only once a spend cap is set (Q-22)
@@ -336,7 +337,7 @@ ARIMA has 9 agents covering 11 roles; Sponsor, PO and Legal default to humans. E
 - **Triggered by:** the daily schedule; any `/arima:*` command.
 - **Reads:** `arima.yaml`, `team.yaml`, Notion, GitHub status, `.arima/` state, ledger.
 - **Writes:** all Notion records (flushing the outbox), IDs, milestone plan, risk register, meeting minutes, gate pages and evidence packs, digest, cost log, event log.
-- **Tools:** Notion MCP (delete disabled), subagent dispatch, Bash limited to git, `gh` read commands and ARIMA scripts; file writes only in `.arima/` and `docs/spec/`.
+- **Tools:** the Notion public API through ARIMA's own scripts (there is no delete operation), subagent dispatch, Bash limited to git, `gh` read commands and ARIMA scripts; file writes only in `.arima/` and `docs/spec/`.
 - **Must not:** write product code, approve a gate, merge a PR, deploy to production, delete anything in Notion.
 - **Done when:** digest published, outbox empty, ledger rows closed for every run.
 - **Escalates when:** any hard stop; the same run fails 3 times; a budget threshold is crossed; a human edit conflicts with a pending write.
@@ -1153,7 +1154,7 @@ The repo is public under the Apache License 2.0 (D-26), with a `LICENSE` and `NO
 
 ## 16. Open questions and decision log
 
-3 questions are open, each with a working default; 33 decisions are made. Each answered question becomes a decision and updates the sections it names.
+3 questions are open, each with a working default; 36 decisions are made. Each answered question becomes a decision and updates the sections it names.
 
 ### 16.1 Open questions
 
@@ -1164,7 +1165,7 @@ The repo is public under the Apache License 2.0 (D-26), with a `LICENSE` and `NO
 | Q-03 | Default stacks for web and backend | 4, 10, 15 | Decided (D-12): the architect agent proposes per project; humans approve at G2 |
 | Q-04 | Hosting for staging and production, and database | 3, 6.3 | Architect proposes at first G2 |
 | Q-06 | Notion plan | 9 | Decided (D-19): Free plan, with the constraints in section 9.4 |
-| Q-07 | Urgent notification channel beyond Notion | 12.3 | Decided (D-20): email plus Notion notifications |
+| Q-07 | Urgent notification channel beyond Notion | 12.3 | Decided (D-20, amended by D-23): Notion @mentions, delivered by Notion's own email and mobile notifications; ARIMA sends no email |
 | Q-08 | Design tool: Figma, or HTML prototypes only | 5.4 | Decided (D-24): HTML prototypes only |
 | Q-09 | Documentation language | 4 | Decided (D-22): set per project in arima.yaml |
 | Q-10 | Does the real client approve in Notion as a guest, or do you relay approvals? | 7.4 | Decided (D-17): the client approves in Notion as a guest |
@@ -1187,6 +1188,9 @@ The repo is public under the Apache License 2.0 (D-26), with a `LICENSE` and `NO
 
 | ID | Decision | Date | By |
 | --- | --- | --- | --- |
+| D-36 | Unattended agent runs execute inside a Docker Sandbox where one is available; otherwise they run through the Claude Code CLI directly, with the local safety layers (role tool lists, guard hook, scrubbed environment) treated as advisory (see ADR-0005 and the Stage 0 review notes) | 2026-11-18 | You |
+| D-35 | Solo-first: ARIMA is built and proven for one owner first; team features (the Client portal and guest approvals of D-17, multi-person approver groups) are deferred until after solo use is stable | 2026-11-18 | You |
+| D-34 | Notion is accessed through the public Notion API with an integration token and ARIMA's own scripts, not through a Notion MCP server (supersedes D-02; see ADR-0003) | 2026-11-18 | You |
 | D-33 | ARIMA builds web apps only; mobile platforms, app-store distribution and mobile testing are out of scope for v1.0 | 2026-11-17 | You |
 | D-32 | Human tasks get a reminder after 24 weekday hours and escalate to the sponsor after 48 (answers Q-16) | 2026-11-17 | You |
 | D-31 | Hypercare lasts 2 weeks by default; default SLO is 99.5% availability (answers Q-19) | 2026-11-17 | You |
@@ -1218,5 +1222,5 @@ The repo is public under the Apache License 2.0 (D-26), with a `LICENSE` and `NO
 | D-05 | v1.0 targets new web apps only (narrowed by D-33) | 2026-11-17 | You |
 | D-04 | Autonomy: mostly autonomous, with a daily digest and hard stops | 2026-11-17 | You |
 | D-03 | GitHub is the engineering layer and hosts the plugin | 2026-11-17 | You |
-| D-02 | Notion is the project-management layer, accessed via MCP | 2026-11-17 | You |
+| D-02 | Notion is the project-management layer (access via MCP, superseded by D-34: the public API) | 2026-11-17 | You |
 | D-01 | Default profile is client-project, so ARIMA transfers to multi-person teams | 2026-11-17 | You |
