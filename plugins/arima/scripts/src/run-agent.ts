@@ -479,6 +479,8 @@ export async function runAgent(o: RunAgentOptions): Promise<RunAgentOutcome> {
     exit_code: spawned.code,
     spawn_error: spawned.spawnError,
     result_text: parsed?.result,
+    errors: parsed?.errors,
+    terminal_reason: parsed?.terminal_reason,
     stderr_tail: spawned.stderr.slice(-2000),
   });
 

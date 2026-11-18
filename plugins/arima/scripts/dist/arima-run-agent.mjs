@@ -19406,6 +19406,8 @@ async function runAgent(o) {
     exit_code: spawned.code,
     spawn_error: spawned.spawnError,
     result_text: parsed?.result,
+    errors: parsed?.errors,
+    terminal_reason: parsed?.terminal_reason,
     stderr_tail: spawned.stderr.slice(-2e3)
   });
   if (row.result === "paused") {
