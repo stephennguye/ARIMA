@@ -6,6 +6,8 @@ Status key: **Open** (needs your decision), **Blocking** (a build step cannot be
 
 ---
 
+> **Owner decisions of 2026-11-18** (recorded as D-37 to D-41 in the spec): S3, S5, S7, S8, S9, S10, S11, S12, S13, S14 accepted as proposed. S4 and S16: one merge script, agents never hold push credentials, Docker sandbox (ADR-0006). S6: native Windows for attended use, Docker or WSL 2 for unattended. S18: stop when no kill-switch source can be read (built). S1: deferred, placeholder first. S15: no unattended runs for now. S2, S17 not yet answered. The spec text of the accepted items still needs amending when each is built.
+
 ## S1. Gate approver identity cannot be checked as the spec says (Blocking, needed before gates are built)
 
 - **Spec:** §7.4 step 5 and §4.2: "accept the decision only if the Notion editor of the decision field is a person listed as approver".

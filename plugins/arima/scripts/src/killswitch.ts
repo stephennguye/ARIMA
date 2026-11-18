@@ -68,13 +68,19 @@ export async function checkKillSwitch(
     const r = await remotePause();
     stateBranch = r === undefined ? 'unchecked' : r;
   }
-  const on = file || remote === true || remote === 'missing' || stateBranch === true;
+  // Owner decision (S18, principle 10): when Notion is configured but neither it nor the remote
+  // state branch could be read, nothing confirms "not paused", so ARIMA counts as paused.
+  const blind = notion !== null && remote === 'unreachable' && stateBranch === 'unchecked';
+  const on = file || remote === true || remote === 'missing' || stateBranch === true || blind;
   if (on) {
     const reasons = [
       file ? 'PAUSE file present' : '',
       remote === true ? 'Notion switch is on' : '',
       remote === 'missing' ? detail : '',
       stateBranch === true ? 'PAUSE file on the remote state branch' : '',
+      blind
+        ? `${detail}; the remote state branch could not be checked either, so ARIMA cannot confirm it is not paused`
+        : '',
     ];
     detail = reasons.filter(Boolean).join(' and ');
     if (file) {

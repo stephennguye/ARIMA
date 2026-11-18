@@ -19151,13 +19151,15 @@ async function checkKillSwitch(projectDir, notion, remotePause) {
     const r = await remotePause();
     stateBranch = r === void 0 ? "unchecked" : r;
   }
-  const on = file || remote === true || remote === "missing" || stateBranch === true;
+  const blind = notion !== null && remote === "unreachable" && stateBranch === "unchecked";
+  const on = file || remote === true || remote === "missing" || stateBranch === true || blind;
   if (on) {
     const reasons = [
       file ? "PAUSE file present" : "",
       remote === true ? "Notion switch is on" : "",
       remote === "missing" ? detail : "",
-      stateBranch === true ? "PAUSE file on the remote state branch" : ""
+      stateBranch === true ? "PAUSE file on the remote state branch" : "",
+      blind ? `${detail}; the remote state branch could not be checked either, so ARIMA cannot confirm it is not paused` : ""
     ];
     detail = reasons.filter(Boolean).join(" and ");
     if (file) {

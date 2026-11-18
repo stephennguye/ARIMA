@@ -4,7 +4,7 @@ Nov 17, 2026 · @Stephen
 
 ## 0. Document control
 
-This spec is the single source of truth for how ARIMA behaves; the Claude Code build package is generated from it. Version 0.4 is a draft: 36 decisions are recorded, and the 3 remaining questions in section 16 each have a working default.
+This spec is the single source of truth for how ARIMA behaves; the Claude Code build package is generated from it. Version 0.4 is a draft: 41 decisions are recorded, and the 3 remaining questions in section 16 each have a working default.
 
 | Version | Date | Change |
 | --- | --- | --- |
@@ -1154,7 +1154,7 @@ The repo is public under the Apache License 2.0 (D-26), with a `LICENSE` and `NO
 
 ## 16. Open questions and decision log
 
-3 questions are open, each with a working default; 36 decisions are made. Each answered question becomes a decision and updates the sections it names.
+3 questions are open, each with a working default; 41 decisions are made. Each answered question becomes a decision and updates the sections it names.
 
 ### 16.1 Open questions
 
@@ -1188,6 +1188,11 @@ The repo is public under the Apache License 2.0 (D-26), with a `LICENSE` and `NO
 
 | ID | Decision | Date | By |
 | --- | --- | --- | --- |
+| D-41 | No unattended runs for now: attended runs are made stable first; scheduled runs and seat terms (S15) wait | 2026-11-18 | You |
+| D-40 | Gate approver identity (S1) uses a placeholder at first so plugin development is not blocked; the real mechanism comes later | 2026-11-18 | You |
+| D-39 | If no kill-switch source can be read (Notion down and state branch unreadable), ARIMA counts as paused | 2026-11-18 | You |
+| D-38 | One ARIMA merge script is the only merger (CI green, QA passed, your approving review); no agent merges or pushes to the default branch | 2026-11-18 | You |
+| D-37 | Unattended runs use a Docker sandbox with no push credentials; a host script pushes and opens PRs (ADR-0006) | 2026-11-18 | You |
 | D-36 | Unattended agent runs execute inside a Docker Sandbox where one is available; otherwise they run through the Claude Code CLI directly, with the local safety layers (role tool lists, guard hook, scrubbed environment) treated as advisory (see ADR-0005 and the Stage 0 review notes) | 2026-11-18 | You |
 | D-35 | Solo-first: ARIMA is built and proven for one owner first; team features (the Client portal and guest approvals of D-17, multi-person approver groups) are deferred until after solo use is stable | 2026-11-18 | You |
 | D-34 | Notion is accessed through the public Notion API with an integration token and ARIMA's own scripts, not through a Notion MCP server (supersedes D-02; see ADR-0003) | 2026-11-18 | You |
