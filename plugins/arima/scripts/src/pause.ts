@@ -16,6 +16,7 @@ export interface PauseOptions {
   /** Commit the PAUSE file to the state branch so it survives a Notion outage. */
   saveState?: boolean;
   branch?: string;
+  allowPublic?: boolean;
   defaultBranch?: string;
   now?: Date;
 }
@@ -66,6 +67,7 @@ export async function setKillSwitch(o: PauseOptions): Promise<PauseResult> {
       const s = await pushState({
         projectDir: o.projectDir,
         runId,
+        ...(o.allowPublic ? { allowPublic: true } : {}),
         ...(o.branch ? { branch: o.branch } : {}),
         ...(o.defaultBranch ? { defaultBranch: o.defaultBranch } : {}),
       });

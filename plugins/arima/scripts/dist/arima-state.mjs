@@ -15792,7 +15792,7 @@ async function pushState(o) {
   git(r.stateDir, ["add", "-A"]);
   const staged = git(r.stateDir, ["diff", "--cached", "--name-only"]).split("\n").filter(Boolean);
   if (staged.length === 0) {
-    return { committed: false, pushed: false, files: 0 };
+    return { committed: false, pushed: false, files: 0, warnings: [] };
   }
   const bad = scanStaged(r);
   if (bad.length > 0) {
@@ -15810,11 +15810,23 @@ async function pushState(o) {
   ]);
   const commit = git(r.stateDir, ["rev-parse", "HEAD"]);
   let pushed = false;
+  const warnings = [];
   if (r.hasRemote) {
+    const privacy = checkRemotePrivacy(r, o);
+    if (privacy.kind === "public" && o.allowPublic !== true) {
+      throw new StateError(
+        `refusing to push state: ${privacy.slug} is a PUBLIC GitHub repository, and the state branch holds your Notion data (requirements, client names, costs). Make the repository private, or set github.allow_public_state: true in arima.yaml if you really mean it.`
+      );
+    }
+    if (privacy.kind === "unknown") {
+      warnings.push(
+        `could not check whether ${privacy.slug} is private (is the gh CLI installed and signed in?); make sure it is`
+      );
+    }
     git(r.stateDir, ["push", "--set-upstream", r.remote, `${r.branch}:${r.branch}`]);
     pushed = true;
   }
-  return { committed: true, pushed, commit, files: staged.length };
+  return { committed: true, pushed, commit, files: staged.length, warnings };
 }
 function stateStatus(o) {
   const r = resolve(o);
@@ -15828,6 +15840,39 @@ function stateStatus(o) {
   }
   return { worktree: true, branch: r.branch, dirty, ahead };
 }
+function githubSlug(url) {
+  const m = /^(?:https?:\/\/(?:[^@/]+@)?github\.com\/|git@github\.com:|ssh:\/\/git@github\.com\/)([^/\s]+)\/([^/\s]+?)(?:\.git)?\/?$/i.exec(
+    url.trim()
+  );
+  return m ? { owner: m[1], repo: m[2] } : void 0;
+}
+function checkRemotePrivacy(r, o) {
+  let url;
+  try {
+    url = git(r.repo, ["config", "--get", "remote." + r.remote + ".url"]);
+  } catch {
+    return { kind: "not-github" };
+  }
+  const slug = githubSlug(url);
+  if (slug === void 0) return { kind: "not-github" };
+  const name = `${slug.owner}/${slug.repo}`;
+  let priv;
+  if (o.isPrivate) {
+    priv = o.isPrivate(slug.owner, slug.repo);
+  } else {
+    try {
+      const out = execFileSync(
+        "gh",
+        ["repo", "view", name, "--json", "isPrivate", "--jq", ".isPrivate"],
+        { encoding: "utf8", timeout: 2e4, stdio: ["ignore", "pipe", "ignore"] }
+      ).trim();
+      priv = out === "true" ? true : out === "false" ? false : void 0;
+    } catch {
+      priv = void 0;
+    }
+  }
+  return { kind: priv === void 0 ? "unknown" : priv ? "private" : "public", slug: name };
+}
 
 // plugins/arima/scripts/src/cli/state-cli.ts
 var USAGE = `Usage: arima-state pull [--project <dir>]
@@ -15840,6 +15885,7 @@ function branchesFromConfig(projectDir) {
   try {
     const doc = (0, import_yaml.parse)(readFileSync4(file, "utf8"));
     return {
+      ...doc.github?.allow_public_state === true ? { allowPublic: true } : {},
       ...doc.github?.state_branch ? { branch: doc.github.state_branch } : {},
       ...doc.github?.default_branch ? { defaultBranch: doc.github.default_branch } : {}
     };

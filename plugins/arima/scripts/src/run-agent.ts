@@ -247,6 +247,9 @@ export function buildClaudeArgs(
     '--disallowedTools',
     deniedTools(o.role).join(','),
   ];
+  // Load this plugin explicitly, so the guard hooks and the arima:<role> agents are active in the
+  // run even if the plugin is not installed for this user (development, CI, another machine).
+  args.push('--plugin-dir', pluginRoot());
   if (o.config.model !== undefined) args.push('--model', o.config.model);
   if (agentName !== undefined) args.push('--agent', agentName);
   if (o.sessionId !== undefined) args.push('--resume', o.sessionId);

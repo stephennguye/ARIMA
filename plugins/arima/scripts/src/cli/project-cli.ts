@@ -20,6 +20,7 @@ interface Settings {
   tokenEnv: string;
   branch?: string;
   defaultBranch?: string;
+  allowPublic?: boolean;
 }
 
 function settingsOf(projectDir: string): Settings {
@@ -29,8 +30,9 @@ function settingsOf(projectDir: string): Settings {
   try {
     const doc = parse(readFileSync(file, 'utf8')) as {
       notion?: { root_page_id?: string; token_env?: string };
-      github?: { state_branch?: string; default_branch?: string };
+      github?: { state_branch?: string; default_branch?: string; allow_public_state?: boolean };
     };
+    if (doc.github?.allow_public_state === true) out.allowPublic = true;
     if (doc.notion?.root_page_id && !doc.notion.root_page_id.startsWith('<'))
       out.rootPageId = doc.notion.root_page_id;
     if (doc.notion?.token_env) out.tokenEnv = doc.notion.token_env;
@@ -205,6 +207,7 @@ export async function runPauseCli(
     ...(v.reason !== undefined ? { reason: v.reason } : {}),
     notion,
     saveState: v['no-state'] !== true,
+    ...(s.allowPublic ? { allowPublic: true } : {}),
     ...(s.branch ? { branch: s.branch } : {}),
     ...(s.defaultBranch ? { defaultBranch: s.defaultBranch } : {}),
     ...(deps.now ? { now: deps.now } : {}),

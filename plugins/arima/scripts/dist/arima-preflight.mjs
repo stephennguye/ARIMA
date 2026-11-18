@@ -18574,8 +18574,34 @@ function validateProject(projectDir, root = pluginRoot()) {
       message: "usage credits are enabled: set a spend cap and note it in the digest configuration (Q-22); budgets are estimates, not money spent"
     });
   }
+  const listed = new Set(
+    arima.autonomy.hard_stops
+  );
+  const missing = REQUIRED_HARD_STOPS.filter((s) => !listed.has(s));
+  if (missing.length > 0) {
+    warnings.push({
+      severity: "warning",
+      file: aSrc.file,
+      line: aSrc.lineOf("/autonomy/hard_stops"),
+      path: "autonomy.hard_stops",
+      message: `hard stops missing from this list: ${missing.join(", ")}. ARIMA enforces them anyway (they cannot be disabled by configuration, spec \xA711.1); keep the list complete so it matches what is enforced`
+    });
+  }
   return { ok: errors.length === 0, errors, warnings, arima, team };
 }
+var REQUIRED_HARD_STOPS = [
+  "G0",
+  "G1",
+  "G2",
+  "G3",
+  "G4",
+  "prod_deploy",
+  "secrets_change",
+  "budget_exceeded",
+  "notion_delete",
+  "prod_data_migration",
+  "new_paid_service"
+];
 
 // plugins/arima/scripts/src/notion/port.ts
 var import_client = __toESM(require_src(), 1);

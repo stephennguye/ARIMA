@@ -10,14 +10,19 @@ export const USAGE = `Usage: arima-state pull [--project <dir>]
        arima-state status [--project <dir>]
 Keeps .arima/ on the orphan branch from github.state_branch (default arima-state). Never touches main.`;
 
-function branchesFromConfig(projectDir: string): { branch?: string; defaultBranch?: string } {
+function branchesFromConfig(projectDir: string): {
+  branch?: string;
+  defaultBranch?: string;
+  allowPublic?: boolean;
+} {
   const file = path.join(projectDir, 'arima.yaml');
   if (!existsSync(file)) return {};
   try {
     const doc = parse(readFileSync(file, 'utf8')) as {
-      github?: { state_branch?: string; default_branch?: string };
+      github?: { state_branch?: string; default_branch?: string; allow_public_state?: boolean };
     };
     return {
+      ...(doc.github?.allow_public_state === true ? { allowPublic: true } : {}),
       ...(doc.github?.state_branch ? { branch: doc.github.state_branch } : {}),
       ...(doc.github?.default_branch ? { defaultBranch: doc.github.default_branch } : {}),
     };

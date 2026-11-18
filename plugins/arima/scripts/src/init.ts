@@ -229,7 +229,7 @@ export async function runInit(o: InitOptions): Promise<InitResult> {
   const raw = arima as unknown as {
     project: { name: string };
     notion: { root_page_id: string };
-    github: { state_branch: string; default_branch: string };
+    github: { state_branch: string; default_branch: string; allow_public_state?: boolean };
   };
   const name = raw.project.name;
   const root = o.rootPageId ?? raw.notion.root_page_id;
@@ -446,7 +446,9 @@ export async function runInit(o: InitOptions): Promise<InitResult> {
         runId,
         branch: raw.github.state_branch,
         defaultBranch: raw.github.default_branch,
+        ...(raw.github.allow_public_state === true ? { allowPublic: true } : {}),
       });
+      for (const w of s.warnings) result.warnings.push(w);
       log(
         s.committed
           ? `state committed${s.pushed ? ' and pushed' : ' (no remote yet)'}`

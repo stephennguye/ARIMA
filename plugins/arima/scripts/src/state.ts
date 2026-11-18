@@ -27,6 +27,10 @@ export interface StateOptions {
   /** The app's default branch; the state branch must differ from it. */
   defaultBranch?: string;
   remote?: string;
+  /** Allow pushing state (client data) to a PUBLIC GitHub repository. Off unless the owner opts in. */
+  allowPublic?: boolean;
+  /** Tells whether a GitHub repo is private; defaults to asking `gh`. Tests inject this. */
+  isPrivate?: (owner: string, repo: string) => boolean | undefined;
 }
 
 const DEFAULT_BRANCH = 'arima-state';
@@ -235,6 +239,7 @@ export interface PushResult {
   pushed: boolean;
   commit?: string;
   files: number;
+  warnings: string[];
 }
 
 /** Files (relative to `.arima/`) that look like they contain a credential. */
@@ -277,7 +282,7 @@ export async function pushState(o: StateOptions & { runId: string }): Promise<Pu
   git(r.stateDir, ['add', '-A']);
   const staged = git(r.stateDir, ['diff', '--cached', '--name-only']).split('\n').filter(Boolean);
   if (staged.length === 0) {
-    return { committed: false, pushed: false, files: 0 };
+    return { committed: false, pushed: false, files: 0, warnings: [] };
   }
   const bad = scanStaged(r);
   if (bad.length > 0) {
@@ -296,11 +301,25 @@ export async function pushState(o: StateOptions & { runId: string }): Promise<Pu
   const commit = git(r.stateDir, ['rev-parse', 'HEAD']);
 
   let pushed = false;
+  const warnings: string[] = [];
   if (r.hasRemote) {
+    // The state branch holds the Notion mirror: client names, requirements, costs. It must go only
+    // to a private repository (spec §9.4, §11.3).
+    const privacy = checkRemotePrivacy(r, o);
+    if (privacy.kind === 'public' && o.allowPublic !== true) {
+      throw new StateError(
+        `refusing to push state: ${privacy.slug} is a PUBLIC GitHub repository, and the state branch holds your Notion data (requirements, client names, costs). Make the repository private, or set github.allow_public_state: true in arima.yaml if you really mean it.`,
+      );
+    }
+    if (privacy.kind === 'unknown') {
+      warnings.push(
+        `could not check whether ${privacy.slug} is private (is the gh CLI installed and signed in?); make sure it is`,
+      );
+    }
     git(r.stateDir, ['push', '--set-upstream', r.remote, `${r.branch}:${r.branch}`]);
     pushed = true;
   }
-  return { committed: true, pushed, commit, files: staged.length };
+  return { committed: true, pushed, commit, files: staged.length, warnings };
 }
 
 export interface StateStatus {
@@ -352,4 +371,43 @@ export function remotePauseFlag(o: StateOptions): boolean | undefined {
     return false;
   }
   return gitOk(r.repo, ['cat-file', '-e', `${ref}:PAUSE`]);
+}
+
+type Privacy = { kind: 'private' | 'public' | 'unknown'; slug: string } | { kind: 'not-github' };
+
+/** owner/repo from a GitHub remote URL (https or ssh), or undefined for any other remote. */
+export function githubSlug(url: string): { owner: string; repo: string } | undefined {
+  const m =
+    /^(?:https?:\/\/(?:[^@/]+@)?github\.com\/|git@github\.com:|ssh:\/\/git@github\.com\/)([^/\s]+)\/([^/\s]+?)(?:\.git)?\/?$/i.exec(
+      url.trim(),
+    );
+  return m ? { owner: m[1] as string, repo: m[2] as string } : undefined;
+}
+
+function checkRemotePrivacy(r: Resolved, o: StateOptions): Privacy {
+  let url: string;
+  try {
+    url = git(r.repo, ['config', '--get', 'remote.' + r.remote + '.url']);
+  } catch {
+    return { kind: 'not-github' };
+  }
+  const slug = githubSlug(url);
+  if (slug === undefined) return { kind: 'not-github' };
+  const name = `${slug.owner}/${slug.repo}`;
+  let priv: boolean | undefined;
+  if (o.isPrivate) {
+    priv = o.isPrivate(slug.owner, slug.repo);
+  } else {
+    try {
+      const out = execFileSync(
+        'gh',
+        ['repo', 'view', name, '--json', 'isPrivate', '--jq', '.isPrivate'],
+        { encoding: 'utf8', timeout: 20_000, stdio: ['ignore', 'pipe', 'ignore'] },
+      ).trim();
+      priv = out === 'true' ? true : out === 'false' ? false : undefined;
+    } catch {
+      priv = undefined;
+    }
+  }
+  return { kind: priv === undefined ? 'unknown' : priv ? 'private' : 'public', slug: name };
 }
