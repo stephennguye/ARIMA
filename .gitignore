@@ -13,3 +13,4 @@ notion_api.txt
 *.token
 *.secret
 secrets/
+.claude/
