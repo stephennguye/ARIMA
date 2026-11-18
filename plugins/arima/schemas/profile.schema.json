@@ -1,0 +1,79 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/stephennguye/ARIMA/schemas/profile.schema.json",
+  "title": "profile",
+  "description": "A rigor preset (spec §4.3): which gates are enforced, who approves, which rules and artifacts apply.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "name", "gates", "rules", "artifacts"],
+  "properties": {
+    "schema_version": { "const": 1 },
+    "name": { "enum": ["solo-lite", "client-project", "regulated"] },
+    "gates": {
+      "type": "object",
+      "minProperties": 1,
+      "propertyNames": { "enum": ["G0", "G1", "G2", "G3", "G4"] },
+      "additionalProperties": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["approvers", "require"],
+        "properties": {
+          "approvers": {
+            "type": "array",
+            "minItems": 1,
+            "uniqueItems": true,
+            "items": { "enum": ["sponsor", "po", "legal"] }
+          },
+          "require": { "const": "all" }
+        }
+      }
+    },
+    "rules": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["urs_separate", "srs", "dpia", "master_test_plan", "rtm_coverage_at_g3", "code_review", "security_signoff_g3", "human_pentest", "evidence_pack", "change_requests"],
+      "properties": {
+        "urs_separate": { "type": "boolean" },
+        "srs": { "enum": ["inside_prd", "separate", "separate_formally_reviewed"] },
+        "dpia": { "enum": ["if_personal_data", "always"] },
+        "master_test_plan": { "type": "boolean" },
+        "rtm_coverage_at_g3": { "enum": ["none", "must_requirements", "all_requirements"] },
+        "code_review": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["reviewers", "mode", "human_pr_approval"],
+          "properties": {
+            "reviewers": { "type": "integer", "minimum": 1, "maximum": 2 },
+            "mode": { "enum": ["agent", "agent_against_tl_rules", "independent"] },
+            "human_pr_approval": { "const": true }
+          }
+        },
+        "security_signoff_g3": { "enum": ["agent_report", "agent_report_plus_human_ack", "human_security_reviewer"] },
+        "human_pentest": { "enum": ["none", "recommended", "required"] },
+        "evidence_pack": { "enum": ["none", "notion_page", "notion_page_plus_pdf_export"] },
+        "change_requests": { "enum": ["informal", "impact_analysis", "impact_analysis_plus_sponsor_signoff"] }
+      }
+    },
+    "artifacts": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["required", "conditional", "recommended", "human_only"],
+      "properties": {
+        "required": { "$ref": "#/$defs/slugs" },
+        "conditional": {
+          "type": "object",
+          "additionalProperties": { "enum": ["personal_data"] }
+        },
+        "recommended": { "$ref": "#/$defs/slugs" },
+        "human_only": { "$ref": "#/$defs/slugs" }
+      }
+    }
+  },
+  "$defs": {
+    "slugs": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": { "type": "string", "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$" }
+    }
+  }
+}
