@@ -354,4 +354,4 @@ The scheduler only ever calls `/arima:run`.
 
 **Generated, never hand-written:** the requirements traceability matrix (Notion relations view) - the changelog (`CHANGELOG.md`, from merged pull request titles) - the run ledger and event log (`.arima/` on the state branch).
 
-Which of these have a template today: project brief, PRD, user story, decision record, bug, gate evidence pack, meeting minutes, digest, postmortem and change request. The other 48 have no template yet; deciding their required sections is the first job of the template step in `docs/BUILD-GUIDE.md`.
+Which of these have a template today: project brief, PRD, user story, decision record, bug, gate evidence pack, meeting minutes, digest, postmortem and change request. The artifact catalog (`plugins/arima/catalog/artifacts.yaml`, 58 entries) now covers the rest: 28 more document templates exist as **drafts written by the builder for the owner's review** (their required sections are the builder's proposal, not yet spec text), and the other artifacts are Notion records, generated files, code or external documents with no document template.

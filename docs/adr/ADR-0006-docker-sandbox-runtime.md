@@ -1,6 +1,6 @@
 # ADR-0006: `runtime.sandbox: docker | none` for unattended agent runs
 
-- Status: Proposed (needs the owner's confirmation; implements decision D-36 and answers the sandbox gap in spec issue S6 and judge review #2, finding 3)
+- Status: Accepted in principle by D-37 (2026-11-18); design only, not yet built (implements decision D-36 and answers the sandbox gap in spec issue S6 and judge review #2, finding 3)
 - Date: 2026-11-18
 
 ## Context

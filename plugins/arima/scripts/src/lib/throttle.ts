@@ -66,7 +66,8 @@ export function isTransient(e: unknown): boolean {
   if (/^(ECONNRESET|ETIMEDOUT|ENOTFOUND|EAI_AGAIN|ECONNREFUSED|UND_ERR_.*)$/.test(code))
     return true;
   if (typeof err?.status === 'number' && [500, 502, 503, 504].includes(err.status)) return true;
-  return /fetch failed|socket hang up|network/i.test(String(err?.message ?? ''));
+  if (code === 'notionhq_client_request_timeout') return true;
+  return /fetch failed|socket hang up|network|timed out/i.test(String(err?.message ?? ''));
 }
 
 /**

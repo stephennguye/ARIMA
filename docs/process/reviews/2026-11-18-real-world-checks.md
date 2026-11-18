@@ -6,7 +6,7 @@ What was run for real (not mocked), what it showed, and what changed because of 
 
 | Check | Result |
 | --- | --- |
-| Notion token | Valid. Bot "ARIMA" in workspace "Gà Bông's Notion" |
+| Notion token | Valid. Bot "ARIMA" in the owner's workspace |
 | Notion pages shared with the integration | **0.** Bootstrap, map, mirror, outbox and init against real Notion are therefore still NOT done (see "Waiting on the owner") |
 | `arima-run-agent` smoke run (QA role, "reply OK") | Passed: exit 0, real result JSON parsed, one ledger row, `run.start`/`run.end` events, run report |
 | Plugin loads in a live session (`--plugin-dir`) | Passed: agent `arima:orchestrator` and skills `arima:init`, `arima:status`, `arima:pause` all listed |

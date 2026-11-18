@@ -16,6 +16,7 @@ export function scrub<T>(value: T): T {
   };
   const walk = (v: unknown, k?: string): unknown => {
     if (typeof v === 'string') {
+      if (k === 'workspace_name') return 'Test Workspace';
       if (k === 'name' && /@/.test(v)) return 'Test User';
       if (k === 'email' || k === 'avatar_url') return k === 'email' ? 'test@example.com' : null;
       if (k === 'url' || k === 'public_url')

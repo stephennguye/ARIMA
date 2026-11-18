@@ -18831,7 +18831,8 @@ function isTransient(e) {
   if (/^(ECONNRESET|ETIMEDOUT|ENOTFOUND|EAI_AGAIN|ECONNREFUSED|UND_ERR_.*)$/.test(code2))
     return true;
   if (typeof err?.status === "number" && [500, 502, 503, 504].includes(err.status)) return true;
-  return /fetch failed|socket hang up|network/i.test(String(err?.message ?? ""));
+  if (code2 === "notionhq_client_request_timeout") return true;
+  return /fetch failed|socket hang up|network|timed out/i.test(String(err?.message ?? ""));
 }
 async function withReadRetry(fn, o = {}) {
   const { retries = 2, baseMs = 300, sleep: wait = (ms) => sleep(ms) } = o;

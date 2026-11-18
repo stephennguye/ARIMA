@@ -720,7 +720,7 @@ At each milestone end, the orchestrator feeds agents the ledger metrics, rework 
 | Run hits its budget cap | Item Blocked; question with cost so far and options |
 | Third failed review or QA attempt | Item Blocked; escalated in digest |
 | Missing credential or account | Hard stop; question to the responsible human |
-| Notion or GitHub unreachable | Work continues on local state; outbox retried next run |
+| Notion or GitHub unreachable | Work continues on local state; outbox retried next run. Exception (D-39): if no kill-switch source can be read at all, ARIMA counts as paused |
 
 ## 8. Artifact catalog
 
@@ -965,7 +965,7 @@ ARIMA is safe to leave running because 11 hard stops are enforced in code (hooks
 - **Test data** is synthetic; production personal data is never copied to staging or prompts.
 - **Credentials scope:** each run gets the narrowest token it needs (read-only GitHub for analysis runs, write for developer branches, Notion only for the orchestrator).
 - **Audit:** every tool call that changes state is written to `events.jsonl` with run ID, role, item ID and timestamp.
-- **Kill switch:** the "Pause ARIMA" checkbox on the Notion root page, also readable from a `PAUSE` file on the state branch if Notion is unreachable.
+- **Kill switch:** the "Pause ARIMA" checkbox on the Notion root page, also readable from a `PAUSE` file on the state branch if Notion is unreachable; if neither can be read, ARIMA counts as paused (D-39).
 
 ## 12. Human-in-the-loop interface
 
@@ -1193,7 +1193,7 @@ The repo is public under the Apache License 2.0 (D-26), with a `LICENSE` and `NO
 | D-39 | If no kill-switch source can be read (Notion down and state branch unreadable), ARIMA counts as paused | 2026-11-18 | You |
 | D-38 | One ARIMA merge script is the only merger (CI green, QA passed, your approving review); no agent merges or pushes to the default branch | 2026-11-18 | You |
 | D-37 | Unattended runs use a Docker sandbox with no push credentials; a host script pushes and opens PRs (ADR-0006) | 2026-11-18 | You |
-| D-36 | Unattended agent runs execute inside a Docker Sandbox where one is available; otherwise they run through the Claude Code CLI directly, with the local safety layers (role tool lists, guard hook, scrubbed environment) treated as advisory (see ADR-0005 and the Stage 0 review notes) | 2026-11-18 | You |
+| D-36 | Agent runs execute inside a Docker Sandbox where one is available (mandatory for unattended runs, D-37); otherwise attended runs use the Claude Code CLI directly, with the local safety layers (role tool lists, guard hook, scrubbed environment) treated as advisory (see ADR-0005 and the Stage 0 review notes) | 2026-11-18 | You |
 | D-35 | Solo-first: ARIMA is built and proven for one owner first; team features (the Client portal and guest approvals of D-17, multi-person approver groups) are deferred until after solo use is stable | 2026-11-18 | You |
 | D-34 | Notion is accessed through the public Notion API with an integration token and ARIMA's own scripts, not through a Notion MCP server (supersedes D-02; see ADR-0003) | 2026-11-18 | You |
 | D-33 | ARIMA builds web apps only; mobile platforms, app-store distribution and mobile testing are out of scope for v1.0 | 2026-11-17 | You |

@@ -189,7 +189,7 @@ artifacts:
     consumers: developer, qa
     required_in: C R (inside PRD for S)
     required:
-      solo_lite: true
+      solo_lite: false
       client_project: true
       regulated: true
     kind: document
@@ -318,6 +318,12 @@ artifacts:
       regulated: true
     kind: record
     template: user-story.md
+    sections:
+      - Story
+      - Acceptance criteria
+      - Screens
+      - Test cases
+      - Notes
   - id: requirement-review-log
     name: Requirement review log
     phase: "1"
@@ -369,6 +375,11 @@ artifacts:
       regulated: true
     kind: code
     template: adr.md
+    sections:
+      - Context
+      - Decision
+      - Alternatives considered
+      - Consequences
   - id: openapi
     name: OpenAPI spec
     phase: 2+
@@ -607,6 +618,11 @@ artifacts:
       regulated: true
     kind: record
     template: bug.md
+    sections:
+      - Steps to reproduce
+      - Expected
+      - Actual
+      - Evidence
   - id: milestone-review
     name: Milestone review
     phase: "4"
@@ -635,6 +651,14 @@ artifacts:
       regulated: true
     kind: record
     template: digest.md
+    sections:
+      - Headline
+      - Awaiting you
+      - Shipped
+      - Decisions made
+      - Blockers and risks
+      - Cost and time
+      - Run health
   - id: decision-log
     name: Decision log
     phase: all
@@ -677,6 +701,11 @@ artifacts:
       regulated: true
     kind: record
     template: meeting-minutes.md
+    sections:
+      - Inputs
+      - Decisions
+      - Open issues
+      - Action items
   - id: lessons
     name: Lessons
     phase: 4+
@@ -740,7 +769,7 @@ artifacts:
     required_in: R; C recommended
     required:
       solo_lite: false
-      client_project: true
+      client_project: false
       regulated: true
     kind: document
     template: pentest-report.md
@@ -902,6 +931,14 @@ artifacts:
       regulated: true
     kind: record
     template: postmortem.md
+    sections:
+      - Summary
+      - Impact
+      - Timeline
+      - Root cause
+      - Contributing factors
+      - What went well
+      - Action items
   - id: change-requests
     name: Change requests, impact analyses
     phase: "8"
@@ -916,6 +953,11 @@ artifacts:
       regulated: true
     kind: record
     template: change-request.md
+    sections:
+      - Description
+      - Reason
+      - Impact analysis
+      - Decision
   - id: slo-cost-reports
     name: SLO and cost reports
     phase: "8"
