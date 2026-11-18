@@ -74,7 +74,7 @@ Notion's API does not always accept formulas and rollups. If `bootstrap` reports
 | Milestones | Cost USD | Rollup | Relation Cost log, property Cost USD, sum |
 | Risks | Score | Formula | `prop("Probability") * prop("Impact")` |
 
-A formula that reads a rollup of a select property sees text, so the Coverage formula uses `contains(...)`; an earlier version of this template used `.some(current == "Pass")`, which the real API does not accept for this rollup. A workspace built with the old formula needs that one property edited by hand (`arima-notion map` does not change an existing property).
+A formula that reads a rollup of a select property sees text, so the Coverage formula uses `contains(...)`; an earlier version of this template used a list-style test on the rollup, which the real API does not accept for this rollup. A workspace built with the old formula needs that one property edited by hand (`arima-notion map` does not change an existing property).
 
 Then run `arima-notion map` again.
 
