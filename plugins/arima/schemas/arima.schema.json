@@ -160,7 +160,7 @@
         "production": {
           "allOf": [
             { "$ref": "#/$defs/environment" },
-            { "properties": { "deploy": { "const": "gated" } } }
+            { "type": "object", "properties": { "deploy": { "const": "gated" } } }
           ]
         }
       }
