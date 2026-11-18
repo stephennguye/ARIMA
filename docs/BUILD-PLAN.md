@@ -68,9 +68,17 @@ Spec references use §N (e.g. §4.1 = spec section 4.1).
   - error_max_turns and error_max_budget_usd map to result blocked (spec 7.12); callers may override the outcome (e.g. QA fail).
 
 ### T-06 Agent-run wrapper (§3.2, §13.3, §13.5)
-- [ ] `arima-run-agent --role <r> --item <id> --budget <usd> --max-turns <n> --prompt-file <f> [--cwd <worktree>]` invokes `claude -p` with `--output-format json`, `--max-budget-usd`, the turn cap and the role's tool allow-list; sets `OTEL_RESOURCE_ATTRIBUTES` (`arima.project`, `arima.phase`, `arima.item`, `arima.role`, `arima.run_id`); writes the ledger row and start/end events.
-- [ ] Detects a seat usage-limit stop and records it as a pause, not a failure (§4.4).
+- [x] `arima-run-agent --role <r> --item <id> --budget <usd> --max-turns <n> --prompt-file <f> [--cwd <worktree>]` invokes `claude -p` with `--output-format json`, `--max-budget-usd`, the turn cap and the role's tool allow-list; sets `OTEL_RESOURCE_ATTRIBUTES` (`arima.project`, `arima.phase`, `arima.item`, `arima.role`, `arima.run_id`); writes the ledger row and start/end events.
+- [x] Detects a seat usage-limit stop and records it as a pause, not a failure (§4.4).
 - **Accept:** tested with a stub `claude` executable on PATH; one manual smoke run against the real CLI documented in the task notes.
+- **Notes (done 2026-11-17):**
+  - Tested with a stub CLI (test/fixtures/stub-claude.mjs, selected via ARIMA_CLAUDE_BIN or the claudeBin option; a node .mjs stub is run through node so it works on Windows without a .cmd shim). 28 tests cover caps, tools, OTEL attributes, rework, resume cost diff, usage-limit pause, timeout, spawn failure, garbage output and the per-run cap guard.
+  - MANUAL SMOKE RUN NOT DONE (needs your go, it spends a little seat usage). To do it: copy examples/arima.yaml and examples/team.yaml into a scratch dir, put 'Reply with the single word OK.' in p.md, then run: node plugins/arima/scripts/dist/arima-run-agent.mjs --role qa --item none --budget 0.1 --max-turns 2 --prompt-file p.md --project <scratch dir>. Expect exit 0, one ledger row and run.start/run.end events. This also confirms the real result JSON shape the parser assumes.
+  - Verified without a model call: claude 2.1.326 accepts --max-turns (hidden from --help), --max-budget-usd, --permission-mode dontAsk, --allowedTools/--disallowedTools, --agent, --resume, --output-format json.
+  - Run results: exit 0 pass, 1 failed/error, 2 usage or invalid config, 3 blocked by turn or budget cap, 75 paused at usage limit (recorded as result paused, event run.paused, never run.end).
+  - Least privilege: only the orchestrator keeps the Notion token in its environment; only developer, tech-lead and devops keep the GitHub machine token; no role may use any Notion MCP tool. Tool rules use Claude Code permission syntax such as Bash(git *); confirm the exact matching in the smoke run.
+  - Prompt goes in on stdin (no argument-length or quoting problems on Windows). The wrapper passes --agent arima:<role> only if agents/<role>.md exists (none until T-11).
+  - Extra flags beyond the plan: --project, --phase (default 4), --attempt, --milestone, --rework-reason, --session, --agent.
 
 ### T-07 Preflight, lock and kill switch (§7.2 step 1, §11.1)
 - [ ] `arima-preflight`: config valid, no other run holds `.arima/run.lock`, kill switch off (Notion root-page checkbox, or `PAUSE` file on the state branch when Notion is unreachable), budget remaining > 0, required env vars present.
