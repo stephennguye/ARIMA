@@ -17,6 +17,7 @@ import { PREFLIGHT_EXIT, runPreflight } from './preflight.js';
 import { enforcedGates, loadProfile, requiredApproverRoles } from './profiles.js';
 import type { GateId } from './profiles.js';
 import { releaseRunLock } from './runlock.js';
+import { renderTemplate } from './templates.js';
 import { issueRunId } from './runid.js';
 import { StateError, pushState } from './state.js';
 
@@ -75,33 +76,19 @@ function charter(
         : `agent${r.count ? ` x${r.count}` : ''}`;
     return `- ${role}: ${who}`;
   });
-  return [
-    `# Charter: ${name}`,
-    '',
-    `Project ${a.project.key} for ${a.project.client}. Profile: ${a.profile}. Skeleton drafted by the orchestrator from the brief; the sponsor reviews it at G0.`,
-    '',
-    '## Scope',
-    '### In scope (must-have features)',
-    brief['Must-have features'] ?? 'None',
-    '### Out of scope',
-    brief['Out of scope'] ?? 'None',
-    '',
-    '## Goals and KPIs',
-    brief['Goals and KPIs'] ?? 'None',
-    '',
-    '## Rough milestones',
-    'To be proposed after G0. Milestones of 8-12 points are planned in Phase 2.',
-    '',
-    '## Budget plan',
-    `Project cap ${fmt(a.budget.project_cap)} (estimated consumption). See the Budget plan document.`,
-    '',
-    '## Risks',
-    brief['Known risks'] ?? 'None',
-    '',
-    '## Roles and responsibilities (from team.yaml)',
-    ...raci,
-    '',
-  ].join('\n');
+  return renderTemplate('charter', {
+    name,
+    key: a.project.key,
+    client: a.project.client,
+    profile: a.profile,
+    in_scope: brief['Must-have features'] ?? 'None',
+    out_of_scope: brief['Out of scope'] ?? 'None',
+    goals: brief['Goals and KPIs'] ?? 'None',
+    roles: raci.join('\n'),
+    project_cap: fmt(a.budget.project_cap),
+    constraints: brief['Constraints'] ?? 'None',
+    risks: brief['Known risks'] ?? 'None',
+  });
 }
 
 function budgetPlan(arima: ArimaConfig): string {
@@ -119,27 +106,16 @@ function budgetPlan(arima: ArimaConfig): string {
     }
   ).budget;
   const sizes = b.by_size ?? { S: 1, M: 3, L: 6 };
-  return [
-    '# Budget plan',
-    '',
-    `All amounts are estimated USD consumption, not money spent (spec §4.4, §13.6).`,
-    '',
-    '## Caps',
-    `- Project cap: ${fmt(b.project_cap)}`,
-    `- Daily cap: ${fmt(b.daily_cap)}`,
-    `- Per-run cap: ${fmt(b.per_run_cap)}`,
-    `- Default per story: ${fmt(b.per_story_default)}`,
-    '',
-    '## Story budgets by size',
-    ...Object.entries(sizes).map(([k, v]) => `- ${k}: ${fmt(v)}`),
-    '',
-    '## Alerts',
-    `Alerts at ${b.alert_thresholds.map((t) => `${Math.round(t * 100)}%`).join(', ')} of each budget.`,
-    '',
-    '## Infrastructure and hosting',
-    'To be estimated by the architect at Phase 2 (hosting cost estimate).',
-    '',
-  ].join('\n');
+  return renderTemplate('budget-plan', {
+    project_cap: fmt(b.project_cap),
+    daily_cap: fmt(b.daily_cap),
+    per_run_cap: fmt(b.per_run_cap),
+    per_story_default: fmt(b.per_story_default),
+    story_budgets: Object.entries(sizes)
+      .map(([k, v]) => `- ${k}: ${fmt(v)}`)
+      .join('\n'),
+    alerts: b.alert_thresholds.map((t) => `${Math.round(t * 100)}%`).join(', '),
+  });
 }
 
 function evidencePack(
@@ -150,31 +126,14 @@ function evidencePack(
   approvers: string,
   checked: ReadonlySet<string>,
 ): string {
-  return [
-    `# ${gate} evidence pack: ${name}`,
-    '',
-    `Prepared by orchestrator run ${runId} on ${date}. Approvers: ${approvers}.`,
-    'Decision: Not ready.',
-    '',
-    '## Criteria checklist',
-    ...GATE_CRITERIA[gate].map((c) => `- [${checked.has(c) ? 'x' : ' '}] ${c}`),
-    '',
-    '## Artifact links',
-    'None yet.',
-    '',
-    '## Open risks',
-    'None recorded yet.',
-    '',
-    '## Known issues',
-    'None.',
-    '',
-    '## Agent recommendation',
-    'Not ready: the criteria above are not all met.',
-    '',
-    '## Cost and time to date',
-    'See the Cost log.',
-    '',
-  ].join('\n');
+  return renderTemplate('gate-page', {
+    gate,
+    name,
+    run_id: runId,
+    date,
+    approvers,
+    criteria: GATE_CRITERIA[gate].map((c) => `- [${checked.has(c) ? 'x' : ' '}] ${c}`).join('\n'),
+  });
 }
 
 /**
