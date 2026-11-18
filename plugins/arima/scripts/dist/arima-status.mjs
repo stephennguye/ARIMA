@@ -18606,6 +18606,17 @@ function readJsonl(file, schema) {
   return out;
 }
 
+// plugins/arima/scripts/src/killswitch.ts
+import path5 from "node:path";
+
+// plugins/arima/scripts/src/notion/port.ts
+var import_client = __toESM(require_src(), 1);
+
+// plugins/arima/scripts/src/killswitch.ts
+function pauseFile(projectDir) {
+  return path5.join(projectDir, ".arima", "PAUSE");
+}
+
 // plugins/arima/scripts/src/gates.ts
 var PHASE_AFTER_GATE = {
   G0: "1 Discovery and requirements",
@@ -18616,9 +18627,9 @@ var PHASE_AFTER_GATE = {
 };
 
 // plugins/arima/scripts/src/ledger.ts
-import path5 from "node:path";
+import path6 from "node:path";
 function ledgerFile(projectDir) {
-  return path5.join(projectDir, ".arima", "ledger.jsonl");
+  return path6.join(projectDir, ".arima", "ledger.jsonl");
 }
 function readLedger(projectDir) {
   return readJsonl(ledgerFile(projectDir), "ledger");
@@ -19049,9 +19060,9 @@ var DATABASES = [
 
 // plugins/arima/scripts/src/notion/mirror.ts
 import { existsSync as existsSync4, mkdirSync as mkdirSync2, readFileSync as readFileSync5 } from "node:fs";
-import path6 from "node:path";
-var mirrorDir = (projectDir) => path6.join(projectDir, ".arima", "mirror");
-var mirrorFile = (projectDir, db) => path6.join(mirrorDir(projectDir), `${db}.json`);
+import path7 from "node:path";
+var mirrorDir = (projectDir) => path7.join(projectDir, ".arima", "mirror");
+var mirrorFile = (projectDir, db) => path7.join(mirrorDir(projectDir), `${db}.json`);
 function readMirror(projectDir, db) {
   const file = mirrorFile(projectDir, db);
   if (!existsSync4(file)) return void 0;
@@ -19077,16 +19088,8 @@ function budgetStatus(projectDir, limits, today) {
   };
 }
 
-// plugins/arima/scripts/src/killswitch.ts
-import path7 from "node:path";
-
-// plugins/arima/scripts/src/notion/port.ts
-var import_client = __toESM(require_src(), 1);
-
-// plugins/arima/scripts/src/killswitch.ts
-function pauseFile(projectDir) {
-  return path7.join(projectDir, ".arima", "PAUSE");
-}
+// plugins/arima/scripts/src/state.ts
+var MAX_SCAN_BYTES = 5 * 1024 * 1024;
 
 // plugins/arima/scripts/src/preflight.ts
 var PREFLIGHT_EXIT = {
@@ -19105,9 +19108,6 @@ var CODE = {
   budget: PREFLIGHT_EXIT.budget,
   env: PREFLIGHT_EXIT.env
 };
-
-// plugins/arima/scripts/src/state.ts
-var MAX_SCAN_BYTES = 5 * 1024 * 1024;
 
 // plugins/arima/scripts/src/status.ts
 import path8 from "node:path";

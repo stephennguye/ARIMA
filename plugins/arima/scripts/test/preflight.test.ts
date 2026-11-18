@@ -311,11 +311,12 @@ describe('kill switch helpers', () => {
     expect(n.todos).toEqual([{ id: 'b1', text: PAUSE_TODO_TEXT, checked: true }]);
   });
 
-  it('reports a missing switch without pausing', async () => {
+  it('treats a missing switch as paused (fail closed): a deleted switch must not mean running', async () => {
     const n = new FakeNotion();
     n.todos = [];
     const s = await checkKillSwitch(tempDir(), { port: n, rootPageId: 'root' });
-    expect(s).toMatchObject({ on: false, notion: 'missing' });
+    expect(s).toMatchObject({ on: true, notion: 'missing' });
+    expect(s.detail).toContain('recreate');
   });
 });
 

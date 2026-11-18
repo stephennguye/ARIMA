@@ -322,3 +322,34 @@ export function stateStatus(o: StateOptions): StateStatus {
   }
   return { worktree: true, branch: r.branch, dirty, ahead };
 }
+
+/**
+ * Whether the PAUSE file exists on the remote state branch (spec §11.3: the kill switch must be
+ * readable from the state branch when Notion is unreachable). Fetches with a short timeout and
+ * never prompts. Returns true or false, or undefined if the answer could not be obtained (no git
+ * repo, no remote, or the network is down).
+ */
+export function remotePauseFlag(o: StateOptions): boolean | undefined {
+  let r: Resolved;
+  try {
+    r = resolve(o);
+  } catch {
+    return undefined;
+  }
+  if (!r.hasRemote) return undefined;
+  const ref = `refs/remotes/${r.remote}/${r.branch}`;
+  try {
+    execFileSync('git', ['fetch', '--quiet', r.remote, `+refs/heads/${r.branch}:${ref}`], {
+      cwd: r.repo,
+      stdio: ['ignore', 'ignore', 'pipe'],
+      timeout: 15_000,
+      env: { ...process.env, GIT_TERMINAL_PROMPT: '0' },
+    });
+  } catch (e) {
+    // A remote that simply has no state branch yet has no PAUSE file either.
+    const msg = String((e as { stderr?: unknown }).stderr ?? '');
+    if (!/couldn't find remote ref/i.test(msg)) return undefined;
+    return false;
+  }
+  return gitOk(r.repo, ['cat-file', '-e', `${ref}:PAUSE`]);
+}

@@ -2,6 +2,7 @@ import { appendEvent } from './events.js';
 import { budgetStatus, newBudgetAlerts, readAlertHistory } from './budget.js';
 import { validateProject } from './config.js';
 import { checkKillSwitch } from './killswitch.js';
+import { remotePauseFlag } from './state.js';
 import type { PauseSwitchPort } from './notion/port.js';
 import { acquireRunLock, lockStatus } from './runlock.js';
 
@@ -42,6 +43,8 @@ export interface PreflightOptions {
   /** Create the run lock for this run id when every check passes. */
   acquireFor?: string;
   now?: Date;
+  /** Reads the PAUSE file on the remote state branch; defaults to a real git fetch. */
+  statePause?: () => Promise<boolean | undefined>;
 }
 
 const CODE: Record<CheckName, number> = {
@@ -89,7 +92,21 @@ export async function runPreflight(opts: PreflightOptions): Promise<PreflightRes
   // 2. kill switch (works without a valid config: the PAUSE file needs none)
   const notionTarget =
     opts.notion && arima ? { port: opts.notion, rootPageId: arima.notion.root_page_id } : null;
-  const ks = await checkKillSwitch(opts.projectDir, notionTarget);
+  const stateBranch = arima as unknown as
+    { github?: { state_branch?: string; default_branch?: string } } | undefined;
+  const statePause =
+    opts.statePause ??
+    (() =>
+      Promise.resolve(
+        remotePauseFlag({
+          projectDir: opts.projectDir,
+          ...(stateBranch?.github?.state_branch ? { branch: stateBranch.github.state_branch } : {}),
+          ...(stateBranch?.github?.default_branch
+            ? { defaultBranch: stateBranch.github.default_branch }
+            : {}),
+        }),
+      ));
+  const ks = await checkKillSwitch(opts.projectDir, notionTarget, statePause);
   const ksCheck: CheckResult = {
     check: 'kill_switch',
     ok: !ks.on,

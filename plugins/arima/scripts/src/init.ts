@@ -4,6 +4,7 @@ import { BRIEF_SECTIONS, checkBrief, describeGaps } from './brief.js';
 import { validateProject } from './config.js';
 import type { ArimaConfig, TeamConfig } from './config.js';
 import { appendEvent } from './events.js';
+import { ensureNotionSwitch } from './killswitch.js';
 import { GATE_CRITERIA, GATE_PHASE } from './gates.js';
 import { appendLedgerRow, buildLedgerRow } from './ledger.js';
 import { mapAndWrite } from './notion/map-file.js';
@@ -214,6 +215,14 @@ export async function runInit(o: InitOptions): Promise<InitResult> {
   };
   const name = raw.project.name;
   const root = o.rootPageId ?? raw.notion.root_page_id;
+
+  // The Notion kill switch must exist (a missing one reads as paused). Creating it unchecked never
+  // changes an existing switch. If Notion is down, the preflight below reports it.
+  try {
+    await ensureNotionSwitch(o.port, root);
+  } catch {
+    /* reported by the preflight */
+  }
 
   // 3. run id, preflight and lock
   const runId = await issueRunId(o.projectDir, now);

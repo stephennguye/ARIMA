@@ -18757,6 +18757,294 @@ function readEvents(projectDir) {
   return readJsonl(eventsFile(projectDir), "event");
 }
 
+// plugins/arima/scripts/src/killswitch.ts
+import { existsSync as existsSync4, mkdirSync as mkdirSync2, readFileSync as readFileSync5, rmSync, writeFileSync } from "node:fs";
+import path7 from "node:path";
+
+// plugins/arima/scripts/src/notion/port.ts
+var import_client = __toESM(require_src(), 1);
+
+// plugins/arima/scripts/src/lib/throttle.ts
+import { setTimeout as sleep2 } from "node:timers/promises";
+var Throttle = class {
+  constructor(minIntervalMs = 334, now = Date.now, wait = (ms) => sleep2(ms)) {
+    this.minIntervalMs = minIntervalMs;
+    this.now = now;
+    this.wait = wait;
+  }
+  minIntervalMs;
+  now;
+  wait;
+  next = 0;
+  async run(fn) {
+    const start = Math.max(this.now(), this.next);
+    this.next = start + this.minIntervalMs;
+    const delay = start - this.now();
+    if (delay > 0) await this.wait(delay);
+    return fn();
+  }
+};
+function isRateLimited(e) {
+  const err = e;
+  return err?.status === 429 || err?.code === "rate_limited";
+}
+function retryAfterMs(e) {
+  const headers = e?.headers;
+  if (headers === void 0 || headers === null) return void 0;
+  const raw = typeof headers.get === "function" ? headers.get("retry-after") : headers["retry-after"];
+  const seconds = Number(raw);
+  return Number.isFinite(seconds) && seconds >= 0 && raw !== null && raw !== void 0 ? seconds * 1e3 : void 0;
+}
+async function withBackoff(fn, o = {}) {
+  const { retries = 5, baseMs = 500, maxMs = 3e4, sleep: wait = (ms) => sleep2(ms) } = o;
+  for (let attempt = 0; ; attempt++) {
+    try {
+      return await fn();
+    } catch (e) {
+      if (!isRateLimited(e) || attempt >= retries) throw e;
+      await wait(retryAfterMs(e) ?? Math.min(maxMs, baseMs * 2 ** attempt));
+    }
+  }
+}
+
+// plugins/arima/scripts/src/notion/port.ts
+var PAUSE_TODO_TEXT = "Pause ARIMA";
+var plain = (rt) => (rt ?? []).map((t2) => t2.plain_text ?? "").join("");
+function toDatabaseInfo(raw) {
+  const dataSourceId = raw.data_sources?.[0]?.id;
+  if (dataSourceId === void 0) throw new Error(`database ${raw.id} has no data source`);
+  return { id: raw.id, title: plain(raw.title), dataSourceId };
+}
+function createNotionPort(client, throttle = new Throttle(), backoff = {}) {
+  const call = (fn) => throttle.run(() => withBackoff(fn, backoff));
+  const listChildren = async (pageId) => {
+    const out = [];
+    let cursor;
+    for (; ; ) {
+      const page = await call(
+        () => client.blocks.children.list({
+          block_id: pageId,
+          page_size: 100,
+          ...cursor !== void 0 ? { start_cursor: cursor } : {}
+        })
+      );
+      for (const raw of page.results) {
+        if (raw.id === void 0 || raw.type === void 0) continue;
+        if (raw.type === "to_do" && raw.to_do) {
+          out.push({
+            id: raw.id,
+            type: "to_do",
+            text: plain(raw.to_do.rich_text),
+            checked: raw.to_do.checked === true
+          });
+        } else if (raw.type === "paragraph") {
+          out.push({ id: raw.id, type: "paragraph", text: plain(raw.paragraph?.rich_text) });
+        } else if (raw.type === "child_database") {
+          out.push({ id: raw.id, type: "child_database", text: raw.child_database?.title ?? "" });
+        } else {
+          out.push({ id: raw.id, type: raw.type, text: "" });
+        }
+      }
+      if (!page.has_more || page.next_cursor === null) return out;
+      cursor = page.next_cursor;
+    }
+  };
+  const getDataSourceProperties = async (dataSourceId) => {
+    const raw = await call(
+      () => client.dataSources.retrieve({ data_source_id: dataSourceId })
+    );
+    const out = {};
+    for (const [name, p] of Object.entries(raw.properties ?? {})) {
+      const info = { id: p.id, name: p.name ?? name, type: p.type };
+      const opts = p.select?.options ?? p.multi_select?.options;
+      if (opts) info.options = opts.map((o) => o.name);
+      if (p.relation?.data_source_id) info.relationTarget = p.relation.data_source_id;
+      out[name] = info;
+    }
+    return out;
+  };
+  return {
+    listChildren,
+    async listTodoBlocks(pageId) {
+      return (await listChildren(pageId)).filter((b) => b.type === "to_do").map((b) => ({ id: b.id, text: b.text, checked: b.checked === true }));
+    },
+    async setTodoChecked(blockId, checked) {
+      await call(() => client.blocks.update({ block_id: blockId, to_do: { checked } }));
+    },
+    async appendTodo(pageId, text2, checked) {
+      const res = await call(
+        () => client.blocks.children.append({
+          block_id: pageId,
+          children: [
+            {
+              object: "block",
+              type: "to_do",
+              to_do: { rich_text: [{ type: "text", text: { content: text2 } }], checked }
+            }
+          ]
+        })
+      );
+      const id = res.results[0]?.id;
+      if (id === void 0) throw new Error("Notion did not return the created block");
+      return id;
+    },
+    async appendParagraph(pageId, text2) {
+      const res = await call(
+        () => client.blocks.children.append({
+          block_id: pageId,
+          children: [
+            {
+              object: "block",
+              type: "paragraph",
+              paragraph: { rich_text: [{ type: "text", text: { content: text2 } }] }
+            }
+          ]
+        })
+      );
+      const id = res.results[0]?.id;
+      if (id === void 0) throw new Error("Notion did not return the created block");
+      return id;
+    },
+    async createDatabase(parentPageId, title, properties) {
+      const raw = await call(
+        () => client.databases.create({
+          parent: { type: "page_id", page_id: parentPageId },
+          title: [{ type: "text", text: { content: title } }],
+          is_inline: true,
+          initial_data_source: { properties }
+        })
+      );
+      return toDatabaseInfo({ ...raw, title: raw.title ?? [{ plain_text: title }] });
+    },
+    async getDatabase(databaseId) {
+      const raw = await call(
+        () => client.databases.retrieve({ database_id: databaseId })
+      );
+      return toDatabaseInfo(raw);
+    },
+    getDataSourceProperties,
+    async addProperties(dataSourceId, properties) {
+      const existing = await getDataSourceProperties(dataSourceId);
+      const clash = Object.keys(properties).filter((n) => n in existing);
+      if (clash.length > 0) {
+        throw new Error(`refusing to alter existing Notion properties: ${clash.join(", ")}`);
+      }
+      await call(() => client.dataSources.update({ data_source_id: dataSourceId, properties }));
+    },
+    async queryRows(dataSourceId) {
+      const rows = [];
+      let cursor;
+      for (; ; ) {
+        const page = await call(
+          () => client.dataSources.query({
+            data_source_id: dataSourceId,
+            page_size: 100,
+            ...cursor !== void 0 ? { start_cursor: cursor } : {}
+          })
+        );
+        for (const raw of page.results) {
+          if (raw.object !== void 0 && raw.object !== "page") continue;
+          rows.push({
+            pageId: raw.id,
+            lastEdited: raw.last_edited_time,
+            properties: raw.properties ?? {}
+          });
+        }
+        if (!page.has_more || page.next_cursor === null) return rows;
+        cursor = page.next_cursor;
+      }
+    },
+    async getPageLastEdited(pageId) {
+      const raw = await call(() => client.pages.retrieve({ page_id: pageId }));
+      return raw.last_edited_time;
+    },
+    async createPage(dataSourceId, properties, children) {
+      const first = children?.slice(0, 100);
+      const raw = await call(
+        () => client.pages.create({
+          parent: { type: "data_source_id", data_source_id: dataSourceId },
+          properties,
+          ...first && first.length > 0 ? { children: first } : {}
+        })
+      );
+      let lastEdited = raw.last_edited_time;
+      for (let i = 100; children && i < children.length; i += 100) {
+        const rest = children.slice(i, i + 100);
+        await call(() => client.blocks.children.append({ block_id: raw.id, children: rest }));
+      }
+      if (children && children.length > 100) lastEdited = await this.getPageLastEdited(raw.id);
+      return { pageId: raw.id, lastEdited };
+    },
+    async updatePage(pageId, properties) {
+      const raw = await call(() => client.pages.update({ page_id: pageId, properties }));
+      return { lastEdited: raw.last_edited_time };
+    },
+    async appendChildren(pageId, blocks) {
+      for (let i = 0; i < blocks.length; i += 100) {
+        const chunk = blocks.slice(i, i + 100);
+        await call(() => client.blocks.children.append({ block_id: pageId, children: chunk }));
+      }
+    }
+  };
+}
+function createNotionPortFromToken(token) {
+  const client = new import_client.Client({ auth: token, retry: false });
+  return createNotionPort(client);
+}
+
+// plugins/arima/scripts/src/killswitch.ts
+function pauseFile(projectDir) {
+  return path7.join(projectDir, ".arima", "PAUSE");
+}
+async function checkKillSwitch(projectDir, notion, remotePause) {
+  const file = existsSync4(pauseFile(projectDir));
+  let remote = "unchecked";
+  let detail = "";
+  if (notion !== null) {
+    try {
+      const todos = await notion.port.listTodoBlocks(notion.rootPageId);
+      const sw = todos.find((t2) => t2.text.trim() === PAUSE_TODO_TEXT);
+      if (sw === void 0) {
+        remote = "missing";
+        detail = `the "${PAUSE_TODO_TEXT}" to-do is missing from the Notion root page, so ARIMA cannot tell whether it is paused; run /arima:pause --resume to recreate it`;
+      } else {
+        remote = sw.checked;
+      }
+    } catch (e) {
+      remote = "unreachable";
+      detail = `Notion unreachable (${e instanceof Error ? e.message : String(e)})`;
+    }
+  }
+  let stateBranch = "unchecked";
+  if (!file && remote !== true && remotePause !== void 0 && remote !== false) {
+    const r = await remotePause();
+    stateBranch = r === void 0 ? "unchecked" : r;
+  }
+  const on = file || remote === true || remote === "missing" || stateBranch === true;
+  if (on) {
+    const reasons = [
+      file ? "PAUSE file present" : "",
+      remote === true ? "Notion switch is on" : "",
+      remote === "missing" ? detail : "",
+      stateBranch === true ? "PAUSE file on the remote state branch" : ""
+    ];
+    detail = reasons.filter(Boolean).join(" and ");
+    if (file) {
+      const first = readFileSync5(pauseFile(projectDir), "utf8").split("\n")[0] ?? "";
+      if (first.trim() !== "") detail += ` (${first.trim()})`;
+    }
+  } else if (remote === "unreachable") {
+    detail += stateBranch === false ? "; the remote state branch has no PAUSE file" : "; the remote state branch could not be checked either, so only the local PAUSE file was consulted";
+  }
+  return { on, file, notion: remote, stateBranch, detail };
+}
+async function ensureNotionSwitch(port, rootPageId) {
+  const todos = await port.listTodoBlocks(rootPageId);
+  if (todos.some((t2) => t2.text.trim() === PAUSE_TODO_TEXT)) return false;
+  await port.appendTodo(rootPageId, PAUSE_TODO_TEXT, false);
+  return true;
+}
+
 // plugins/arima/scripts/src/gates.ts
 var GATE_PHASE = { G0: 0, G1: 1, G2: 2, G3: 5, G4: 7 };
 var GATE_CRITERIA = {
@@ -18799,9 +19087,9 @@ var GATE_CRITERIA = {
 };
 
 // plugins/arima/scripts/src/ledger.ts
-import path7 from "node:path";
+import path8 from "node:path";
 function ledgerFile(projectDir) {
-  return path7.join(projectDir, ".arima", "ledger.jsonl");
+  return path8.join(projectDir, ".arima", "ledger.jsonl");
 }
 var round6 = (n) => Math.round(n * 1e6) / 1e6;
 var int = (n) => Math.max(0, Math.round(n ?? 0));
@@ -18853,16 +19141,16 @@ function readLedger(projectDir) {
 }
 
 // plugins/arima/scripts/src/notion/map-file.ts
-import { mkdirSync as mkdirSync4 } from "node:fs";
-import path10 from "node:path";
+import { mkdirSync as mkdirSync5 } from "node:fs";
+import path11 from "node:path";
 
 // plugins/arima/scripts/src/lib/atomic-file.ts
-import { mkdirSync as mkdirSync2, renameSync, unlinkSync as unlinkSync2, writeFileSync } from "node:fs";
-import path8 from "node:path";
+import { mkdirSync as mkdirSync3, renameSync, unlinkSync as unlinkSync2, writeFileSync as writeFileSync2 } from "node:fs";
+import path9 from "node:path";
 function writeFileAtomic(file, content) {
-  mkdirSync2(path8.dirname(file), { recursive: true });
+  mkdirSync3(path9.dirname(file), { recursive: true });
   const tmp = `${file}.${process.pid}.tmp`;
-  writeFileSync(tmp, content, "utf8");
+  writeFileSync2(tmp, content, "utf8");
   for (let attempt = 0; ; attempt++) {
     try {
       renameSync(tmp, file);
@@ -19648,8 +19936,8 @@ function buildMap(rootPageId, specs, found, propsByKey, now) {
 }
 
 // plugins/arima/scripts/src/notion/mirror.ts
-import { existsSync as existsSync4, mkdirSync as mkdirSync3, readFileSync as readFileSync5 } from "node:fs";
-import path9 from "node:path";
+import { existsSync as existsSync5, mkdirSync as mkdirSync4, readFileSync as readFileSync6 } from "node:fs";
+import path10 from "node:path";
 
 // plugins/arima/scripts/src/notion/values.ts
 var CHUNK = 2e3;
@@ -19696,13 +19984,13 @@ function toNotionValue(type, name, value, resolveRelation) {
       throw new ValueError(`"${name}" is a ${type} property, which agents cannot write`);
   }
 }
-var plain = (rt) => Array.isArray(rt) ? rt.map((t2) => t2.plain_text ?? "").join("") : "";
+var plain2 = (rt) => Array.isArray(rt) ? rt.map((t2) => t2.plain_text ?? "").join("") : "";
 function fromNotionValue(raw) {
   switch (raw.type) {
     case "title":
-      return plain(raw["title"]);
+      return plain2(raw["title"]);
     case "rich_text":
-      return plain(raw["rich_text"]);
+      return plain2(raw["rich_text"]);
     case "number":
       return raw["number"] ?? null;
     case "select":
@@ -19783,9 +20071,9 @@ function markdownToBlocks(markdown) {
 }
 
 // plugins/arima/scripts/src/notion/mirror.ts
-var mirrorDir = (projectDir) => path9.join(projectDir, ".arima", "mirror");
-var mirrorFile = (projectDir, db) => path9.join(mirrorDir(projectDir), `${db}.json`);
-var notionMapFile = (projectDir) => path9.join(projectDir, ".arima", "notion-map.json");
+var mirrorDir = (projectDir) => path10.join(projectDir, ".arima", "mirror");
+var mirrorFile = (projectDir, db) => path10.join(mirrorDir(projectDir), `${db}.json`);
+var notionMapFile = (projectDir) => path10.join(projectDir, ".arima", "notion-map.json");
 function toMirrorRow(raw) {
   const properties = {};
   let id = "";
@@ -19797,11 +20085,11 @@ function toMirrorRow(raw) {
 }
 function readMirror(projectDir, db) {
   const file = mirrorFile(projectDir, db);
-  if (!existsSync4(file)) return void 0;
-  return JSON.parse(readFileSync5(file, "utf8"));
+  if (!existsSync5(file)) return void 0;
+  return JSON.parse(readFileSync6(file, "utf8"));
 }
 function writeMirror(projectDir, m) {
-  mkdirSync3(mirrorDir(projectDir), { recursive: true });
+  mkdirSync4(mirrorDir(projectDir), { recursive: true });
   writeFileAtomic(mirrorFile(projectDir, m.database), `${JSON.stringify(m, null, 2)}
 `);
 }
@@ -19841,7 +20129,7 @@ async function mapAndWrite(projectDir, port, rootPageId, opts = {}) {
     );
   }
   const file = notionMapFile(projectDir);
-  mkdirSync4(path10.dirname(file), { recursive: true });
+  mkdirSync5(path11.dirname(file), { recursive: true });
   writeFileAtomic(file, `${JSON.stringify(result.map, null, 2)}
 `);
   return { result, file };
@@ -19849,15 +20137,15 @@ async function mapAndWrite(projectDir, port, rootPageId, opts = {}) {
 
 // plugins/arima/scripts/src/notion/outbox.ts
 import {
-  existsSync as existsSync5,
-  mkdirSync as mkdirSync5,
-  readFileSync as readFileSync6,
+  existsSync as existsSync6,
+  mkdirSync as mkdirSync6,
+  readFileSync as readFileSync7,
   readdirSync as readdirSync2,
   renameSync as renameSync2,
-  writeFileSync as writeFileSync2
+  writeFileSync as writeFileSync3
 } from "node:fs";
-import path11 from "node:path";
-var outboxDir = (projectDir) => path11.join(projectDir, ".arima", "outbox");
+import path12 from "node:path";
+var outboxDir = (projectDir) => path12.join(projectDir, ".arima", "outbox");
 var UUID = /^[0-9a-f]{8}-?[0-9a-f]{4}-?[0-9a-f]{4}-?[0-9a-f]{4}-?[0-9a-f]{12}$/i;
 function enqueue(projectDir, entry) {
   const validate = getValidator("outbox");
@@ -19867,23 +20155,23 @@ function enqueue(projectDir, entry) {
     );
   }
   const dir = outboxDir(projectDir);
-  mkdirSync5(dir, { recursive: true });
-  const file = path11.join(dir, `${entry.id}.json`);
-  if (existsSync5(file)) throw new Error(`outbox entry ${entry.id} already exists`);
+  mkdirSync6(dir, { recursive: true });
+  const file = path12.join(dir, `${entry.id}.json`);
+  if (existsSync6(file)) throw new Error(`outbox entry ${entry.id} already exists`);
   writeFileAtomic(file, `${JSON.stringify(entry, null, 2)}
 `);
   return file;
 }
 function listPending(projectDir, report) {
   const dir = outboxDir(projectDir);
-  if (!existsSync5(dir)) return [];
+  if (!existsSync6(dir)) return [];
   const validate = getValidator("outbox");
   const out = [];
   for (const name of readdirSync2(dir).filter((f) => f.endsWith(".json")).sort()) {
-    const file = path11.join(dir, name);
+    const file = path12.join(dir, name);
     let data;
     try {
-      data = JSON.parse(readFileSync6(file, "utf8"));
+      data = JSON.parse(readFileSync7(file, "utf8"));
     } catch {
       settle(
         projectDir,
@@ -19912,11 +20200,11 @@ function settle(projectDir, file, id, result, report) {
   else if (result.kind === "rejected") report.rejected.push({ id, reason: result.reason });
   else report.deferred.push(id);
   if (bucket === void 0) return;
-  const dir = path11.join(outboxDir(projectDir), bucket);
-  mkdirSync5(dir, { recursive: true });
-  renameSync2(file, path11.join(dir, `${id}.json`));
-  writeFileSync2(
-    path11.join(dir, `${id}.result.json`),
+  const dir = path12.join(outboxDir(projectDir), bucket);
+  mkdirSync6(dir, { recursive: true });
+  renameSync2(file, path12.join(dir, `${id}.json`));
+  writeFileSync3(
+    path12.join(dir, `${id}.result.json`),
     `${JSON.stringify({ ...result, at: (/* @__PURE__ */ new Date()).toISOString() }, null, 2)}
 `
   );
@@ -20158,285 +20446,244 @@ function readAlertHistory(projectDir) {
   return readEvents(projectDir).filter((e) => e.type === "budget.alert");
 }
 
-// plugins/arima/scripts/src/killswitch.ts
-import { existsSync as existsSync6, mkdirSync as mkdirSync6, readFileSync as readFileSync7, rmSync, writeFileSync as writeFileSync3 } from "node:fs";
-import path12 from "node:path";
-
-// plugins/arima/scripts/src/notion/port.ts
-var import_client = __toESM(require_src(), 1);
-
-// plugins/arima/scripts/src/lib/throttle.ts
-import { setTimeout as sleep2 } from "node:timers/promises";
-var Throttle = class {
-  constructor(minIntervalMs = 334, now = Date.now, wait = (ms) => sleep2(ms)) {
-    this.minIntervalMs = minIntervalMs;
-    this.now = now;
-    this.wait = wait;
-  }
-  minIntervalMs;
-  now;
-  wait;
-  next = 0;
-  async run(fn) {
-    const start = Math.max(this.now(), this.next);
-    this.next = start + this.minIntervalMs;
-    const delay = start - this.now();
-    if (delay > 0) await this.wait(delay);
-    return fn();
-  }
+// plugins/arima/scripts/src/state.ts
+import { execFileSync } from "node:child_process";
+import {
+  appendFileSync as appendFileSync2,
+  cpSync,
+  existsSync as existsSync7,
+  mkdirSync as mkdirSync7,
+  mkdtempSync,
+  readFileSync as readFileSync8,
+  realpathSync,
+  readdirSync as readdirSync3,
+  rmSync as rmSync2,
+  statSync as statSync2,
+  writeFileSync as writeFileSync4
+} from "node:fs";
+import { tmpdir } from "node:os";
+import path13 from "node:path";
+var StateError = class extends Error {
 };
-function isRateLimited(e) {
-  const err = e;
-  return err?.status === 429 || err?.code === "rate_limited";
-}
-function retryAfterMs(e) {
-  const headers = e?.headers;
-  if (headers === void 0 || headers === null) return void 0;
-  const raw = typeof headers.get === "function" ? headers.get("retry-after") : headers["retry-after"];
-  const seconds = Number(raw);
-  return Number.isFinite(seconds) && seconds >= 0 && raw !== null && raw !== void 0 ? seconds * 1e3 : void 0;
-}
-async function withBackoff(fn, o = {}) {
-  const { retries = 5, baseMs = 500, maxMs = 3e4, sleep: wait = (ms) => sleep2(ms) } = o;
-  for (let attempt = 0; ; attempt++) {
-    try {
-      return await fn();
-    } catch (e) {
-      if (!isRateLimited(e) || attempt >= retries) throw e;
-      await wait(retryAfterMs(e) ?? Math.min(maxMs, baseMs * 2 ** attempt));
-    }
+var DEFAULT_BRANCH = "arima-state";
+var STATE_GITIGNORE = "*.lock\n*.tmp\nrun.lock\n";
+var STATE_GITATTRIBUTES = "* -text\n";
+var MAX_SCAN_BYTES = 5 * 1024 * 1024;
+function git(cwd, args, input) {
+  try {
+    return execFileSync("git", args, {
+      cwd,
+      encoding: "utf8",
+      input,
+      stdio: ["pipe", "pipe", "pipe"]
+    }).trimEnd();
+  } catch (e) {
+    const err = e;
+    const detail = (err.stderr ? String(err.stderr) : err.message).trim();
+    throw new StateError(`git ${args.join(" ")} failed: ${detail}`, { cause: e });
   }
 }
-
-// plugins/arima/scripts/src/notion/port.ts
-var PAUSE_TODO_TEXT = "Pause ARIMA";
-var plain2 = (rt) => (rt ?? []).map((t2) => t2.plain_text ?? "").join("");
-function toDatabaseInfo(raw) {
-  const dataSourceId = raw.data_sources?.[0]?.id;
-  if (dataSourceId === void 0) throw new Error(`database ${raw.id} has no data source`);
-  return { id: raw.id, title: plain2(raw.title), dataSourceId };
+function gitOk(cwd, args) {
+  try {
+    execFileSync("git", args, { cwd, stdio: "ignore" });
+    return true;
+  } catch {
+    return false;
+  }
 }
-function createNotionPort(client, throttle = new Throttle(), backoff = {}) {
-  const call = (fn) => throttle.run(() => withBackoff(fn, backoff));
-  const listChildren = async (pageId) => {
-    const out = [];
-    let cursor;
-    for (; ; ) {
-      const page = await call(
-        () => client.blocks.children.list({
-          block_id: pageId,
-          page_size: 100,
-          ...cursor !== void 0 ? { start_cursor: cursor } : {}
-        })
-      );
-      for (const raw of page.results) {
-        if (raw.id === void 0 || raw.type === void 0) continue;
-        if (raw.type === "to_do" && raw.to_do) {
-          out.push({
-            id: raw.id,
-            type: "to_do",
-            text: plain2(raw.to_do.rich_text),
-            checked: raw.to_do.checked === true
-          });
-        } else if (raw.type === "paragraph") {
-          out.push({ id: raw.id, type: "paragraph", text: plain2(raw.paragraph?.rich_text) });
-        } else if (raw.type === "child_database") {
-          out.push({ id: raw.id, type: "child_database", text: raw.child_database?.title ?? "" });
-        } else {
-          out.push({ id: raw.id, type: raw.type, text: "" });
-        }
-      }
-      if (!page.has_more || page.next_cursor === null) return out;
-      cursor = page.next_cursor;
+function identityArgs(cwd) {
+  const has = (key) => {
+    try {
+      return execFileSync("git", ["config", key], { cwd, encoding: "utf8" }).trim() !== "";
+    } catch {
+      return false;
     }
   };
-  const getDataSourceProperties = async (dataSourceId) => {
-    const raw = await call(
-      () => client.dataSources.retrieve({ data_source_id: dataSourceId })
+  return has("user.name") && has("user.email") ? [] : ["-c", "user.name=ARIMA", "-c", "user.email=arima@users.noreply.github.com"];
+}
+function resolve(o) {
+  const repo = path13.resolve(o.projectDir);
+  if (!existsSync7(repo) || !gitOk(repo, ["rev-parse", "--git-dir"])) {
+    throw new StateError(`${repo} is not a git repository`);
+  }
+  const norm2 = (p) => {
+    const real = realpathSync.native(p);
+    return process.platform === "win32" ? real.toLowerCase() : real;
+  };
+  if (norm2(git(repo, ["rev-parse", "--show-toplevel"])) !== norm2(repo)) {
+    throw new StateError(`${repo} is not the root of a git repository`);
+  }
+  const branch = o.branch ?? DEFAULT_BRANCH;
+  if (branch === (o.defaultBranch ?? "main") || branch === "main" || branch === "master") {
+    throw new StateError(
+      `refusing to use "${branch}" as the state branch; ARIMA never touches the default branch`
     );
-    const out = {};
-    for (const [name, p] of Object.entries(raw.properties ?? {})) {
-      const info = { id: p.id, name: p.name ?? name, type: p.type };
-      const opts = p.select?.options ?? p.multi_select?.options;
-      if (opts) info.options = opts.map((o) => o.name);
-      if (p.relation?.data_source_id) info.relationTarget = p.relation.data_source_id;
-      out[name] = info;
-    }
-    return out;
-  };
-  return {
-    listChildren,
-    async listTodoBlocks(pageId) {
-      return (await listChildren(pageId)).filter((b) => b.type === "to_do").map((b) => ({ id: b.id, text: b.text, checked: b.checked === true }));
-    },
-    async setTodoChecked(blockId, checked) {
-      await call(() => client.blocks.update({ block_id: blockId, to_do: { checked } }));
-    },
-    async appendTodo(pageId, text2, checked) {
-      const res = await call(
-        () => client.blocks.children.append({
-          block_id: pageId,
-          children: [
-            {
-              object: "block",
-              type: "to_do",
-              to_do: { rich_text: [{ type: "text", text: { content: text2 } }], checked }
-            }
-          ]
-        })
-      );
-      const id = res.results[0]?.id;
-      if (id === void 0) throw new Error("Notion did not return the created block");
-      return id;
-    },
-    async appendParagraph(pageId, text2) {
-      const res = await call(
-        () => client.blocks.children.append({
-          block_id: pageId,
-          children: [
-            {
-              object: "block",
-              type: "paragraph",
-              paragraph: { rich_text: [{ type: "text", text: { content: text2 } }] }
-            }
-          ]
-        })
-      );
-      const id = res.results[0]?.id;
-      if (id === void 0) throw new Error("Notion did not return the created block");
-      return id;
-    },
-    async createDatabase(parentPageId, title, properties) {
-      const raw = await call(
-        () => client.databases.create({
-          parent: { type: "page_id", page_id: parentPageId },
-          title: [{ type: "text", text: { content: title } }],
-          is_inline: true,
-          initial_data_source: { properties }
-        })
-      );
-      return toDatabaseInfo({ ...raw, title: raw.title ?? [{ plain_text: title }] });
-    },
-    async getDatabase(databaseId) {
-      const raw = await call(
-        () => client.databases.retrieve({ database_id: databaseId })
-      );
-      return toDatabaseInfo(raw);
-    },
-    getDataSourceProperties,
-    async addProperties(dataSourceId, properties) {
-      const existing = await getDataSourceProperties(dataSourceId);
-      const clash = Object.keys(properties).filter((n) => n in existing);
-      if (clash.length > 0) {
-        throw new Error(`refusing to alter existing Notion properties: ${clash.join(", ")}`);
-      }
-      await call(() => client.dataSources.update({ data_source_id: dataSourceId, properties }));
-    },
-    async queryRows(dataSourceId) {
-      const rows = [];
-      let cursor;
-      for (; ; ) {
-        const page = await call(
-          () => client.dataSources.query({
-            data_source_id: dataSourceId,
-            page_size: 100,
-            ...cursor !== void 0 ? { start_cursor: cursor } : {}
-          })
-        );
-        for (const raw of page.results) {
-          if (raw.object !== void 0 && raw.object !== "page") continue;
-          rows.push({
-            pageId: raw.id,
-            lastEdited: raw.last_edited_time,
-            properties: raw.properties ?? {}
-          });
-        }
-        if (!page.has_more || page.next_cursor === null) return rows;
-        cursor = page.next_cursor;
-      }
-    },
-    async getPageLastEdited(pageId) {
-      const raw = await call(() => client.pages.retrieve({ page_id: pageId }));
-      return raw.last_edited_time;
-    },
-    async createPage(dataSourceId, properties, children) {
-      const first = children?.slice(0, 100);
-      const raw = await call(
-        () => client.pages.create({
-          parent: { type: "data_source_id", data_source_id: dataSourceId },
-          properties,
-          ...first && first.length > 0 ? { children: first } : {}
-        })
-      );
-      let lastEdited = raw.last_edited_time;
-      for (let i = 100; children && i < children.length; i += 100) {
-        const rest = children.slice(i, i + 100);
-        await call(() => client.blocks.children.append({ block_id: raw.id, children: rest }));
-      }
-      if (children && children.length > 100) lastEdited = await this.getPageLastEdited(raw.id);
-      return { pageId: raw.id, lastEdited };
-    },
-    async updatePage(pageId, properties) {
-      const raw = await call(() => client.pages.update({ page_id: pageId, properties }));
-      return { lastEdited: raw.last_edited_time };
-    },
-    async appendChildren(pageId, blocks) {
-      for (let i = 0; i < blocks.length; i += 100) {
-        const chunk = blocks.slice(i, i + 100);
-        await call(() => client.blocks.children.append({ block_id: pageId, children: chunk }));
-      }
-    }
-  };
+  }
+  const remote = o.remote ?? "origin";
+  const hasRemote = git(repo, ["remote"]).split("\n").includes(remote);
+  return { repo, stateDir: path13.join(repo, ".arima"), branch, remote, hasRemote };
 }
-function createNotionPortFromToken(token) {
-  const client = new import_client.Client({ auth: token, retry: false });
-  return createNotionPort(client);
+function excludeArima(repo) {
+  const rel2 = git(repo, ["rev-parse", "--git-path", "info/exclude"]);
+  const file = path13.resolve(repo, rel2);
+  mkdirSync7(path13.dirname(file), { recursive: true });
+  const current = existsSync7(file) ? readFileSync8(file, "utf8") : "";
+  if (!current.split(/\r?\n/).includes("/.arima/")) {
+    appendFileSync2(file, `${current.endsWith("\n") || current === "" ? "" : "\n"}/.arima/
+`);
+  }
 }
-
-// plugins/arima/scripts/src/killswitch.ts
-function pauseFile(projectDir) {
-  return path12.join(projectDir, ".arima", "PAUSE");
+var isWorktree = (stateDir) => existsSync7(path13.join(stateDir, ".git"));
+var isEmptyDir = (dir) => !existsSync7(dir) || readdirSync3(dir).length === 0;
+function localBranchExists(r) {
+  return gitOk(r.repo, ["show-ref", "--verify", "--quiet", `refs/heads/${r.branch}`]);
 }
-async function checkKillSwitch(projectDir, notion) {
-  const file = existsSync6(pauseFile(projectDir));
-  let remote = "unchecked";
-  let detail = "";
-  if (notion !== null) {
+function remoteBranchExists(r) {
+  return gitOk(r.repo, ["show-ref", "--verify", "--quiet", `refs/remotes/${r.remote}/${r.branch}`]);
+}
+function createOrphanBranch(r) {
+  const tree = git(r.repo, ["mktree"], "");
+  const commit = git(r.repo, [
+    ...identityArgs(r.repo),
+    "commit-tree",
+    tree,
+    "-m",
+    "chore(state): initialise arima-state"
+  ]);
+  git(r.repo, ["branch", r.branch, commit]);
+}
+function ensureWorktree(r) {
+  excludeArima(r.repo);
+  if (r.hasRemote) {
     try {
-      const todos = await notion.port.listTodoBlocks(notion.rootPageId);
-      const sw = todos.find((t2) => t2.text.trim() === PAUSE_TODO_TEXT);
-      if (sw === void 0) {
-        remote = "missing";
-        detail = `no "${PAUSE_TODO_TEXT}" to-do found on the Notion root page`;
-      } else {
-        remote = sw.checked;
-      }
-    } catch (e) {
-      remote = "unreachable";
-      detail = `Notion unreachable (${e instanceof Error ? e.message : String(e)}); using the PAUSE file only`;
+      git(r.repo, ["fetch", r.remote, `${r.branch}:refs/remotes/${r.remote}/${r.branch}`]);
+    } catch {
     }
   }
-  const on = file || remote === true;
-  if (on) {
-    const reasons = [
-      file ? "PAUSE file present" : "",
-      remote === true ? "Notion switch is on" : ""
-    ];
-    detail = reasons.filter(Boolean).join(" and ");
-    if (file) {
-      const first = readFileSync7(pauseFile(projectDir), "utf8").split("\n")[0] ?? "";
-      if (first.trim() !== "") detail += ` (${first.trim()})`;
+  if (isWorktree(r.stateDir)) {
+    const head = git(r.stateDir, ["rev-parse", "--abbrev-ref", "HEAD"]);
+    if (head !== r.branch)
+      throw new StateError(`.arima/ is on branch "${head}", expected "${r.branch}"`);
+    return;
+  }
+  const exists = localBranchExists(r) || remoteBranchExists(r);
+  const hasFiles = !isEmptyDir(r.stateDir);
+  if (exists && hasFiles) {
+    throw new StateError(
+      `.arima/ already has files but is not the "${r.branch}" worktree, and that branch already exists. Move .arima/ aside (or delete it if it is disposable) and run again.`
+    );
+  }
+  if (!exists) createOrphanBranch(r);
+  let aside;
+  if (hasFiles) {
+    aside = mkdtempSync(path13.join(tmpdir(), "arima-state-"));
+    cpSync(r.stateDir, aside, { recursive: true });
+    rmSync2(r.stateDir, { recursive: true, force: true });
+  }
+  try {
+    if (!localBranchExists(r)) {
+      git(r.repo, ["branch", "--track", r.branch, `${r.remote}/${r.branch}`]);
+    }
+    git(r.repo, ["worktree", "add", r.stateDir, r.branch]);
+  } finally {
+    if (aside !== void 0) {
+      mkdirSync7(r.stateDir, { recursive: true });
+      cpSync(aside, r.stateDir, { recursive: true, force: false, errorOnExist: false });
+      rmSync2(aside, { recursive: true, force: true });
     }
   }
-  return { on, file, notion: remote, detail };
+}
+function ensureStateFiles(r) {
+  const write = (name, body) => {
+    const file = path13.join(r.stateDir, name);
+    if (!existsSync7(file)) writeFileSync4(file, body, "utf8");
+  };
+  write(".gitignore", STATE_GITIGNORE);
+  write(".gitattributes", STATE_GITATTRIBUTES);
+}
+function scanStaged(r) {
+  const names = git(r.stateDir, ["diff", "--cached", "--name-only", "--diff-filter=AM"]).split("\n").filter(Boolean);
+  const bad2 = [];
+  for (const name of names) {
+    const file = path13.join(r.stateDir, name);
+    try {
+      if (statSync2(file).size > MAX_SCAN_BYTES) continue;
+      if (findSecrets(readFileSync8(file, "utf8")).length > 0) bad2.push(name);
+    } catch {
+    }
+  }
+  return bad2;
+}
+async function pushState(o) {
+  if (!/^r-\d{8}-\d{4}-\d{2,}$/.test(o.runId)) {
+    throw new StateError(`run id "${o.runId}" does not look like r-YYYYMMDD-HHMM-NN`);
+  }
+  const r = resolve(o);
+  ensureWorktree(r);
+  ensureStateFiles(r);
+  await appendEvent(r.repo, {
+    type: "state.push",
+    actor: "system",
+    run_id: o.runId,
+    data: { branch: r.branch }
+  });
+  git(r.stateDir, ["add", "-A"]);
+  const staged = git(r.stateDir, ["diff", "--cached", "--name-only"]).split("\n").filter(Boolean);
+  if (staged.length === 0) {
+    return { committed: false, pushed: false, files: 0 };
+  }
+  const bad2 = scanStaged(r);
+  if (bad2.length > 0) {
+    git(r.stateDir, ["reset", "-q"]);
+    throw new StateError(
+      `refusing to commit state: ${bad2.length} file(s) look like they contain a secret: ${bad2.join(", ")}`
+    );
+  }
+  git(r.stateDir, [
+    ...identityArgs(r.stateDir),
+    "commit",
+    "-q",
+    "-m",
+    `chore(state): run ${o.runId}`
+  ]);
+  const commit = git(r.stateDir, ["rev-parse", "HEAD"]);
+  let pushed = false;
+  if (r.hasRemote) {
+    git(r.stateDir, ["push", "--set-upstream", r.remote, `${r.branch}:${r.branch}`]);
+    pushed = true;
+  }
+  return { committed: true, pushed, commit, files: staged.length };
+}
+function remotePauseFlag(o) {
+  let r;
+  try {
+    r = resolve(o);
+  } catch {
+    return void 0;
+  }
+  if (!r.hasRemote) return void 0;
+  const ref = `refs/remotes/${r.remote}/${r.branch}`;
+  try {
+    execFileSync("git", ["fetch", "--quiet", r.remote, `+refs/heads/${r.branch}:${ref}`], {
+      cwd: r.repo,
+      stdio: ["ignore", "ignore", "pipe"],
+      timeout: 15e3,
+      env: { ...process.env, GIT_TERMINAL_PROMPT: "0" }
+    });
+  } catch (e) {
+    const msg = String(e.stderr ?? "");
+    if (!/couldn't find remote ref/i.test(msg)) return void 0;
+    return false;
+  }
+  return gitOk(r.repo, ["cat-file", "-e", `${ref}:PAUSE`]);
 }
 
 // plugins/arima/scripts/src/runlock.ts
-import { existsSync as existsSync7, mkdirSync as mkdirSync7, readFileSync as readFileSync8, rmSync as rmSync2, writeFileSync as writeFileSync4 } from "node:fs";
+import { existsSync as existsSync8, mkdirSync as mkdirSync8, readFileSync as readFileSync9, rmSync as rmSync3, writeFileSync as writeFileSync5 } from "node:fs";
 import { hostname } from "node:os";
-import path13 from "node:path";
+import path14 from "node:path";
 function runLockFile(projectDir) {
-  return path13.join(projectDir, ".arima", "run.lock");
+  return path14.join(projectDir, ".arima", "run.lock");
 }
 function alive(pid) {
   try {
@@ -20448,10 +20695,10 @@ function alive(pid) {
 }
 function lockStatus(projectDir, staleAfterMs, now = Date.now()) {
   const file = runLockFile(projectDir);
-  if (!existsSync7(file)) return { held: false, stale: false };
+  if (!existsSync8(file)) return { held: false, stale: false };
   let lock;
   try {
-    lock = JSON.parse(readFileSync8(file, "utf8"));
+    lock = JSON.parse(readFileSync9(file, "utf8"));
   } catch {
     return { held: false, stale: true };
   }
@@ -20463,7 +20710,7 @@ function lockStatus(projectDir, staleAfterMs, now = Date.now()) {
 }
 function acquireRunLock(projectDir, runId, staleAfterMs) {
   const file = runLockFile(projectDir);
-  mkdirSync7(path13.dirname(file), { recursive: true });
+  mkdirSync8(path14.dirname(file), { recursive: true });
   const body = {
     pid: process.pid,
     run_id: runId,
@@ -20472,27 +20719,27 @@ function acquireRunLock(projectDir, runId, staleAfterMs) {
   };
   for (let attempt = 0; attempt < 2; attempt++) {
     try {
-      writeFileSync4(file, `${JSON.stringify(body)}
+      writeFileSync5(file, `${JSON.stringify(body)}
 `, { flag: "wx" });
       return true;
     } catch (e) {
       if (e.code !== "EEXIST") throw e;
       const status = lockStatus(projectDir, staleAfterMs);
       if (status.held) return false;
-      rmSync2(file, { force: true });
+      rmSync3(file, { force: true });
     }
   }
   return false;
 }
 function releaseRunLock(projectDir, runId) {
   const file = runLockFile(projectDir);
-  if (!existsSync7(file)) return false;
+  if (!existsSync8(file)) return false;
   try {
-    const lock = JSON.parse(readFileSync8(file, "utf8"));
+    const lock = JSON.parse(readFileSync9(file, "utf8"));
     if (lock.run_id !== runId) return false;
   } catch {
   }
-  rmSync2(file, { force: true });
+  rmSync3(file, { force: true });
   return true;
 }
 
@@ -20527,7 +20774,15 @@ async function runPreflight(opts) {
   });
   const arima = cfg.arima;
   const notionTarget = opts.notion && arima ? { port: opts.notion, rootPageId: arima.notion.root_page_id } : null;
-  const ks = await checkKillSwitch(opts.projectDir, notionTarget);
+  const stateBranch = arima;
+  const statePause = opts.statePause ?? (() => Promise.resolve(
+    remotePauseFlag({
+      projectDir: opts.projectDir,
+      ...stateBranch?.github?.state_branch ? { branch: stateBranch.github.state_branch } : {},
+      ...stateBranch?.github?.default_branch ? { defaultBranch: stateBranch.github.default_branch } : {}
+    })
+  ));
+  const ks = await checkKillSwitch(opts.projectDir, notionTarget, statePause);
   const ksCheck = {
     check: "kill_switch",
     ok: !ks.on,
@@ -20616,18 +20871,18 @@ async function runPreflight(opts) {
 }
 
 // plugins/arima/scripts/src/runid.ts
-import { existsSync as existsSync8, mkdirSync as mkdirSync8, readFileSync as readFileSync9 } from "node:fs";
-import path14 from "node:path";
+import { existsSync as existsSync9, mkdirSync as mkdirSync9, readFileSync as readFileSync10 } from "node:fs";
+import path15 from "node:path";
 var pad = (n, w = 2) => String(n).padStart(w, "0");
 async function issueRunId(projectDir, now = /* @__PURE__ */ new Date()) {
   const day = `${now.getFullYear()}${pad(now.getMonth() + 1)}${pad(now.getDate())}`;
   const hhmm = `${pad(now.getHours())}${pad(now.getMinutes())}`;
-  const file = path14.join(projectDir, ".arima", "state", "run-seq.json");
-  mkdirSync8(path14.dirname(file), { recursive: true });
+  const file = path15.join(projectDir, ".arima", "state", "run-seq.json");
+  mkdirSync9(path15.dirname(file), { recursive: true });
   return withFileLock(`${file}.lock`, () => {
     let state = { day, last: 0 };
-    if (existsSync8(file)) {
-      const parsed = JSON.parse(readFileSync9(file, "utf8"));
+    if (existsSync9(file)) {
+      const parsed = JSON.parse(readFileSync10(file, "utf8"));
       if (parsed.day === day && Number.isInteger(parsed.last))
         state = { day, last: parsed.last };
     }
@@ -20636,215 +20891,6 @@ async function issueRunId(projectDir, now = /* @__PURE__ */ new Date()) {
 `);
     return `r-${day}-${hhmm}-${pad(state.last)}`;
   });
-}
-
-// plugins/arima/scripts/src/state.ts
-import { execFileSync } from "node:child_process";
-import {
-  appendFileSync as appendFileSync2,
-  cpSync,
-  existsSync as existsSync9,
-  mkdirSync as mkdirSync9,
-  mkdtempSync,
-  readFileSync as readFileSync10,
-  realpathSync,
-  readdirSync as readdirSync3,
-  rmSync as rmSync3,
-  statSync as statSync2,
-  writeFileSync as writeFileSync5
-} from "node:fs";
-import { tmpdir } from "node:os";
-import path15 from "node:path";
-var StateError = class extends Error {
-};
-var DEFAULT_BRANCH = "arima-state";
-var STATE_GITIGNORE = "*.lock\n*.tmp\nrun.lock\n";
-var STATE_GITATTRIBUTES = "* -text\n";
-var MAX_SCAN_BYTES = 5 * 1024 * 1024;
-function git(cwd, args, input) {
-  try {
-    return execFileSync("git", args, {
-      cwd,
-      encoding: "utf8",
-      input,
-      stdio: ["pipe", "pipe", "pipe"]
-    }).trimEnd();
-  } catch (e) {
-    const err = e;
-    const detail = (err.stderr ? String(err.stderr) : err.message).trim();
-    throw new StateError(`git ${args.join(" ")} failed: ${detail}`, { cause: e });
-  }
-}
-function gitOk(cwd, args) {
-  try {
-    execFileSync("git", args, { cwd, stdio: "ignore" });
-    return true;
-  } catch {
-    return false;
-  }
-}
-function identityArgs(cwd) {
-  const has = (key) => {
-    try {
-      return execFileSync("git", ["config", key], { cwd, encoding: "utf8" }).trim() !== "";
-    } catch {
-      return false;
-    }
-  };
-  return has("user.name") && has("user.email") ? [] : ["-c", "user.name=ARIMA", "-c", "user.email=arima@users.noreply.github.com"];
-}
-function resolve(o) {
-  const repo = path15.resolve(o.projectDir);
-  if (!existsSync9(repo) || !gitOk(repo, ["rev-parse", "--git-dir"])) {
-    throw new StateError(`${repo} is not a git repository`);
-  }
-  const norm2 = (p) => {
-    const real = realpathSync.native(p);
-    return process.platform === "win32" ? real.toLowerCase() : real;
-  };
-  if (norm2(git(repo, ["rev-parse", "--show-toplevel"])) !== norm2(repo)) {
-    throw new StateError(`${repo} is not the root of a git repository`);
-  }
-  const branch = o.branch ?? DEFAULT_BRANCH;
-  if (branch === (o.defaultBranch ?? "main") || branch === "main" || branch === "master") {
-    throw new StateError(
-      `refusing to use "${branch}" as the state branch; ARIMA never touches the default branch`
-    );
-  }
-  const remote = o.remote ?? "origin";
-  const hasRemote = git(repo, ["remote"]).split("\n").includes(remote);
-  return { repo, stateDir: path15.join(repo, ".arima"), branch, remote, hasRemote };
-}
-function excludeArima(repo) {
-  const rel2 = git(repo, ["rev-parse", "--git-path", "info/exclude"]);
-  const file = path15.resolve(repo, rel2);
-  mkdirSync9(path15.dirname(file), { recursive: true });
-  const current = existsSync9(file) ? readFileSync10(file, "utf8") : "";
-  if (!current.split(/\r?\n/).includes("/.arima/")) {
-    appendFileSync2(file, `${current.endsWith("\n") || current === "" ? "" : "\n"}/.arima/
-`);
-  }
-}
-var isWorktree = (stateDir) => existsSync9(path15.join(stateDir, ".git"));
-var isEmptyDir = (dir) => !existsSync9(dir) || readdirSync3(dir).length === 0;
-function localBranchExists(r) {
-  return gitOk(r.repo, ["show-ref", "--verify", "--quiet", `refs/heads/${r.branch}`]);
-}
-function remoteBranchExists(r) {
-  return gitOk(r.repo, ["show-ref", "--verify", "--quiet", `refs/remotes/${r.remote}/${r.branch}`]);
-}
-function createOrphanBranch(r) {
-  const tree = git(r.repo, ["mktree"], "");
-  const commit = git(r.repo, [
-    ...identityArgs(r.repo),
-    "commit-tree",
-    tree,
-    "-m",
-    "chore(state): initialise arima-state"
-  ]);
-  git(r.repo, ["branch", r.branch, commit]);
-}
-function ensureWorktree(r) {
-  excludeArima(r.repo);
-  if (r.hasRemote) {
-    try {
-      git(r.repo, ["fetch", r.remote, `${r.branch}:refs/remotes/${r.remote}/${r.branch}`]);
-    } catch {
-    }
-  }
-  if (isWorktree(r.stateDir)) {
-    const head = git(r.stateDir, ["rev-parse", "--abbrev-ref", "HEAD"]);
-    if (head !== r.branch)
-      throw new StateError(`.arima/ is on branch "${head}", expected "${r.branch}"`);
-    return;
-  }
-  const exists = localBranchExists(r) || remoteBranchExists(r);
-  const hasFiles = !isEmptyDir(r.stateDir);
-  if (exists && hasFiles) {
-    throw new StateError(
-      `.arima/ already has files but is not the "${r.branch}" worktree, and that branch already exists. Move .arima/ aside (or delete it if it is disposable) and run again.`
-    );
-  }
-  if (!exists) createOrphanBranch(r);
-  let aside;
-  if (hasFiles) {
-    aside = mkdtempSync(path15.join(tmpdir(), "arima-state-"));
-    cpSync(r.stateDir, aside, { recursive: true });
-    rmSync3(r.stateDir, { recursive: true, force: true });
-  }
-  try {
-    if (!localBranchExists(r)) {
-      git(r.repo, ["branch", "--track", r.branch, `${r.remote}/${r.branch}`]);
-    }
-    git(r.repo, ["worktree", "add", r.stateDir, r.branch]);
-  } finally {
-    if (aside !== void 0) {
-      mkdirSync9(r.stateDir, { recursive: true });
-      cpSync(aside, r.stateDir, { recursive: true, force: false, errorOnExist: false });
-      rmSync3(aside, { recursive: true, force: true });
-    }
-  }
-}
-function ensureStateFiles(r) {
-  const write = (name, body) => {
-    const file = path15.join(r.stateDir, name);
-    if (!existsSync9(file)) writeFileSync5(file, body, "utf8");
-  };
-  write(".gitignore", STATE_GITIGNORE);
-  write(".gitattributes", STATE_GITATTRIBUTES);
-}
-function scanStaged(r) {
-  const names = git(r.stateDir, ["diff", "--cached", "--name-only", "--diff-filter=AM"]).split("\n").filter(Boolean);
-  const bad2 = [];
-  for (const name of names) {
-    const file = path15.join(r.stateDir, name);
-    try {
-      if (statSync2(file).size > MAX_SCAN_BYTES) continue;
-      if (findSecrets(readFileSync10(file, "utf8")).length > 0) bad2.push(name);
-    } catch {
-    }
-  }
-  return bad2;
-}
-async function pushState(o) {
-  if (!/^r-\d{8}-\d{4}-\d{2,}$/.test(o.runId)) {
-    throw new StateError(`run id "${o.runId}" does not look like r-YYYYMMDD-HHMM-NN`);
-  }
-  const r = resolve(o);
-  ensureWorktree(r);
-  ensureStateFiles(r);
-  await appendEvent(r.repo, {
-    type: "state.push",
-    actor: "system",
-    run_id: o.runId,
-    data: { branch: r.branch }
-  });
-  git(r.stateDir, ["add", "-A"]);
-  const staged = git(r.stateDir, ["diff", "--cached", "--name-only"]).split("\n").filter(Boolean);
-  if (staged.length === 0) {
-    return { committed: false, pushed: false, files: 0 };
-  }
-  const bad2 = scanStaged(r);
-  if (bad2.length > 0) {
-    git(r.stateDir, ["reset", "-q"]);
-    throw new StateError(
-      `refusing to commit state: ${bad2.length} file(s) look like they contain a secret: ${bad2.join(", ")}`
-    );
-  }
-  git(r.stateDir, [
-    ...identityArgs(r.stateDir),
-    "commit",
-    "-q",
-    "-m",
-    `chore(state): run ${o.runId}`
-  ]);
-  const commit = git(r.stateDir, ["rev-parse", "HEAD"]);
-  let pushed = false;
-  if (r.hasRemote) {
-    git(r.stateDir, ["push", "--set-upstream", r.remote, `${r.branch}:${r.branch}`]);
-    pushed = true;
-  }
-  return { committed: true, pushed, commit, files: staged.length };
 }
 
 // plugins/arima/scripts/src/init.ts
@@ -20968,6 +21014,10 @@ async function runInit(o) {
   const raw = arima;
   const name = raw.project.name;
   const root = o.rootPageId ?? raw.notion.root_page_id;
+  try {
+    await ensureNotionSwitch(o.port, root);
+  } catch {
+  }
   const runId = await issueRunId(o.projectDir, now);
   result.runId = runId;
   const pre = await runPreflight({
