@@ -48,8 +48,13 @@ Spec references use §N (e.g. §4.1 = spec section 4.1).
   - Added profile.schema.json; loader in scripts/src/profiles.ts validates each profile at load. Shared helpers: lib/paths.ts (plugin root, works from src and dist), lib/schema.ts (Ajv 2020 + formats), lib/yaml-source.ts (JSON pointer to line number).
 
 ### T-04 ID issuer (§2)
-- [ ] `arima-ids next <PREFIX>` issues the next ID (REQ-014, US-112, DEC-0120, …) with the zero-padding from §2; counters in `.arima/state/ids.json`; file lock; never reuses an ID.
+- [x] `arima-ids next <PREFIX>` issues the next ID (REQ-014, US-112, DEC-0120, …) with the zero-padding from §2; counters in `.arima/state/ids.json`; file lock; never reuses an ID.
 - **Accept:** concurrent-issue test (parallel processes) yields unique, gap-free IDs; unknown prefix rejected.
+- **Notes (done 2026-11-17):**
+  - Added schemas/ids.schema.json so ids.json is validated like all other ARIMA JSON; a corrupt counter file is an error, never reset (reset could reissue an ID).
+  - lib/filelock.ts (O_EXCL lock file with stale-lock break; retries EPERM for Windows) and lib/atomic-file.ts are reused by the ledger, event log and outbox.
+  - Counter prefixes only: MTG, G, v and r IDs are not counters (spec §2) and are rejected. Width is a minimum, so REQ-1000 is valid.
+  - Concurrency tested in-process (40 calls) and across 6 real processes x 6 calls.
 
 ### T-05 Event log and ledger (§13.2, §11.3 Audit)
 - [ ] Append-only writers for `.arima/events.jsonl` and `.arima/ledger.jsonl`, validated against `schemas/event.schema.json` and `schemas/ledger.schema.json`.
