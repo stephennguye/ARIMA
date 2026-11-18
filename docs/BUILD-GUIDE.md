@@ -11,22 +11,23 @@ This guide says what we build next, in what order, how each piece is built and c
 - **Foundations:** TypeScript tooling, bundled scripts, CI on Windows and Linux, branch protection on `main`.
 - **Config:** schemas and a validator with line-numbered errors, three profiles.
 - **Bookkeeping:** ID issuer, event log, run ledger, run IDs, a locked append-only writer.
-- **Running agents:** a wrapper that runs one headless Claude session with a dollar cap, a turn cap, a per-role tool list and a trimmed environment; usage limit is recorded as a pause.
-- **Safety:** preflight (config, kill switch, run lock, budget, environment variables), a two-way kill switch, guard and audit hooks, no way to delete in Notion.
+- **Running agents:** a wrapper that runs one headless Claude session with a dollar cap, a turn cap, a per-role tool list and an allow-listed environment; a usage-limit stop is recorded as a pause. Proven with real headless runs on Windows (Stage 0, S0.2).
+- **Safety:** preflight (config, kill switch, run lock, budget, environment variables), a two-way kill switch that agents cannot clear, a guard hook that blocks secret-file access, merges and pushes to the default branch, Notion deletes and writes to protected state (fails closed inside ARIMA projects), audit hooks, no way to delete in Notion. These are pattern-based layers, not a sandbox (spec issue S6).
 - **State:** `.arima/` kept on an `arima-state` branch, one commit per run, secret scan before commit.
 - **Notion:** the 19-database template as data, bootstrap, verify-and-map, read-only mirror, outbox with human-only field refusal and "human edit wins".
 - **Plugin parts:** one orchestrator agent, three skills (`init`, `status`, `pause`), hooks, ten templates.
 - **Docs and evals:** install guide, Notion guide, a v0.1 eval that runs in CI.
 
-### Known gaps in what we built (found in the spec audit)
+### Known gaps in what we built (spec audit and the judge's review)
 
-These are fixed first, in "Stage 0" below:
+Fixed or being fixed in Stage 0 (see the status column there):
 
-1. Never run against real Notion, a real `claude` run, or a live Claude session (skills, agent, hooks).
-2. Charter, budget plan and gate pages are hard-coded in `init.ts`, not in templates. Only 10 of 58 deliverables have a template, and nothing checks templates.
-3. Profiles are loaded but nothing enforces their rules or artifact lists yet.
-4. Four deviations are not recorded as decisions: Windows-first instead of WSL, `init` not duplicating the Notion template, Notion views left manual without trying the API, and ADR-0004 still "Proposed".
-5. Packaging gaps against Anthropic's norms: no LICENSE, NOTICE or CHANGELOG inside the plugin folder, no plugin validation in CI, hooks fail open if Node is missing, agent and skill descriptions written in the wrong style.
+1. Real Notion, real GitHub and the live behaviour of skills were never exercised. The Claude side is now proven; Notion and GitHub are waiting on a shared page and a throwaway repo.
+2. The guard, role lists, kill switch, environment and secret handling were weaker than the guides claimed: agents could merge, push to the default branch, clear the kill switch and edit approver config; secrets could reach Notion; the child environment was not trimmed. Fixed in Stage 0A with tests that try each forbidden action.
+3. Charter, budget plan and gate pages are still hard-coded in `init.ts`; only 10 of 58 deliverables have a template, and nothing checks templates (Stage 0B).
+4. Profiles are loaded but nothing enforces their rules or artifact lists (S0.12 and Stage 2).
+5. Fifteen spec issues need the owner's decision (`docs/process/spec-issues.md`), including how a gate approver's identity can be verified, who merges, and Windows versus WSL 2.
+6. Packaging gaps against Anthropic's norms (S0.8, S0.9).
 
 ---
 
@@ -114,24 +115,36 @@ Copy these into every task that adds the component.
 
 Steps are numbered so they can become tasks (S0.x are small fixes; later stages use the spec's increments). Order within a stage matters unless marked "parallel".
 
-### Stage 0 - Make v0.1 solid (call it v0.1.1)
+### Stage 0 - Make v0.1 real and safe (v0.1.1)
 
-Goal: what we built is real, faithful to the spec, and packaged the way Anthropic packages plugins. Nothing new for users except confidence.
+Goal: what we built works against the real systems, the hard stops are enforced in code and proven by tests that try to break them, and the plugin is packaged the way Anthropic packages plugins. Nothing new for users except confidence.
 
-| Step | What | Done when |
+An independent reviewer (the judge, `docs/process/JUDGE.md`) read the plan and the code before this stage began and found it too big and too weak in places. This version is the result: Stage 0 is split into **0A** (prove it and make the hard stops real, which gates the v0.1.1 tag) and **0B** (the catalog and templates, which do not). Reports are in `docs/process/reviews/`.
+
+#### 0A - Prove it and make the hard stops real
+
+| Step | What | Status |
 | --- | --- | --- |
-| S0.1 | **You** merge the 14 pull requests in order (#1 first, then retarget each to `main`) | `main` contains v0.1 and CI is green |
-| S0.2 | **Real-world checks** on a throwaway project: bootstrap and map a real Notion workspace; run `/arima:init`; run one real `arima-run-agent` smoke run; load the plugin with `--plugin-dir` and run all three skills, the agent and the hooks in a live session | Each check recorded in the task notes; every bug found is fixed with a test |
-| S0.3 | **Find out what Notion's API can do:** can a page be duplicated; can views be created. Read the docs, then try on the throwaway workspace | Findings in an ADR. If views can be created, build them (the six views of spec §9.2); if not, say why |
-| S0.4 | **Record the decisions:** Windows-first (amends D-15 and `runtime.shell`), `init` does not duplicate the template, accept or change ADR-0004, resolve the `stacks/` folder against D-12, update the example config and `CLAUDE.md` | ADRs accepted; spec text updated with your approval |
-| S0.5 | **Package files** inside `plugins/arima/`: LICENSE, NOTICE, CHANGELOG; README rewritten to say what leaves the machine, where state lives, what it costs | Files present; README disclosure checked |
-| S0.6 | **CI like Anthropic's:** plugin validation (alone and in a throwaway marketplace), frontmatter check, hooks JSON check, licence check, pin Actions by commit | A deliberately broken agent file makes CI fail |
-| S0.7 | **Harden the hooks:** add `description`, a Node-present check at session start, loud failure instead of silent skip, `if` filters on audit hooks, measure per-call delay | Test: with Node hidden, ARIMA reports the guard is off |
-| S0.8 | **Rewrite descriptions** for the agent and three skills in Anthropic's style; add "not for direct invocation" to the orchestrator; move init's exit-code table to `references/`; each skill ends on one next command | `skill-reviewer` and `plugin-validator` agents pass |
-| S0.9 | **Artifact catalog as data:** one file listing all 58 deliverables (id, phase, owner, master location, profiles requiring it, template) generated from spec §8.1; a test keeps it in step with the profiles and the spec | Profiles, docs and catalog cannot disagree |
-| S0.10 | **Template addendum (needs your approval):** draft the required sections for the 48 deliverables that have none, grouped by kind (Notion documents, repo documents, reports, records); then add the templates, a template renderer and a template validator; move charter, budget plan and gate pages out of `init.ts` into templates | Every catalog row has a template or an explicit "no template, because..." ; a document missing a required section fails validation |
-| S0.11 | **Profile rules become checks:** a function that, for a profile, lists required artifacts and gate criteria and says which are present (the base of gate-check) | Test: client-project at G0 reports exactly the five G0 criteria |
-| S0.12 | Tag `v0.1.1`; run `plugin-dev` validators; update both guides | Release notes and CHANGELOG entry |
+| S0.1 | Merge the 14 pull requests | **Done** |
+| S0.2 | Real-world checks on the Claude side: a real headless run, the plugin loaded in a live session, hooks firing, an allowed script run under the real permission rules, a battery of forbidden actions, real result JSON recorded as fixtures | **Done** (`reviews/2026-11-18-real-world-checks.md`) |
+| S0.3 | Real-world checks on the Notion side: bootstrap, map, `init`, mirror and outbox against a real workspace; timestamp granularity for the human-edit-wins rule; whether rollups and formulas are accepted; rate limits; whether a bot-created mention sends email; **whether a gate approver's identity can be checked (spec issue S1)**; whether a page can be duplicated and whether views can be created (S5) | **Waiting** for a Notion page shared with the integration |
+| S0.4 | Fix what the judge found missing: no merge or push to the default branch for any role; the kill switch cannot be cleared by an agent and fails closed; the guard fails closed and checks Node exists; secrets scanned before they reach Notion and the scanner widened; child environment is an allow-list; hard stops re-checked at every dispatch; process tree killed on timeout; public state remotes refused; conflict baseline cannot be loosened by an agent; audit actor not "human" by default | **Done**, with tests that try each forbidden action |
+| S0.5 | Real GitHub check on a throwaway repo and machine account: token scope, `gh pr create`, how `gh pr merge` behaves, worktrees on Windows, behaviour on the Free plan | **Planned** (needs a throwaway repo and account from the owner) |
+| S0.6 | A live test tier: `npm run test:live` behind environment variables, run by hand; real responses recorded (scrubbed) and fed back into the fakes so the mocks stop drifting from reality | **Planned** |
+| S0.7 | Decisions: the owner answers spec issues S1 to S15 (`docs/process/spec-issues.md`); ADRs are written and the spec amended with approval | **Waiting** for the owner |
+| S0.8 | Packaging and CI to Anthropic's norms: LICENSE, NOTICE and CHANGELOG inside `plugins/arima/`; `claude plugin validate --json` in CI (alone and in a throwaway marketplace); frontmatter check; hooks JSON check; licence check; Actions pinned by commit; README states what leaves the machine, where state lives, what it costs | **Planned** |
+| S0.9 | Descriptions and hook polish: agent and skill descriptions in Anthropic's style, with "not for direct invocation" on the orchestrator; log permission-rule denials through the `PermissionDenied` hook; `if` filters; a measured hook latency budget; retry transient network errors on Notion reads (never blind retries of creates) | **Planned** |
+
+Tag **v0.1.1** when S0.2 to S0.9 are done.
+
+#### 0B - Catalog and templates (does not block the tag)
+
+| Step | What |
+| --- | --- |
+| S0.10 | The artifact catalog as one data file listing all 58 deliverables (id, phase, owner, master location, which profiles require it, template), with a test that keeps it in step with the profiles and the spec |
+| S0.11 | Templates for every deliverable, drafted by the builder and reviewed by the owner at the end; a template renderer and a validator that fails a document missing a required section; charter, budget plan and gate pages move out of `init.ts` into templates. The required sections for the 48 new templates go in a separate **draft addendum** file; the spec itself is not edited until the owner approves. Order: the templates v0.2 consumes first (pull request, Definition of Ready and Done, digest, bug, story), then the rest |
+| S0.12 | Profile rules become checks: a function that lists, for a profile, the required artifacts and gate criteria and which are present (the base of gate-check) |
+| S0.13 | Run the `plugin-dev` validators, update both guides, write the CHANGELOG entry |
 
 ### Stage 1 - v0.2 "Build loop (web)"
 
@@ -152,6 +165,22 @@ Goal (from the spec): five stories go from Ready to staging unattended, each wit
 | 1.11 | **Setup phase:** DevOps agent (staging only), CI and staging templates for the stack, walking skeleton; `/arima:setup`; the `stacks/` decision from S0.4 | Staging deploys automatic; production not yet |
 | 1.12 | **Scheduler:** Windows Task Scheduler script (wake timer, catch up on a missed run), with a Linux/macOS cron or GitHub Actions equivalent later | Usage-limit pause already handled |
 | 1.13 | **v0.2 eval:** a sample app with five ready stories, run unattended against throwaway Notion and GitHub accounts | Done when the spec's "five stories to staging" holds |
+
+#### Prerequisites and gaps carried into Stage 1 (from the judge's review)
+
+Do these before or inside the steps above; each has a test.
+
+1. **The ticket state machine (1.1) comes before agents write to the Notion outbox.** Today `Status` on stories, requirements and documents is writable by an agent's outbox entry, so an agent could mark a story Done. `arima-notion push` for agent outboxes stays disabled until the state machine gates those fields. The outbox also needs the writer's role checked against the run, not trusted from the entry.
+2. **Stories have no producer before Stage 2.** The analyst, UX and architect agents arrive in v0.3, so the v0.2 evaluation uses hand-written stories that already meet the Definition of Ready, and says so.
+3. **A stack and a staging host are needed for the walking skeleton** (spec issues S11 and Q-04). The owner picks one for the sample project and records it as an ADR before step 1.11.
+4. **A stub deploy script ships with `/arima:setup`** (spec issue S10): it can deploy to staging and refuses production under every condition, with its hard stop tested.
+5. **The dispatcher owns these rules, each with a test** (step 1.2): story budget before each dispatch, review-queue limit, third failed review or QA moves to Blocked, retry a failed run once, re-run flaky CI once, and the "missing credential" hard stop.
+6. **Per-run cost floor.** Plan budgets knowing a run costs about $0.15 to $0.24 at minimum (spec issue S3); set each run's cap to the smaller of the cap and the remaining story budget.
+7. **Hermetic headless runs.** Decide whether runs isolate user settings (`--setting-sources`, `--disable-slash-commands`) to cut about half the context cost, which then needs the plugin loaded explicitly (the wrapper already does that).
+8. **Permission and secret-file coverage.** The guard is pattern-based. For unattended runs, prefer WSL 2 or Linux (spec issue S6) and add more adversarial tests (obfuscated paths, `git show HEAD:.env`, symlinks, indirect reads).
+9. **Upgrade and migration test.** Add a test that loads a v0.1 `.arima/` and config and migrates them, because `schema_version` and `template_schema_version` already ship.
+10. **Interactive commands wait for the run lock** (spec §12.4): `arima-notion pull` and other interactive writers take the lock or refuse while a run holds it.
+11. **Seat terms and limits** (spec issue S15) are confirmed before the first unattended run.
 
 ### Stage 2 - v0.3 "Discovery and design"
 

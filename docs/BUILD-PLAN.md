@@ -12,6 +12,17 @@ Spec references use §N (e.g. §4.1 = spec section 4.1).
 
 **Done when:** on a fresh sample project, `/arima:init` with `examples/brief.md` validates config, maps the Notion workspace, writes the brief and charter skeleton to Notion, opens the G0 page, and `.arima/` on the `arima-state` branch holds a valid ledger row and event log. `/arima:status` and `/arima:pause` work.
 
+### Status corrections after the independent review (2026-11-18)
+
+Four tasks were ticked while an acceptance criterion was still unmet. The truth, with the evidence in `docs/process/reviews/`:
+
+- **T-06:** the "one manual smoke run against the real CLI" was NOT done when ticked. **Done 2026-11-18** (real headless runs on Windows, real result JSON recorded as fixtures).
+- **T-11:** "agent loads in an interactive session" was NOT done when ticked. **Done 2026-11-18** (the agent loads with `--plugin-dir` and resolves as `arima:orchestrator`; a headless run under it succeeded).
+- **T-12:** skills were never invoked in a live session when ticked. The three skills now load live (`arima:init`, `arima:status`, `arima:pause`); running `/arima:init` end to end against real Notion is still **open** (waiting for a shared Notion page).
+- **T-09:** the "one manual run against a real workspace" is still **open** (waiting for a shared Notion page). T-10 and T-12 depend on it for real-API behaviour.
+
+The v0.1 hard stops were also weaker than the guides said; see `docs/process/reviews/2026-11-18-pre-stage0.md` and the Stage 0A fixes in `docs/BUILD-GUIDE.md`.
+
 ### T-01 Tooling and CI for this repo
 - [x] `package.json` at repo root (workspace) with TypeScript strict, ESM, Node 22 engines, Vitest, ESLint, Prettier, esbuild.
 - [x] Source in `plugins/arima/scripts/src/`, bundles in `plugins/arima/scripts/dist/` (ADR-0001). `npm run build` bundles each entry point.

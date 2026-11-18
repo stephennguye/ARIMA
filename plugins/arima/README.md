@@ -9,6 +9,6 @@ Install:
 /plugin install arima@arima
 ```
 
-Setup: duplicate the ARIMA Notion template, set `ARIMA_NOTION_TOKEN`, add `arima.yaml` and `team.yaml` to your app repo, then run `/arima:init` with a project brief. Full documentation lives in the repository's `docs/` folder.
+Setup: create a Notion page for the project and let ARIMA build its workspace on it (`arima-notion bootstrap`; a published template to duplicate is planned), set `ARIMA_NOTION_TOKEN`, add `arima.yaml` and `team.yaml` to your app repo, then run `/arima:init` with a project brief. Full documentation lives in the repository's `docs/` folder.
 
 Commands in v0.1: `/arima:init`, `/arima:status`, `/arima:pause`. Status: v0.1 foundations, tested against mocks; see `docs/INSTALL.md`.
