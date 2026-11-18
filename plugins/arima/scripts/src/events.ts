@@ -25,7 +25,8 @@ export type EventType =
   | 'state.push'
   | 'state.pull'
   | 'budget.alert'
-  | 'hardstop.hit';
+  | 'hardstop.hit'
+  | 'agent.stop';
 
 export interface ArimaEvent {
   ts: string;

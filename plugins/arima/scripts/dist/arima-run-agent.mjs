@@ -16083,6 +16083,10 @@ function isUsageLimit(result, stderr, stdout) {
 var safe = (s) => s.replace(/[^A-Za-z0-9._-]/g, "_");
 function childEnv(base, o) {
   const env = { ...base };
+  if (o.projectDir !== void 0) env["ARIMA_PROJECT_DIR"] = o.projectDir;
+  env["ARIMA_RUN_ID"] = o.runId;
+  env["ARIMA_ROLE"] = o.role;
+  env["ARIMA_ITEM"] = o.item;
   if (!mayHoldNotionToken(o.role)) delete env[o.config.notionTokenEnv];
   if (!mayHoldGithubToken(o.role) && o.config.githubTokenEnv !== void 0) {
     delete env[o.config.githubTokenEnv];
@@ -16208,6 +16212,7 @@ async function runAgent(o) {
     phase: o.phase,
     runId,
     projectKey: o.config.projectKey,
+    projectDir: path10.resolve(o.projectDir),
     config: o.config
   });
   const bin = o.claudeBin ?? process.env["ARIMA_CLAUDE_BIN"] ?? "claude";
