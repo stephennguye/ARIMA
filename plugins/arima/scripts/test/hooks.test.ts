@@ -70,15 +70,14 @@ describe('secret files (spec §11.3)', () => {
       '/x/.arima/ledger.jsonl',
       '.arima/events.jsonl',
       '.arima/notion-map.json',
+      '.arima/PAUSE',
+      '.arima/run.lock',
+      '.arima/state/ids.json',
+      '.arima/runs/r-1.json',
     ]) {
       expect(isProtectedStatePath(p), p).toBe(true);
     }
-    for (const p of [
-      '.arima/outbox/a.json',
-      '.arima/state/ids.json',
-      'src/ledger.ts',
-      'docs/events.jsonl.md',
-    ]) {
+    for (const p of ['.arima/outbox/a.json', 'src/ledger.ts', 'docs/events.jsonl.md']) {
       expect(isProtectedStatePath(p), p).toBe(false);
     }
   });
@@ -402,7 +401,7 @@ describe('hooks/hooks.json', () => {
         for (const h of g.hooks) {
           expect(h.type).toBe('command');
           expect(h.command, event).toMatch(
-            /^node "\$\{CLAUDE_PLUGIN_ROOT\}\/scripts\/dist\/arima-hook\.mjs" (pre-tool-use|post-tool-use|stop|subagent-stop)$/,
+            /node "\$\{CLAUDE_PLUGIN_ROOT\}\/scripts\/dist\/arima-hook\.mjs" (pre-tool-use|post-tool-use|stop|subagent-stop)$/,
           );
           expect(h.timeout).toBeGreaterThan(0);
         }

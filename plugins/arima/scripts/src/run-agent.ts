@@ -132,7 +132,7 @@ export function buildClaudeArgs(
     '--allowedTools',
     allowedTools(o.role, scriptsGlob).join(','),
     '--disallowedTools',
-    deniedTools().join(','),
+    deniedTools(o.role).join(','),
   ];
   if (o.config.model !== undefined) args.push('--model', o.config.model);
   if (agentName !== undefined) args.push('--agent', agentName);

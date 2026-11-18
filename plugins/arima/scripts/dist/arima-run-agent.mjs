@@ -15710,9 +15710,29 @@ function configKey(role) {
   return role.replace("-", "_");
 }
 var OUTBOX = "Write(./.arima/outbox/**)";
-function allowedTools(role, scriptsGlob) {
+var bash = (cmd) => [`Bash(${cmd})`, `Bash(${cmd} *)`];
+var GIT_READ = [
+  ...bash("git status"),
+  ...bash("git diff"),
+  ...bash("git log"),
+  ...bash("git show"),
+  ...bash("git rev-parse"),
+  ...bash("git ls-files"),
+  ...bash("git branch --list"),
+  ...bash("git fetch")
+];
+var GH_READ = [
+  ...bash("gh pr view"),
+  ...bash("gh pr list"),
+  ...bash("gh pr diff"),
+  ...bash("gh pr checks"),
+  ...bash("gh run list"),
+  ...bash("gh run view")
+];
+var NPM_TEST = [...bash("npm test"), ...bash("npm run"), ...bash("npm ci")];
+function allowedTools(role, scriptsDir) {
   const read = ["Read", "Glob", "Grep"];
-  const arimaScripts = `Bash(node ${scriptsGlob}/*)`;
+  const script = (name) => bash(`node ${scriptsDir}/${name}.mjs`);
   switch (role) {
     case "orchestrator":
       return [
@@ -15721,12 +15741,16 @@ function allowedTools(role, scriptsGlob) {
         "Edit(./.arima/**)",
         "Write(./docs/spec/**)",
         "Edit(./docs/spec/**)",
-        "Bash(git *)",
-        "Bash(gh pr view *)",
-        "Bash(gh pr list *)",
-        "Bash(gh run list *)",
-        "Bash(gh run view *)",
-        arimaScripts,
+        ...GIT_READ,
+        ...GH_READ,
+        ...[
+          "arima-config",
+          "arima-preflight",
+          "arima-ids",
+          "arima-notion",
+          "arima-state",
+          "arima-status"
+        ].flatMap(script),
         "WebFetch"
       ];
     case "ba":
@@ -15743,7 +15767,6 @@ function allowedTools(role, scriptsGlob) {
         "Write(./design/**)",
         "Edit(./design/**)",
         OUTBOX,
-        "Bash(npx serve *)",
         "mcp__playwright__*",
         "WebFetch"
       ];
@@ -15761,10 +15784,11 @@ function allowedTools(role, scriptsGlob) {
       return [
         ...read,
         OUTBOX,
-        "Bash(git *)",
-        "Bash(gh pr *)",
-        "Bash(npm *)",
-        "Bash(npx *)",
+        ...GIT_READ,
+        ...GH_READ,
+        ...bash("gh pr review"),
+        ...bash("gh pr comment"),
+        ...NPM_TEST,
         "WebFetch"
       ];
     case "developer":
@@ -15772,11 +15796,16 @@ function allowedTools(role, scriptsGlob) {
         ...read,
         "Edit",
         "Write",
-        "Bash(git *)",
-        "Bash(gh pr create *)",
-        "Bash(gh pr view *)",
-        "Bash(npm *)",
-        "Bash(npx *)",
+        ...GIT_READ,
+        ...bash("git add"),
+        ...bash("git commit"),
+        ...bash("git switch"),
+        ...bash("git checkout"),
+        // The guard hook limits pushes to the story's own branch; the default branch is blocked.
+        ...bash("git push"),
+        ...bash("gh pr create"),
+        ...bash("gh pr view"),
+        ...NPM_TEST,
         "WebFetch"
       ];
     case "qa":
@@ -15785,12 +15814,12 @@ function allowedTools(role, scriptsGlob) {
         "Write(./tests/**)",
         "Edit(./tests/**)",
         OUTBOX,
-        "Bash(npm *)",
-        "Bash(npx *)",
+        ...NPM_TEST,
+        ...bash("npx playwright"),
         "mcp__playwright__*"
       ];
     case "security":
-      return [...read, OUTBOX, "Bash(git *)", "Bash(npm audit *)", "Bash(npx *)", "WebFetch"];
+      return [...read, OUTBOX, ...GIT_READ, ...bash("npm audit"), "WebFetch"];
     case "devops":
       return [
         ...read,
@@ -15800,22 +15829,48 @@ function allowedTools(role, scriptsGlob) {
         "Edit(./.github/**)",
         "Write(./docs/ops/**)",
         "Edit(./docs/ops/**)",
-        "Bash(git *)",
-        "Bash(gh *)",
+        ...GIT_READ,
+        ...bash("git add"),
+        ...bash("git commit"),
+        ...bash("git push"),
+        ...GH_READ,
+        ...bash("gh workflow list"),
+        ...bash("gh workflow view"),
         "WebFetch"
       ];
   }
 }
-function deniedTools() {
-  return [
+function deniedTools(role) {
+  const out = [
     "mcp__*notion*",
     "Read(./.env)",
     "Read(./.env.*)",
     "Read(**/*.pem)",
     "Read(**/*.key)",
     "Edit(./.env*)",
-    "Write(./.env*)"
+    "Write(./.env*)",
+    "Edit(./arima.yaml)",
+    "Write(./arima.yaml)",
+    "Edit(./team.yaml)",
+    "Write(./team.yaml)",
+    "Edit(./.claude/**)",
+    "Write(./.claude/**)",
+    "Edit(./.githooks/**)",
+    "Write(./.githooks/**)",
+    "Edit(./.arima/PAUSE)",
+    "Write(./.arima/PAUSE)",
+    "Edit(./.arima/run.lock)",
+    "Write(./.arima/run.lock)",
+    ...bash("gh pr merge"),
+    ...bash("gh api"),
+    ...bash("gh workflow run"),
+    ...bash("gh release"),
+    ...bash("gh secret"),
+    ...bash("gh repo"),
+    ...bash("gh auth")
   ];
+  if (role !== "devops") out.push("Edit(./.github/**)", "Write(./.github/**)");
+  return out;
 }
 function mayHoldGithubToken(role) {
   return role === "developer" || role === "tech-lead" || role === "devops";
@@ -16115,7 +16170,7 @@ function buildClaudeArgs(o, agentName, scriptsGlob) {
     "--allowedTools",
     allowedTools(o.role, scriptsGlob).join(","),
     "--disallowedTools",
-    deniedTools().join(",")
+    deniedTools(o.role).join(",")
   ];
   if (o.config.model !== void 0) args.push("--model", o.config.model);
   if (agentName !== void 0) args.push("--agent", agentName);

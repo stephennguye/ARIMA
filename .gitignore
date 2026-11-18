@@ -7,3 +7,9 @@ coverage/
 .arima/
 # local scratch
 tmp/
+
+# credentials must never be committed (keys live outside the repo, e.g. ~/.config/arima/env)
+notion_api.txt
+*.token
+*.secret
+secrets/

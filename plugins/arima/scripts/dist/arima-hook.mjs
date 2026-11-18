@@ -8076,7 +8076,7 @@ var require_dist = __commonJS({
 });
 
 // plugins/arima/scripts/src/hooks.ts
-import { existsSync as existsSync3 } from "node:fs";
+import { existsSync as existsSync3, readFileSync as readFileSync3 } from "node:fs";
 import path5 from "node:path";
 
 // plugins/arima/scripts/src/events.ts
@@ -8246,9 +8246,16 @@ function isSecretPath(p) {
   if (/(^|\/)(credentials|secrets?)\.(json|ya?ml|toml|txt)$/i.test(base)) return true;
   return false;
 }
-var READ_ONLY_PROTECTED = /(^|\/)\.arima\/(mirror\/|ledger\.jsonl$|events\.jsonl$|notion-map\.json$)/;
+var PROTECTED_STATE = /(^|\/)\.arima\/(mirror\/|ledger\.jsonl$|events\.jsonl$|notion-map\.json$|PAUSE$|run\.lock$|state\/|runs\/)/;
 function isProtectedStatePath(p) {
-  return READ_ONLY_PROTECTED.test(norm(p));
+  return PROTECTED_STATE.test(norm(p));
+}
+function isProtectedConfigPath(p, role) {
+  const f = norm(p);
+  if (/(^|\/)(arima|team)\.yaml$/.test(f)) return true;
+  if (/(^|\/)\.claude\//.test(f) || /(^|\/)\.githooks\//.test(f)) return true;
+  if (/(^|\/)\.github\//.test(f)) return role !== "devops";
+  return false;
 }
 var FILE_TOOLS = /* @__PURE__ */ new Set(["Read", "Edit", "Write", "MultiEdit", "NotebookEdit", "Glob", "Grep"]);
 var WRITE_TOOLS = /* @__PURE__ */ new Set(["Edit", "Write", "MultiEdit", "NotebookEdit"]);
@@ -8262,7 +8269,113 @@ function pathsOf(input) {
 }
 var SECRET_WORDS = "(?:TOKEN|SECRET|API_?KEY|PASSWORD|PASSWD|CREDENTIAL)";
 var WRITE_VERBS = /(?:>>?|\btee\b|\brm\b|\bmv\b|\bcp\b|\bdel\b|\btruncate\b|\bsed\s+-i|\bSet-Content\b|\bAdd-Content\b|\bOut-File\b|\bRemove-Item\b|\bClear-Content\b)/;
-function guardBash(command) {
+var PROTECTED_BRANCHES = ["main", "master", "trunk"];
+function words(command) {
+  return [...command.matchAll(/"([^"]*)"|'([^']*)'|(\S+)/g)].map((m) => m[1] ?? m[2] ?? m[3] ?? "");
+}
+function simpleCommands(command) {
+  return command.split(/&&|\|\||;|\|/).map((c) => words(c.trim())).filter((w) => w.length > 0);
+}
+function gitSubcommand(w) {
+  if (w[0] !== "git") return void 0;
+  let i = 1;
+  while (i < w.length) {
+    const t = w[i];
+    if (t === "-C" || t === "-c") i += 2;
+    else if (t.startsWith("-")) i += 1;
+    else break;
+  }
+  const sub = w[i];
+  return sub === void 0 ? void 0 : { sub, rest: w.slice(i + 1) };
+}
+function guardVcs(command, ctx) {
+  const protectedBranches = /* @__PURE__ */ new Set([
+    ...PROTECTED_BRANCHES,
+    ...ctx.defaultBranch ? [ctx.defaultBranch] : []
+  ]);
+  for (const w of simpleCommands(command)) {
+    const g = gitSubcommand(w);
+    if (g !== void 0) {
+      if (g.rest.includes("--no-verify") || g.sub === "commit" && g.rest.includes("-n")) {
+        return { rule: "vcs", reason: "skipping git hooks (--no-verify) is not allowed" };
+      }
+      if (g.sub === "config" && g.rest.some((a) => /core\.hookspath|hooks/i.test(a))) {
+        return { rule: "vcs", reason: "changing where git hooks run from is not allowed" };
+      }
+      if (g.sub === "push") {
+        const opts = g.rest.filter((a) => a.startsWith("-"));
+        if (opts.some(
+          (a) => /^(-f|--force|--force-with-lease.*|--delete|-d|--mirror|--all|--prune)$/.test(a)
+        )) {
+          return {
+            rule: "vcs",
+            reason: "force pushes, deleting remote branches and mirror pushes are not allowed"
+          };
+        }
+        const args = g.rest.filter((a) => !a.startsWith("-"));
+        const refspecs = args.slice(1);
+        if (refspecs.length === 0) {
+          return {
+            rule: "vcs",
+            reason: "push needs an explicit remote and branch (git push -u origin <your-branch>), so it cannot land on the default branch by accident"
+          };
+        }
+        for (const spec of refspecs) {
+          if (spec.startsWith(":") || spec.startsWith("+")) {
+            return {
+              rule: "vcs",
+              reason: "deleting or force-updating a remote branch is not allowed"
+            };
+          }
+          const [source = "", target = source] = spec.split(":");
+          const strip = (b) => b.replace(/^refs\/heads\//, "");
+          if (protectedBranches.has(strip(target)) || protectedBranches.has(strip(source))) {
+            return {
+              rule: "vcs",
+              reason: `pushing to ${strip(target) || strip(source)} is not allowed; push your feature branch and open a pull request`
+            };
+          }
+        }
+      }
+      continue;
+    }
+    if (w[0] === "gh") {
+      const rest = w.slice(1);
+      const [a, b] = [rest[0], rest[1]];
+      if (a === "pr" && b === "merge") {
+        return {
+          rule: "vcs",
+          reason: "merging is done only by ARIMA's merge script after human approval (spec \xA710.3)"
+        };
+      }
+      if (a === "api") {
+        const method = rest.findIndex((x) => x === "-X" || x === "--method");
+        const verb = method >= 0 ? (rest[method + 1] ?? "").toUpperCase() : "GET";
+        const hasBody = rest.some((x) => /^(-f|-F|--field|--raw-field|--input)$/.test(x));
+        if (verb !== "GET" || hasBody) {
+          return {
+            rule: "vcs",
+            reason: "`gh api` calls that change anything are not allowed (they could merge, delete or change settings)"
+          };
+        }
+      }
+      if (a === "workflow" && b === "run") {
+        return {
+          rule: "vcs",
+          reason: "starting workflows (which can deploy) is not allowed for agents"
+        };
+      }
+      if (a === "release" || a === "secret" || a === "repo" || a === "auth" || a === "ssh-key" || a === "gpg-key") {
+        return {
+          rule: "vcs",
+          reason: `\`gh ${a}\` can publish, delete or change credentials and settings; it is not allowed for agents`
+        };
+      }
+    }
+  }
+  return void 0;
+}
+function guardBash(command, ctx = {}) {
   const c = command;
   if (/(^|[\s"'=:/\\])\.env(\.(?!example\b|sample\b|template\b|dist\b)[A-Za-z0-9_-]+)?(?=$|[\s"';|&)<>])/.test(
     c
@@ -8293,15 +8406,21 @@ function guardBash(command) {
       reason: "deleting or archiving in Notion is never allowed; retire items by status instead (spec \xA79.3)"
     };
   }
-  if (/\.arima[/\\](mirror|ledger\.jsonl|events\.jsonl)/.test(c) && WRITE_VERBS.test(c)) {
+  if (/\.arima[/\\](mirror|ledger\.jsonl|events\.jsonl|PAUSE|run\.lock)/.test(c) && WRITE_VERBS.test(c)) {
     return {
       rule: "protected-state",
-      reason: "the Notion mirror and the ledger/event logs are written only by ARIMA scripts; propose Notion changes through .arima/outbox/"
+      reason: "the Notion mirror, the logs, the lock and the kill switch are written only by ARIMA scripts; propose Notion changes through .arima/outbox/"
     };
   }
-  return void 0;
+  if (ctx.role !== void 0 && /arima-(pause|init)\.mjs/.test(c)) {
+    return {
+      rule: "kill-switch",
+      reason: "only a human may pause, resume or initialise ARIMA; agents escalate instead"
+    };
+  }
+  return guardVcs(c, ctx);
 }
-function guardTool(tool, input) {
+function guardTool(tool, input, ctx = {}) {
   if (/^mcp__.*notion/i.test(tool) && /(delete|archive|remove|trash)/i.test(tool)) {
     return {
       rule: "notion-delete",
@@ -8310,20 +8429,28 @@ function guardTool(tool, input) {
   }
   if (FILE_TOOLS.has(tool)) {
     for (const p of pathsOf(input)) {
-      if (isSecretPath(p))
+      if (isSecretPath(p)) {
         return {
           rule: "secret-file",
           reason: `${path5.basename(norm(p))} may hold secrets; ARIMA agents must not read or change secret files (spec \xA711.3)`
         };
+      }
       if (WRITE_TOOLS.has(tool) && isProtectedStatePath(p)) {
         return {
           rule: "protected-state",
           reason: `${norm(p)} is written only by ARIMA scripts; propose Notion changes through .arima/outbox/ instead`
         };
       }
+      if (WRITE_TOOLS.has(tool) && ctx.role !== void 0 && isProtectedConfigPath(p, ctx.role)) {
+        return {
+          rule: "protected-config",
+          reason: `${norm(p)} decides who may approve work or what the guards do; agents never edit it (spec \xA75.7)`
+        };
+      }
     }
   }
-  if (tool === "Bash" && typeof input["command"] === "string") return guardBash(input["command"]);
+  if (tool === "Bash" && typeof input["command"] === "string")
+    return guardBash(input["command"], ctx);
   return void 0;
 }
 function findProjectDir(input, env = process.env) {
@@ -8336,6 +8463,16 @@ function findProjectDir(input, env = process.env) {
     const parent = path5.dirname(dir);
     if (parent === dir) return void 0;
     dir = parent;
+  }
+}
+function defaultBranchOf(projectDir) {
+  try {
+    const m = /^\s*default_branch:\s*["']?([A-Za-z0-9._/-]+)/m.exec(
+      readFileSync3(path5.join(projectDir, "arima.yaml"), "utf8")
+    );
+    return m?.[1];
+  } catch {
+    return void 0;
   }
 }
 var READ_ONLY_COMMANDS = /* @__PURE__ */ new Set([
@@ -8367,18 +8504,21 @@ function isReadOnlyBash(command) {
   return false;
 }
 function actorFor(env) {
-  return env["ARIMA_ROLE"] || "human";
+  if (env["ARIMA_ROLE"]) return env["ARIMA_ROLE"];
+  return env["ARIMA_RUN_ID"] ? "unknown" : "human";
 }
 function describe(tool, input) {
   const data = { tool };
   const p = pathsOf(input)[0];
-  if (p !== void 0) data["path"] = norm(p).slice(0, 300);
-  if (typeof input["command"] === "string") data["command"] = input["command"].slice(0, 300);
+  if (p !== void 0) data["path"] = norm(p);
+  if (typeof input["command"] === "string") data["command"] = input["command"];
   if (findSecrets(JSON.stringify(data)).length > 0)
     return { tool, note: "details withheld: looked like a secret" };
+  if (typeof data["path"] === "string") data["path"] = data["path"].slice(0, 300);
+  if (typeof data["command"] === "string") data["command"] = data["command"].slice(0, 300);
   return data;
 }
-async function log(projectDir, type, input, env, data) {
+async function log(projectDir, type, env, data) {
   try {
     await appendEvent(projectDir, {
       type,
@@ -8389,7 +8529,6 @@ async function log(projectDir, type, input, env, data) {
     });
   } catch {
   }
-  void input;
 }
 async function handleHook(kind, input, env = process.env) {
   const projectDir = findProjectDir(input, env);
@@ -8397,24 +8536,35 @@ async function handleHook(kind, input, env = process.env) {
   const tool = input.tool_name ?? "";
   const toolInput = input.tool_input ?? {};
   if (kind === "pre-tool-use") {
-    const hit = guardTool(tool, toolInput);
-    if (hit === void 0) return { exitCode: 0 };
-    await log(projectDir, "tool.blocked", input, env, {
-      ...describe(tool, toolInput),
-      rule: hit.rule,
-      reason: hit.reason
-    });
-    return {
-      exitCode: 2,
-      stderr: `ARIMA blocked this action (${hit.rule}): ${hit.reason}. This is a safety rule, not a glitch; do not try to work around it. If it is genuinely needed, ask the human.`
-    };
+    try {
+      const ctx = {
+        role: env["ARIMA_ROLE"],
+        defaultBranch: defaultBranchOf(projectDir)
+      };
+      const hit = guardTool(tool, toolInput, ctx);
+      if (hit === void 0) return { exitCode: 0 };
+      await log(projectDir, "tool.blocked", env, {
+        ...describe(tool, toolInput),
+        rule: hit.rule,
+        reason: hit.reason
+      });
+      return {
+        exitCode: 2,
+        stderr: `ARIMA blocked this action (${hit.rule}): ${hit.reason}. This is a safety rule, not a glitch; do not try to work around it. If it is genuinely needed, ask the human.`
+      };
+    } catch (e) {
+      return {
+        exitCode: 2,
+        stderr: `ARIMA guard error, so this action is blocked to be safe (${e instanceof Error ? e.message : String(e)}). Ask the human to check the ARIMA plugin.`
+      };
+    }
   }
   if (kind === "post-tool-use") {
     const changesState = WRITE_TOOLS.has(tool) || tool === "Bash" && typeof toolInput["command"] === "string" && !isReadOnlyBash(toolInput["command"]);
-    if (changesState) await log(projectDir, "tool.used", input, env, describe(tool, toolInput));
+    if (changesState) await log(projectDir, "tool.used", env, describe(tool, toolInput));
     return { exitCode: 0 };
   }
-  await log(projectDir, "agent.stop", input, env, {
+  await log(projectDir, "agent.stop", env, {
     kind: kind === "stop" ? "session" : "subagent",
     ...input.agent_type ? { agent_type: input.agent_type } : {}
   });
@@ -8430,20 +8580,31 @@ async function runHookCli(argv, io) {
 `);
     return 1;
   }
-  let input = {};
+  const env = io.env ?? process.env;
+  const closed = (why) => {
+    io.err(
+      `ARIMA guard could not decide (${why}), so this action is blocked to be safe. Ask the human to check the ARIMA plugin.
+`
+    );
+    return 2;
+  };
+  const failsClosed = () => kind === "pre-tool-use" && findProjectDir({ cwd: io.cwd ?? process.cwd() }, env) !== void 0;
+  let input;
   try {
     const parsed = io.stdin.trim() === "" ? {} : JSON.parse(io.stdin);
-    if (parsed !== null && typeof parsed === "object") input = parsed;
+    if (parsed === null || typeof parsed !== "object" || Array.isArray(parsed))
+      throw new Error("payload is not an object");
+    input = parsed;
   } catch {
-    return 0;
+    return failsClosed() ? closed("unreadable payload") : 0;
   }
   try {
-    const out = await handleHook(kind, input, io.env ?? process.env);
+    const out = await handleHook(kind, input, env);
     if (out.stderr) io.err(`${out.stderr}
 `);
     return out.exitCode;
-  } catch {
-    return 0;
+  } catch (e) {
+    return failsClosed() ? closed(e instanceof Error ? e.message : "internal error") : 0;
   }
 }
 

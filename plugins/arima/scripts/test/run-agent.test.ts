@@ -100,7 +100,7 @@ describe('runAgent: a normal run', () => {
     expect(flag('--max-turns')).toBe('10');
     expect(flag('--permission-mode')).toBe('dontAsk');
     expect(flag('--model')).toBe('claude-sonnet-5-5');
-    expect(flag('--allowedTools')).toContain('Bash(git *)');
+    expect(flag('--allowedTools')).toContain('Bash(git push *)');
     expect(flag('--disallowedTools')).toContain('mcp__*notion*');
     expect(rec.stdin).toBe('Implement US-112.');
     expect(path.resolve(rec.cwd).toLowerCase()).toBe(path.resolve(worktree).toLowerCase());
@@ -301,7 +301,7 @@ describe('least privilege', () => {
     ] as const) {
       const allowed = allowedTools(role, '/x/scripts/dist');
       expect(allowed).not.toContain('Bash');
-      expect(allowed.some((t) => /notion/i.test(t))).toBe(false);
+      expect(allowed.some((t) => /mcp__.*notion/i.test(t))).toBe(false);
     }
   });
 
