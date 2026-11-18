@@ -92,8 +92,14 @@ Spec references use §N (e.g. §4.1 = spec section 4.1).
   - Not verified against real Notion (mocked SDK only); the real check happens with the T-09 manual run.
 
 ### T-08 State branch persistence (§3.2 Local state, D-09)
-- [ ] `arima-state pull|push`: maintains `.arima/` on the orphan branch `arima-state` via a dedicated git worktree; never touches `main`; push is a single commit per run with the run ID in the message.
+- [x] `arima-state pull|push`: maintains `.arima/` on the orphan branch `arima-state` via a dedicated git worktree; never touches `main`; push is a single commit per run with the run ID in the message.
 - **Accept:** integration test in a temp git repo: pull → modify → push → fresh clone pull restores state.
+- **Notes (done 2026-11-17):**
+  - Real git, no mocks: tests use temporary app repos and a bare remote, including a fresh clone that pulls state back (pull -> modify -> push -> clone -> pull restores byte-identical files).
+  - The branch is created as an orphan with plumbing (git mktree + commit-tree + branch), not 'git worktree add --orphan', so it works on older git such as Ubuntu 22.04's 2.34. .arima/ is added to .git/info/exclude (local only), so main's tree and .gitignore are never modified.
+  - One commit per push, message 'chore(state): run <run-id>'; nothing changed means no commit. The state branch carries its own .gitignore (locks, tmp) and .gitattributes ('* -text') so state files are byte-stable across OSes. Pushes only the state branch ('arima-state:arima-state'); the default branch name is refused as a state branch.
+  - Staged files are scanned for credential-shaped strings before committing (spec §11.3); a hit unstages everything and aborts. Pull is fast-forward only and reports divergence instead of merging. If .arima/ already has files and the branch exists elsewhere it stops rather than overwrite.
+  - Project dir must be the repo root (a temp dir inside another repo is rejected). Note: .arima/events.jsonl is itself state, so a push right after a push can commit just the state.push event line. Raised the Vitest timeout to 30s for git-heavy tests.
 
 ### T-09 Notion template bootstrap and mapping (§9.1–9.4)
 - [ ] `arima-notion bootstrap --parent <page-id>`: creates the 19 databases with every property and relation from §9.1 under a page (used once to build the public template).
