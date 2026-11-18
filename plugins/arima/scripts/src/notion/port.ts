@@ -68,13 +68,18 @@ export interface NotionPort extends PauseSwitchPort {
   /** Every row of a data source (all pages of results). */
   queryRows(dataSourceId: string): Promise<RawRow[]>;
   getPageLastEdited(pageId: string): Promise<string>;
+  /** One page with its raw property values (what a human sees now). */
+  getPage(pageId: string): Promise<RawRow>;
   createPage(
     dataSourceId: string,
     properties: Record<string, unknown>,
     children?: unknown[],
-  ): Promise<{ pageId: string; lastEdited: string }>;
+  ): Promise<{ pageId: string; lastEdited: string; properties?: RawRow['properties'] }>;
   /** Updates property values. There is no way to trash or archive a page through this port. */
-  updatePage(pageId: string, properties: Record<string, unknown>): Promise<{ lastEdited: string }>;
+  updatePage(
+    pageId: string,
+    properties: Record<string, unknown>,
+  ): Promise<{ lastEdited: string; properties?: RawRow['properties'] }>;
   appendChildren(pageId: string, blocks: unknown[]): Promise<void>;
 }
 
@@ -335,6 +340,15 @@ export function createNotionPort(
       return raw.last_edited_time;
     },
 
+    async getPage(pageId) {
+      const raw = (await call(() => client.pages.retrieve({ page_id: pageId }))) as {
+        id: string;
+        last_edited_time: string;
+        properties?: RawRow['properties'];
+      };
+      return { pageId: raw.id, lastEdited: raw.last_edited_time, properties: raw.properties ?? {} };
+    },
+
     async createPage(dataSourceId, properties, children) {
       const first = children?.slice(0, 100);
       const raw = (await call(() =>
@@ -343,21 +357,29 @@ export function createNotionPort(
           properties,
           ...(first && first.length > 0 ? { children: first } : {}),
         }),
-      )) as { id: string; last_edited_time: string };
+      )) as { id: string; last_edited_time: string; properties?: RawRow['properties'] };
       let lastEdited = raw.last_edited_time;
       for (let i = 100; children && i < children.length; i += 100) {
         const rest = children.slice(i, i + 100);
         await call(() => client.blocks.children.append({ block_id: raw.id, children: rest }));
       }
       if (children && children.length > 100) lastEdited = await this.getPageLastEdited(raw.id);
-      return { pageId: raw.id, lastEdited };
+      return {
+        pageId: raw.id,
+        lastEdited,
+        ...(raw.properties ? { properties: raw.properties } : {}),
+      };
     },
 
     async updatePage(pageId, properties) {
       const raw = (await call(() => client.pages.update({ page_id: pageId, properties }))) as {
         last_edited_time: string;
+        properties?: RawRow['properties'];
       };
-      return { lastEdited: raw.last_edited_time };
+      return {
+        lastEdited: raw.last_edited_time,
+        ...(raw.properties ? { properties: raw.properties } : {}),
+      };
     },
 
     async appendChildren(pageId, blocks) {

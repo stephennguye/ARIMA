@@ -18579,6 +18579,10 @@ function createNotionPort(client, throttle = new Throttle(), backoff = {}) {
       const raw = await call(() => client.pages.retrieve({ page_id: pageId }));
       return raw.last_edited_time;
     },
+    async getPage(pageId) {
+      const raw = await call(() => client.pages.retrieve({ page_id: pageId }));
+      return { pageId: raw.id, lastEdited: raw.last_edited_time, properties: raw.properties ?? {} };
+    },
     async createPage(dataSourceId, properties, children) {
       const first = children?.slice(0, 100);
       const raw = await call(
@@ -18594,11 +18598,18 @@ function createNotionPort(client, throttle = new Throttle(), backoff = {}) {
         await call(() => client.blocks.children.append({ block_id: raw.id, children: rest }));
       }
       if (children && children.length > 100) lastEdited = await this.getPageLastEdited(raw.id);
-      return { pageId: raw.id, lastEdited };
+      return {
+        pageId: raw.id,
+        lastEdited,
+        ...raw.properties ? { properties: raw.properties } : {}
+      };
     },
     async updatePage(pageId, properties) {
       const raw = await call(() => client.pages.update({ page_id: pageId, properties }));
-      return { lastEdited: raw.last_edited_time };
+      return {
+        lastEdited: raw.last_edited_time,
+        ...raw.properties ? { properties: raw.properties } : {}
+      };
     },
     async appendChildren(pageId, blocks) {
       for (let i = 0; i < blocks.length; i += 100) {
@@ -19847,9 +19858,6 @@ function classify(e) {
   const status = e.status;
   return typeof status === "number" && status >= 400 && status < 500 && status !== 429 ? "permanent" : "transient";
 }
-function plainOf(v) {
-  return v;
-}
 async function pushOutbox(projectDir, port, map, opts = {}) {
   const report = { applied: [], rejected: [], conflicts: [], deferred: [] };
   const pending = listPending(projectDir, report);
@@ -19869,7 +19877,9 @@ async function pushOutbox(projectDir, port, map, opts = {}) {
     });
     return report;
   }
-  const ownWrites = /* @__PURE__ */ new Map();
+  const snapshots = /* @__PURE__ */ new Map();
+  const normalised = (pageId, lastEdited, raw) => raw === void 0 ? void 0 : toMirrorRow({ pageId, lastEdited, properties: raw }).properties;
+  const sameValue = (a, b) => JSON.stringify(a ?? null) === JSON.stringify(b ?? null);
   const resolveAnywhere = (id) => {
     if (UUID.test(id)) return id;
     const hits = [];
@@ -19998,12 +20008,13 @@ async function pushOutbox(projectDir, port, map, opts = {}) {
         notionProps(),
         entry.content_markdown ? markdownToBlocks(entry.content_markdown) : void 0
       );
-      ownWrites.set(created.pageId, created.lastEdited);
+      const fresh2 = normalised(created.pageId, created.lastEdited, created.properties) ?? toMirrorRow(await port.getPage(created.pageId)).properties;
+      snapshots.set(created.pageId, fresh2);
       const row2 = {
         page_id: created.pageId,
         last_edited_time: created.lastEdited,
         id: title,
-        properties: { ...props, [LAST_WRITTEN_BY_RUN]: entry.run_id }
+        properties: { ...fresh2 }
       };
       mirror.rows.push(row2);
       return { kind: "applied", pageId: created.pageId };
@@ -20022,17 +20033,25 @@ async function pushOutbox(projectDir, port, map, opts = {}) {
         return { kind: "rejected", reason: `${db.title} has no Status property` };
       if (row.properties["Status"] === status) return { kind: "applied", pageId: row.page_id };
     }
-    const mirrored = baseline.get(entry.database)?.rows.find((r) => r.page_id === row.page_id)?.last_edited_time;
-    const claimed = entry.base_last_edited;
-    const basis = mirrored !== void 0 && claimed !== void 0 ? Date.parse(claimed) < Date.parse(mirrored) ? claimed : mirrored : mirrored ?? claimed;
-    const current = await port.getPageLastEdited(row.page_id);
-    if (basis !== void 0 && Date.parse(current) > Date.parse(basis) && current !== ownWrites.get(row.page_id)) {
-      return { kind: "conflict", humanEditedAt: current };
+    const touched = entry.op === "update" ? Object.keys(props) : entry.op === "retire" ? ["Status"] : [];
+    if (touched.length > 0) {
+      const live = await port.getPage(row.page_id);
+      const liveProps = toMirrorRow(live).properties;
+      const seen = snapshots.get(row.page_id) ?? baseline.get(entry.database)?.rows.find((r) => r.page_id === row.page_id)?.properties;
+      if (seen !== void 0) {
+        if (touched.some((n) => !sameValue(seen[n], liveProps[n]))) {
+          return { kind: "conflict", humanEditedAt: live.lastEdited };
+        }
+      } else if (
+        // No earlier copy to compare values with: fall back to the (coarse) timestamp.
+        entry.base_last_edited !== void 0 && Date.parse(live.lastEdited) > Date.parse(entry.base_last_edited)
+      ) {
+        return { kind: "conflict", humanEditedAt: live.lastEdited };
+      }
     }
     let written;
     if (entry.op === "update") {
       written = await port.updatePage(row.page_id, notionProps());
-      Object.assign(row.properties, props);
     } else if (entry.op === "append_content") {
       if (!entry.content_markdown)
         return { kind: "rejected", reason: "append_content needs content_markdown" };
@@ -20046,11 +20065,16 @@ async function pushOutbox(projectDir, port, map, opts = {}) {
         ...notionProps(),
         Status: toNotionValue(statusType, "Status", status, resolveAnywhere)
       });
-      row.properties["Status"] = plainOf(status);
     }
-    row.properties[LAST_WRITTEN_BY_RUN] = entry.run_id;
+    const fresh = normalised(row.page_id, written.lastEdited, written.properties) ?? toMirrorRow(await port.getPage(row.page_id)).properties;
+    const wrote = [...touched, LAST_WRITTEN_BY_RUN];
+    const before = snapshots.get(row.page_id) ?? baseline.get(entry.database)?.rows.find((r) => r.page_id === row.page_id)?.properties ?? {};
+    snapshots.set(row.page_id, {
+      ...before,
+      ...Object.fromEntries(wrote.map((n) => [n, fresh[n] ?? null]))
+    });
+    row.properties = { ...fresh };
     row.last_edited_time = written.lastEdited;
-    ownWrites.set(row.page_id, written.lastEdited);
     return { kind: "applied", pageId: row.page_id };
   }
 }

@@ -64,8 +64,15 @@ export class FakeNotion {
   /** Make the next matching API call fail, e.g. { op: 'pages.update', status: 503 }. */
   failNext: { op: string; status?: number; message?: string } | undefined;
 
+  /**
+   * Notion rounds last_edited_time to the minute (checked against the real API). When set, every
+   * write in the test falls in the same minute and gets the same timestamp.
+   */
+  sameMinute = false;
+
   /** Monotonic fake clock: every write gets a later last_edited_time. */
   tick(): string {
+    if (this.sameMinute) return new Date(Date.UTC(2026, 10, 18, 0, 0, 0)).toISOString();
     this.clock += 1;
     return new Date(Date.UTC(2026, 10, 18, 0, 0, this.clock)).toISOString();
   }
@@ -303,7 +310,11 @@ export class FakeNotion {
         this.calls.push('pages.retrieve');
         const row = this.rows.get(page_id);
         if (!row) return Promise.reject(new ApiError('no page ' + page_id, 404));
-        return Promise.resolve({ id: row.id, last_edited_time: row.last_edited_time });
+        return Promise.resolve({
+          id: row.id,
+          last_edited_time: row.last_edited_time,
+          properties: row.properties,
+        });
       },
       create: ({ parent, properties, children }) => {
         this.calls.push('pages.create');
@@ -324,7 +335,11 @@ export class FakeNotion {
             void this.client.blocks.children.append({ block_id: row.id, children });
             row.last_edited_time = this.tick();
           }
-          return Promise.resolve({ id: row.id, last_edited_time: row.last_edited_time });
+          return Promise.resolve({
+            id: row.id,
+            last_edited_time: row.last_edited_time,
+            properties: row.properties,
+          });
         } catch (e) {
           return Promise.reject(e as Error);
         }
@@ -337,7 +352,11 @@ export class FakeNotion {
           if (!row) throw new ApiError('no page ' + page_id, 404);
           this.writeProps(this.sources.get(row.dsId) as DataSource, row, properties);
           row.last_edited_time = this.tick();
-          return Promise.resolve({ id: row.id, last_edited_time: row.last_edited_time });
+          return Promise.resolve({
+            id: row.id,
+            last_edited_time: row.last_edited_time,
+            properties: row.properties,
+          });
         } catch (e) {
           return Promise.reject(e as Error);
         }

@@ -18800,6 +18800,10 @@ function createNotionPort(client, throttle = new Throttle(), backoff = {}) {
       const raw = await call(() => client.pages.retrieve({ page_id: pageId }));
       return raw.last_edited_time;
     },
+    async getPage(pageId) {
+      const raw = await call(() => client.pages.retrieve({ page_id: pageId }));
+      return { pageId: raw.id, lastEdited: raw.last_edited_time, properties: raw.properties ?? {} };
+    },
     async createPage(dataSourceId, properties, children) {
       const first = children?.slice(0, 100);
       const raw = await call(
@@ -18815,11 +18819,18 @@ function createNotionPort(client, throttle = new Throttle(), backoff = {}) {
         await call(() => client.blocks.children.append({ block_id: raw.id, children: rest }));
       }
       if (children && children.length > 100) lastEdited = await this.getPageLastEdited(raw.id);
-      return { pageId: raw.id, lastEdited };
+      return {
+        pageId: raw.id,
+        lastEdited,
+        ...raw.properties ? { properties: raw.properties } : {}
+      };
     },
     async updatePage(pageId, properties) {
       const raw = await call(() => client.pages.update({ page_id: pageId, properties }));
-      return { lastEdited: raw.last_edited_time };
+      return {
+        lastEdited: raw.last_edited_time,
+        ...raw.properties ? { properties: raw.properties } : {}
+      };
     },
     async appendChildren(pageId, blocks) {
       for (let i = 0; i < blocks.length; i += 100) {

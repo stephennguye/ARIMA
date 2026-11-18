@@ -11,10 +11,10 @@ import { appendEvent } from '../events.js';
 import { writeFileAtomic } from '../lib/atomic-file.js';
 import { describeError, getValidator } from '../lib/schema.js';
 import { findSecrets } from '../lib/secrets.js';
-import { findRow, pullMirror, readMirror, writeMirror } from './mirror.js';
+import { findRow, pullMirror, readMirror, toMirrorRow, writeMirror } from './mirror.js';
 import type { MirrorFile, MirrorRow } from './mirror.js';
 import type { MapDatabase, NotionMap } from './mapper.js';
-import type { NotionPort } from './port.js';
+import type { NotionPort, RawRow } from './port.js';
 import { LAST_WRITTEN_BY_RUN, NON_UNIQUE_TITLES, RETIRE_STATUS } from './schema.js';
 import type { DbKey } from './schema.js';
 import { ValueError, markdownToBlocks, toNotionValue } from './values.js';
@@ -157,10 +157,6 @@ function classify(e: unknown): 'permanent' | 'transient' {
     : 'transient';
 }
 
-function plainOf(v: unknown): unknown {
-  return v;
-}
-
 /**
  * Applies the outbox to Notion (spec §3.3, §9.3). Per entry: validate, refuse human-only fields,
  * refuse anything that is not a create/update/append/retire (there is no delete), detect a human
@@ -202,7 +198,18 @@ export async function pushOutbox(
     return report;
   }
 
-  const ownWrites = new Map<string, string>();
+  // What Notion held for each page right after OUR last write in this push (only the properties we
+  // wrote, overlaid on the baseline). A later entry on the same page is compared against this, so
+  // our own writes are never mistaken for a human edit.
+  const snapshots = new Map<string, MirrorRow['properties']>();
+  const normalised = (
+    pageId: string,
+    lastEdited: string,
+    raw: RawRow['properties'] | undefined,
+  ): MirrorRow['properties'] | undefined =>
+    raw === undefined ? undefined : toMirrorRow({ pageId, lastEdited, properties: raw }).properties;
+  const sameValue = (a: unknown, b: unknown): boolean =>
+    JSON.stringify(a ?? null) === JSON.stringify(b ?? null);
   const resolveAnywhere = (id: string): string => {
     if (UUID.test(id)) return id;
     const hits: string[] = [];
@@ -346,12 +353,16 @@ export async function pushOutbox(
         notionProps(),
         entry.content_markdown ? markdownToBlocks(entry.content_markdown) : undefined,
       );
-      ownWrites.set(created.pageId, created.lastEdited);
+      // Keep Notion's own spelling of the values (not the agent's), so later comparisons are exact.
+      const fresh =
+        normalised(created.pageId, created.lastEdited, created.properties) ??
+        toMirrorRow(await port.getPage(created.pageId)).properties;
+      snapshots.set(created.pageId, fresh);
       const row: MirrorRow = {
         page_id: created.pageId,
         last_edited_time: created.lastEdited,
         id: title,
-        properties: { ...(props as MirrorRow['properties']), [LAST_WRITTEN_BY_RUN]: entry.run_id },
+        properties: { ...fresh },
       };
       mirror.rows.push(row);
       return { kind: 'applied', pageId: created.pageId };
@@ -374,33 +385,35 @@ export async function pushOutbox(
       if (row.properties['Status'] === status) return { kind: 'applied', pageId: row.page_id };
     }
 
-    // A human edit since the agent looked wins.
-    // The mirror the orchestrator itself holds is the baseline; an entry may only make the check
-    // STRICTER (an earlier base), never looser, so an agent cannot hide a human edit by claiming a
-    // late "last seen" time.
-    const mirrored = baseline
-      .get(entry.database)
-      ?.rows.find((r) => r.page_id === row.page_id)?.last_edited_time;
-    const claimed = entry.base_last_edited;
-    const basis =
-      mirrored !== undefined && claimed !== undefined
-        ? Date.parse(claimed) < Date.parse(mirrored)
-          ? claimed
-          : mirrored
-        : (mirrored ?? claimed);
-    const current = await port.getPageLastEdited(row.page_id);
-    if (
-      basis !== undefined &&
-      Date.parse(current) > Date.parse(basis) &&
-      current !== ownWrites.get(row.page_id)
-    ) {
-      return { kind: 'conflict', humanEditedAt: current };
+    // A human edit since the agent looked wins (spec §3.3). Notion rounds last_edited_time to the
+    // minute, so edits are detected by VALUE: for every property this entry would write, the value
+    // Notion holds right now must equal the value the agent saw (the mirror as it was before this
+    // push), or the value Notion held right after our own earlier write in this push. Edits to
+    // other properties do not conflict. Appending content overwrites nothing, so it never does.
+    const touched =
+      entry.op === 'update' ? Object.keys(props) : entry.op === 'retire' ? ['Status'] : [];
+    if (touched.length > 0) {
+      const live = await port.getPage(row.page_id);
+      const liveProps = toMirrorRow(live).properties;
+      const seen =
+        snapshots.get(row.page_id) ??
+        baseline.get(entry.database)?.rows.find((r) => r.page_id === row.page_id)?.properties;
+      if (seen !== undefined) {
+        if (touched.some((n) => !sameValue(seen[n], liveProps[n]))) {
+          return { kind: 'conflict', humanEditedAt: live.lastEdited };
+        }
+      } else if (
+        // No earlier copy to compare values with: fall back to the (coarse) timestamp.
+        entry.base_last_edited !== undefined &&
+        Date.parse(live.lastEdited) > Date.parse(entry.base_last_edited)
+      ) {
+        return { kind: 'conflict', humanEditedAt: live.lastEdited };
+      }
     }
 
-    let written: { lastEdited: string };
+    let written: { lastEdited: string; properties?: RawRow['properties'] };
     if (entry.op === 'update') {
       written = await port.updatePage(row.page_id, notionProps());
-      Object.assign(row.properties, props);
     } else if (entry.op === 'append_content') {
       if (!entry.content_markdown)
         return { kind: 'rejected', reason: 'append_content needs content_markdown' };
@@ -414,11 +427,24 @@ export async function pushOutbox(
         ...notionProps(),
         Status: toNotionValue(statusType, 'Status', status, resolveAnywhere),
       });
-      row.properties['Status'] = plainOf(status) as string;
     }
-    row.properties[LAST_WRITTEN_BY_RUN] = entry.run_id;
+    // Record Notion's own values after the write: the mirror holds the page as it now is, and the
+    // snapshot remembers only what WE wrote (a concurrent human edit elsewhere stays visible to the
+    // next entry's comparison against the older baseline).
+    const fresh =
+      normalised(row.page_id, written.lastEdited, written.properties) ??
+      toMirrorRow(await port.getPage(row.page_id)).properties;
+    const wrote = [...touched, LAST_WRITTEN_BY_RUN];
+    const before =
+      snapshots.get(row.page_id) ??
+      baseline.get(entry.database)?.rows.find((r) => r.page_id === row.page_id)?.properties ??
+      {};
+    snapshots.set(row.page_id, {
+      ...before,
+      ...Object.fromEntries(wrote.map((n) => [n, fresh[n] ?? null])),
+    });
+    row.properties = { ...fresh };
     row.last_edited_time = written.lastEdited;
-    ownWrites.set(row.page_id, written.lastEdited);
     return { kind: 'applied', pageId: row.page_id };
   }
 }

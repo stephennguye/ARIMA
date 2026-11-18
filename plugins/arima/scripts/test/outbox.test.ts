@@ -784,3 +784,147 @@ describe('outbox: Status writes need an explicit human opt-in (judge #2)', () =>
     expect(fake.rowByTitle('Stories', 'US-001')).toBeDefined();
   });
 });
+
+describe('outbox: human edits are detected by VALUE, not by minute-rounded timestamps', () => {
+  const storyRow = async (
+    ctx: Awaited<ReturnType<typeof setup>>,
+    props: Record<string, unknown> = {},
+  ) => {
+    enqueue(
+      ctx.dir,
+      entry({
+        op: 'create',
+        database: 'stories',
+        properties: { ID: 'US-001', Title: 'original', Attempt: 1, ...props },
+      }),
+    );
+    await pushOutbox(ctx.dir, ctx.port, ctx.map);
+    return ctx.fake.rowByTitle('Stories', 'US-001')!;
+  };
+
+  it('keeps a human edit made in the SAME minute as the agent baseline (timestamps are equal)', async () => {
+    const ctx = await setup();
+    ctx.fake.sameMinute = true;
+    const row = await storyRow(ctx);
+    const seen = row.last_edited_time;
+    ctx.fake.humanEdit(row.id, { Attempt: { number: 7 } });
+    expect(row.last_edited_time).toBe(seen); // the timestamp cannot tell
+    const e = entry({
+      op: 'update',
+      database: 'stories',
+      item_id: 'US-001',
+      base_last_edited: seen,
+      properties: { Attempt: 2 },
+    });
+    enqueue(ctx.dir, e);
+    const r = await pushOutbox(ctx.dir, ctx.port, ctx.map);
+    expect(r.conflicts).toEqual([e.id]);
+    expect(row.properties['Attempt']).toMatchObject({ number: 7 });
+  });
+
+  it('a human edit to a DIFFERENT property does not block the agent, and survives it', async () => {
+    const ctx = await setup();
+    const row = await storyRow(ctx);
+    ctx.fake.humanEdit(row.id, {
+      Title: { rich_text: [{ type: 'text', text: { content: 'renamed by a human' } }] },
+    });
+    const e = entry({
+      op: 'update',
+      database: 'stories',
+      item_id: 'US-001',
+      properties: { Attempt: 2 },
+    });
+    enqueue(ctx.dir, e);
+    const r = await pushOutbox(ctx.dir, ctx.port, ctx.map);
+    expect(r.applied).toEqual([e.id]);
+    expect(row.properties['Attempt']).toMatchObject({ number: 2 });
+    expect(ctx.fake.text(row, 'Title')).toBe('renamed by a human');
+  });
+
+  it('a later timestamp with unchanged values is not a conflict (a touch, or our own earlier write)', async () => {
+    const ctx = await setup();
+    const row = await storyRow(ctx);
+    ctx.fake.humanEdit(row.id, {}); // bumps last_edited_time, changes nothing
+    const e = entry({
+      op: 'update',
+      database: 'stories',
+      item_id: 'US-001',
+      properties: { Attempt: 2 },
+    });
+    enqueue(ctx.dir, e);
+    expect((await pushOutbox(ctx.dir, ctx.port, ctx.map)).applied).toEqual([e.id]);
+  });
+
+  it('our own write in an earlier push is not mistaken for a human edit (relations included)', async () => {
+    const ctx = await setup();
+    enqueue(
+      ctx.dir,
+      entry({
+        op: 'create',
+        database: 'requirements',
+        properties: { ID: 'REQ-001', Title: 'r' },
+      }),
+    );
+    await storyRow(ctx, { Requirements: ['REQ-001'] });
+    for (const n of [2, 3]) {
+      const e = entry({
+        op: 'update',
+        database: 'stories',
+        item_id: 'US-001',
+        properties: { Attempt: n, Requirements: ['REQ-001'] },
+      });
+      enqueue(ctx.dir, e);
+      const r = await pushOutbox(ctx.dir, ctx.port, ctx.map);
+      expect(r.conflicts).toEqual([]);
+      expect(r.applied).toEqual([e.id]);
+    }
+  });
+
+  it('retire loses to a human who changed Status in the meantime', async () => {
+    const ctx = await setup();
+    const row = await storyRow(ctx);
+    ctx.fake.humanEdit(row.id, { Status: { select: { name: 'In progress' } } });
+    const e = entry({ op: 'retire', database: 'stories', item_id: 'US-001' });
+    enqueue(ctx.dir, e);
+    const r = await pushOutbox(ctx.dir, ctx.port, ctx.map, ALLOW);
+    expect(r.conflicts).toEqual([e.id]);
+    expect(row.properties['Status']).toMatchObject({ select: { name: 'In progress' } });
+  });
+
+  it('appending content never overwrites a value, so it is not a conflict', async () => {
+    const ctx = await setup();
+    const row = await storyRow(ctx);
+    ctx.fake.humanEdit(row.id, { Attempt: { number: 9 } });
+    const e = entry({
+      op: 'append_content',
+      database: 'stories',
+      item_id: 'US-001',
+      content_markdown: 'a note',
+    });
+    enqueue(ctx.dir, e);
+    expect((await pushOutbox(ctx.dir, ctx.port, ctx.map)).applied).toEqual([e.id]);
+  });
+
+  it('an agent cannot hide a human edit by claiming a late base_last_edited', async () => {
+    const ctx = await setup();
+    const row = await storyRow(ctx);
+    ctx.fake.humanEdit(row.id, { Attempt: { number: 7 } });
+    const e = entry({
+      op: 'update',
+      database: 'stories',
+      item_id: 'US-001',
+      base_last_edited: '2099-01-01T00:00:00.000Z',
+      properties: { Attempt: 2 },
+    });
+    enqueue(ctx.dir, e);
+    expect((await pushOutbox(ctx.dir, ctx.port, ctx.map)).conflicts).toEqual([e.id]);
+  });
+
+  it("the stored mirror holds Notion's own values after a push, not the agent's spelling", async () => {
+    const ctx = await setup();
+    await storyRow(ctx, { Priority: 1 });
+    const mirrored = readMirror(ctx.dir, 'stories')!.rows.find((r) => r.id === 'US-001')!;
+    expect(mirrored.properties['Attempt']).toBe(1);
+    expect(mirrored.properties['Last written by run']).toBe(RUN);
+  });
+});
