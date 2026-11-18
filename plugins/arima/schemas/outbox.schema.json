@@ -22,8 +22,8 @@
   },
   "allOf": [
     {
-      "if": { "properties": { "op": { "enum": ["update", "append_content", "retire"] } } },
-      "then": { "required": ["item_id"] }
+      "if": { "type": "object", "properties": { "op": { "enum": ["update", "append_content", "retire"] } } },
+      "then": { "type": "object", "required": ["item_id"], "properties": { "item_id": { "type": "string", "minLength": 1 } } }
     }
   ]
 }

@@ -529,3 +529,24 @@ export function dbByKey(key: DbKey): DbSpec {
   if (found === undefined) throw new Error(`unknown database ${key}`);
   return found;
 }
+
+/**
+ * The status an item is retired into (spec §9.3: nothing is deleted). Databases without an entry
+ * here cannot be retired; the outbox rejects such a request.
+ */
+export const RETIRE_STATUS: Partial<Record<DbKey, string>> = {
+  requirements: 'Retired',
+  epics: 'Cancelled',
+  stories: 'Cancelled',
+  bugs: 'Cancelled',
+  documents: 'Superseded',
+  questions: 'Withdrawn',
+  incidents: 'Closed',
+  change_requests: 'Withdrawn',
+  risks: 'Closed',
+  lessons: 'Rejected',
+  human_tasks: 'Cancelled',
+};
+
+/** Databases whose title is not a unique ID (several rows may share it). */
+export const NON_UNIQUE_TITLES: ReadonlySet<DbKey> = new Set<DbKey>(['cost_log']);

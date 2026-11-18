@@ -1,5 +1,6 @@
 import { Client } from '@notionhq/client';
-import { Throttle } from '../lib/throttle.js';
+import { Throttle, withBackoff } from '../lib/throttle.js';
+import type { BackoffOptions } from '../lib/throttle.js';
 import type { ApiProperty } from './props.js';
 
 /** Name of the kill-switch to-do on the project root page (spec §11.3 "Pause ARIMA"). */
@@ -64,6 +65,24 @@ export interface NotionPort extends PauseSwitchPort {
   getDataSourceProperties(dataSourceId: string): Promise<Record<string, PropertyInfo>>;
   /** Adds NEW properties; throws if any name already exists (never alters or removes existing ones). */
   addProperties(dataSourceId: string, properties: Record<string, ApiProperty>): Promise<void>;
+  /** Every row of a data source (all pages of results). */
+  queryRows(dataSourceId: string): Promise<RawRow[]>;
+  getPageLastEdited(pageId: string): Promise<string>;
+  createPage(
+    dataSourceId: string,
+    properties: Record<string, unknown>,
+    children?: unknown[],
+  ): Promise<{ pageId: string; lastEdited: string }>;
+  /** Updates property values. There is no way to trash or archive a page through this port. */
+  updatePage(pageId: string, properties: Record<string, unknown>): Promise<{ lastEdited: string }>;
+  appendChildren(pageId: string, blocks: unknown[]): Promise<void>;
+}
+
+/** A page of a data source with its raw Notion property values. */
+export interface RawRow {
+  pageId: string;
+  lastEdited: string;
+  properties: Record<string, { type: string; [k: string]: unknown }>;
 }
 
 /** The slice of the official SDK client the port uses, so tests can fake it. */
@@ -91,6 +110,20 @@ export interface NotionClientLike {
   dataSources: {
     retrieve(args: { data_source_id: string }): Promise<unknown>;
     update(args: { data_source_id: string; properties: Record<string, unknown> }): Promise<unknown>;
+    query(args: { data_source_id: string; start_cursor?: string; page_size?: number }): Promise<{
+      results: unknown[];
+      has_more: boolean;
+      next_cursor: string | null;
+    }>;
+  };
+  pages: {
+    retrieve(args: { page_id: string }): Promise<unknown>;
+    create(args: {
+      parent: { type: 'data_source_id'; data_source_id: string };
+      properties: Record<string, unknown>;
+      children?: unknown[];
+    }): Promise<unknown>;
+    update(args: { page_id: string; properties: Record<string, unknown> }): Promise<unknown>;
   };
 }
 
@@ -129,12 +162,17 @@ function toDatabaseInfo(raw: RawDatabase): DatabaseInfo {
 export function createNotionPort(
   client: NotionClientLike,
   throttle: Throttle = new Throttle(),
+  backoff: BackoffOptions = {},
 ): NotionPort {
+  /** Every API call: spaced to ~3 requests/second, and retried with backoff on HTTP 429. */
+  const call = <T>(fn: () => Promise<T>): Promise<T> =>
+    throttle.run(() => withBackoff(fn, backoff));
+
   const listChildren = async (pageId: string): Promise<ChildBlock[]> => {
     const out: ChildBlock[] = [];
     let cursor: string | undefined;
     for (;;) {
-      const page = await throttle.run(() =>
+      const page = await call(() =>
         client.blocks.children.list({
           block_id: pageId,
           page_size: 100,
@@ -166,7 +204,7 @@ export function createNotionPort(
   const getDataSourceProperties = async (
     dataSourceId: string,
   ): Promise<Record<string, PropertyInfo>> => {
-    const raw = (await throttle.run(() =>
+    const raw = (await call(() =>
       client.dataSources.retrieve({ data_source_id: dataSourceId }),
     )) as {
       properties?: Record<string, RawProperty>;
@@ -192,11 +230,11 @@ export function createNotionPort(
     },
 
     async setTodoChecked(blockId, checked) {
-      await throttle.run(() => client.blocks.update({ block_id: blockId, to_do: { checked } }));
+      await call(() => client.blocks.update({ block_id: blockId, to_do: { checked } }));
     },
 
     async appendTodo(pageId, text, checked) {
-      const res = await throttle.run(() =>
+      const res = await call(() =>
         client.blocks.children.append({
           block_id: pageId,
           children: [
@@ -214,7 +252,7 @@ export function createNotionPort(
     },
 
     async appendParagraph(pageId, text) {
-      const res = await throttle.run(() =>
+      const res = await call(() =>
         client.blocks.children.append({
           block_id: pageId,
           children: [
@@ -232,7 +270,7 @@ export function createNotionPort(
     },
 
     async createDatabase(parentPageId, title, properties) {
-      const raw = (await throttle.run(() =>
+      const raw = (await call(() =>
         client.databases.create({
           parent: { type: 'page_id', page_id: parentPageId },
           title: [{ type: 'text', text: { content: title } }],
@@ -244,7 +282,7 @@ export function createNotionPort(
     },
 
     async getDatabase(databaseId) {
-      const raw = (await throttle.run(() =>
+      const raw = (await call(() =>
         client.databases.retrieve({ database_id: databaseId }),
       )) as RawDatabase;
       return toDatabaseInfo(raw);
@@ -258,15 +296,82 @@ export function createNotionPort(
       if (clash.length > 0) {
         throw new Error(`refusing to alter existing Notion properties: ${clash.join(', ')}`);
       }
-      await throttle.run(() =>
-        client.dataSources.update({ data_source_id: dataSourceId, properties }),
-      );
+      await call(() => client.dataSources.update({ data_source_id: dataSourceId, properties }));
+    },
+
+    async queryRows(dataSourceId) {
+      const rows: RawRow[] = [];
+      let cursor: string | undefined;
+      for (;;) {
+        const page = await call(() =>
+          client.dataSources.query({
+            data_source_id: dataSourceId,
+            page_size: 100,
+            ...(cursor !== undefined ? { start_cursor: cursor } : {}),
+          }),
+        );
+        for (const raw of page.results as {
+          object?: string;
+          id: string;
+          last_edited_time: string;
+          properties?: RawRow['properties'];
+        }[]) {
+          if (raw.object !== undefined && raw.object !== 'page') continue;
+          rows.push({
+            pageId: raw.id,
+            lastEdited: raw.last_edited_time,
+            properties: raw.properties ?? {},
+          });
+        }
+        if (!page.has_more || page.next_cursor === null) return rows;
+        cursor = page.next_cursor;
+      }
+    },
+
+    async getPageLastEdited(pageId) {
+      const raw = (await call(() => client.pages.retrieve({ page_id: pageId }))) as {
+        last_edited_time: string;
+      };
+      return raw.last_edited_time;
+    },
+
+    async createPage(dataSourceId, properties, children) {
+      const first = children?.slice(0, 100);
+      const raw = (await call(() =>
+        client.pages.create({
+          parent: { type: 'data_source_id', data_source_id: dataSourceId },
+          properties,
+          ...(first && first.length > 0 ? { children: first } : {}),
+        }),
+      )) as { id: string; last_edited_time: string };
+      let lastEdited = raw.last_edited_time;
+      for (let i = 100; children && i < children.length; i += 100) {
+        const rest = children.slice(i, i + 100);
+        await call(() => client.blocks.children.append({ block_id: raw.id, children: rest }));
+      }
+      if (children && children.length > 100) lastEdited = await this.getPageLastEdited(raw.id);
+      return { pageId: raw.id, lastEdited };
+    },
+
+    async updatePage(pageId, properties) {
+      const raw = (await call(() => client.pages.update({ page_id: pageId, properties }))) as {
+        last_edited_time: string;
+      };
+      return { lastEdited: raw.last_edited_time };
+    },
+
+    async appendChildren(pageId, blocks) {
+      for (let i = 0; i < blocks.length; i += 100) {
+        const chunk = blocks.slice(i, i + 100);
+        await call(() => client.blocks.children.append({ block_id: pageId, children: chunk }));
+      }
     },
   };
 }
 
 /** Real port from an integration token. Retries on 429 are handled by the SDK. */
 export function createNotionPortFromToken(token: string): NotionPort {
-  const client = new Client({ auth: token, retry: { maxRetries: 5 } });
+  // The SDK's own retry is off: createNotionPort retries 429s itself (withBackoff), once.
+  const client = new Client({ auth: token, retry: false });
   return createNotionPort(client as unknown as NotionClientLike);
 }

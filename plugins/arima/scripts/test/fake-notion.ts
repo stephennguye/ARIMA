@@ -14,6 +14,23 @@ interface DataSource {
   props: Map<string, Prop>;
 }
 
+interface Row {
+  id: string;
+  dsId: string;
+  last_edited_time: string;
+  properties: Record<string, { type: string; [k: string]: unknown }>;
+}
+
+/** Like the SDK's APIResponseError: carries an HTTP status. */
+class ApiError extends Error {
+  constructor(
+    message: string,
+    readonly status?: number,
+  ) {
+    super(message);
+  }
+}
+
 interface Block {
   id: string;
   type: string;
@@ -40,6 +57,75 @@ export class FakeNotion {
 
   constructor(readonly rootId = 'root-page') {
     this.pages.set(rootId, []);
+  }
+
+  readonly rows = new Map<string, Row>();
+  private clock = 0;
+  /** Make the next matching API call fail, e.g. { op: 'pages.update', status: 503 }. */
+  failNext: { op: string; status?: number; message?: string } | undefined;
+
+  /** Monotonic fake clock: every write gets a later last_edited_time. */
+  tick(): string {
+    this.clock += 1;
+    return new Date(Date.UTC(2026, 10, 18, 0, 0, this.clock)).toISOString();
+  }
+
+  private maybeFail(op: string): void {
+    if (this.failNext && this.failNext.op === op) {
+      const f = this.failNext;
+      this.failNext = undefined;
+      throw new ApiError(f.message ?? 'simulated failure of ' + op, f.status);
+    }
+  }
+
+  private fromRequest(type: string, value: unknown): { type: string; [k: string]: unknown } {
+    if (type === 'title' || type === 'rich_text') {
+      const items = (value as { text: { content: string } }[]).map((x) => ({
+        plain_text: x.text.content,
+      }));
+      return { type, [type]: items };
+    }
+    return { type, [type]: value };
+  }
+
+  private writeProps(ds: DataSource, row: Row, props: Record<string, unknown>): void {
+    for (const [name, value] of Object.entries(props)) {
+      const def = ds.props.get(name);
+      if (def === undefined) throw new ApiError(name + ' is not a property that exists.', 400);
+      row.properties[name] = this.fromRequest(
+        def.type,
+        (value as Record<string, unknown>)[def.type],
+      );
+    }
+  }
+
+  /** Simulates a human editing a row in the Notion UI (bumps last_edited_time). */
+  humanEdit(pageId: string, props: Record<string, unknown>): void {
+    const row = this.rows.get(pageId);
+    if (!row) throw new Error('no row ' + pageId);
+    this.writeProps(this.sources.get(row.dsId) as DataSource, row, props);
+    row.last_edited_time = this.tick();
+  }
+
+  /** The row whose title text equals `id` in the database titled `dbTitle`. */
+  rowByTitle(dbTitle: string, id: string): Row | undefined {
+    const db = [...this.databases.values()].find((d) => d.title === dbTitle);
+    return [...this.rows.values()].find(
+      (r) =>
+        r.dsId === db?.dataSourceId &&
+        Object.values(r.properties).some(
+          (p) =>
+            p.type === 'title' &&
+            (p['title'] as { plain_text: string }[]).map((x) => x.plain_text).join('') === id,
+        ),
+    );
+  }
+
+  /** Plain text of one property of a row. */
+  text(row: Row, name: string): string {
+    const p = row.properties[name];
+    const items = (p?.['title'] ?? p?.['rich_text'] ?? []) as { plain_text: string }[];
+    return items.map((x) => x.plain_text).join('');
   }
 
   private id(prefix: string): string {
@@ -105,6 +191,8 @@ export class FakeNotion {
             return { id: this.id('b'), type, [type]: { ...body, rich_text: rich } } as Block;
           });
           blocks.push(...created);
+          const row = this.rows.get(block_id);
+          if (row) row.last_edited_time = this.tick();
           return Promise.resolve({ results: created });
         },
       },
@@ -170,6 +258,68 @@ export class FakeNotion {
           return Promise.reject(e instanceof Error ? e : new Error(String(e)));
         }
         return Promise.resolve({});
+      },
+      query: ({ data_source_id }) => {
+        this.calls.push('dataSources.query');
+        try {
+          this.maybeFail('dataSources.query');
+        } catch (e) {
+          return Promise.reject(e as Error);
+        }
+        const results = [...this.rows.values()]
+          .filter((r) => r.dsId === data_source_id)
+          .map((r) => ({
+            object: 'page',
+            id: r.id,
+            last_edited_time: r.last_edited_time,
+            properties: r.properties,
+          }));
+        return Promise.resolve({ results, has_more: false, next_cursor: null });
+      },
+    },
+    pages: {
+      retrieve: ({ page_id }) => {
+        this.calls.push('pages.retrieve');
+        const row = this.rows.get(page_id);
+        if (!row) return Promise.reject(new ApiError('no page ' + page_id, 404));
+        return Promise.resolve({ id: row.id, last_edited_time: row.last_edited_time });
+      },
+      create: ({ parent, properties, children }) => {
+        this.calls.push('pages.create');
+        try {
+          this.maybeFail('pages.create');
+          const ds = this.sources.get(parent.data_source_id);
+          if (!ds) throw new ApiError('no data source ' + parent.data_source_id, 404);
+          const row: Row = {
+            id: this.id('pg'),
+            dsId: ds.id,
+            last_edited_time: this.tick(),
+            properties: {},
+          };
+          this.writeProps(ds, row, properties);
+          this.rows.set(row.id, row);
+          this.pages.set(row.id, []);
+          if (children && children.length > 0) {
+            void this.client.blocks.children.append({ block_id: row.id, children });
+            row.last_edited_time = this.tick();
+          }
+          return Promise.resolve({ id: row.id, last_edited_time: row.last_edited_time });
+        } catch (e) {
+          return Promise.reject(e as Error);
+        }
+      },
+      update: ({ page_id, properties }) => {
+        this.calls.push('pages.update');
+        try {
+          this.maybeFail('pages.update');
+          const row = this.rows.get(page_id);
+          if (!row) throw new ApiError('no page ' + page_id, 404);
+          this.writeProps(this.sources.get(row.dsId) as DataSource, row, properties);
+          row.last_edited_time = this.tick();
+          return Promise.resolve({ id: row.id, last_edited_time: row.last_edited_time });
+        } catch (e) {
+          return Promise.reject(e as Error);
+        }
       },
     },
   };
