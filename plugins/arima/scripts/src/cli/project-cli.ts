@@ -213,9 +213,19 @@ export async function runPauseCli(
     ...(deps.now ? { now: deps.now } : {}),
   });
   for (const m of r.messages) io.out(`${m}\n`);
+  // The change is in effect on THIS machine either way; a failed state save means other machines
+  // (and a Notion outage) will not see it, which the caller must not mistake for success.
+  const unsaved = r.stateSaved === 'failed';
+  if (unsaved) {
+    io.err(
+      on
+        ? 'The pause is on here, but the state was NOT saved: other machines will not see it until it is pushed. Fix the problem above and run again.\n'
+        : 'Resumed here, but the state was NOT saved: the remote state branch may still carry PAUSE, so other machines may stay paused. Fix the problem above and run again.\n',
+    );
+  }
   if (on) {
     io.out('ARIMA is paused: the next run will stop at preflight.\n');
-    return 0;
+    return unsaved ? 1 : 0;
   }
   if (r.stillPausedInNotion) {
     io.err(
@@ -224,5 +234,5 @@ export async function runPauseCli(
     return 1;
   }
   io.out('ARIMA is resumed.\n');
-  return 0;
+  return unsaved ? 1 : 0;
 }

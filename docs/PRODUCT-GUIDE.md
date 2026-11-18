@@ -266,15 +266,17 @@ ARIMA stops and waits for a person at these points, and enforces them in code, n
 | --- | --- | --- |
 | Gates G0 to G4 | Only listed approvers' decisions count; agents cannot write approver or decision fields | Partly built |
 | Production deploy | A deploy script that waits for your approval on the release page | Planned (v0.4) |
-| Secrets change | A hook blocks reading or editing secret files and printing secret variables; secrets are also scanned for before anything is written to Notion, logs or the state branch. Pattern-based, not a sandbox | Built (verified live) |
-| Daily or project budget reached | Checked by the daily preflight and again before every dispatch | Built |
+| Secrets change | A hook blocks reading or editing secret files and printing secret variables; secrets are also scanned for before anything is written to Notion, logs or the state branch. Pattern-based, not a sandbox. Only reading `.env` was checked in a live session; other credential files (for example under your home folder) are not covered by the hook | Built, partly verified live |
+| Daily or project budget reached | Checked by the daily preflight and again before every dispatch (the local `PAUSE` file, the Notion switch, the remote state branch, and both budgets) | Built |
 | Story budget reached | Checked before each dispatch | Planned (v0.2) |
-| Deleting anything in Notion | No delete operation exists in ARIMA's code | Built |
+| Deleting anything in Notion | No delete operation exists in ARIMA's code, and only the orchestrator is given the Notion token. The guard blocks common `curl` forms but is not a barrier by itself | Built |
 | Production data migration | Flagged in pull requests; needs release-page approval | Planned (v0.4) |
 | New paid service or account | Dependency and infrastructure review raises a question | Planned (v0.2) |
 | Dependency with a non-approved licence | CI check blocks the pull request | Planned (v0.2) |
 | Critical security finding | Blocks merge and release | Planned (v0.3) |
-| Kill switch | A "Pause ARIMA" to-do in Notion and a `PAUSE` file (also read from the remote state branch if Notion is down); either one stops every run, a missing Notion switch counts as paused, and agents cannot clear it | Built |
+| Kill switch | A "Pause ARIMA" to-do in Notion and a `PAUSE` file (also read from the remote state branch if Notion is down); either one stops every run, a missing Notion switch counts as paused, and the role lists and guard stop agents from clearing it. A developer or QA run that writes and runs its own script could still delete `PAUSE`, so this is advisory for those roles until there is a sandbox | Built; advisory for developer and QA |
+
+**Plainly:** the local layers are advisory for the developer and QA roles until a sandbox or GitHub branch protection exists (see the build guide, section 1). Unattended runs should use WSL 2 or Linux, and the default branch should have branch protection.
 
 Other protections: the Notion token is given only to the orchestrator; agents get a tool allow-list per role; text from Notion, web pages and issues is treated as data, never as instructions; test data is always made up; nothing that looks like a secret is written to a log.
 

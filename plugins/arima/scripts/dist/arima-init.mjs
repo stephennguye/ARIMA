@@ -20411,6 +20411,13 @@ async function pushOutbox(projectDir, port, map, opts = {}) {
         return { kind: "rejected", reason: `unknown property "${name}" on ${db.title}` };
       if (name === LAST_WRITTEN_BY_RUN)
         return { kind: "rejected", reason: `"${name}" is stamped by ARIMA and cannot be set` };
+      if (name === "Status" && opts.allowStatusWrites !== true) {
+        return {
+          kind: "rejected",
+          refused: true,
+          reason: `"Status" on ${db.title} cannot be written from the outbox until the ticket state machine exists (pass --allow-status-writes, which only a human may do)`
+        };
+      }
       if (def.human_only === true) {
         return {
           kind: "rejected",
@@ -20784,9 +20791,9 @@ If you have reviewed a finding and it is NOT a secret, add its fingerprint on it
         `refusing to push state: ${privacy.slug} is a PUBLIC GitHub repository, and the state branch holds your Notion data (requirements, client names, costs). Make the repository private, or set github.allow_public_state: true in arima.yaml if you really mean it.`
       );
     }
-    if (privacy.kind === "unknown") {
-      warnings.push(
-        `could not check whether ${privacy.slug} is private (is the gh CLI installed and signed in?); make sure it is`
+    if (privacy.kind === "unknown" && o.allowPublic !== true) {
+      throw new StateError(
+        `refusing to push state: could not check whether ${privacy.slug} is private (is the gh CLI installed and signed in, and is the remote a normal github.com repository?). The state branch holds your Notion data, so ARIMA refuses when it cannot be sure. Sign in with 'gh auth login' and run again, or set github.allow_public_state: true in arima.yaml if you accept the risk.`
       );
     }
     git(r.stateDir, ["push", "--set-upstream", r.remote, `${r.branch}:${r.branch}`]);
@@ -20817,12 +20824,20 @@ function remotePauseFlag(o) {
   }
   return gitOk(r.repo, ["cat-file", "-e", `${ref}:PAUSE`]);
 }
+var SLUG_PART = /^[A-Za-z0-9_][A-Za-z0-9._-]*$/;
 function githubSlug(url2) {
   const m = /^(?:https?:\/\/(?:[^@/]+@)?github\.com\/|git@github\.com:|ssh:\/\/git@github\.com\/)([^/\s]+)\/([^/\s]+?)(?:\.git)?\/?$/i.exec(
     url2.trim()
   );
-  return m ? { owner: m[1], repo: m[2] } : void 0;
+  if (!m) return void 0;
+  const owner = m[1];
+  const repo = m[2];
+  if (!SLUG_PART.test(owner) || !SLUG_PART.test(repo) || repo === "." || repo === "..") {
+    return void 0;
+  }
+  return { owner, repo };
 }
+var MENTIONS_GITHUB = /(^|[/@:])github\.com[/:]/i;
 function checkRemotePrivacy(r, o) {
   let url2;
   try {
@@ -20831,7 +20846,9 @@ function checkRemotePrivacy(r, o) {
     return { kind: "not-github" };
   }
   const slug = githubSlug(url2);
-  if (slug === void 0) return { kind: "not-github" };
+  if (slug === void 0) {
+    return MENTIONS_GITHUB.test(url2) ? { kind: "unknown", slug: "the remote" } : { kind: "not-github" };
+  }
   const name = `${slug.owner}/${slug.repo}`;
   let priv;
   if (o.isPrivate) {
@@ -21251,7 +21268,10 @@ async function runInit(o) {
     const map = mapped.result.map;
     log(`mapped ${Object.keys(map.databases).length} databases`);
     await pullMirror(o.projectDir, o.port, map, { now, runId });
-    const leftover = await pushOutbox(o.projectDir, o.port, map, { now });
+    const leftover = await pushOutbox(o.projectDir, o.port, map, {
+      now,
+      allowStatusWrites: true
+    });
     for (const r of leftover.rejected)
       result.warnings.push("earlier outbox entry " + r.id + " was rejected: " + r.reason);
     const profile = loadProfile(arima.profile);
@@ -21320,7 +21340,7 @@ async function runInit(o) {
       });
       result.created.push(`${gate} gate page`);
     }
-    const report = await pushOutbox(o.projectDir, o.port, map, { now });
+    const report = await pushOutbox(o.projectDir, o.port, map, { now, allowStatusWrites: true });
     if (report.rejected.length + report.conflicts.length + report.deferred.length > 0) {
       result.problems = [
         ...report.rejected.map((r) => `${r.id}: ${r.reason}`),

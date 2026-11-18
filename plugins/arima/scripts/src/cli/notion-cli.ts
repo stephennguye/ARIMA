@@ -15,7 +15,8 @@ import type { Io } from './config-cli.js';
 export const USAGE = `Usage: arima-notion bootstrap --parent <page-id> [--token-env NAME]
        arima-notion map [--root <page-id>] [--migrate] [--project <dir>] [--token-env NAME]
        arima-notion pull [--project <dir>]     mirror every mapped database to .arima/mirror/
-       arima-notion push [--project <dir>]     apply .arima/outbox/ to Notion (orchestrator only)
+       arima-notion push [--project <dir>] [--allow-status-writes]
+                                               apply .arima/outbox/ to Notion (orchestrator only)
 bootstrap builds the 19 ARIMA databases under a page (run once, to build the public template).
 map finds them under a duplicated template, verifies every property, writes .arima/notion-map.json.
 The Notion integration token is read from the environment (default ARIMA_NOTION_TOKEN); it is never printed.
@@ -61,6 +62,7 @@ export async function runNotionCli(
     migrate?: boolean;
     project?: string;
     'token-env'?: string;
+    'allow-status-writes'?: boolean;
   };
   try {
     values = parseArgs({
@@ -72,6 +74,7 @@ export async function runNotionCli(
         migrate: { type: 'boolean' },
         project: { type: 'string' },
         'token-env': { type: 'string' },
+        'allow-status-writes': { type: 'boolean' },
       },
     }).values;
   } catch (e) {
@@ -127,6 +130,7 @@ export async function runNotionCli(
     if (command === 'push') {
       const report = await pushOutbox(projectDir, port, readNotionMap(projectDir), {
         ...(deps.now ? { now: deps.now } : {}),
+        ...(values['allow-status-writes'] === true ? { allowStatusWrites: true } : {}),
       });
       io.out(
         `outbox: ${report.applied.length} applied, ${report.rejected.length} rejected, ${report.conflicts.length} in conflict (human edit kept), ${report.deferred.length} deferred\n`,

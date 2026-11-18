@@ -2986,7 +2986,7 @@ var require_compile = __commonJS({
       const schOrFunc = root.refs[ref];
       if (schOrFunc)
         return schOrFunc;
-      let _sch = resolve.call(this, root, ref);
+      let _sch = resolve2.call(this, root, ref);
       if (_sch === void 0) {
         const schema = (_a = root.localRefs) === null || _a === void 0 ? void 0 : _a[ref];
         const { schemaId } = this.opts;
@@ -3013,7 +3013,7 @@ var require_compile = __commonJS({
     function sameSchemaEnv(s1, s2) {
       return s1.schema === s2.schema && s1.root === s2.root && s1.baseId === s2.baseId;
     }
-    function resolve(root, ref) {
+    function resolve2(root, ref) {
       let sch;
       while (typeof (sch = this.refs[ref]) == "string")
         ref = sch;
@@ -3264,8 +3264,8 @@ var require_utils = __commonJS({
       }
       return ind;
     }
-    function removeDotSegments(path13) {
-      let input = path13;
+    function removeDotSegments(path14) {
+      let input = path14;
       const output = [];
       let nextSlash = -1;
       let len = 0;
@@ -3339,11 +3339,11 @@ var require_utils = __commonJS({
       }
       return output.join("");
     }
-    function removeDotSegmentsRelative(path13) {
-      if (path13 === "" || path13[0] === "/") {
-        return removeDotSegments(path13);
+    function removeDotSegmentsRelative(path14) {
+      if (path14 === "" || path14[0] === "/") {
+        return removeDotSegments(path14);
       }
-      const segments = path13.split("/");
+      const segments = path14.split("/");
       const last = segments.length - 1;
       const output = [];
       let trailingDirectory = false;
@@ -3706,8 +3706,8 @@ var require_schemes = __commonJS({
       }
       if (wsComponent.resourceName) {
         const queryIndex = wsComponent.resourceName.indexOf("?");
-        const path13 = queryIndex === -1 ? wsComponent.resourceName : wsComponent.resourceName.slice(0, queryIndex);
-        wsComponent.path = path13 && path13 !== "/" ? path13 : void 0;
+        const path14 = queryIndex === -1 ? wsComponent.resourceName : wsComponent.resourceName.slice(0, queryIndex);
+        wsComponent.path = path14 && path14 !== "/" ? path14 : void 0;
         wsComponent.query = queryIndex === -1 ? void 0 : wsComponent.resourceName.slice(queryIndex + 1);
         wsComponent.resourceName = void 0;
       }
@@ -3877,7 +3877,7 @@ var require_fast_uri = __commonJS({
       }
       return uri;
     }
-    function resolve(baseURI, relativeURI, options) {
+    function resolve2(baseURI, relativeURI, options) {
       const schemelessOptions = options ? Object.assign({ scheme: "null" }, options) : { scheme: "null" };
       const {
         parsed: baseParsed,
@@ -4268,7 +4268,7 @@ var require_fast_uri = __commonJS({
     var fastUri = {
       SCHEMES,
       normalize,
-      resolve,
+      resolve: resolve2,
       resolveComponent,
       equal,
       serialize,
@@ -8158,17 +8158,17 @@ var require_visit = __commonJS({
     visit.BREAK = BREAK;
     visit.SKIP = SKIP;
     visit.REMOVE = REMOVE;
-    function visit_(key, node, visitor, path13) {
-      const ctrl = callVisitor(key, node, visitor, path13);
+    function visit_(key, node, visitor, path14) {
+      const ctrl = callVisitor(key, node, visitor, path14);
       if (identity.isNode(ctrl) || identity.isPair(ctrl)) {
-        replaceNode(key, path13, ctrl);
-        return visit_(key, ctrl, visitor, path13);
+        replaceNode(key, path14, ctrl);
+        return visit_(key, ctrl, visitor, path14);
       }
       if (typeof ctrl !== "symbol") {
         if (identity.isCollection(node)) {
-          path13 = Object.freeze(path13.concat(node));
+          path14 = Object.freeze(path14.concat(node));
           for (let i = 0; i < node.items.length; ++i) {
-            const ci = visit_(i, node.items[i], visitor, path13);
+            const ci = visit_(i, node.items[i], visitor, path14);
             if (typeof ci === "number")
               i = ci - 1;
             else if (ci === BREAK)
@@ -8179,13 +8179,13 @@ var require_visit = __commonJS({
             }
           }
         } else if (identity.isPair(node)) {
-          path13 = Object.freeze(path13.concat(node));
-          const ck = visit_("key", node.key, visitor, path13);
+          path14 = Object.freeze(path14.concat(node));
+          const ck = visit_("key", node.key, visitor, path14);
           if (ck === BREAK)
             return BREAK;
           else if (ck === REMOVE)
             node.key = null;
-          const cv = visit_("value", node.value, visitor, path13);
+          const cv = visit_("value", node.value, visitor, path14);
           if (cv === BREAK)
             return BREAK;
           else if (cv === REMOVE)
@@ -8206,17 +8206,17 @@ var require_visit = __commonJS({
     visitAsync.BREAK = BREAK;
     visitAsync.SKIP = SKIP;
     visitAsync.REMOVE = REMOVE;
-    async function visitAsync_(key, node, visitor, path13) {
-      const ctrl = await callVisitor(key, node, visitor, path13);
+    async function visitAsync_(key, node, visitor, path14) {
+      const ctrl = await callVisitor(key, node, visitor, path14);
       if (identity.isNode(ctrl) || identity.isPair(ctrl)) {
-        replaceNode(key, path13, ctrl);
-        return visitAsync_(key, ctrl, visitor, path13);
+        replaceNode(key, path14, ctrl);
+        return visitAsync_(key, ctrl, visitor, path14);
       }
       if (typeof ctrl !== "symbol") {
         if (identity.isCollection(node)) {
-          path13 = Object.freeze(path13.concat(node));
+          path14 = Object.freeze(path14.concat(node));
           for (let i = 0; i < node.items.length; ++i) {
-            const ci = await visitAsync_(i, node.items[i], visitor, path13);
+            const ci = await visitAsync_(i, node.items[i], visitor, path14);
             if (typeof ci === "number")
               i = ci - 1;
             else if (ci === BREAK)
@@ -8227,13 +8227,13 @@ var require_visit = __commonJS({
             }
           }
         } else if (identity.isPair(node)) {
-          path13 = Object.freeze(path13.concat(node));
-          const ck = await visitAsync_("key", node.key, visitor, path13);
+          path14 = Object.freeze(path14.concat(node));
+          const ck = await visitAsync_("key", node.key, visitor, path14);
           if (ck === BREAK)
             return BREAK;
           else if (ck === REMOVE)
             node.key = null;
-          const cv = await visitAsync_("value", node.value, visitor, path13);
+          const cv = await visitAsync_("value", node.value, visitor, path14);
           if (cv === BREAK)
             return BREAK;
           else if (cv === REMOVE)
@@ -8260,23 +8260,23 @@ var require_visit = __commonJS({
       }
       return visitor;
     }
-    function callVisitor(key, node, visitor, path13) {
+    function callVisitor(key, node, visitor, path14) {
       if (typeof visitor === "function")
-        return visitor(key, node, path13);
+        return visitor(key, node, path14);
       if (identity.isMap(node))
-        return visitor.Map?.(key, node, path13);
+        return visitor.Map?.(key, node, path14);
       if (identity.isSeq(node))
-        return visitor.Seq?.(key, node, path13);
+        return visitor.Seq?.(key, node, path14);
       if (identity.isPair(node))
-        return visitor.Pair?.(key, node, path13);
+        return visitor.Pair?.(key, node, path14);
       if (identity.isScalar(node))
-        return visitor.Scalar?.(key, node, path13);
+        return visitor.Scalar?.(key, node, path14);
       if (identity.isAlias(node))
-        return visitor.Alias?.(key, node, path13);
+        return visitor.Alias?.(key, node, path14);
       return void 0;
     }
-    function replaceNode(key, path13, node) {
-      const parent = path13[path13.length - 1];
+    function replaceNode(key, path14, node) {
+      const parent = path14[path14.length - 1];
       if (identity.isCollection(parent)) {
         parent.items[key] = node;
       } else if (identity.isPair(parent)) {
@@ -8888,10 +8888,10 @@ var require_Collection = __commonJS({
     var createNode = require_createNode();
     var identity = require_identity();
     var Node = require_Node();
-    function collectionFromPath(schema, path13, value) {
+    function collectionFromPath(schema, path14, value) {
       let v = value;
-      for (let i = path13.length - 1; i >= 0; --i) {
-        const k = path13[i];
+      for (let i = path14.length - 1; i >= 0; --i) {
+        const k = path14[i];
         if (typeof k === "number" && Number.isInteger(k) && k >= 0) {
           const a = [];
           a[k] = v;
@@ -8910,7 +8910,7 @@ var require_Collection = __commonJS({
         sourceObjects: /* @__PURE__ */ new Map()
       });
     }
-    var isEmptyPath = (path13) => path13 == null || typeof path13 === "object" && !!path13[Symbol.iterator]().next().done;
+    var isEmptyPath = (path14) => path14 == null || typeof path14 === "object" && !!path14[Symbol.iterator]().next().done;
     var Collection = class extends Node.NodeBase {
       constructor(type, schema) {
         super(type);
@@ -8940,11 +8940,11 @@ var require_Collection = __commonJS({
        * be a Pair instance or a `{ key, value }` object, which may not have a key
        * that already exists in the map.
        */
-      addIn(path13, value) {
-        if (isEmptyPath(path13))
+      addIn(path14, value) {
+        if (isEmptyPath(path14))
           this.add(value);
         else {
-          const [key, ...rest] = path13;
+          const [key, ...rest] = path14;
           const node = this.get(key, true);
           if (identity.isCollection(node))
             node.addIn(rest, value);
@@ -8958,8 +8958,8 @@ var require_Collection = __commonJS({
        * Removes a value from the collection.
        * @returns `true` if the item was found and removed.
        */
-      deleteIn(path13) {
-        const [key, ...rest] = path13;
+      deleteIn(path14) {
+        const [key, ...rest] = path14;
         if (rest.length === 0)
           return this.delete(key);
         const node = this.get(key, true);
@@ -8973,8 +8973,8 @@ var require_Collection = __commonJS({
        * scalar values from their surrounding node; to disable set `keepScalar` to
        * `true` (collections are always returned intact).
        */
-      getIn(path13, keepScalar) {
-        const [key, ...rest] = path13;
+      getIn(path14, keepScalar) {
+        const [key, ...rest] = path14;
         const node = this.get(key, true);
         if (rest.length === 0)
           return !keepScalar && identity.isScalar(node) ? node.value : node;
@@ -8992,8 +8992,8 @@ var require_Collection = __commonJS({
       /**
        * Checks if the collection includes a value with the key `key`.
        */
-      hasIn(path13) {
-        const [key, ...rest] = path13;
+      hasIn(path14) {
+        const [key, ...rest] = path14;
         if (rest.length === 0)
           return this.has(key);
         const node = this.get(key, true);
@@ -9003,8 +9003,8 @@ var require_Collection = __commonJS({
        * Sets a value in this collection. For `!!set`, `value` needs to be a
        * boolean to add/remove the item from the set.
        */
-      setIn(path13, value) {
-        const [key, ...rest] = path13;
+      setIn(path14, value) {
+        const [key, ...rest] = path14;
         if (rest.length === 0) {
           this.set(key, value);
         } else {
@@ -11519,9 +11519,9 @@ var require_Document = __commonJS({
           this.contents.add(value);
       }
       /** Adds a value to the document. */
-      addIn(path13, value) {
+      addIn(path14, value) {
         if (assertCollection(this.contents))
-          this.contents.addIn(path13, value);
+          this.contents.addIn(path14, value);
       }
       /**
        * Create a new `Alias` node, ensuring that the target `node` has the required anchor.
@@ -11596,14 +11596,14 @@ var require_Document = __commonJS({
        * Removes a value from the document.
        * @returns `true` if the item was found and removed.
        */
-      deleteIn(path13) {
-        if (Collection.isEmptyPath(path13)) {
+      deleteIn(path14) {
+        if (Collection.isEmptyPath(path14)) {
           if (this.contents == null)
             return false;
           this.contents = null;
           return true;
         }
-        return assertCollection(this.contents) ? this.contents.deleteIn(path13) : false;
+        return assertCollection(this.contents) ? this.contents.deleteIn(path14) : false;
       }
       /**
        * Returns item at `key`, or `undefined` if not found. By default unwraps
@@ -11618,10 +11618,10 @@ var require_Document = __commonJS({
        * scalar values from their surrounding node; to disable set `keepScalar` to
        * `true` (collections are always returned intact).
        */
-      getIn(path13, keepScalar) {
-        if (Collection.isEmptyPath(path13))
+      getIn(path14, keepScalar) {
+        if (Collection.isEmptyPath(path14))
           return !keepScalar && identity.isScalar(this.contents) ? this.contents.value : this.contents;
-        return identity.isCollection(this.contents) ? this.contents.getIn(path13, keepScalar) : void 0;
+        return identity.isCollection(this.contents) ? this.contents.getIn(path14, keepScalar) : void 0;
       }
       /**
        * Checks if the document includes a value with the key `key`.
@@ -11632,10 +11632,10 @@ var require_Document = __commonJS({
       /**
        * Checks if the document includes a value at `path`.
        */
-      hasIn(path13) {
-        if (Collection.isEmptyPath(path13))
+      hasIn(path14) {
+        if (Collection.isEmptyPath(path14))
           return this.contents !== void 0;
-        return identity.isCollection(this.contents) ? this.contents.hasIn(path13) : false;
+        return identity.isCollection(this.contents) ? this.contents.hasIn(path14) : false;
       }
       /**
        * Sets a value in this document. For `!!set`, `value` needs to be a
@@ -11652,13 +11652,13 @@ var require_Document = __commonJS({
        * Sets a value in this document. For `!!set`, `value` needs to be a
        * boolean to add/remove the item from the set.
        */
-      setIn(path13, value) {
-        if (Collection.isEmptyPath(path13)) {
+      setIn(path14, value) {
+        if (Collection.isEmptyPath(path14)) {
           this.contents = value;
         } else if (this.contents == null) {
-          this.contents = Collection.collectionFromPath(this.schema, Array.from(path13), value);
+          this.contents = Collection.collectionFromPath(this.schema, Array.from(path14), value);
         } else if (assertCollection(this.contents)) {
-          this.contents.setIn(path13, value);
+          this.contents.setIn(path14, value);
         }
       }
       /**
@@ -13619,9 +13619,9 @@ var require_cst_visit = __commonJS({
     visit.BREAK = BREAK;
     visit.SKIP = SKIP;
     visit.REMOVE = REMOVE;
-    visit.itemAtPath = (cst, path13) => {
+    visit.itemAtPath = (cst, path14) => {
       let item = cst;
-      for (const [field, index] of path13) {
+      for (const [field, index] of path14) {
         const tok = item?.[field];
         if (tok && "items" in tok) {
           item = tok.items[index];
@@ -13630,23 +13630,23 @@ var require_cst_visit = __commonJS({
       }
       return item;
     };
-    visit.parentCollection = (cst, path13) => {
-      const parent = visit.itemAtPath(cst, path13.slice(0, -1));
-      const field = path13[path13.length - 1][0];
+    visit.parentCollection = (cst, path14) => {
+      const parent = visit.itemAtPath(cst, path14.slice(0, -1));
+      const field = path14[path14.length - 1][0];
       const coll = parent?.[field];
       if (coll && "items" in coll)
         return coll;
       throw new Error("Parent collection not found");
     };
-    function _visit(path13, item, visitor) {
-      let ctrl = visitor(item, path13);
+    function _visit(path14, item, visitor) {
+      let ctrl = visitor(item, path14);
       if (typeof ctrl === "symbol")
         return ctrl;
       for (const field of ["key", "value"]) {
         const token = item[field];
         if (token && "items" in token) {
           for (let i = 0; i < token.items.length; ++i) {
-            const ci = _visit(Object.freeze(path13.concat([[field, i]])), token.items[i], visitor);
+            const ci = _visit(Object.freeze(path14.concat([[field, i]])), token.items[i], visitor);
             if (typeof ci === "number")
               i = ci - 1;
             else if (ci === BREAK)
@@ -13657,10 +13657,10 @@ var require_cst_visit = __commonJS({
             }
           }
           if (typeof ctrl === "function" && field === "key")
-            ctrl = ctrl(item, path13);
+            ctrl = ctrl(item, path14);
         }
       }
-      return typeof ctrl === "function" ? ctrl(item, path13) : ctrl;
+      return typeof ctrl === "function" ? ctrl(item, path14) : ctrl;
     }
     exports.visit = visit;
   }
@@ -16684,11 +16684,11 @@ var require_errors3 = __commonJS({
         });
       }
       static rejectAfterTimeout(promise, timeoutMS) {
-        return new Promise((resolve, reject) => {
+        return new Promise((resolve2, reject) => {
           const timeoutId = setTimeout(() => {
             reject(new _RequestTimeoutError());
           }, timeoutMS);
-          promise.then(resolve).catch(reject).then(() => clearTimeout(timeoutId));
+          promise.then(resolve2).catch(reject).then(() => clearTimeout(timeoutId));
         });
       }
     };
@@ -16713,19 +16713,19 @@ var require_errors3 = __commonJS({
       }
     };
     exports.BrowserTokenNotAllowedError = BrowserTokenNotAllowedError;
-    function validateRequestPath(path13) {
-      if (path13.includes("..")) {
-        throw new InvalidPathParameterError(`Request path "${path13}" contains path traversal sequence ".."`);
+    function validateRequestPath(path14) {
+      if (path14.includes("..")) {
+        throw new InvalidPathParameterError(`Request path "${path14}" contains path traversal sequence ".."`);
       }
-      if (/%2e/i.test(path13)) {
+      if (/%2e/i.test(path14)) {
         let decoded;
         try {
-          decoded = decodeURIComponent(path13);
+          decoded = decodeURIComponent(path14);
         } catch {
           return;
         }
         if (decoded.includes("..")) {
-          throw new InvalidPathParameterError(`Request path "${path13}" contains encoded path traversal sequence`);
+          throw new InvalidPathParameterError(`Request path "${path14}" contains encoded path traversal sequence`);
         }
       }
     }
@@ -17409,17 +17409,17 @@ var require_Client = __commonJS({
        * Sends a request.
        */
       async request(args) {
-        const { path: path13, method, query, body, formDataParams, auth } = args;
-        (0, errors_1.validateRequestPath)(path13);
-        this.log(logging_1.LogLevel.INFO, "request start", { method, path: path13 });
-        const url = this.buildRequestUrl(path13, query);
+        const { path: path14, method, query, body, formDataParams, auth } = args;
+        (0, errors_1.validateRequestPath)(path14);
+        this.log(logging_1.LogLevel.INFO, "request start", { method, path: path14 });
+        const url = this.buildRequestUrl(path14, query);
         const bodyAsJsonString = this.serializeBody(body);
         const headers = this.buildRequestHeaders(args.headers, auth, bodyAsJsonString);
         const formData = this.buildFormData(formDataParams, headers);
         return this.executeWithRetry({
           url,
           method,
-          path: path13,
+          path: path14,
           headers,
           body: bodyAsJsonString !== null && bodyAsJsonString !== void 0 ? bodyAsJsonString : formData
         }, (request) => this.executeSingleRequest(request));
@@ -17429,20 +17429,20 @@ var require_Client = __commonJS({
        */
       async *streamRequest(args, parseEvent) {
         var _a;
-        const { path: path13, method, query, body, auth } = args;
-        (0, errors_1.validateRequestPath)(path13);
-        this.log(logging_1.LogLevel.INFO, "stream request start", { method, path: path13 });
-        const url = this.buildRequestUrl(path13, query);
+        const { path: path14, method, query, body, auth } = args;
+        (0, errors_1.validateRequestPath)(path14);
+        this.log(logging_1.LogLevel.INFO, "stream request start", { method, path: path14 });
+        const url = this.buildRequestUrl(path14, query);
         const bodyAsJsonString = this.serializeBody(body);
         const headers = this.buildRequestHeaders(args.headers, auth, bodyAsJsonString);
         const response = await this.executeWithRetry({
           url,
           method,
-          path: path13,
+          path: path14,
           headers,
           body: bodyAsJsonString
         }, (request) => this.executeSingleStreamRequest(request));
-        this.log(logging_1.LogLevel.INFO, "stream request opened", { method, path: path13 });
+        this.log(logging_1.LogLevel.INFO, "stream request opened", { method, path: path14 });
         if (response.body === void 0 || response.body === null) {
           for (const frame of takeSseFrames({
             content: await response.text(),
@@ -17494,8 +17494,8 @@ var require_Client = __commonJS({
       /**
        * Builds the full URL with query parameters.
        */
-      buildRequestUrl(path13, query) {
-        const url = new URL(`${__classPrivateFieldGet(this, _Client_prefixUrl, "f")}${path13}`);
+      buildRequestUrl(path14, query) {
+        const url = new URL(`${__classPrivateFieldGet(this, _Client_prefixUrl, "f")}${path14}`);
         if (query) {
           for (const [key, value] of Object.entries(query)) {
             if (value !== void 0 && value !== null) {
@@ -17582,14 +17582,14 @@ var require_Client = __commonJS({
        * Executes the request with retry logic.
        */
       async executeWithRetry(args, execute) {
-        const { url, method, path: path13, headers, body } = args;
+        const { url, method, path: path14, headers, body } = args;
         let attempt = 0;
         while (true) {
           try {
             return await execute({
               url,
               method,
-              path: path13,
+              path: path14,
               headers,
               body
             });
@@ -17602,7 +17602,7 @@ var require_Client = __commonJS({
               const delayMs = this.calculateRetryDelay(error, attempt);
               this.log(logging_1.LogLevel.INFO, "retrying request", {
                 method,
-                path: path13,
+                path: path14,
                 attempt: attempt + 1,
                 delayMs
               });
@@ -17618,7 +17618,7 @@ var require_Client = __commonJS({
        * Executes a single HTTP request (no retry).
        */
       async executeSingleRequest(args) {
-        const { url, method, path: path13, headers, body } = args;
+        const { url, method, path: path14, headers, body } = args;
         const response = await errors_1.RequestTimeoutError.rejectAfterTimeout(__classPrivateFieldGet(this, _Client_fetch, "f").call(this, url.toString(), {
           method: method.toUpperCase(),
           headers,
@@ -17632,7 +17632,7 @@ var require_Client = __commonJS({
         const responseJson = JSON.parse(responseText);
         this.log(logging_1.LogLevel.INFO, "request success", {
           method,
-          path: path13,
+          path: path14,
           ...this.extractRequestId(responseJson)
         });
         return responseJson;
@@ -17707,9 +17707,9 @@ var require_Client = __commonJS({
        */
       calculateRetryDelay(error, attempt) {
         if (errors_1.APIResponseError.isAPIResponseError(error)) {
-          const retryAfterMs = this.parseRetryAfterHeader(error.headers);
-          if (retryAfterMs !== void 0) {
-            return Math.min(retryAfterMs, __classPrivateFieldGet(this, _Client_maxRetryDelayMs, "f"));
+          const retryAfterMs2 = this.parseRetryAfterHeader(error.headers);
+          if (retryAfterMs2 !== void 0) {
+            return Math.min(retryAfterMs2, __classPrivateFieldGet(this, _Client_maxRetryDelayMs, "f"));
           }
         }
         const baseDelay = __classPrivateFieldGet(this, _Client_initialRetryDelayMs, "f") * Math.pow(2, attempt);
@@ -17738,7 +17738,7 @@ var require_Client = __commonJS({
         return void 0;
       }
       sleep(ms) {
-        return new Promise((resolve) => setTimeout(resolve, ms));
+        return new Promise((resolve2) => setTimeout(resolve2, ms));
       }
       /**
        * Logs a warning when the caller passes parameters that are not recognized
@@ -18298,7 +18298,7 @@ var require_src = __commonJS({
 });
 
 // plugins/arima/scripts/src/cli/run-agent-cli.ts
-import path12 from "node:path";
+import path13 from "node:path";
 import { parseArgs } from "node:util";
 
 // plugins/arima/scripts/src/config.ts
@@ -18791,10 +18791,241 @@ function mayHoldNotionToken(role) {
   return role === "orchestrator";
 }
 
+// plugins/arima/scripts/src/notion/port.ts
+var import_client = __toESM(require_src(), 1);
+
+// plugins/arima/scripts/src/lib/throttle.ts
+import { setTimeout as sleep } from "node:timers/promises";
+var Throttle = class {
+  constructor(minIntervalMs = 334, now = Date.now, wait = (ms) => sleep(ms)) {
+    this.minIntervalMs = minIntervalMs;
+    this.now = now;
+    this.wait = wait;
+  }
+  minIntervalMs;
+  now;
+  wait;
+  next = 0;
+  async run(fn) {
+    const start = Math.max(this.now(), this.next);
+    this.next = start + this.minIntervalMs;
+    const delay = start - this.now();
+    if (delay > 0) await this.wait(delay);
+    return fn();
+  }
+};
+function isRateLimited(e) {
+  const err = e;
+  return err?.status === 429 || err?.code === "rate_limited";
+}
+function retryAfterMs(e) {
+  const headers = e?.headers;
+  if (headers === void 0 || headers === null) return void 0;
+  const raw = typeof headers.get === "function" ? headers.get("retry-after") : headers["retry-after"];
+  const seconds = Number(raw);
+  return Number.isFinite(seconds) && seconds >= 0 && raw !== null && raw !== void 0 ? seconds * 1e3 : void 0;
+}
+async function withBackoff(fn, o = {}) {
+  const { retries = 5, baseMs = 500, maxMs = 3e4, sleep: wait = (ms) => sleep(ms) } = o;
+  for (let attempt = 0; ; attempt++) {
+    try {
+      return await fn();
+    } catch (e) {
+      if (!isRateLimited(e) || attempt >= retries) throw e;
+      await wait(retryAfterMs(e) ?? Math.min(maxMs, baseMs * 2 ** attempt));
+    }
+  }
+}
+
+// plugins/arima/scripts/src/notion/port.ts
+var PAUSE_TODO_TEXT = "Pause ARIMA";
+var plain = (rt) => (rt ?? []).map((t) => t.plain_text ?? "").join("");
+function toDatabaseInfo(raw) {
+  const dataSourceId = raw.data_sources?.[0]?.id;
+  if (dataSourceId === void 0) throw new Error(`database ${raw.id} has no data source`);
+  return { id: raw.id, title: plain(raw.title), dataSourceId };
+}
+function createNotionPort(client, throttle = new Throttle(), backoff = {}) {
+  const call = (fn) => throttle.run(() => withBackoff(fn, backoff));
+  const listChildren = async (pageId) => {
+    const out = [];
+    let cursor;
+    for (; ; ) {
+      const page = await call(
+        () => client.blocks.children.list({
+          block_id: pageId,
+          page_size: 100,
+          ...cursor !== void 0 ? { start_cursor: cursor } : {}
+        })
+      );
+      for (const raw of page.results) {
+        if (raw.id === void 0 || raw.type === void 0) continue;
+        if (raw.type === "to_do" && raw.to_do) {
+          out.push({
+            id: raw.id,
+            type: "to_do",
+            text: plain(raw.to_do.rich_text),
+            checked: raw.to_do.checked === true
+          });
+        } else if (raw.type === "paragraph") {
+          out.push({ id: raw.id, type: "paragraph", text: plain(raw.paragraph?.rich_text) });
+        } else if (raw.type === "child_database") {
+          out.push({ id: raw.id, type: "child_database", text: raw.child_database?.title ?? "" });
+        } else {
+          out.push({ id: raw.id, type: raw.type, text: "" });
+        }
+      }
+      if (!page.has_more || page.next_cursor === null) return out;
+      cursor = page.next_cursor;
+    }
+  };
+  const getDataSourceProperties = async (dataSourceId) => {
+    const raw = await call(
+      () => client.dataSources.retrieve({ data_source_id: dataSourceId })
+    );
+    const out = {};
+    for (const [name, p] of Object.entries(raw.properties ?? {})) {
+      const info = { id: p.id, name: p.name ?? name, type: p.type };
+      const opts = p.select?.options ?? p.multi_select?.options;
+      if (opts) info.options = opts.map((o) => o.name);
+      if (p.relation?.data_source_id) info.relationTarget = p.relation.data_source_id;
+      out[name] = info;
+    }
+    return out;
+  };
+  return {
+    listChildren,
+    async listTodoBlocks(pageId) {
+      return (await listChildren(pageId)).filter((b) => b.type === "to_do").map((b) => ({ id: b.id, text: b.text, checked: b.checked === true }));
+    },
+    async setTodoChecked(blockId, checked) {
+      await call(() => client.blocks.update({ block_id: blockId, to_do: { checked } }));
+    },
+    async appendTodo(pageId, text, checked) {
+      const res = await call(
+        () => client.blocks.children.append({
+          block_id: pageId,
+          children: [
+            {
+              object: "block",
+              type: "to_do",
+              to_do: { rich_text: [{ type: "text", text: { content: text } }], checked }
+            }
+          ]
+        })
+      );
+      const id = res.results[0]?.id;
+      if (id === void 0) throw new Error("Notion did not return the created block");
+      return id;
+    },
+    async appendParagraph(pageId, text) {
+      const res = await call(
+        () => client.blocks.children.append({
+          block_id: pageId,
+          children: [
+            {
+              object: "block",
+              type: "paragraph",
+              paragraph: { rich_text: [{ type: "text", text: { content: text } }] }
+            }
+          ]
+        })
+      );
+      const id = res.results[0]?.id;
+      if (id === void 0) throw new Error("Notion did not return the created block");
+      return id;
+    },
+    async createDatabase(parentPageId, title, properties) {
+      const raw = await call(
+        () => client.databases.create({
+          parent: { type: "page_id", page_id: parentPageId },
+          title: [{ type: "text", text: { content: title } }],
+          is_inline: true,
+          initial_data_source: { properties }
+        })
+      );
+      return toDatabaseInfo({ ...raw, title: raw.title ?? [{ plain_text: title }] });
+    },
+    async getDatabase(databaseId) {
+      const raw = await call(
+        () => client.databases.retrieve({ database_id: databaseId })
+      );
+      return toDatabaseInfo(raw);
+    },
+    getDataSourceProperties,
+    async addProperties(dataSourceId, properties) {
+      const existing = await getDataSourceProperties(dataSourceId);
+      const clash = Object.keys(properties).filter((n) => n in existing);
+      if (clash.length > 0) {
+        throw new Error(`refusing to alter existing Notion properties: ${clash.join(", ")}`);
+      }
+      await call(() => client.dataSources.update({ data_source_id: dataSourceId, properties }));
+    },
+    async queryRows(dataSourceId) {
+      const rows = [];
+      let cursor;
+      for (; ; ) {
+        const page = await call(
+          () => client.dataSources.query({
+            data_source_id: dataSourceId,
+            page_size: 100,
+            ...cursor !== void 0 ? { start_cursor: cursor } : {}
+          })
+        );
+        for (const raw of page.results) {
+          if (raw.object !== void 0 && raw.object !== "page") continue;
+          rows.push({
+            pageId: raw.id,
+            lastEdited: raw.last_edited_time,
+            properties: raw.properties ?? {}
+          });
+        }
+        if (!page.has_more || page.next_cursor === null) return rows;
+        cursor = page.next_cursor;
+      }
+    },
+    async getPageLastEdited(pageId) {
+      const raw = await call(() => client.pages.retrieve({ page_id: pageId }));
+      return raw.last_edited_time;
+    },
+    async createPage(dataSourceId, properties, children) {
+      const first = children?.slice(0, 100);
+      const raw = await call(
+        () => client.pages.create({
+          parent: { type: "data_source_id", data_source_id: dataSourceId },
+          properties,
+          ...first && first.length > 0 ? { children: first } : {}
+        })
+      );
+      let lastEdited = raw.last_edited_time;
+      for (let i = 100; children && i < children.length; i += 100) {
+        const rest = children.slice(i, i + 100);
+        await call(() => client.blocks.children.append({ block_id: raw.id, children: rest }));
+      }
+      if (children && children.length > 100) lastEdited = await this.getPageLastEdited(raw.id);
+      return { pageId: raw.id, lastEdited };
+    },
+    async updatePage(pageId, properties) {
+      const raw = await call(() => client.pages.update({ page_id: pageId, properties }));
+      return { lastEdited: raw.last_edited_time };
+    },
+    async appendChildren(pageId, blocks) {
+      for (let i = 0; i < blocks.length; i += 100) {
+        const chunk = blocks.slice(i, i + 100);
+        await call(() => client.blocks.children.append({ block_id: pageId, children: chunk }));
+      }
+    }
+  };
+}
+function createNotionPortFromToken(token) {
+  const client = new import_client.Client({ auth: token, retry: false });
+  return createNotionPort(client);
+}
+
 // plugins/arima/scripts/src/run-agent.ts
-import { execFileSync, spawn } from "node:child_process";
-import { existsSync as existsSync5, mkdirSync as mkdirSync4, readFileSync as readFileSync6, writeFileSync as writeFileSync2 } from "node:fs";
-import path11 from "node:path";
+import { execFileSync as execFileSync2, spawn } from "node:child_process";
+import { existsSync as existsSync7, mkdirSync as mkdirSync6, readFileSync as readFileSync8, writeFileSync as writeFileSync4 } from "node:fs";
+import path12 from "node:path";
 
 // plugins/arima/scripts/src/events.ts
 import path6 from "node:path";
@@ -18805,7 +19036,7 @@ import path5 from "node:path";
 
 // plugins/arima/scripts/src/lib/filelock.ts
 import { closeSync, openSync, statSync, unlinkSync, writeSync } from "node:fs";
-import { setTimeout as sleep } from "node:timers/promises";
+import { setTimeout as sleep2 } from "node:timers/promises";
 var RETRYABLE = /* @__PURE__ */ new Set(["EEXIST", "EPERM", "EACCES", "EBUSY"]);
 function code(e) {
   return typeof e === "object" && e !== null && "code" in e ? String(e.code) : void 0;
@@ -18834,7 +19065,7 @@ async function withFileLock(lockPath, fn, { timeoutMs = 15e3, staleMs = 3e4, ret
           cause: e
         });
       }
-      await sleep(retryMs + Math.floor(Math.random() * retryMs * 2));
+      await sleep2(retryMs + Math.floor(Math.random() * retryMs * 2));
     }
   }
   try {
@@ -19068,27 +19299,153 @@ function budgetStatus(projectDir, limits, today) {
 }
 
 // plugins/arima/scripts/src/killswitch.ts
+import { existsSync as existsSync4, mkdirSync as mkdirSync2, readFileSync as readFileSync5, rmSync, writeFileSync } from "node:fs";
 import path8 from "node:path";
-
-// plugins/arima/scripts/src/notion/port.ts
-var import_client = __toESM(require_src(), 1);
-
-// plugins/arima/scripts/src/killswitch.ts
 function pauseFile(projectDir) {
   return path8.join(projectDir, ".arima", "PAUSE");
 }
+async function checkKillSwitch(projectDir, notion, remotePause) {
+  const file = existsSync4(pauseFile(projectDir));
+  let remote = "unchecked";
+  let detail = "";
+  if (notion !== null) {
+    try {
+      const todos = await notion.port.listTodoBlocks(notion.rootPageId);
+      const sw = todos.find((t) => t.text.trim() === PAUSE_TODO_TEXT);
+      if (sw === void 0) {
+        remote = "missing";
+        detail = `the "${PAUSE_TODO_TEXT}" to-do is missing from the Notion root page, so ARIMA cannot tell whether it is paused; run /arima:pause --resume to recreate it`;
+      } else {
+        remote = sw.checked;
+      }
+    } catch (e) {
+      remote = "unreachable";
+      detail = `Notion unreachable (${e instanceof Error ? e.message : String(e)})`;
+    }
+  }
+  let stateBranch = "unchecked";
+  if (!file && remote !== true && remotePause !== void 0 && remote !== false) {
+    const r = await remotePause();
+    stateBranch = r === void 0 ? "unchecked" : r;
+  }
+  const on = file || remote === true || remote === "missing" || stateBranch === true;
+  if (on) {
+    const reasons = [
+      file ? "PAUSE file present" : "",
+      remote === true ? "Notion switch is on" : "",
+      remote === "missing" ? detail : "",
+      stateBranch === true ? "PAUSE file on the remote state branch" : ""
+    ];
+    detail = reasons.filter(Boolean).join(" and ");
+    if (file) {
+      const first = readFileSync5(pauseFile(projectDir), "utf8").split("\n")[0] ?? "";
+      if (first.trim() !== "") detail += ` (${first.trim()})`;
+    }
+  } else if (remote === "unreachable") {
+    detail += stateBranch === false ? "; the remote state branch has no PAUSE file" : "; the remote state branch could not be checked either, so only the local PAUSE file was consulted";
+  }
+  return { on, file, notion: remote, stateBranch, detail };
+}
+
+// plugins/arima/scripts/src/state.ts
+import { execFileSync } from "node:child_process";
+import {
+  appendFileSync as appendFileSync2,
+  cpSync,
+  existsSync as existsSync5,
+  mkdirSync as mkdirSync3,
+  mkdtempSync,
+  readFileSync as readFileSync6,
+  realpathSync,
+  readdirSync as readdirSync2,
+  rmSync as rmSync2,
+  statSync as statSync2,
+  writeFileSync as writeFileSync2
+} from "node:fs";
+import path9 from "node:path";
+var StateError = class extends Error {
+};
+var DEFAULT_BRANCH = "arima-state";
+var MAX_SCAN_BYTES = 64 * 1024 * 1024;
+function git(cwd, args, input) {
+  try {
+    return execFileSync("git", args, {
+      cwd,
+      encoding: "utf8",
+      input,
+      stdio: ["pipe", "pipe", "pipe"]
+    }).trimEnd();
+  } catch (e) {
+    const err = e;
+    const detail = (err.stderr ? String(err.stderr) : err.message).trim();
+    throw new StateError(`git ${args.join(" ")} failed: ${detail}`, { cause: e });
+  }
+}
+function gitOk(cwd, args) {
+  try {
+    execFileSync("git", args, { cwd, stdio: "ignore" });
+    return true;
+  } catch {
+    return false;
+  }
+}
+function resolve(o) {
+  const repo = path9.resolve(o.projectDir);
+  if (!existsSync5(repo) || !gitOk(repo, ["rev-parse", "--git-dir"])) {
+    throw new StateError(`${repo} is not a git repository`);
+  }
+  const norm = (p) => {
+    const real = realpathSync.native(p);
+    return process.platform === "win32" ? real.toLowerCase() : real;
+  };
+  if (norm(git(repo, ["rev-parse", "--show-toplevel"])) !== norm(repo)) {
+    throw new StateError(`${repo} is not the root of a git repository`);
+  }
+  const branch = o.branch ?? DEFAULT_BRANCH;
+  if (branch === (o.defaultBranch ?? "main") || branch === "main" || branch === "master") {
+    throw new StateError(
+      `refusing to use "${branch}" as the state branch; ARIMA never touches the default branch`
+    );
+  }
+  const remote = o.remote ?? "origin";
+  const hasRemote = git(repo, ["remote"]).split("\n").includes(remote);
+  return { repo, stateDir: path9.join(repo, ".arima"), branch, remote, hasRemote };
+}
+function remotePauseFlag(o) {
+  let r;
+  try {
+    r = resolve(o);
+  } catch {
+    return void 0;
+  }
+  if (!r.hasRemote) return void 0;
+  const ref = `refs/remotes/${r.remote}/${r.branch}`;
+  try {
+    execFileSync("git", ["fetch", "--quiet", r.remote, `+refs/heads/${r.branch}:${ref}`], {
+      cwd: r.repo,
+      stdio: ["ignore", "ignore", "pipe"],
+      timeout: 15e3,
+      env: { ...process.env, GIT_TERMINAL_PROMPT: "0" }
+    });
+  } catch (e) {
+    const msg = String(e.stderr ?? "");
+    if (!/couldn't find remote ref/i.test(msg)) return void 0;
+    return false;
+  }
+  return gitOk(r.repo, ["cat-file", "-e", `${ref}:PAUSE`]);
+}
 
 // plugins/arima/scripts/src/runid.ts
-import { existsSync as existsSync4, mkdirSync as mkdirSync3, readFileSync as readFileSync5 } from "node:fs";
-import path10 from "node:path";
+import { existsSync as existsSync6, mkdirSync as mkdirSync5, readFileSync as readFileSync7 } from "node:fs";
+import path11 from "node:path";
 
 // plugins/arima/scripts/src/lib/atomic-file.ts
-import { mkdirSync as mkdirSync2, renameSync, unlinkSync as unlinkSync2, writeFileSync } from "node:fs";
-import path9 from "node:path";
+import { mkdirSync as mkdirSync4, renameSync, unlinkSync as unlinkSync2, writeFileSync as writeFileSync3 } from "node:fs";
+import path10 from "node:path";
 function writeFileAtomic(file, content) {
-  mkdirSync2(path9.dirname(file), { recursive: true });
+  mkdirSync4(path10.dirname(file), { recursive: true });
   const tmp = `${file}.${process.pid}.tmp`;
-  writeFileSync(tmp, content, "utf8");
+  writeFileSync3(tmp, content, "utf8");
   for (let attempt = 0; ; attempt++) {
     try {
       renameSync(tmp, file);
@@ -19113,12 +19470,12 @@ var pad = (n, w = 2) => String(n).padStart(w, "0");
 async function issueRunId(projectDir, now = /* @__PURE__ */ new Date()) {
   const day = `${now.getFullYear()}${pad(now.getMonth() + 1)}${pad(now.getDate())}`;
   const hhmm = `${pad(now.getHours())}${pad(now.getMinutes())}`;
-  const file = path10.join(projectDir, ".arima", "state", "run-seq.json");
-  mkdirSync3(path10.dirname(file), { recursive: true });
+  const file = path11.join(projectDir, ".arima", "state", "run-seq.json");
+  mkdirSync5(path11.dirname(file), { recursive: true });
   return withFileLock(`${file}.lock`, () => {
     let state = { day, last: 0 };
-    if (existsSync4(file)) {
-      const parsed = JSON.parse(readFileSync5(file, "utf8"));
+    if (existsSync6(file)) {
+      const parsed = JSON.parse(readFileSync7(file, "utf8"));
       if (parsed.day === day && Number.isInteger(parsed.last))
         state = { day, last: parsed.last };
     }
@@ -19149,7 +19506,7 @@ function killTree(pid) {
   if (pid === void 0) return;
   try {
     if (process.platform === "win32") {
-      execFileSync("taskkill", ["/pid", String(pid), "/T", "/F"], { stdio: "ignore" });
+      execFileSync2("taskkill", ["/pid", String(pid), "/T", "/F"], { stdio: "ignore" });
     } else {
       process.kill(-pid, "SIGKILL");
     }
@@ -19272,7 +19629,7 @@ function buildClaudeArgs(o, agentName, scriptsGlob) {
   return args;
 }
 function runProcess(bin, args, opts) {
-  return new Promise((resolve) => {
+  return new Promise((resolve2) => {
     const isScript = /\.(?:m?js|cjs)$/.test(bin);
     const child = spawn(isScript ? process.execPath : bin, isScript ? [bin, ...args] : args, {
       cwd: opts.cwd,
@@ -19290,7 +19647,7 @@ function runProcess(bin, args, opts) {
       if (settled) return;
       settled = true;
       clearTimeout(timer);
-      resolve(r);
+      resolve2(r);
     };
     const timer = setTimeout(() => {
       timedOut = true;
@@ -19320,8 +19677,8 @@ function exitFor(result) {
   }
 }
 function writeRunReport(projectDir, runId, body) {
-  const dir = path11.join(projectDir, ".arima", "runs");
-  mkdirSync4(dir, { recursive: true });
+  const dir = path12.join(projectDir, ".arima", "runs");
+  mkdirSync6(dir, { recursive: true });
   let text = JSON.stringify(body, null, 2);
   if (findSecrets(text).length > 0) {
     text = JSON.stringify(
@@ -19330,7 +19687,7 @@ function writeRunReport(projectDir, runId, body) {
       2
     );
   }
-  writeFileSync2(path11.join(dir, `${runId}.json`), `${text}
+  writeFileSync4(path12.join(dir, `${runId}.json`), `${text}
 `, "utf8");
 }
 var localDay = (d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
@@ -19344,26 +19701,36 @@ async function assertMayDispatch(o, now) {
     });
     throw new DispatchRefused(message, exitCode);
   };
-  if (existsSync5(pauseFile(o.projectDir))) {
+  const c = o.config;
+  if (!Number.isFinite(c.projectCap) || !Number.isFinite(c.dailyCap)) {
+    throw new Error("projectCap and dailyCap are required in the agent config (spec \xA713.5)");
+  }
+  const remotePause = o.killSwitch.remotePause ?? (() => Promise.resolve(
+    remotePauseFlag({
+      projectDir: o.projectDir,
+      ...o.config.stateBranch ? { branch: o.config.stateBranch } : {},
+      ...o.config.defaultBranch ? { defaultBranch: o.config.defaultBranch } : {}
+    })
+  ));
+  const ks = await checkKillSwitch(o.projectDir, o.killSwitch.notion, remotePause);
+  if (ks.on) {
     await refuse(
       "kill_switch",
-      "refusing to start a run: the kill switch is on (.arima/PAUSE)",
+      `refusing to start a run: the kill switch is on (${ks.detail})`,
       12
     );
   }
-  if (o.config.projectCap !== void 0 && o.config.dailyCap !== void 0) {
-    const s = budgetStatus(
-      o.projectDir,
-      { projectCap: o.config.projectCap, dailyCap: o.config.dailyCap, alertThresholds: [] },
-      localDay(now)
+  const s = budgetStatus(
+    o.projectDir,
+    { projectCap: c.projectCap, dailyCap: c.dailyCap, alertThresholds: [] },
+    localDay(now)
+  );
+  if (!s.ok) {
+    await refuse(
+      "budget_exceeded",
+      `refusing to start a run: the ${s.exhausted.join(" and ")} budget is used up (project ${s.projectSpent}/${s.projectCap}, today ${s.daySpent}/${s.dailyCap})`,
+      13
     );
-    if (!s.ok) {
-      await refuse(
-        "budget_exceeded",
-        `refusing to start a run: the ${s.exhausted.join(" and ")} budget is used up (project ${s.projectSpent}/${s.projectCap}, today ${s.daySpent}/${s.dailyCap})`,
-        13
-      );
-    }
   }
 }
 async function runAgent(o) {
@@ -19373,12 +19740,12 @@ async function runAgent(o) {
       `budget ${o.budgetUsd} exceeds budget.per_run_cap ${o.config.perRunCap} in arima.yaml (spec \xA713.5)`
     );
   }
-  if (!existsSync5(o.promptFile)) throw new Error(`prompt file not found: ${o.promptFile}`);
-  const prompt = readFileSync6(o.promptFile, "utf8");
-  const cwd = path11.resolve(o.cwd ?? o.projectDir);
+  if (!existsSync7(o.promptFile)) throw new Error(`prompt file not found: ${o.promptFile}`);
+  const prompt = readFileSync8(o.promptFile, "utf8");
+  const cwd = path12.resolve(o.cwd ?? o.projectDir);
   const root = pluginRoot();
-  const scriptsGlob = path11.join(root, "scripts", "dist").replace(/\\/g, "/");
-  const agentName = o.agent ?? (existsSync5(path11.join(root, "agents", `${o.role}.md`)) ? `arima:${o.role}` : void 0);
+  const scriptsGlob = path12.join(root, "scripts", "dist").replace(/\\/g, "/");
+  const agentName = o.agent ?? (existsSync7(path12.join(root, "agents", `${o.role}.md`)) ? `arima:${o.role}` : void 0);
   const now = o.now ?? /* @__PURE__ */ new Date();
   await assertMayDispatch(o, now);
   const runId = await issueRunId(o.projectDir, now);
@@ -19397,7 +19764,7 @@ async function runAgent(o) {
     phase: o.phase,
     runId,
     projectKey: o.config.projectKey,
-    projectDir: path11.resolve(o.projectDir),
+    projectDir: path12.resolve(o.projectDir),
     config: o.config
   });
   Object.assign(env, o.extraEnv ?? {});
@@ -19509,6 +19876,8 @@ function agentConfigFrom(arima, role) {
     auth: get("runtime.auth") === "api_key" ? "api_key" : "seat",
     projectCap: Number(get("budget.project_cap")),
     dailyCap: Number(get("budget.daily_cap")),
+    stateBranch: typeof get("github.state_branch") === "string" ? get("github.state_branch") : void 0,
+    defaultBranch: typeof get("github.default_branch") === "string" ? get("github.default_branch") : void 0,
     notionTokenEnv: String(get("notion.token_env")),
     githubTokenEnv: typeof githubEnv === "string" ? githubEnv : void 0
   };
@@ -19530,7 +19899,7 @@ function passthroughEnv() {
   }
   return out;
 }
-async function runAgentCli(argv, io) {
+async function runAgentCli(argv, io, deps = {}) {
   let values;
   try {
     values = parseArgs({
@@ -19587,13 +19956,29 @@ ${USAGE}
 `);
     return EXIT.usage;
   }
-  const projectDir = path12.resolve(io.cwd, values["project"] ?? ".");
+  const projectDir = path13.resolve(io.cwd, values["project"] ?? ".");
   const config = validateProject(projectDir);
   if (!config.ok || config.arima === void 0) {
     for (const e of config.errors) io.err(`${e.file}:${e.line}: ${e.message}
 `);
     io.err("refusing to run with an invalid config (run: arima-config validate)\n");
     return EXIT.usage;
+  }
+  const arimaDoc = config.arima;
+  const token = (deps.env ?? process.env)[arimaDoc.notion?.token_env ?? "ARIMA_NOTION_TOKEN"];
+  const rootPageId = arimaDoc.notion?.root_page_id;
+  let killSwitch = { notion: null };
+  if (token && rootPageId) {
+    killSwitch = {
+      notion: {
+        port: (deps.portFactory ?? createNotionPortFromToken)(token),
+        rootPageId
+      }
+    };
+  } else {
+    io.err(
+      "warning: the Notion token is not set here, so the Notion kill switch is not re-checked before this run (the PAUSE file and the state branch still are)\n"
+    );
   }
   try {
     const outcome = await runAgent({
@@ -19602,12 +19987,13 @@ ${USAGE}
       item,
       budgetUsd: budget,
       maxTurns,
-      promptFile: path12.resolve(io.cwd, promptFile),
+      promptFile: path13.resolve(io.cwd, promptFile),
       phase,
       attempt,
       config: agentConfigFrom(config.arima, role),
+      killSwitch,
       extraEnv: passthroughEnv(),
-      ...values["cwd"] !== void 0 ? { cwd: path12.resolve(io.cwd, values["cwd"]) } : {},
+      ...values["cwd"] !== void 0 ? { cwd: path13.resolve(io.cwd, values["cwd"]) } : {},
       ...values["milestone"] !== void 0 ? { milestone: values["milestone"] } : {},
       ...rework !== void 0 ? { reworkReason: rework } : {},
       ...values["session"] !== void 0 ? { sessionId: values["session"] } : {},

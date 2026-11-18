@@ -19459,9 +19459,9 @@ If you have reviewed a finding and it is NOT a secret, add its fingerprint on it
         `refusing to push state: ${privacy.slug} is a PUBLIC GitHub repository, and the state branch holds your Notion data (requirements, client names, costs). Make the repository private, or set github.allow_public_state: true in arima.yaml if you really mean it.`
       );
     }
-    if (privacy.kind === "unknown") {
-      warnings.push(
-        `could not check whether ${privacy.slug} is private (is the gh CLI installed and signed in?); make sure it is`
+    if (privacy.kind === "unknown" && o.allowPublic !== true) {
+      throw new StateError(
+        `refusing to push state: could not check whether ${privacy.slug} is private (is the gh CLI installed and signed in, and is the remote a normal github.com repository?). The state branch holds your Notion data, so ARIMA refuses when it cannot be sure. Sign in with 'gh auth login' and run again, or set github.allow_public_state: true in arima.yaml if you accept the risk.`
       );
     }
     git(r.stateDir, ["push", "--set-upstream", r.remote, `${r.branch}:${r.branch}`]);
@@ -19469,12 +19469,20 @@ If you have reviewed a finding and it is NOT a secret, add its fingerprint on it
   }
   return { committed: true, pushed, commit, files: staged.length, warnings };
 }
+var SLUG_PART = /^[A-Za-z0-9_][A-Za-z0-9._-]*$/;
 function githubSlug(url2) {
   const m = /^(?:https?:\/\/(?:[^@/]+@)?github\.com\/|git@github\.com:|ssh:\/\/git@github\.com\/)([^/\s]+)\/([^/\s]+?)(?:\.git)?\/?$/i.exec(
     url2.trim()
   );
-  return m ? { owner: m[1], repo: m[2] } : void 0;
+  if (!m) return void 0;
+  const owner = m[1];
+  const repo = m[2];
+  if (!SLUG_PART.test(owner) || !SLUG_PART.test(repo) || repo === "." || repo === "..") {
+    return void 0;
+  }
+  return { owner, repo };
 }
+var MENTIONS_GITHUB = /(^|[/@:])github\.com[/:]/i;
 function checkRemotePrivacy(r, o) {
   let url2;
   try {
@@ -19483,7 +19491,9 @@ function checkRemotePrivacy(r, o) {
     return { kind: "not-github" };
   }
   const slug = githubSlug(url2);
-  if (slug === void 0) return { kind: "not-github" };
+  if (slug === void 0) {
+    return MENTIONS_GITHUB.test(url2) ? { kind: "unknown", slug: "the remote" } : { kind: "not-github" };
+  }
   const name = `${slug.owner}/${slug.repo}`;
   let priv;
   if (o.isPrivate) {
@@ -19568,6 +19578,7 @@ async function setKillSwitch(o) {
     actor: o.actor ?? "human",
     data: { notion, ...o.reason ? { reason: o.reason } : {} }
   });
+  let stateSaved = "skipped";
   if (o.saveState === true) {
     try {
       const runId = await issueRunId(o.projectDir, o.now);
@@ -19578,10 +19589,12 @@ async function setKillSwitch(o) {
         ...o.branch ? { branch: o.branch } : {},
         ...o.defaultBranch ? { defaultBranch: o.defaultBranch } : {}
       });
+      stateSaved = s.pushed ? "pushed" : s.committed ? "committed" : "unchanged";
       messages.push(
         s.pushed ? "state pushed" : s.committed ? "state committed locally" : "state unchanged"
       );
     } catch (e) {
+      stateSaved = "failed";
       messages.push(
         `state not saved: ${e instanceof StateError || e instanceof Error ? e.message : String(e)}`
       );
@@ -19593,6 +19606,7 @@ async function setKillSwitch(o) {
     file: existsSync6(pauseFile(o.projectDir)),
     notion,
     stillPausedInNotion,
+    stateSaved,
     messages
   };
 }
@@ -19662,9 +19676,15 @@ async function runPauseCli(argv, io, deps = {}) {
   });
   for (const m of r.messages) io.out(`${m}
 `);
+  const unsaved = r.stateSaved === "failed";
+  if (unsaved) {
+    io.err(
+      on ? "The pause is on here, but the state was NOT saved: other machines will not see it until it is pushed. Fix the problem above and run again.\n" : "Resumed here, but the state was NOT saved: the remote state branch may still carry PAUSE, so other machines may stay paused. Fix the problem above and run again.\n"
+    );
+  }
   if (on) {
     io.out("ARIMA is paused: the next run will stop at preflight.\n");
-    return 0;
+    return unsaved ? 1 : 0;
   }
   if (r.stillPausedInNotion) {
     io.err(
@@ -19673,7 +19693,7 @@ async function runPauseCli(argv, io, deps = {}) {
     return 1;
   }
   io.out("ARIMA is resumed.\n");
-  return 0;
+  return unsaved ? 1 : 0;
 }
 
 // plugins/arima/scripts/src/bin/arima-pause.ts

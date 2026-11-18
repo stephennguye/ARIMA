@@ -293,7 +293,10 @@ export async function runInit(o: InitOptions): Promise<InitResult> {
     // 5. mirror, then plan only what is missing
     await pullMirror(o.projectDir, o.port, map, { now, runId });
     // Entries left over from an earlier, interrupted run go first, so a re-run never queues duplicates.
-    const leftover = await pushOutbox(o.projectDir, o.port, map, { now });
+    const leftover = await pushOutbox(o.projectDir, o.port, map, {
+      now,
+      allowStatusWrites: true,
+    });
     for (const r of leftover.rejected)
       result.warnings.push('earlier outbox entry ' + r.id + ' was rejected: ' + r.reason);
     const profile = loadProfile((arima as unknown as { profile: string }).profile);
@@ -373,7 +376,7 @@ export async function runInit(o: InitOptions): Promise<InitResult> {
     }
 
     // 6. apply
-    const report = await pushOutbox(o.projectDir, o.port, map, { now });
+    const report = await pushOutbox(o.projectDir, o.port, map, { now, allowStatusWrites: true });
     if (report.rejected.length + report.conflicts.length + report.deferred.length > 0) {
       result.problems = [
         ...report.rejected.map((r) => `${r.id}: ${r.reason}`),

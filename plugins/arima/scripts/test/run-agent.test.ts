@@ -17,6 +17,8 @@ const config = (over: Partial<AgentConfig> = {}): AgentConfig => ({
   perRunCap: 2,
   maxRunMinutes: 1,
   notionTokenEnv: 'ARIMA_NOTION_TOKEN',
+  projectCap: 100,
+  dailyCap: 20,
   githubTokenEnv: 'ARIMA_GITHUB_TOKEN',
   ...over,
 });
@@ -60,6 +62,7 @@ function go(
     promptFile: s.prompt,
     phase: 4,
     config: config(),
+    killSwitch: { notion: null },
     claudeBin: STUB,
     env: {
       ...process.env,

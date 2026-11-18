@@ -334,9 +334,9 @@ export async function pushState(o: StateOptions & { runId: string }): Promise<Pu
         `refusing to push state: ${privacy.slug} is a PUBLIC GitHub repository, and the state branch holds your Notion data (requirements, client names, costs). Make the repository private, or set github.allow_public_state: true in arima.yaml if you really mean it.`,
       );
     }
-    if (privacy.kind === 'unknown') {
-      warnings.push(
-        `could not check whether ${privacy.slug} is private (is the gh CLI installed and signed in?); make sure it is`,
+    if (privacy.kind === 'unknown' && o.allowPublic !== true) {
+      throw new StateError(
+        `refusing to push state: could not check whether ${privacy.slug} is private (is the gh CLI installed and signed in, and is the remote a normal github.com repository?). The state branch holds your Notion data, so ARIMA refuses when it cannot be sure. Sign in with 'gh auth login' and run again, or set github.allow_public_state: true in arima.yaml if you accept the risk.`,
       );
     }
     git(r.stateDir, ['push', '--set-upstream', r.remote, `${r.branch}:${r.branch}`]);
@@ -399,13 +399,29 @@ export function remotePauseFlag(o: StateOptions): boolean | undefined {
 type Privacy = { kind: 'private' | 'public' | 'unknown'; slug: string } | { kind: 'not-github' };
 
 /** owner/repo from a GitHub remote URL (https or ssh), or undefined for any other remote. */
+const SLUG_PART = /^[A-Za-z0-9_][A-Za-z0-9._-]*$/;
+
+/**
+ * owner/repo from a GitHub remote URL (https or ssh), or undefined for any other remote, or for a
+ * github.com URL whose owner or repo contains characters GitHub does not allow (so that a hostile
+ * remote URL can never become an option to the gh CLI).
+ */
 export function githubSlug(url: string): { owner: string; repo: string } | undefined {
   const m =
     /^(?:https?:\/\/(?:[^@/]+@)?github\.com\/|git@github\.com:|ssh:\/\/git@github\.com\/)([^/\s]+)\/([^/\s]+?)(?:\.git)?\/?$/i.exec(
       url.trim(),
     );
-  return m ? { owner: m[1] as string, repo: m[2] as string } : undefined;
+  if (!m) return undefined;
+  const owner = m[1] as string;
+  const repo = m[2] as string;
+  if (!SLUG_PART.test(owner) || !SLUG_PART.test(repo) || repo === '.' || repo === '..') {
+    return undefined;
+  }
+  return { owner, repo };
 }
+
+/** A URL that points at github.com in any form, valid or not. */
+const MENTIONS_GITHUB = /(^|[/@:])github\.com[/:]/i;
 
 function checkRemotePrivacy(r: Resolved, o: StateOptions): Privacy {
   let url: string;
@@ -415,7 +431,12 @@ function checkRemotePrivacy(r: Resolved, o: StateOptions): Privacy {
     return { kind: 'not-github' };
   }
   const slug = githubSlug(url);
-  if (slug === undefined) return { kind: 'not-github' };
+  if (slug === undefined) {
+    // A github.com URL we cannot parse safely is not "somewhere else": refuse rather than guess.
+    return MENTIONS_GITHUB.test(url)
+      ? { kind: 'unknown', slug: 'the remote' }
+      : { kind: 'not-github' };
+  }
   const name = `${slug.owner}/${slug.repo}`;
   let priv: boolean | undefined;
   if (o.isPrivate) {

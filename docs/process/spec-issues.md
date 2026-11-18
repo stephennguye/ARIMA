@@ -31,7 +31,7 @@ Status key: **Open** (needs your decision), **Blocking** (a build step cannot be
 ## S4. Who is allowed to merge is described five ways (Open)
 
 - **Spec:** §5.2 orchestrator must not merge; §5.6 tech-lead "waits for your approval and is then merged automatically"; §10.3 "ARIMA merges automatically"; §11.2 "tech-lead merges after human approval"; D-29 a hook blocks pushes to main.
-- **Proposed resolution:** exactly one actor merges: a single ARIMA merge script, run by the orchestrator's session, that refuses unless CI is green, QA passed and the human's approving review exists. No agent has `gh pr merge`, `git push` to the default branch, or `gh api` writes (this is already enforced for every role in code since Stage 0A). Reword §5.2, §5.6, §10.3 and §11.2 to say "the merge script".
+- **Proposed resolution:** exactly one actor merges: a single ARIMA merge script, run by the orchestrator's session, that refuses unless CI is green, QA passed and the human's approving review exists. No agent has `gh pr merge`, `git push` to the default branch, or `gh api` writes (the role lists no longer grant these, and the guard blocks the literal forms; the second review showed the guard alone can be bypassed, so the real barrier is GitHub branch protection plus the rule below that agents never hold push credentials, S16). Reword §5.2, §5.6, §10.3 and §11.2 to say "the merge script".
 
 ## S5. `/arima:init` cannot duplicate the Notion template as §9.3 says (Open, pending S0.3)
 
@@ -87,6 +87,17 @@ Status key: **Open** (needs your decision), **Blocking** (a build step cannot be
 ## S15. Seat usage for unattended runs (Open, owner research)
 
 - §4.4 relies on two support articles to say that `claude -p` signed in with a Team seat draws on the plan's limits. Nobody has verified that unattended scheduled headless use of a seat is permitted by the terms, or how the limit behaves with three parallel developers. Q-21 (seat versus API key) is deferred to v0.4 but the seat is used from v0.2. Please confirm against Anthropic's current terms before v0.2's unattended runs.
+
+## S16. Agents should never hold push credentials (Proposed, from judge #2)
+
+- **Spec:** §10.3 and D-29 describe a hook that blocks pushes to the default branch; §5 lets the developer role run `git push` and the machine account open pull requests.
+- **Problem:** a hook and a tool list are advisory for roles that can run project scripts (see S6). If the agent's environment holds a push credential, any script it runs can use it.
+- **Proposed resolution:** agents work in a worktree with **no remote credentials at all**. A host script, run by the orchestrator's session and not by an agent, pushes the feature branch and opens the pull request, and is the only holder of the machine token. Combined with S4 (one merge script) and branch protection, no agent can reach the default branch even by writing its own script. This also fits the Docker sandbox design (D-36), where the container has no network route to GitHub.
+
+## S17. The QA role has `npx playwright` (Proposed, from judge #2)
+
+- **Spec:** §5.4 gives QA Playwright. **Today:** the role list allows `Bash(npx playwright *)`, while the guides say no `npx` is allowed to any role. `npx` can fetch and run arbitrary packages.
+- **Proposed resolution:** keep Playwright, but run it through a pinned local binary (`node_modules/.bin/playwright`, installed by `npm ci` from a lock file) and drop `npx`; say so in the guides. Until then the guides state the exception. Decide together with S16, since both are about what a role may execute.
 
 ---
 

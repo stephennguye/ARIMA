@@ -3,7 +3,15 @@ import { parseArgs } from 'node:util';
 import { validateProject } from '../config.js';
 import type { Io } from './config-cli.js';
 import { isRole, ROLES } from '../roles.js';
+import { createNotionPortFromToken } from '../notion/port.js';
+import type { PauseSwitchPort } from '../notion/port.js';
 import { DispatchRefused, EXIT, agentConfigFrom, runAgent } from '../run-agent.js';
+import type { DispatchKillSwitch } from '../run-agent.js';
+
+export interface RunAgentCliDeps {
+  env?: NodeJS.ProcessEnv;
+  portFactory?: (token: string) => PauseSwitchPort;
+}
 
 export const USAGE = `Usage: arima-run-agent --role <role> --item <ID|none> --budget <usd> --max-turns <n> --prompt-file <file>
          [--cwd <worktree>] [--project <dir>] [--phase <0-8>] [--attempt <n>] [--milestone MS-NN]
@@ -32,7 +40,11 @@ function passthroughEnv(): Record<string, string> {
 }
 
 /** Runs `arima-run-agent`; prints one JSON summary line on stdout. */
-export async function runAgentCli(argv: string[], io: Io): Promise<number> {
+export async function runAgentCli(
+  argv: string[],
+  io: Io,
+  deps: RunAgentCliDeps = {},
+): Promise<number> {
   let values: Record<string, string | undefined>;
   try {
     values = parseArgs({
@@ -102,6 +114,25 @@ export async function runAgentCli(argv: string[], io: Io): Promise<number> {
     return EXIT.usage;
   }
 
+  // The dispatch re-checks the Notion switch, so the wrapper needs the token and the root page. A
+  // missing token is said out loud; the local PAUSE file and the state branch are still checked.
+  const arimaDoc = config.arima as { notion?: { root_page_id?: string; token_env?: string } };
+  const token = (deps.env ?? process.env)[arimaDoc.notion?.token_env ?? 'ARIMA_NOTION_TOKEN'];
+  const rootPageId = arimaDoc.notion?.root_page_id;
+  let killSwitch: DispatchKillSwitch = { notion: null };
+  if (token && rootPageId) {
+    killSwitch = {
+      notion: {
+        port: (deps.portFactory ?? createNotionPortFromToken)(token),
+        rootPageId,
+      },
+    };
+  } else {
+    io.err(
+      'warning: the Notion token is not set here, so the Notion kill switch is not re-checked before this run (the PAUSE file and the state branch still are)\n',
+    );
+  }
+
   try {
     const outcome = await runAgent({
       projectDir,
@@ -113,6 +144,7 @@ export async function runAgentCli(argv: string[], io: Io): Promise<number> {
       phase,
       attempt,
       config: agentConfigFrom(config.arima, role),
+      killSwitch,
       extraEnv: passthroughEnv(),
       ...(values['cwd'] !== undefined ? { cwd: path.resolve(io.cwd, values['cwd']) } : {}),
       ...(values['milestone'] !== undefined ? { milestone: values['milestone'] } : {}),

@@ -19939,6 +19939,13 @@ async function pushOutbox(projectDir, port, map, opts = {}) {
         return { kind: "rejected", reason: `unknown property "${name}" on ${db.title}` };
       if (name === LAST_WRITTEN_BY_RUN)
         return { kind: "rejected", reason: `"${name}" is stamped by ARIMA and cannot be set` };
+      if (name === "Status" && opts.allowStatusWrites !== true) {
+        return {
+          kind: "rejected",
+          refused: true,
+          reason: `"Status" on ${db.title} cannot be written from the outbox until the ticket state machine exists (pass --allow-status-writes, which only a human may do)`
+        };
+      }
       if (def.human_only === true) {
         return {
           kind: "rejected",
@@ -20053,7 +20060,8 @@ var errText2 = (e) => e instanceof Error ? e.message : String(e);
 var USAGE = `Usage: arima-notion bootstrap --parent <page-id> [--token-env NAME]
        arima-notion map [--root <page-id>] [--migrate] [--project <dir>] [--token-env NAME]
        arima-notion pull [--project <dir>]     mirror every mapped database to .arima/mirror/
-       arima-notion push [--project <dir>]     apply .arima/outbox/ to Notion (orchestrator only)
+       arima-notion push [--project <dir>] [--allow-status-writes]
+                                               apply .arima/outbox/ to Notion (orchestrator only)
 bootstrap builds the 19 ARIMA databases under a page (run once, to build the public template).
 map finds them under a duplicated template, verifies every property, writes .arima/notion-map.json.
 The Notion integration token is read from the environment (default ARIMA_NOTION_TOKEN); it is never printed.
@@ -20088,7 +20096,8 @@ async function runNotionCli(argv, io, deps = {}) {
         root: { type: "string" },
         migrate: { type: "boolean" },
         project: { type: "string" },
-        "token-env": { type: "string" }
+        "token-env": { type: "string" },
+        "allow-status-writes": { type: "boolean" }
       }
     }).values;
   } catch (e) {
@@ -20150,7 +20159,8 @@ ${USAGE}
     }
     if (command === "push") {
       const report = await pushOutbox(projectDir, port, readNotionMap(projectDir), {
-        ...deps.now ? { now: deps.now } : {}
+        ...deps.now ? { now: deps.now } : {},
+        ...values["allow-status-writes"] === true ? { allowStatusWrites: true } : {}
       });
       io.out(
         `outbox: ${report.applied.length} applied, ${report.rejected.length} rejected, ${report.conflicts.length} in conflict (human edit kept), ${report.deferred.length} deferred

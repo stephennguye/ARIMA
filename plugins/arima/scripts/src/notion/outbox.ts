@@ -171,7 +171,15 @@ export async function pushOutbox(
   projectDir: string,
   port: NotionPort,
   map: NotionMap,
-  opts: { now?: Date } = {},
+  opts: {
+    now?: Date;
+    /**
+     * Let entries write the Status property. Off by default: until the ticket state machine
+     * exists, an agent's outbox entry must not be able to mark a story Done. Only a human-run
+     * command (init, or `arima-notion push --allow-status-writes`) turns this on.
+     */
+    allowStatusWrites?: boolean;
+  } = {},
 ): Promise<PushReport> {
   const report: PushReport = { applied: [], rejected: [], conflicts: [], deferred: [] };
   const pending = listPending(projectDir, report);
@@ -277,6 +285,13 @@ export async function pushOutbox(
         return { kind: 'rejected', reason: `unknown property "${name}" on ${db.title}` };
       if (name === LAST_WRITTEN_BY_RUN)
         return { kind: 'rejected', reason: `"${name}" is stamped by ARIMA and cannot be set` };
+      if (name === 'Status' && opts.allowStatusWrites !== true) {
+        return {
+          kind: 'rejected',
+          refused: true,
+          reason: `"Status" on ${db.title} cannot be written from the outbox until the ticket state machine exists (pass --allow-status-writes, which only a human may do)`,
+        };
+      }
       if (def.human_only === true) {
         return {
           kind: 'rejected',

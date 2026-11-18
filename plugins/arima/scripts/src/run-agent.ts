@@ -3,7 +3,9 @@ import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 import { budgetStatus } from './budget.js';
 import { appendEvent } from './events.js';
-import { pauseFile } from './killswitch.js';
+import { checkKillSwitch } from './killswitch.js';
+import type { PauseSwitchPort } from './notion/port.js';
+import { remotePauseFlag } from './state.js';
 import { buildLedgerRow, appendLedgerRow, parseClaudeResult, readLedger } from './ledger.js';
 import type { ClaudeResult, LedgerRow, Role, RunContext, RunResult } from './ledger.js';
 import { pluginRoot } from './lib/paths.js';
@@ -31,9 +33,23 @@ export interface AgentConfig {
   githubTokenEnv?: string | undefined;
   /** runtime.auth: with 'api_key' the ANTHROPIC_* variables are passed to the child. */
   auth?: 'seat' | 'api_key' | undefined;
-  /** Caps re-checked before every dispatch (spec §13.5). Optional so callers may omit them. */
-  projectCap?: number | undefined;
-  dailyCap?: number | undefined;
+  /** Caps re-checked before every dispatch (spec §13.5). Required: a missing cap is not "no limit". */
+  projectCap: number;
+  dailyCap: number;
+  /** The state branch and default branch, for reading the remote PAUSE flag. */
+  stateBranch?: string | undefined;
+  defaultBranch?: string | undefined;
+}
+
+/**
+ * Where the dispatch re-check looks for the kill switch besides the local PAUSE file (spec §11.3):
+ * the "Pause ARIMA" to-do on the Notion root page and the PAUSE file on the remote state branch.
+ * `notion: null` is an explicit "Notion is not configured here" and is recorded as a warning.
+ */
+export interface DispatchKillSwitch {
+  notion: { port: PauseSwitchPort; rootPageId: string } | null;
+  /** Overrides the remote state-branch lookup (tests). */
+  remotePause?: () => Promise<boolean | undefined>;
 }
 
 /** A dispatch the wrapper refuses because a hard stop is on. `exitCode` matches arima-preflight. */
@@ -62,6 +78,7 @@ export interface RunAgentOptions {
   sessionId?: string;
   agent?: string;
   config: AgentConfig;
+  killSwitch: DispatchKillSwitch;
   /** Executable to run instead of `claude` (tests, or a non-PATH install). */
   claudeBin?: string;
   /** The environment the child is built FROM (an allow-list is applied); defaults to process.env. */
@@ -349,26 +366,39 @@ async function assertMayDispatch(o: RunAgentOptions, now: Date): Promise<void> {
     });
     throw new DispatchRefused(message, exitCode);
   };
-  if (existsSync(pauseFile(o.projectDir))) {
+  const c = o.config as Partial<AgentConfig>;
+  if (!Number.isFinite(c.projectCap) || !Number.isFinite(c.dailyCap)) {
+    throw new Error('projectCap and dailyCap are required in the agent config (spec §13.5)');
+  }
+  const remotePause =
+    o.killSwitch.remotePause ??
+    ((): Promise<boolean | undefined> =>
+      Promise.resolve(
+        remotePauseFlag({
+          projectDir: o.projectDir,
+          ...(o.config.stateBranch ? { branch: o.config.stateBranch } : {}),
+          ...(o.config.defaultBranch ? { defaultBranch: o.config.defaultBranch } : {}),
+        }),
+      ));
+  const ks = await checkKillSwitch(o.projectDir, o.killSwitch.notion, remotePause);
+  if (ks.on) {
     await refuse(
       'kill_switch',
-      'refusing to start a run: the kill switch is on (.arima/PAUSE)',
+      `refusing to start a run: the kill switch is on (${ks.detail})`,
       12,
     );
   }
-  if (o.config.projectCap !== undefined && o.config.dailyCap !== undefined) {
-    const s = budgetStatus(
-      o.projectDir,
-      { projectCap: o.config.projectCap, dailyCap: o.config.dailyCap, alertThresholds: [] },
-      localDay(now),
+  const s = budgetStatus(
+    o.projectDir,
+    { projectCap: c.projectCap as number, dailyCap: c.dailyCap as number, alertThresholds: [] },
+    localDay(now),
+  );
+  if (!s.ok) {
+    await refuse(
+      'budget_exceeded',
+      `refusing to start a run: the ${s.exhausted.join(' and ')} budget is used up (project ${s.projectSpent}/${s.projectCap}, today ${s.daySpent}/${s.dailyCap})`,
+      13,
     );
-    if (!s.ok) {
-      await refuse(
-        'budget_exceeded',
-        `refusing to start a run: the ${s.exhausted.join(' and ')} budget is used up (project ${s.projectSpent}/${s.projectCap}, today ${s.daySpent}/${s.dailyCap})`,
-        13,
-      );
-    }
   }
 }
 
@@ -544,6 +574,14 @@ export function agentConfigFrom(arima: Record<string, unknown>, role: Role): Age
     auth: get('runtime.auth') === 'api_key' ? 'api_key' : 'seat',
     projectCap: Number(get('budget.project_cap')),
     dailyCap: Number(get('budget.daily_cap')),
+    stateBranch:
+      typeof get('github.state_branch') === 'string'
+        ? (get('github.state_branch') as string)
+        : undefined,
+    defaultBranch:
+      typeof get('github.default_branch') === 'string'
+        ? (get('github.default_branch') as string)
+        : undefined,
     notionTokenEnv: String(get('notion.token_env')),
     githubTokenEnv: typeof githubEnv === 'string' ? githubEnv : undefined,
   };

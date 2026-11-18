@@ -62,6 +62,9 @@ describe('githubSlug', () => {
   });
 
   it.each([
+    'git@github.com:-R/x.git',
+    'https://github.com/ac me/app.git',
+    'https://github.com/acme/-app.git',
     '/tmp/bare.git',
     'C:/repos/bare.git',
     'https://gitlab.com/acme/app.git',
@@ -106,13 +109,37 @@ describe('pushState and repository privacy', () => {
     expect(hasState(bare)).toBe(true);
   });
 
-  it('pushes but warns when privacy cannot be checked', async () => {
+  it('REFUSES to push when privacy cannot be checked, leaving the remote untouched', async () => {
     const { dir, bare } = appWithGithubOrigin();
     put(dir);
-    const r = await pushState({ projectDir: dir, runId: RUN, isPrivate: () => undefined });
+    await expect(
+      pushState({ projectDir: dir, runId: RUN, isPrivate: () => undefined }),
+    ).rejects.toThrow(/could not check whether acme\/app is private/);
+    expect(hasState(bare)).toBe(false);
+  });
+
+  it('an explicit allow_public_state also accepts an unknown answer', async () => {
+    const { dir, bare } = appWithGithubOrigin();
+    put(dir);
+    const r = await pushState({
+      projectDir: dir,
+      runId: RUN,
+      isPrivate: () => undefined,
+      allowPublic: true,
+    });
     expect(r.pushed).toBe(true);
-    expect(r.warnings[0]).toMatch(/could not check whether acme\/app is private/);
     expect(hasState(bare)).toBe(true);
+  });
+
+  it('refuses a github.com remote whose owner or repo has odd characters (no gh flag injection)', async () => {
+    const { dir, bare } = appWithGithubOrigin('git@github.com:-R/x.git');
+    put(dir);
+    let asked = false;
+    await expect(
+      pushState({ projectDir: dir, runId: RUN, isPrivate: () => ((asked = true), true) }),
+    ).rejects.toThrow(/could not check/);
+    expect(asked).toBe(false);
+    expect(hasState(bare)).toBe(false);
   });
 
   it('does not ask about non-GitHub remotes', async () => {

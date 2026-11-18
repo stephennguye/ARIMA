@@ -86,10 +86,16 @@ switch (mode) {
     setInterval(() => undefined, 1000);
     break;
   case 'hang_tree': {
-    // Starts a grandchild that would outlive a plain kill of this process.
+    // Starts a grandchild that OUTLIVES a plain kill of this process. On Windows, libuv puts a
+    // Node child into a job object that dies with its parent, so the grandchild must break away
+    // (detached) or the test could never fail. On POSIX it stays in this process group, which is
+    // what the wrapper kills.
     const grandchild = spawn(process.execPath, ['-e', 'setInterval(() => {}, 1000)'], {
       stdio: 'ignore',
+      detached: process.platform === 'win32',
+      windowsHide: true,
     });
+    grandchild.unref();
     writeFileSync(process.env.STUB_PIDFILE, String(grandchild.pid));
     setInterval(() => undefined, 1000);
     break;

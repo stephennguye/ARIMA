@@ -16,6 +16,7 @@ import { FakeNotion } from './fake-notion.js';
 import { tempDir } from './helpers.js';
 
 const RUN = 'r-20261118-0200-01';
+const ALLOW = { allowStatusWrites: true };
 let seq = 0;
 
 async function setup() {
@@ -193,7 +194,7 @@ describe('outbox: create / update / append', () => {
         content_markdown: '# Charter\n\n- scope\n- budget',
       }),
     );
-    await pushOutbox(dir, port, map);
+    await pushOutbox(dir, port, map, ALLOW);
     const row = fake.rowByTitle('Documents', 'Charter')!;
     expect((fake.pages.get(row.id) ?? []).map((b) => b.type)).toEqual([
       'heading_1',
@@ -248,7 +249,7 @@ describe('outbox: create / update / append', () => {
       properties: { Status: 'Ready', Attempt: 1 },
     });
     enqueue(dir, upd);
-    expect((await pushOutbox(dir, port, map)).applied).toEqual([upd.id]);
+    expect((await pushOutbox(dir, port, map, ALLOW)).applied).toEqual([upd.id]);
     const row = fake.rowByTitle('Stories', 'US-001')!;
     expect(row.properties['Status']).toMatchObject({ select: { name: 'Ready' } });
     expect(fake.text(row, 'Last written by run')).toBe('r-20261118-0400-03');
@@ -373,7 +374,7 @@ describe('outbox: refusals (spec §9.3)', () => {
     });
     enqueue(dir, bad);
     enqueue(dir, ok);
-    const r = await pushOutbox(dir, port, map);
+    const r = await pushOutbox(dir, port, map, ALLOW);
     expect(r.rejected.map((x) => x.id)).toEqual([bad.id]);
     expect(r.applied).toEqual([ok.id]);
     expect(fake.rowByTitle('Gates', 'G1')).toBeUndefined();
@@ -462,7 +463,7 @@ describe('outbox: refusals (spec §9.3)', () => {
       dir,
       entry({ op: 'create', database: 'test_cases', properties: { ID: 'TC-0001', Title: 't' } }),
     );
-    await pushOutbox(dir, port, map);
+    await pushOutbox(dir, port, map, ALLOW);
     enqueue(dir, entry({ op: 'retire', database: 'stories', item_id: 'US-001' }));
     enqueue(dir, entry({ op: 'retire', database: 'requirements', item_id: 'REQ-001' }));
     enqueue(dir, entry({ op: 'retire', database: 'test_cases', item_id: 'TC-0001' }));
@@ -698,5 +699,88 @@ describe('arima-notion pull / push CLI', () => {
     expect(readFileSync(path.join(dir, '.arima', 'mirror', 'stories.json'), 'utf8')).not.toContain(
       'ntn_',
     );
+  });
+});
+
+describe('outbox: Status writes need an explicit human opt-in (judge #2)', () => {
+  it('refuses an entry that sets Status by default, writing nothing and recording a refusal', async () => {
+    const { fake, port, map, dir } = await setup();
+    const e = entry({
+      op: 'create',
+      database: 'stories',
+      properties: { ID: 'US-001', Title: 'a', Status: 'Done' },
+    });
+    enqueue(dir, e);
+    const r = await pushOutbox(dir, port, map);
+    expect(r.applied).toEqual([]);
+    expect(r.rejected[0]).toMatchObject({ id: e.id });
+    expect(r.rejected[0]?.reason).toMatch(/Status.*state machine/);
+    expect(fake.rowByTitle('Stories', 'US-001')).toBeUndefined();
+    expect(events(dir, 'notion.refused')).toHaveLength(1);
+  });
+
+  it('refuses a Status update on an existing row, even from the orchestrator role', async () => {
+    const { fake, port, map, dir } = await setup();
+    enqueue(
+      dir,
+      entry({ op: 'create', database: 'stories', properties: { ID: 'US-001', Title: 'a' } }),
+    );
+    await pushOutbox(dir, port, map);
+    const upd = entry({
+      op: 'update',
+      database: 'stories',
+      item_id: 'US-001',
+      role: 'orchestrator',
+      properties: { Status: 'Done' },
+    });
+    enqueue(dir, upd);
+    expect((await pushOutbox(dir, port, map)).rejected.map((x) => x.id)).toEqual([upd.id]);
+    expect(fake.rowByTitle('Stories', 'US-001')!.properties['Status']).not.toMatchObject({
+      select: { name: 'Done' },
+    });
+  });
+
+  it('entries without Status are unaffected', async () => {
+    const { port, map, dir } = await setup();
+    const e = entry({
+      op: 'create',
+      database: 'stories',
+      properties: { ID: 'US-001', Title: 'a' },
+    });
+    enqueue(dir, e);
+    expect((await pushOutbox(dir, port, map)).applied).toEqual([e.id]);
+  });
+
+  it('the CLI refuses without --allow-status-writes and applies with it', async () => {
+    const { fake, dir } = await setup();
+    const run = async (argv: string[]) => {
+      let out = '';
+      const code = await runNotionCli(
+        argv,
+        { out: (s) => (out += s), err: () => undefined, cwd: dir },
+        {
+          portFactory: () =>
+            createNotionPort(fake.client, new Throttle(0), { sleep: () => Promise.resolve() }),
+          env: { ARIMA_NOTION_TOKEN: 'ntn_not_a_real_token' },
+          now: new Date('2026-11-18T01:00:00Z'),
+        },
+      );
+      return { code, out };
+    };
+    const e = entry({
+      op: 'create',
+      database: 'stories',
+      properties: { ID: 'US-001', Title: 'a', Status: 'Ready' },
+    });
+    enqueue(dir, e);
+    const refused = await run(['push', '--project', dir]);
+    expect(refused.code).toBe(1);
+    expect(refused.out).toMatch(/rejected.*Status/);
+    expect(fake.rowByTitle('Stories', 'US-001')).toBeUndefined();
+    // a rejected entry is moved out of the way; queue it again for the human-approved push
+    enqueue(dir, { ...e, id: 'ob-again-0001' });
+    const allowed = await run(['push', '--project', dir, '--allow-status-writes']);
+    expect(allowed.code).toBe(0);
+    expect(fake.rowByTitle('Stories', 'US-001')).toBeDefined();
   });
 });
