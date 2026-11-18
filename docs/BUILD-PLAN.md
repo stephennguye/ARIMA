@@ -129,8 +129,12 @@ Spec references use §N (e.g. §4.1 = spec section 4.1).
   - Mirror read-only for agents is enforced by role tool rules (T-06) and the T-13 hook, not by file permissions (would break atomic rewrites on Windows). Still tested only against the in-memory fake; real-API behaviour is covered by the pending T-09 manual run.
 
 ### T-11 Orchestrator agent, minimal (§5.2)
-- [ ] `agents/orchestrator.md` with mission, tools, must-nots and escalation rules from §5.2, trimmed to v0.1 abilities (init, status, pause).
+- [x] `agents/orchestrator.md` with mission, tools, must-nots and escalation rules from §5.2, trimmed to v0.1 abilities (init, status, pause).
 - **Accept:** `claude plugin validate` passes; agent loads in an interactive session.
+- **Notes (done 2026-11-17):**
+  - agents/orchestrator.md has exactly the eight §5 sections (enforced by test/agents.test.ts), tools Read, Write, Edit, Glob, Grep, Bash (no Notion MCP, no web in v0.1), model inherit. Format checked against the current docs: plugin agent names cannot contain ':' and are addressed as arima:orchestrator, which is what arima-run-agent passes via --agent; ${CLAUDE_PLUGIN_ROOT} is substituted in agent and skill bodies.
+  - Path-level limits (write only under .arima/ and docs/spec/, Bash only git/gh read/ARIMA scripts) cannot be expressed in agent frontmatter tools; they are enforced by arima-run-agent's allow-list (T-06) and the T-13 hook.
+  - claude plugin validate ./plugins/arima --strict passes. NOT DONE: loading the agent in a live session (needs a model call): try 'claude --plugin-dir plugins/arima --agent arima:orchestrator' interactively. The docs list no command that enumerates loaded agents.
 
 ### T-12 Skills: `/arima:init`, `/arima:status`, `/arima:pause` (§6.0, §14)
 - [ ] `skills/init/SKILL.md`: checks the brief against `templates/project-brief.md` and asks for gaps; runs `arima-config validate`; asks for the duplicated template root page ID and runs `arima-notion map`; writes brief, charter skeleton and budget plan via the outbox; creates the G0 page with an evidence-pack checklist; commits state.
