@@ -1,5 +1,5 @@
 import { Client } from '@notionhq/client';
-import { Throttle, withBackoff } from '../lib/throttle.js';
+import { Throttle, withBackoff, withReadRetry } from '../lib/throttle.js';
 import type { BackoffOptions } from '../lib/throttle.js';
 import type { ApiProperty } from './props.js';
 
@@ -172,12 +172,20 @@ export function createNotionPort(
   /** Every API call: spaced to ~3 requests/second, and retried with backoff on HTTP 429. */
   const call = <T>(fn: () => Promise<T>): Promise<T> =>
     throttle.run(() => withBackoff(fn, backoff));
+  /** Reads also survive a dropped connection or a 5xx (writes never do: a retry could duplicate). */
+  const callRead = <T>(fn: () => Promise<T>): Promise<T> =>
+    throttle.run(() =>
+      withReadRetry(
+        () => withBackoff(fn, backoff),
+        backoff.sleep ? { sleep: async (ms) => void (await backoff.sleep?.(ms)) } : {},
+      ),
+    );
 
   const listChildren = async (pageId: string): Promise<ChildBlock[]> => {
     const out: ChildBlock[] = [];
     let cursor: string | undefined;
     for (;;) {
-      const page = await call(() =>
+      const page = await callRead(() =>
         client.blocks.children.list({
           block_id: pageId,
           page_size: 100,
@@ -209,7 +217,7 @@ export function createNotionPort(
   const getDataSourceProperties = async (
     dataSourceId: string,
   ): Promise<Record<string, PropertyInfo>> => {
-    const raw = (await call(() =>
+    const raw = (await callRead(() =>
       client.dataSources.retrieve({ data_source_id: dataSourceId }),
     )) as {
       properties?: Record<string, RawProperty>;
@@ -287,7 +295,7 @@ export function createNotionPort(
     },
 
     async getDatabase(databaseId) {
-      const raw = (await call(() =>
+      const raw = (await callRead(() =>
         client.databases.retrieve({ database_id: databaseId }),
       )) as RawDatabase;
       return toDatabaseInfo(raw);
@@ -308,7 +316,7 @@ export function createNotionPort(
       const rows: RawRow[] = [];
       let cursor: string | undefined;
       for (;;) {
-        const page = await call(() =>
+        const page = await callRead(() =>
           client.dataSources.query({
             data_source_id: dataSourceId,
             page_size: 100,
@@ -334,14 +342,14 @@ export function createNotionPort(
     },
 
     async getPageLastEdited(pageId) {
-      const raw = (await call(() => client.pages.retrieve({ page_id: pageId }))) as {
+      const raw = (await callRead(() => client.pages.retrieve({ page_id: pageId }))) as {
         last_edited_time: string;
       };
       return raw.last_edited_time;
     },
 
     async getPage(pageId) {
-      const raw = (await call(() => client.pages.retrieve({ page_id: pageId }))) as {
+      const raw = (await callRead(() => client.pages.retrieve({ page_id: pageId }))) as {
         id: string;
         last_edited_time: string;
         properties?: RawRow['properties'];

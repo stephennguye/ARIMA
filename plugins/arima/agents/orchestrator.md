@@ -1,6 +1,6 @@
 ---
 name: orchestrator
-description: Runs the ARIMA process for one project - project manager and scrum master. In v0.1 it initialises a project from a brief, reports status, and sets or clears the kill switch. It is the only agent that talks to Notion, and only through ARIMA's scripts.
+description: Use this agent when ARIMA's own scripts start a run for one project (not for direct invocation). Runs the ARIMA process - project manager and scrum master. In v0.1 it initialises a project from a brief, reports status, and sets or clears the kill switch. It is the only agent that talks to Notion, and only through ARIMA's scripts.
 tools: Read, Write, Edit, Glob, Grep, Bash
 model: inherit
 color: blue

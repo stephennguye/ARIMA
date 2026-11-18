@@ -982,3 +982,41 @@ describe('outbox: evidence of a human edit survives a mirror refresh (judge #3)'
     expect(r.applied).toEqual(['ob-retry-0001']);
   });
 });
+
+describe('Notion reads retry transient network errors, writes never do', () => {
+  it('a read survives one dropped connection', async () => {
+    const f = new FakeNotion();
+    const port = createNotionPort(f.client, new Throttle(0), { sleep: () => Promise.resolve() });
+    const row = await port.createPage(
+      (
+        await (async () => {
+          await bootstrapTemplate(port, f.rootId);
+          return mapWorkspace(port, f.rootId);
+        })()
+      ).map!.databases['documents']!.data_source_id,
+      { Title: { title: [{ type: 'text', text: { content: 'x' } }] } },
+    );
+    let n = 0;
+    const orig = f.client.pages.retrieve;
+    f.client.pages.retrieve = (a) =>
+      ++n === 1
+        ? Promise.reject(Object.assign(new Error('fetch failed'), { code: 'ECONNRESET' }))
+        : orig(a);
+    expect((await port.getPage(row.pageId)).pageId).toBe(row.pageId);
+    expect(n).toBe(2);
+  });
+
+  it('a create is NOT retried after a connection reset', async () => {
+    const f = new FakeNotion();
+    const port = createNotionPort(f.client, new Throttle(0), { sleep: () => Promise.resolve() });
+    await bootstrapTemplate(port, f.rootId);
+    const ds = (await mapWorkspace(port, f.rootId)).map!.databases['documents']!.data_source_id;
+    let n = 0;
+    f.client.pages.create = () => {
+      n++;
+      return Promise.reject(Object.assign(new Error('fetch failed'), { code: 'ECONNRESET' }));
+    };
+    await expect(port.createPage(ds, {})).rejects.toThrow();
+    expect(n).toBe(1);
+  });
+});

@@ -18637,6 +18637,25 @@ function retryAfterMs(e) {
   const seconds = Number(raw);
   return Number.isFinite(seconds) && seconds >= 0 && raw !== null && raw !== void 0 ? seconds * 1e3 : void 0;
 }
+function isTransient(e) {
+  const err = e;
+  const code2 = String(err?.code ?? err?.cause?.code ?? "");
+  if (/^(ECONNRESET|ETIMEDOUT|ENOTFOUND|EAI_AGAIN|ECONNREFUSED|UND_ERR_.*)$/.test(code2))
+    return true;
+  if (typeof err?.status === "number" && [500, 502, 503, 504].includes(err.status)) return true;
+  return /fetch failed|socket hang up|network/i.test(String(err?.message ?? ""));
+}
+async function withReadRetry(fn, o = {}) {
+  const { retries = 2, baseMs = 300, sleep: wait = (ms) => sleep(ms) } = o;
+  for (let attempt = 0; ; attempt++) {
+    try {
+      return await fn();
+    } catch (e) {
+      if (!isTransient(e) || attempt >= retries) throw e;
+      await wait(baseMs * 2 ** attempt);
+    }
+  }
+}
 async function withBackoff(fn, o = {}) {
   const { retries = 5, baseMs = 500, maxMs = 3e4, sleep: wait = (ms) => sleep(ms) } = o;
   for (let attempt = 0; ; attempt++) {
@@ -18659,11 +18678,17 @@ function toDatabaseInfo(raw) {
 }
 function createNotionPort(client, throttle = new Throttle(), backoff = {}) {
   const call = (fn) => throttle.run(() => withBackoff(fn, backoff));
+  const callRead = (fn) => throttle.run(
+    () => withReadRetry(
+      () => withBackoff(fn, backoff),
+      backoff.sleep ? { sleep: async (ms) => void await backoff.sleep?.(ms) } : {}
+    )
+  );
   const listChildren = async (pageId) => {
     const out = [];
     let cursor;
     for (; ; ) {
-      const page = await call(
+      const page = await callRead(
         () => client.blocks.children.list({
           block_id: pageId,
           page_size: 100,
@@ -18692,7 +18717,7 @@ function createNotionPort(client, throttle = new Throttle(), backoff = {}) {
     }
   };
   const getDataSourceProperties = async (dataSourceId) => {
-    const raw = await call(
+    const raw = await callRead(
       () => client.dataSources.retrieve({ data_source_id: dataSourceId })
     );
     const out = {};
@@ -18759,7 +18784,7 @@ function createNotionPort(client, throttle = new Throttle(), backoff = {}) {
       return toDatabaseInfo({ ...raw, title: raw.title ?? [{ plain_text: title }] });
     },
     async getDatabase(databaseId) {
-      const raw = await call(
+      const raw = await callRead(
         () => client.databases.retrieve({ database_id: databaseId })
       );
       return toDatabaseInfo(raw);
@@ -18777,7 +18802,7 @@ function createNotionPort(client, throttle = new Throttle(), backoff = {}) {
       const rows = [];
       let cursor;
       for (; ; ) {
-        const page = await call(
+        const page = await callRead(
           () => client.dataSources.query({
             data_source_id: dataSourceId,
             page_size: 100,
@@ -18797,11 +18822,11 @@ function createNotionPort(client, throttle = new Throttle(), backoff = {}) {
       }
     },
     async getPageLastEdited(pageId) {
-      const raw = await call(() => client.pages.retrieve({ page_id: pageId }));
+      const raw = await callRead(() => client.pages.retrieve({ page_id: pageId }));
       return raw.last_edited_time;
     },
     async getPage(pageId) {
-      const raw = await call(() => client.pages.retrieve({ page_id: pageId }));
+      const raw = await callRead(() => client.pages.retrieve({ page_id: pageId }));
       return { pageId: raw.id, lastEdited: raw.last_edited_time, properties: raw.properties ?? {} };
     },
     async createPage(dataSourceId, properties, children) {

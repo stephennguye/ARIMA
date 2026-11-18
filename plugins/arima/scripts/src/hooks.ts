@@ -678,7 +678,7 @@ async function log(
  * hooks stay fail-open.
  */
 export async function handleHook(
-  kind: 'pre-tool-use' | 'post-tool-use' | 'stop' | 'subagent-stop',
+  kind: 'pre-tool-use' | 'post-tool-use' | 'permission-denied' | 'stop' | 'subagent-stop',
   input: HookInput,
   env: NodeJS.ProcessEnv = process.env,
 ): Promise<HookOutcome> {
@@ -710,6 +710,16 @@ export async function handleHook(
         stderr: `ARIMA guard error, so this action is blocked to be safe (${e instanceof Error ? e.message : String(e)}). Ask the human to check the ARIMA plugin.`,
       };
     }
+  }
+
+  // A permission rule (not this guard) refused the call; no other hook fires, so record it here.
+  if (kind === 'permission-denied') {
+    await log(projectDir, 'tool.blocked', env, {
+      ...describe(tool, toolInput),
+      rule: 'permission-rule',
+      reason: 'refused by a Claude Code permission rule',
+    });
+    return { exitCode: 0 };
   }
 
   if (kind === 'post-tool-use') {

@@ -8804,6 +8804,14 @@ async function handleHook(kind2, input, env = process.env) {
       };
     }
   }
+  if (kind2 === "permission-denied") {
+    await log(projectDir, "tool.blocked", env, {
+      ...describe(tool, toolInput),
+      rule: "permission-rule",
+      reason: "refused by a Claude Code permission rule"
+    });
+    return { exitCode: 0 };
+  }
   if (kind2 === "post-tool-use") {
     const changesState = WRITE_TOOLS.has(tool) || tool === "Bash" && typeof toolInput["command"] === "string" && !isReadOnlyBash(toolInput["command"]);
     if (changesState) await log(projectDir, "tool.used", env, describe(tool, toolInput));
@@ -8817,7 +8825,13 @@ async function handleHook(kind2, input, env = process.env) {
 }
 
 // plugins/arima/scripts/src/cli/hook-cli.ts
-var KINDS = ["pre-tool-use", "post-tool-use", "stop", "subagent-stop"];
+var KINDS = [
+  "pre-tool-use",
+  "post-tool-use",
+  "permission-denied",
+  "stop",
+  "subagent-stop"
+];
 async function runHookCli(argv, io) {
   const kind2 = argv[0];
   if (!KINDS.includes(kind2 ?? "")) {

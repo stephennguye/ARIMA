@@ -1,7 +1,13 @@
 import { findProjectDir, handleHook } from '../hooks.js';
 import type { HookInput } from '../hooks.js';
 
-const KINDS = ['pre-tool-use', 'post-tool-use', 'stop', 'subagent-stop'] as const;
+const KINDS = [
+  'pre-tool-use',
+  'post-tool-use',
+  'permission-denied',
+  'stop',
+  'subagent-stop',
+] as const;
 type Kind = (typeof KINDS)[number];
 
 export interface HookIo {
