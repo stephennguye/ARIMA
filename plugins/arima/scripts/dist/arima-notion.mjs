@@ -18635,6 +18635,7 @@ var DATABASES = [
     props: [
       t("Title"),
       select("Type", [
+        "Project brief",
         "PRD",
         "URS",
         "SRS",

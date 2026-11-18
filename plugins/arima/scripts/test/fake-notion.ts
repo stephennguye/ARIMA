@@ -70,7 +70,11 @@ export class FakeNotion {
     return new Date(Date.UTC(2026, 10, 18, 0, 0, this.clock)).toISOString();
   }
 
+  /** When true every API call fails as if Notion were unreachable. */
+  down = false;
+
   private maybeFail(op: string): void {
+    if (this.down) throw new ApiError('fetch failed: ENOTFOUND api.notion.com');
     if (this.failNext && this.failNext.op === op) {
       const f = this.failNext;
       this.failNext = undefined;
@@ -176,12 +180,14 @@ export class FakeNotion {
       children: {
         list: ({ block_id }) => {
           this.calls.push('blocks.children.list');
+          this.maybeFail('blocks.children.list');
           const blocks = this.pages.get(block_id);
           if (!blocks) return Promise.reject(new Error(`no page ${block_id}`));
           return Promise.resolve({ results: blocks, has_more: false, next_cursor: null });
         },
         append: ({ block_id, children }) => {
           this.calls.push('blocks.children.append');
+          this.maybeFail('blocks.children.append');
           const blocks = this.pages.get(block_id);
           if (!blocks) return Promise.reject(new Error(`no page ${block_id}`));
           const created = (children as Record<string, unknown>[]).map((c) => {
@@ -196,7 +202,22 @@ export class FakeNotion {
           return Promise.resolve({ results: created });
         },
       },
-      update: () => Promise.resolve({}),
+      update: ({ block_id, to_do }) => {
+        this.calls.push('blocks.update');
+        try {
+          this.maybeFail('blocks.update');
+        } catch (e) {
+          return Promise.reject(e as Error);
+        }
+        for (const blocks of this.pages.values()) {
+          const b = blocks.find((x) => x.id === block_id);
+          if (b) {
+            (b['to_do'] as { checked: boolean }).checked = to_do.checked;
+            return Promise.resolve({});
+          }
+        }
+        return Promise.reject(new ApiError('no block ' + block_id, 404));
+      },
     },
     databases: {
       create: ({ parent, title, initial_data_source }) => {
