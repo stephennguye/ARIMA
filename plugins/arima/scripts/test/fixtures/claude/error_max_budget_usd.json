@@ -1,0 +1,16 @@
+{
+  "type": "result",
+  "subtype": "error_max_budget_usd",
+  "is_error": true,
+  "duration_ms": 120500,
+  "duration_api_ms": 90100,
+  "num_turns": 21,
+  "session_id": "33333333-3333-4333-8333-333333333333",
+  "total_cost_usd": 2.04,
+  "usage": {
+    "input_tokens": 80000,
+    "output_tokens": 15000,
+    "cache_read_input_tokens": 400000,
+    "cache_creation_input_tokens": 30000
+  }
+}

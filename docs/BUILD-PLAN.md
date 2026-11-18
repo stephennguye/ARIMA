@@ -57,9 +57,15 @@ Spec references use §N (e.g. §4.1 = spec section 4.1).
   - Concurrency tested in-process (40 calls) and across 6 real processes x 6 calls.
 
 ### T-05 Event log and ledger (§13.2, §11.3 Audit)
-- [ ] Append-only writers for `.arima/events.jsonl` and `.arima/ledger.jsonl`, validated against `schemas/event.schema.json` and `schemas/ledger.schema.json`.
-- [ ] Parser that turns a `claude -p --output-format json` result into a ledger row; for resumed sessions stores the cost difference from the previous result of that session (§13.6).
+- [x] Append-only writers for `.arima/events.jsonl` and `.arima/ledger.jsonl`, validated against `schemas/event.schema.json` and `schemas/ledger.schema.json`.
+- [x] Parser that turns a `claude -p --output-format json` result into a ledger row; for resumed sessions stores the cost difference from the previous result of that session (§13.6).
 - **Accept:** fixture-based tests for success, error_max_turns, error_max_budget_usd and resumed-session results.
+- **Notes (done 2026-11-17):**
+  - events.ts and ledger.ts are append-only (no update/delete API); every line is validated against its schema and scanned for credential-shaped strings (lib/secrets.ts, reused by the T-13 guard).
+  - parseClaudeResult accepts both a single result object and a message array. Fixtures are hand-written from the documented result shape; the first real-CLI shape check happens in the T-06 smoke run.
+  - Resumed sessions: cost stored as total minus what earlier rows of the same session_id already hold, clamped at 0. Tokens and durations are stored as reported (spec only defines the cost rule).
+  - Added runid.ts issuing r-YYYYMMDD-HHMM-NN with a per-day counter under lock (needed by T-06); local host time.
+  - error_max_turns and error_max_budget_usd map to result blocked (spec 7.12); callers may override the outcome (e.g. QA fail).
 
 ### T-06 Agent-run wrapper (§3.2, §13.3, §13.5)
 - [ ] `arima-run-agent --role <r> --item <id> --budget <usd> --max-turns <n> --prompt-file <f> [--cwd <worktree>]` invokes `claude -p` with `--output-format json`, `--max-budget-usd`, the turn cap and the role's tool allow-list; sets `OTEL_RESOURCE_ATTRIBUTES` (`arima.project`, `arima.phase`, `arima.item`, `arima.role`, `arima.run_id`); writes the ledger row and start/end events.
