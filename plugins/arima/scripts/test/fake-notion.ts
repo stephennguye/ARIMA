@@ -103,10 +103,11 @@ export class FakeNotion {
     for (const [name, value] of Object.entries(props)) {
       const def = ds.props.get(name);
       if (def === undefined) throw new ApiError(name + ' is not a property that exists.', 400);
-      row.properties[name] = this.fromRequest(
-        def.type,
-        (value as Record<string, unknown>)[def.type],
-      );
+      // Real Notion puts the property id on every value (found by comparing with recorded responses).
+      row.properties[name] = {
+        id: def.id,
+        ...this.fromRequest(def.type, (value as Record<string, unknown>)[def.type]),
+      };
     }
   }
 

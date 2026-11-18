@@ -504,3 +504,14 @@ describe('remotePauseFlag fails open only to "unknown", never to "no pause"', ()
     expect(remotePauseFlag({ projectDir: dir })).toBeUndefined();
   });
 });
+
+describe('the Status opt-in flag cannot be hidden by quoting (judge #3)', () => {
+  it.each([
+    'node /p/scripts/dist/arima-notion.mjs push --allow-status-writes',
+    `node /p/scripts/dist/arima-notion.mjs push --allow-status-"writes"`,
+    `node /p/scripts/dist/arima-notion.mjs push --allow-status-w''rites`,
+    `node /p/scripts/dist/arima-notion.mjs push --allow-s"tatus-writes"`,
+  ])('blocks %s for a role', (cmd) => {
+    expect(guardBash(cmd, { role: 'orchestrator', defaultBranch: 'main' })).toBeDefined();
+  });
+});

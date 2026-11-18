@@ -8643,7 +8643,10 @@ function guardBash(command, ctx = {}) {
       reason: "only a human may pause, resume or initialise ARIMA; agents escalate instead"
     };
   }
-  if (ctx.role !== void 0 && /--allow-status-writes/.test(c)) {
+  const statusFlag = /--allow-status-writes/.test(c) || expandCommands(command).some(
+    (s) => s.words.some((w) => w.replace(/["'\\]/g, "") === "--allow-status-writes")
+  );
+  if (ctx.role !== void 0 && statusFlag) {
     return {
       rule: "protected-state",
       reason: "only a human may let the outbox write Status fields; agents propose, the state machine decides"

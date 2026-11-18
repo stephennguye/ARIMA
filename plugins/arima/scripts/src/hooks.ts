@@ -500,7 +500,14 @@ export function guardBash(command: string, ctx: GuardContext = {}): Guard | unde
       reason: 'only a human may pause, resume or initialise ARIMA; agents escalate instead',
     };
   }
-  if (ctx.role !== undefined && /--allow-status-writes/.test(c)) {
+  // Tokenised, so quote-splitting (--allow-status-"writes") cannot hide the flag; the raw text test
+  // stays as a second net.
+  const statusFlag =
+    /--allow-status-writes/.test(c) ||
+    expandCommands(command).some((s) =>
+      s.words.some((w) => w.replace(/["'\\]/g, '') === '--allow-status-writes'),
+    );
+  if (ctx.role !== undefined && statusFlag) {
     return {
       rule: 'protected-state',
       reason:

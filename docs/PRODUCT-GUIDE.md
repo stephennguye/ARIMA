@@ -267,7 +267,7 @@ ARIMA stops and waits for a person at these points, and enforces them in code, n
 | Gates G0 to G4 | Only listed approvers' decisions count; agents cannot write approver or decision fields | Partly built |
 | Production deploy | A deploy script that waits for your approval on the release page | Planned (v0.4) |
 | Secrets change | A hook blocks reading or editing secret files and printing secret variables; secrets are also scanned for before anything is written to Notion, logs or the state branch. Pattern-based, not a sandbox. Only reading `.env` was checked in a live session; other credential files (for example under your home folder) are not covered by the hook | Built, partly verified live |
-| Daily or project budget reached | Checked by the daily preflight and again before every dispatch (the local `PAUSE` file, the Notion switch, the remote state branch, and both budgets) | Built |
+| Daily or project budget reached | Checked by the daily preflight and again before every dispatch. If the Notion token is missing, or Notion and the remote state branch are both unreachable, only the local `PAUSE` file is checked and a warning is printed (spec section 7 keeps work going in an outage; principle 10 says stop; the owner decides, see spec issue S2) (the local `PAUSE` file, the Notion switch, the remote state branch, and both budgets) | Built |
 | Story budget reached | Checked before each dispatch | Planned (v0.2) |
 | Deleting anything in Notion | No delete operation exists in ARIMA's code, and only the orchestrator is given the Notion token. The guard blocks common `curl` forms but is not a barrier by itself | Built |
 | Production data migration | Flagged in pull requests; needs release-page approval | Planned (v0.4) |

@@ -94,6 +94,12 @@ Status key: **Open** (needs your decision), **Blocking** (a build step cannot be
 - **Problem:** a hook and a tool list are advisory for roles that can run project scripts (see S6). If the agent's environment holds a push credential, any script it runs can use it.
 - **Proposed resolution:** agents work in a worktree with **no remote credentials at all**. A host script, run by the orchestrator's session and not by an agent, pushes the feature branch and opens the pull request, and is the only holder of the machine token. Combined with S4 (one merge script) and branch protection, no agent can reach the default branch even by writing its own script. This also fits the Docker sandbox design (D-36), where the container has no network route to GitHub.
 
+## S18. Dispatch when the kill switch cannot be read (Open, from judge #3)
+
+- **Spec:** principle 10 (fail closed on uncertainty, stop on a missing credential) versus section 7 (work continues when Notion is down).
+- **Today:** the preflight and the dispatch re-check proceed with a warning when Notion is unreachable and the state branch cannot be read, or when the Notion token is absent in `arima-run-agent`.
+- **Proposed resolution:** refuse to dispatch when no kill-switch source could be read at all; continue only if at least one source answered "not paused". Needs your choice because it makes a Notion outage stop all unattended work.
+
 ## S17. The QA role has `npx playwright` (Proposed, from judge #2)
 
 - **Spec:** §5.4 gives QA Playwright. **Today:** the role list allows `Bash(npx playwright *)`, while the guides say no `npx` is allowed to any role. `npx` can fetch and run arbitrary packages.

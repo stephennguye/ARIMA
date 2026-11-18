@@ -1207,9 +1207,9 @@ The repo is public under the Apache License 2.0 (D-26), with a `LICENSE` and `NO
 | D-20 | Urgent alerts reach you through Notion notifications, including email (answers Q-07; see D-23) | 2026-11-17 | You |
 | D-19 | Notion Free plan: up to 10 client guests, large files in GitHub, daily mirror snapshots as history; team mode with 2+ members needs Plus (answers Q-06) | 2026-11-17 | You |
 | D-18 | Usage credits stay off: when the seat limit is reached, runs pause and resume at the next scheduled run (answers Q-22) | 2026-11-17 | You |
-| D-17 | On client projects the client is the sponsor and approves gates in Notion as a guest, through a Client portal (answers Q-10) | 2026-11-17 | You |
+| D-17 | On client projects the client is the sponsor and approves gates in Notion as a guest, through a Client portal (answers Q-10; deferred by D-35 until after solo use is stable) | 2026-11-17 | You |
 | D-16 | Stories are auto-accepted when QA passes; humans review every accepted story at the milestone review and can veto (answers Q-17) | 2026-11-17 | You |
-| D-15 | ARIMA runs on your Windows PC inside WSL 2 | 2026-11-17 | You |
+| D-15 | ARIMA runs on your Windows PC inside WSL 2 (amended by D-36 and spec issue S6: native Windows is supported for interactive use; unattended runs prefer WSL 2, Linux or the Docker sandbox) | 2026-11-17 | You |
 | D-14 | Billing: your Claude Team seat's usage limits, with usage credits as overflow (answers Q-02) | 2026-11-17 | You |
 | D-13 | Execution: your own machine now, GitHub Actions later; ARIMA stays runner-agnostic (answers Q-01) | 2026-11-17 | You |
 | D-12 | No fixed default stack: the architect agent proposes web and backend stacks per project in the SAD, approved at G2 (answers Q-03) | 2026-11-17 | You |

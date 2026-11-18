@@ -17,7 +17,7 @@ import type { MapDatabase, NotionMap } from './mapper.js';
 import type { NotionPort, RawRow } from './port.js';
 import { LAST_WRITTEN_BY_RUN, NON_UNIQUE_TITLES, RETIRE_STATUS } from './schema.js';
 import type { DbKey } from './schema.js';
-import { ValueError, markdownToBlocks, toNotionValue } from './values.js';
+import { ValueError, fromNotionValue, markdownToBlocks, toNotionValue } from './values.js';
 
 export interface OutboxEntry {
   id: string;
@@ -30,6 +30,8 @@ export interface OutboxEntry {
   properties?: Record<string, unknown>;
   content_markdown?: string;
   base_last_edited?: string;
+  /** What the agent saw for the properties it writes; the strongest baseline for conflicts. */
+  base_values?: Record<string, unknown>;
 }
 
 export const outboxDir = (projectDir: string): string => path.join(projectDir, '.arima', 'outbox');
@@ -64,6 +66,21 @@ export function enqueue(projectDir: string, entry: OutboxEntry): string {
     throw new Error(
       `Refusing outbox entry ${entry.id}: it looks like it contains a secret (${leaked.join(', ')})`,
     );
+  }
+  // Remember what the agent saw, so a later mirror refresh cannot erase the evidence of a human edit.
+  if (
+    entry.base_values === undefined &&
+    (entry.op === 'update' || entry.op === 'retire') &&
+    entry.item_id !== undefined
+  ) {
+    const row = findRow(readMirror(projectDir, entry.database), entry.item_id);
+    if (row !== undefined) {
+      const names = entry.op === 'retire' ? ['Status'] : Object.keys(entry.properties ?? {});
+      entry = {
+        ...entry,
+        base_values: Object.fromEntries(names.map((n) => [n, row.properties[n] ?? null])),
+      };
+    }
   }
   const dir = outboxDir(projectDir);
   mkdirSync(dir, { recursive: true });
@@ -395,8 +412,27 @@ export async function pushOutbox(
     if (touched.length > 0) {
       const live = await port.getPage(row.page_id);
       const liveProps = toMirrorRow(live).properties;
+      // Already applied (a retry after a lost response): Notion already holds exactly what this
+      // entry would write, and this run stamped it.
+      if (entry.op === 'update' && liveProps[LAST_WRITTEN_BY_RUN] === entry.run_id) {
+        const intended = notionProps();
+        if (
+          touched.every((n) =>
+            sameValue(
+              fromNotionValue({
+                type: (db.properties[n] as { type: string }).type,
+                ...(intended[n] as object),
+              }),
+              liveProps[n],
+            ),
+          )
+        ) {
+          return { kind: 'applied', pageId: row.page_id };
+        }
+      }
       const seen =
         snapshots.get(row.page_id) ??
+        (entry.base_values as MirrorRow['properties'] | undefined) ??
         baseline.get(entry.database)?.rows.find((r) => r.page_id === row.page_id)?.properties;
       if (seen !== undefined) {
         if (touched.some((n) => !sameValue(seen[n], liveProps[n]))) {

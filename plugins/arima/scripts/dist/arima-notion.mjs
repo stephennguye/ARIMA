@@ -20037,7 +20037,21 @@ async function pushOutbox(projectDir, port, map, opts = {}) {
     if (touched.length > 0) {
       const live = await port.getPage(row.page_id);
       const liveProps = toMirrorRow(live).properties;
-      const seen = snapshots.get(row.page_id) ?? baseline.get(entry.database)?.rows.find((r) => r.page_id === row.page_id)?.properties;
+      if (entry.op === "update" && liveProps[LAST_WRITTEN_BY_RUN] === entry.run_id) {
+        const intended = notionProps();
+        if (touched.every(
+          (n) => sameValue(
+            fromNotionValue({
+              type: db.properties[n].type,
+              ...intended[n]
+            }),
+            liveProps[n]
+          )
+        )) {
+          return { kind: "applied", pageId: row.page_id };
+        }
+      }
+      const seen = snapshots.get(row.page_id) ?? entry.base_values ?? baseline.get(entry.database)?.rows.find((r) => r.page_id === row.page_id)?.properties;
       if (seen !== void 0) {
         if (touched.some((n) => !sameValue(seen[n], liveProps[n]))) {
           return { kind: "conflict", humanEditedAt: live.lastEdited };

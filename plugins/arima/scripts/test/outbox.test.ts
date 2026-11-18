@@ -928,3 +928,57 @@ describe('outbox: human edits are detected by VALUE, not by minute-rounded times
     expect(mirrored.properties['Last written by run']).toBe(RUN);
   });
 });
+
+describe('outbox: evidence of a human edit survives a mirror refresh (judge #3)', () => {
+  it('enqueue records what the agent saw, so pull + push cannot erase a human edit', async () => {
+    const ctx = await setup();
+    enqueue(
+      ctx.dir,
+      entry({
+        op: 'create',
+        database: 'stories',
+        properties: { ID: 'US-001', Title: 'a', Attempt: 1 },
+      }),
+    );
+    await pushOutbox(ctx.dir, ctx.port, ctx.map);
+    const row = ctx.fake.rowByTitle('Stories', 'US-001')!;
+    const e = entry({
+      op: 'update',
+      database: 'stories',
+      item_id: 'US-001',
+      properties: { Attempt: 2 },
+    });
+    enqueue(ctx.dir, e); // the agent read Attempt = 1
+    ctx.fake.humanEdit(row.id, { Attempt: { number: 7 } });
+    await pullMirror(ctx.dir, ctx.port, ctx.map); // something refreshes the mirror before the push
+    const r = await pushOutbox(ctx.dir, ctx.port, ctx.map);
+    expect(r.conflicts).toEqual([e.id]);
+    expect(row.properties['Attempt']).toMatchObject({ number: 7 });
+  });
+
+  it('a retry after a lost response is applied, not reported as a human conflict', async () => {
+    const ctx = await setup();
+    enqueue(
+      ctx.dir,
+      entry({
+        op: 'create',
+        database: 'stories',
+        properties: { ID: 'US-001', Title: 'a', Attempt: 1 },
+      }),
+    );
+    await pushOutbox(ctx.dir, ctx.port, ctx.map);
+    const e = entry({
+      op: 'update',
+      database: 'stories',
+      item_id: 'US-001',
+      properties: { Attempt: 2 },
+    });
+    enqueue(ctx.dir, e);
+    // the write lands in Notion but the answer is lost: simulate by applying it, then re-queueing
+    await pushOutbox(ctx.dir, ctx.port, ctx.map);
+    enqueue(ctx.dir, { ...e, id: 'ob-retry-0001' });
+    const r = await pushOutbox(ctx.dir, ctx.port, ctx.map);
+    expect(r.conflicts).toEqual([]);
+    expect(r.applied).toEqual(['ob-retry-0001']);
+  });
+});
