@@ -13,7 +13,3 @@ _Fill in. Cite sources (file:line or item id); mark guesses as guesses._
 ## Sitemap
 
 _Fill in. Cite sources (file:line or item id); mark guesses as guesses._
-
-## Open questions
-
-_Fill in. Cite sources (file:line or item id); mark guesses as guesses._

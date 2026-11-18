@@ -2,7 +2,11 @@
 
 <!-- arima-template: srs; DRAFT for the owner's review. The H2 headings below are the required sections. Owner: ba. Master location: Notion Documents. -->
 
-## Functional requirements
+## Functional detail
+
+_Fill in. Cite sources (file:line or item id); mark guesses as guesses._
+
+## Business rules
 
 _Fill in. Cite sources (file:line or item id); mark guesses as guesses._
 
@@ -14,10 +18,6 @@ _Fill in. Cite sources (file:line or item id); mark guesses as guesses._
 
 _Fill in. Cite sources (file:line or item id); mark guesses as guesses._
 
-## Constraints
-
-_Fill in. Cite sources (file:line or item id); mark guesses as guesses._
-
-## Traceability to requirements
+## Traceability to REQ items
 
 _Fill in. Cite sources (file:line or item id); mark guesses as guesses._

@@ -1,6 +1,7 @@
 # ARIMA artifact catalog (spec section 8.1), 58 artifacts. Source of truth for ids, owners, master locations,
-# which profiles require each artifact and which template (if any) it uses. Generated once from the spec by
-# scripts/gen-catalog.mjs; edit this file from now on. Templates marked DRAFT are awaiting the owner's review.
+# which profiles require each artifact, its template and the template's required sections. It was generated
+# once from the spec and is edited by hand now. Section lists for artifacts the spec does not define in 8.2
+# follow the wording of the spec's phase tables (6.x) and role outputs (5.x) and are DRAFTS for the owner's review.
 schema_version: 1
 artifacts:
   - id: project-brief
@@ -40,13 +41,11 @@ artifacts:
     kind: document
     template: charter.md
     sections:
-      - Purpose and scope
-      - Objectives and success measures
-      - Stakeholders and approvers
-      - Milestones and budget summary
-      - Constraints and assumptions
+      - Scope
+      - Rough milestones
+      - Budget plan
       - Risks
-      - Approval
+      - Roles and responsibilities
   - id: budget-plan
     name: Budget plan
     phase: "0"
@@ -62,9 +61,8 @@ artifacts:
     kind: document
     template: budget-plan.md
     sections:
-      - Budget summary
-      - Allocation by phase
-      - Caps and alerts
+      - Agent budget
+      - Infrastructure budget
       - Assumptions
   - id: feasibility-note
     name: Feasibility note
@@ -81,11 +79,9 @@ artifacts:
     kind: document
     template: feasibility-note.md
     sections:
-      - Question
-      - Options
-      - Technical feasibility
-      - Cost and schedule estimate
-      - Risks
+      - Platform and stack fit
+      - Third-party needs
+      - Major risks
       - Recommendation
   - id: compliance-screen
     name: Compliance screen
@@ -102,9 +98,8 @@ artifacts:
     kind: document
     template: compliance-screen.md
     sections:
-      - Data handled
-      - Applicable regulations
-      - Findings
+      - Data classification
+      - DPIA flag
       - Required controls
       - Open questions for legal
   - id: sow
@@ -175,8 +170,8 @@ artifacts:
     kind: document
     template: urs.md
     sections:
+      - REQ items
       - Business needs
-      - User requirements
       - Priorities
       - Out of scope
       - Open questions
@@ -195,11 +190,11 @@ artifacts:
     kind: document
     template: srs.md
     sections:
-      - Functional requirements
+      - Functional detail
+      - Business rules
       - Non-functional requirements
       - External interfaces
-      - Constraints
-      - Traceability to requirements
+      - Traceability to REQ items
   - id: nfr
     name: NFR items
     phase: "1"
@@ -249,7 +244,6 @@ artifacts:
       - Personas
       - Journeys
       - Sitemap
-      - Open questions
   - id: wireframes
     name: Wireframes
     phase: "1"
@@ -303,7 +297,7 @@ artifacts:
       - Necessity and proportionality
       - Risks to people
       - Mitigations
-      - Outcome and sign-off
+      - Legal sign-off
   - id: backlog
     name: Epics, stories, acceptance criteria
     phase: 1, 4
@@ -353,13 +347,11 @@ artifacts:
     kind: document
     template: sad.md
     sections:
-      - Context and goals
-      - Architecture overview
-      - Components
-      - Data and integrations
-      - Quality attributes
-      - Deployment
+      - Architecture
       - Decisions
+      - API and data model
+      - Infrastructure and hosting cost estimate
+      - Quality attributes
       - Risks
   - id: adrs
     name: ADRs
@@ -428,9 +420,8 @@ artifacts:
     kind: document
     template: infra-diagram.md
     sections:
-      - Diagram
-      - Hosting choices
-      - Cost estimate
+      - Infrastructure diagram
+      - Hosting cost estimate
       - Assumptions
   - id: prototype
     name: Prototype, design tokens
@@ -447,10 +438,9 @@ artifacts:
     kind: document
     template: prototype.md
     sections:
-      - Scope
+      - Prototype
       - Design tokens
       - Screens
-      - Interaction notes
   - id: threat-model
     name: Threat model
     phase: "2"
@@ -466,10 +456,9 @@ artifacts:
     kind: document
     template: threat-model.md
     sections:
-      - Assets
-      - Trust boundaries
-      - Threats
-      - Mitigations
+      - Assets and trust boundaries
+      - STRIDE analysis
+      - Controls
       - Residual risk
   - id: master-test-plan
     name: Master Test Plan
@@ -486,13 +475,12 @@ artifacts:
     kind: document
     template: master-test-plan.md
     sections:
-      - Scope
-      - Strategy
+      - Test levels
+      - Tools
       - Environments
+      - Test data
       - Entry and exit criteria
-      - Test types and tools
-      - Risks
-      - Schedule
+      - RTM coverage rule
   - id: env-matrix
     name: Environment matrix, pipeline design
     phase: "2"
@@ -508,9 +496,7 @@ artifacts:
     kind: document
     template: env-matrix.md
     sections:
-      - Environments
-      - Configuration
-      - Access
+      - Environment matrix
       - Pipeline design
   - id: milestone-plan
     name: Milestone plan
@@ -735,11 +721,10 @@ artifacts:
     kind: document
     template: test-reports.md
     sections:
-      - Scope
-      - Results summary
-      - Failures and defects
-      - Coverage
-      - Sign-off
+      - Test results
+      - Regression
+      - Performance
+      - Accessibility
   - id: security-report
     name: Pre-release security report
     phase: "5"
@@ -821,9 +806,8 @@ artifacts:
     kind: document
     template: runbook-rollback.md
     sections:
-      - Service overview
-      - Deploy steps
-      - Rollback steps
+      - Runbook
+      - Rollback plan
       - Health checks
       - Contacts
   - id: release-record
@@ -855,10 +839,8 @@ artifacts:
     kind: document
     template: user-guide-faq.md
     sections:
-      - Getting started
-      - Common tasks
+      - User guide
       - FAQ
-      - Getting help
   - id: support-kb
     name: Support knowledge base, escalation matrix
     phase: "6"
@@ -874,9 +856,8 @@ artifacts:
     kind: document
     template: support-kb.md
     sections:
-      - Common issues
+      - Support knowledge base
       - Escalation matrix
-      - Contacts
   - id: hypercare-closure
     name: Hypercare report, closure report
     phase: "7"
@@ -892,11 +873,8 @@ artifacts:
     kind: document
     template: hypercare-closure.md
     sections:
-      - Period and scope
-      - Incidents
-      - SLO results
-      - Open items
-      - Closure statement
+      - Hypercare report
+      - Closure report
   - id: ops-manual
     name: Operations manual
     phase: "7"
@@ -916,7 +894,7 @@ artifacts:
       - Monitoring and alerts
       - Routine tasks
       - Incident handling
-      - Backups
+      - Runbooks
   - id: incidents
     name: Incident records, postmortems
     phase: "8"
@@ -973,10 +951,8 @@ artifacts:
     kind: document
     template: slo-cost-reports.md
     sections:
-      - Period
-      - SLO results
-      - Cost
-      - Actions
+      - SLO report
+      - Cost report
   - id: sbom
     name: SBOM
     phase: 6, 8

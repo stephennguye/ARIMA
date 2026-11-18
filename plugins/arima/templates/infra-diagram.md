@@ -2,15 +2,11 @@
 
 <!-- arima-template: infra-diagram; DRAFT for the owner's review. The H2 headings below are the required sections. Owner: architect. Master location: `docs/architecture/`. -->
 
-## Diagram
+## Infrastructure diagram
 
 _Fill in. Cite sources (file:line or item id); mark guesses as guesses._
 
-## Hosting choices
-
-_Fill in. Cite sources (file:line or item id); mark guesses as guesses._
-
-## Cost estimate
+## Hosting cost estimate
 
 _Fill in. Cite sources (file:line or item id); mark guesses as guesses._
 

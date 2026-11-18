@@ -18,6 +18,6 @@ _Fill in. Cite sources (file:line or item id); mark guesses as guesses._
 
 _Fill in. Cite sources (file:line or item id); mark guesses as guesses._
 
-## Outcome and sign-off
+## Legal sign-off
 
 _Fill in. Cite sources (file:line or item id); mark guesses as guesses._

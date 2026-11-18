@@ -2,19 +2,15 @@
 
 <!-- arima-template: threat-model; DRAFT for the owner's review. The H2 headings below are the required sections. Owner: security. Master location: `docs/security/threat-model.md`. -->
 
-## Assets
+## Assets and trust boundaries
 
 _Fill in. Cite sources (file:line or item id); mark guesses as guesses._
 
-## Trust boundaries
+## STRIDE analysis
 
 _Fill in. Cite sources (file:line or item id); mark guesses as guesses._
 
-## Threats
-
-_Fill in. Cite sources (file:line or item id); mark guesses as guesses._
-
-## Mitigations
+## Controls
 
 _Fill in. Cite sources (file:line or item id); mark guesses as guesses._
 

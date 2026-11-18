@@ -4,7 +4,7 @@ Nov 17, 2026 · @Stephen
 
 ## 0. Document control
 
-This spec is the single source of truth for how ARIMA behaves; the Claude Code build package is generated from it. Version 0.4 is a draft: 41 decisions are recorded, and the 3 remaining questions in section 16 each have a working default.
+This spec is the single source of truth for how ARIMA behaves; the Claude Code build package is generated from it. Version 0.4 is a draft: 42 decisions are recorded, and the 3 remaining questions in section 16 each have a working default.
 
 | Version | Date | Change |
 | --- | --- | --- |
@@ -864,7 +864,7 @@ ARIMA runs on Notion's Free plan, which caps external guests at 10, file uploads
 | 5 MB per file | Screenshots, PDFs, test evidence and pentest reports live in GitHub (repo or release assets); Notion links to them |
 | 7-day page history | The orchestrator commits a daily snapshot of the Notion mirror to the `arima-state` branch, which serves as long-term history and recovery |
 | Block limit with 2+ members | Solo use is unaffected; team mode with more than one Notion member requires upgrading to Plus |
-| Database query tools in the hosted MCP vary by plan | Sync uses the Notion public API through the integration token and ARIMA's own scripts, not the hosted MCP query tools |
+| Notion API features vary by plan and workspace | Sync uses only the Notion public API through the integration token and ARIMA's own scripts (D-34); what the API accepts is checked against a real workspace by the live test tier |
 
 ## 10. GitHub conventions
 
@@ -1154,7 +1154,7 @@ The repo is public under the Apache License 2.0 (D-26), with a `LICENSE` and `NO
 
 ## 16. Open questions and decision log
 
-3 questions are open, each with a working default; 41 decisions are made. Each answered question becomes a decision and updates the sections it names.
+3 questions are open, each with a working default; 42 decisions are made. Each answered question becomes a decision and updates the sections it names.
 
 ### 16.1 Open questions
 
@@ -1188,6 +1188,7 @@ The repo is public under the Apache License 2.0 (D-26), with a `LICENSE` and `NO
 
 | ID | Decision | Date | By |
 | --- | --- | --- | --- |
+| D-42 | The hard stops are one fixed canonical list of ids in code (gates, prod_deploy, secrets_change, budget_exceeded, story_budget, notion_delete, prod_data_migration, new_paid_service, licence, critical_finding, kill_switch, missing_credential); `autonomy.hard_stops` is documentation only and the validator warns when it differs (answers S2) | 2026-11-18 | You |
 | D-41 | No unattended runs for now: attended runs are made stable first; scheduled runs and seat terms (S15) wait | 2026-11-18 | You |
 | D-40 | Gate approver identity (S1) uses a placeholder at first so plugin development is not blocked; the real mechanism comes later | 2026-11-18 | You |
 | D-39 | If no kill-switch source can be read (Notion down and state branch unreadable), ARIMA counts as paused | 2026-11-18 | You |
@@ -1227,5 +1228,5 @@ The repo is public under the Apache License 2.0 (D-26), with a `LICENSE` and `NO
 | D-05 | v1.0 targets new web apps only (narrowed by D-33) | 2026-11-17 | You |
 | D-04 | Autonomy: mostly autonomous, with a daily digest and hard stops | 2026-11-17 | You |
 | D-03 | GitHub is the engineering layer and hosts the plugin | 2026-11-17 | You |
-| D-02 | Notion is the project-management layer (access via MCP, superseded by D-34: the public API) | 2026-11-17 | You |
+| D-02 | Notion is the project-management layer (access method: see D-34, the public Notion API) | 2026-11-17 | You |
 | D-01 | Default profile is client-project, so ARIMA transfers to multi-person teams | 2026-11-17 | You |

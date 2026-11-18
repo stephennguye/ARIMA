@@ -2,7 +2,7 @@
 
 <!-- arima-template: prototype; DRAFT for the owner's review. The H2 headings below are the required sections. Owner: ux. Master location: `design/`. -->
 
-## Scope
+## Prototype
 
 _Fill in. Cite sources (file:line or item id); mark guesses as guesses._
 
@@ -11,9 +11,5 @@ _Fill in. Cite sources (file:line or item id); mark guesses as guesses._
 _Fill in. Cite sources (file:line or item id); mark guesses as guesses._
 
 ## Screens
-
-_Fill in. Cite sources (file:line or item id); mark guesses as guesses._
-
-## Interaction notes
 
 _Fill in. Cite sources (file:line or item id); mark guesses as guesses._

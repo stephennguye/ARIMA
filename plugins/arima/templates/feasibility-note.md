@@ -2,23 +2,15 @@
 
 <!-- arima-template: feasibility-note; DRAFT for the owner's review. The H2 headings below are the required sections. Owner: architect. Master location: Notion Documents. -->
 
-## Question
+## Platform and stack fit
 
 _Fill in. Cite sources (file:line or item id); mark guesses as guesses._
 
-## Options
+## Third-party needs
 
 _Fill in. Cite sources (file:line or item id); mark guesses as guesses._
 
-## Technical feasibility
-
-_Fill in. Cite sources (file:line or item id); mark guesses as guesses._
-
-## Cost and schedule estimate
-
-_Fill in. Cite sources (file:line or item id); mark guesses as guesses._
-
-## Risks
+## Major risks
 
 _Fill in. Cite sources (file:line or item id); mark guesses as guesses._
 

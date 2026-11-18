@@ -2,15 +2,7 @@
 
 <!-- arima-template: env-matrix; DRAFT for the owner's review. The H2 headings below are the required sections. Owner: devops. Master location: `docs/ops/`. -->
 
-## Environments
-
-_Fill in. Cite sources (file:line or item id); mark guesses as guesses._
-
-## Configuration
-
-_Fill in. Cite sources (file:line or item id); mark guesses as guesses._
-
-## Access
+## Environment matrix
 
 _Fill in. Cite sources (file:line or item id); mark guesses as guesses._
 

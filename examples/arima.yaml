@@ -10,8 +10,9 @@ profile: client-project
 autonomy:
   mode: autonomous
   question_policy: block_story
-  hard_stops: [G0, G1, G2, G3, G4, prod_deploy, secrets_change, budget_exceeded,
-               notion_delete, prod_data_migration, new_paid_service]
+  hard_stops: [G0, G1, G2, G3, G4, prod_deploy, secrets_change, budget_exceeded, story_budget,
+               notion_delete, prod_data_migration, new_paid_service, licence, critical_finding,
+               kill_switch, missing_credential]
 schedule:
   timezone: Asia/Ho_Chi_Minh
   daily_run: "02:00"

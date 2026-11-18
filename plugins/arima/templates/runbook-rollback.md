@@ -2,15 +2,11 @@
 
 <!-- arima-template: runbook-rollback; DRAFT for the owner's review. The H2 headings below are the required sections. Owner: devops. Master location: `docs/ops/`. -->
 
-## Service overview
+## Runbook
 
 _Fill in. Cite sources (file:line or item id); mark guesses as guesses._
 
-## Deploy steps
-
-_Fill in. Cite sources (file:line or item id); mark guesses as guesses._
-
-## Rollback steps
+## Rollback plan
 
 _Fill in. Cite sources (file:line or item id); mark guesses as guesses._
 

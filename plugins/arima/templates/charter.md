@@ -1,10 +1,10 @@
 # Charter: {{name}}
 
-<!-- arima-template: charter. Drafted by the orchestrator from the brief; the sponsor reviews it at G0. -->
+<!-- arima-template: charter. Drafted by the orchestrator from the brief; the sponsor reviews it at G0 (spec 6.0 step 4: scope, rough milestones, budget plan, risks, RACI). -->
 
 Project {{key}} for {{client}}. Profile: {{profile}}.
 
-## Purpose and scope
+## Scope
 
 ### In scope (must-have features)
 
@@ -14,30 +14,28 @@ Project {{key}} for {{client}}. Profile: {{profile}}.
 
 {{out_of_scope}}
 
-## Objectives and success measures
+### Goals and KPIs
 
 {{goals}}
 
-## Stakeholders and approvers
+### Constraints
 
-Roles and responsibilities (from team.yaml):
+{{constraints}}
 
-{{roles}}
-
-## Milestones and budget summary
+## Rough milestones
 
 Milestones of 8-12 points are planned in Phase 2; none are proposed before G0.
 
+## Budget plan
+
 Project cap {{project_cap}} (estimated consumption). See the Budget plan document.
-
-## Constraints and assumptions
-
-{{constraints}}
 
 ## Risks
 
 {{risks}}
 
-## Approval
+## Roles and responsibilities
 
-Pending: the sponsor decides at G0 (or G1 in solo-lite).
+From team.yaml:
+
+{{roles}}

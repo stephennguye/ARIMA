@@ -1,4 +1,5 @@
 import { existsSync } from 'node:fs';
+import { HARD_STOPS, isHardStop } from './hardstops.js';
 import path from 'node:path';
 import type { ErrorObject } from 'ajv/dist/2020.js';
 import { pluginRoot } from './lib/paths.js';
@@ -218,6 +219,16 @@ export function validateProject(projectDir: string, root: string = pluginRoot())
     (arima as unknown as { autonomy: { hard_stops: string[] } }).autonomy.hard_stops,
   );
   const missing = REQUIRED_HARD_STOPS.filter((s) => !listed.has(s));
+  const unknown = [...listed].filter((s) => !isHardStop(s));
+  if (unknown.length > 0) {
+    warnings.push({
+      severity: 'warning',
+      file: aSrc.file,
+      line: aSrc.lineOf('/autonomy/hard_stops'),
+      path: 'autonomy.hard_stops',
+      message: `unknown hard stop ids: ${unknown.join(', ')}. The ids are fixed in code (see src/hardstops.ts); a typo here protects nothing`,
+    });
+  }
   if (missing.length > 0) {
     warnings.push({
       severity: 'warning',
@@ -231,20 +242,8 @@ export function validateProject(projectDir: string, root: string = pluginRoot())
   return { ok: errors.length === 0, errors, warnings, arima, team };
 }
 
-/** The hard stops of spec §4.1 / §11.1 that arima.yaml lists. */
-export const REQUIRED_HARD_STOPS = [
-  'G0',
-  'G1',
-  'G2',
-  'G3',
-  'G4',
-  'prod_deploy',
-  'secrets_change',
-  'budget_exceeded',
-  'notion_delete',
-  'prod_data_migration',
-  'new_paid_service',
-] as const;
+/** The hard stops arima.yaml should list: the canonical list in code (spec 11.1, D-42). */
+export const REQUIRED_HARD_STOPS = HARD_STOPS;
 
 export function formatIssue(i: Issue): string {
   return `${i.file}:${i.line}: ${i.severity}: ${i.message}`;
