@@ -4,7 +4,7 @@
 
 ARIMA runs a client-grade delivery process (phases 0–8: initiation → discovery → design → setup → build → stabilization → release → hypercare → operations) with role agents (BA, UX, architect, tech lead, developers, QA, security, DevOps) coordinated by an orchestrator. Notion is the project-management layer, GitHub the engineering layer. Runs happen daily on their own; humans decide at approval gates, approve every PR and every production deploy.
 
-> Status: **v0.1 in development.** Not usable yet. See `docs/BUILD-PLAN.md`.
+> Status: **v0.1 (foundations) is built and tested against mocked Notion and real git; it has not yet been run against a real Notion workspace.** It can initialise a project (`/arima:init`), report status (`/arima:status`) and pause (`/arima:pause`). The agents that build software arrive in v0.2 and later. See `docs/BUILD-PLAN.md`, and `docs/INSTALL.md` to try it.
 
 ## Why
 
@@ -27,15 +27,17 @@ docs/spec/                        # master specification
 docs/adr/                         # ARIMA's own architecture decisions
 docs/BUILD-PLAN.md                # ordered build tasks
 examples/                         # sample arima.yaml, team.yaml, brief
-evals/                            # sample project + expected outcomes
+evals/                            # eval scenarios + expected outcomes (npm run eval)
 ```
 
-## Install (once released)
+## Install
 
 ```
 /plugin marketplace add stephennguye/ARIMA
 /plugin install arima@arima
 ```
+
+Full setup (Notion integration, token, first project): `docs/INSTALL.md`. The Notion workspace is described in `docs/NOTION-TEMPLATE.md`.
 
 ## License
 
