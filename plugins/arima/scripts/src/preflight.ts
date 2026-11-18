@@ -2,7 +2,7 @@ import { appendEvent } from './events.js';
 import { budgetStatus, newBudgetAlerts, readAlertHistory } from './budget.js';
 import { validateProject } from './config.js';
 import { checkKillSwitch } from './killswitch.js';
-import type { NotionPort } from './notion/port.js';
+import type { PauseSwitchPort } from './notion/port.js';
 import { acquireRunLock, lockStatus } from './runlock.js';
 
 /** Exit codes of `arima-preflight`; each failing condition has its own (spec §7.2 step 1). */
@@ -38,7 +38,7 @@ export interface PreflightOptions {
   /** Environment to inspect; defaults to process.env. Only variable *names* are ever reported. */
   env?: NodeJS.ProcessEnv;
   /** Notion access for the kill switch; null skips the Notion check (PAUSE file only). */
-  notion?: NotionPort | null;
+  notion?: PauseSwitchPort | null;
   /** Create the run lock for this run id when every check passes. */
   acquireFor?: string;
   now?: Date;

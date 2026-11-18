@@ -2,7 +2,7 @@ import path from 'node:path';
 import { parseArgs } from 'node:util';
 import { validateProject } from '../config.js';
 import { createNotionPortFromToken } from '../notion/port.js';
-import type { NotionPort } from '../notion/port.js';
+import type { PauseSwitchPort } from '../notion/port.js';
 import { PREFLIGHT_EXIT, runPreflight } from '../preflight.js';
 import { releaseRunLock } from '../runlock.js';
 import type { Io } from './config-cli.js';
@@ -13,7 +13,7 @@ Exit codes: 0 ok, 2 usage, 10 config invalid, 11 run lock held, 12 kill switch o
 
 export interface PreflightCliDeps {
   /** Overrides how the Notion port is built (tests). */
-  notionFactory?: (token: string) => NotionPort;
+  notionFactory?: (token: string) => PauseSwitchPort;
   env?: NodeJS.ProcessEnv;
 }
 
@@ -63,7 +63,7 @@ export async function runPreflightCli(
   }
 
   // Build the Notion port only when the token is present; its absence is reported by the env check.
-  let notion: NotionPort | null = null;
+  let notion: PauseSwitchPort | null = null;
   if (values['skip-notion'] !== true) {
     const cfg = validateProject(projectDir);
     const tokenEnv = (cfg.arima as { notion?: { token_env?: string } } | undefined)?.notion
