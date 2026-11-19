@@ -141,13 +141,13 @@ Types: `run.start run.end run.paused preflight.fail killswitch.on killswitch.off
 | `arima-state` | 0 ok, 1 failure (including refused push), 2 usage |
 | `arima-notion` | 0 ok, 1 verification failed / Notion error / entries rejected, in conflict or deferred, 2 usage |
 | `arima-hook` | 0 allow, 2 block, 1 usage |
+| `arima-packet` | 0 ok, 2 usage, 20 packet invalid |
 | `arima-status` | 0 ok, 1 other error, 2 usage, 10 invalid config |
 
 Planned scripts reserve these codes (final values are fixed by the package that builds each; the table is the plan, not yet code):
 
 | Planned script | Codes |
 | --- | --- |
-| `arima-packet` | 0, 2, 20 packet invalid |
 | `arima-dispatch` (the daily run; Phase 4 and operations) | 0, 1, 2, 4 nothing to do, 5 phase refusal (Phase 3 exit not green), 10-14 as preflight, 75 paused (never 3) |
 | `arima-notion` additions | 11 run lock held after waiting 60 s, 12 paused (push) |
 | `arima-publish` | 0, 2, 12, 14, 31, 32 |

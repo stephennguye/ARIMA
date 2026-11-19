@@ -203,7 +203,7 @@ packages:
   - id: WP-102
     stage: 1
     track: engine
-    status: ready
+    status: done
     title: "Packet builder arima-packet: renders and validates the run packet from a work-unit descriptor; untrusted content quoted"
     deps:
       - WP-101
