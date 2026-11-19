@@ -437,7 +437,7 @@ ARIMA has 9 agents covering 11 roles; Sponsor, PO and Legal default to humans. E
 - **Triggered by:** Phase 2 (environment plan), Phase 3 (setup), merges (staging rebuilt by the host), Phase 6 (release), alerts and incidents, recurring jobs.
 - **Reads:** SAD, infrastructure config, CI results, monitoring alerts, runbooks.
 - **Writes:** CI config (GitHub Actions, checks only), Dockerfiles and Compose files, environment matrix, release plans, runbooks, rollback plans and rollback proposals (section 7.8), incident records, postmortem drafts, SLO reports, SBOM, dependency-update PRs.
-- **Tools:** Read; Write in `infra/`, `.github/`, `docs/ops/`; Bash for git, Docker and Docker Compose against the local preview and staging environments. No cloud CLI and no GitHub credential (D-47, D-49).
+- **Tools:** Read; Write in `infra/`, `.github/`, `docs/ops/`; Bash for git and the host script `arima-env` (check, status, logs, smoke, up, down for the local preview and staging environments only). No `docker` command, no cloud CLI and no GitHub credential (D-47, D-49, ADR-0008).
 - **Must not:** run the production script or deploy to production (only the approval-gated local script `arima-release` does, after the approval recorded on the release page); read production credentials (D-29).
 - **Done when:** a deploy is verified by smoke test; an incident is closed with its postmortem.
 - **Escalates when:** production is degraded (P1/P2); a deploy fails and rollback is needed.

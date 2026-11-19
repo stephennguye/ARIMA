@@ -39,6 +39,8 @@ The full decision log is spec section 16.2; the full spec-issue text is `docs/pr
 | 0004 | Polymorphic item references are ID text, not relations | Proposed (owner accepted S13) |
 | 0005 | The guard fails closed inside an ARIMA project | Proposed (needs owner confirmation) |
 | 0006 | `runtime.sandbox: docker | none` | Accepted in principle (D-37); design only |
+| 0007 | Reference stack and local hosting | Accepted |
+| 0008 | The devops role reaches Docker only through `arima-env` | Accepted (owner, 2026-11-20) |
 
 New ADRs this plan will need: ticket-state-machine ownership of `Status` (WP-108), run-packet/agent-report contract (WP-101), merge and publish scripts (WP-111/112), stack and staging host (WP-201), gate approver mechanism if reopened (WP-330).
 

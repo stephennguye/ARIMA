@@ -1,6 +1,6 @@
 # ADR-0008: The devops role reaches Docker only through arima-env
 
-- Status: Proposed (needs the owner's confirmation; implemented in WP-213 because the work package's own acceptance criterion requires it)
+- Status: Accepted (the owner accepted it on 2026-11-20; built in WP-213)
 - Date: 2026-11-20
 - Refines: spec 5.10 "Tools" and the devops card section 6 (decision 15)
 
