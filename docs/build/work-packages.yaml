@@ -377,7 +377,7 @@ packages:
   - id: WP-112
     stage: 1
     track: safety
-    status: ready
+    status: done
     title: "Merge script arima-merge: only merger; needs CI green, QA pass, human approving review"
     deps:
       - WP-111
@@ -722,7 +722,7 @@ packages:
   - id: WP-213
     stage: 2
     track: agent
-    status: planned
+    status: ready
     title: devops agent, staging only, with stub deploy script refusing production
     deps:
       - WP-201
