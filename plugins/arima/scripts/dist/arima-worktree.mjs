@@ -10366,7 +10366,8 @@ async function createWorktree(o) {
   if (isProtected(o.branch, o))
     throw new WorktreeError(`refusing to use the protected branch "${o.branch}"`);
   const baseCommit = git(repo, ["rev-parse", "--verify", `${o.base}^{commit}`]);
-  if (gitOk(repo, ["show-ref", "--verify", "--quiet", `refs/heads/${o.branch}`]))
+  const exists = gitOk(repo, ["show-ref", "--verify", "--quiet", `refs/heads/${o.branch}`]);
+  if (exists && o.reuse !== true)
     throw new WorktreeError(
       `branch ${o.branch} already exists; STOP (remove it, or this is a re-dispatch of a unit that was not cleaned up)`
     );
@@ -10385,11 +10386,9 @@ async function createWorktree(o) {
     "worktree",
     "add",
     ...sparse ? ["--no-checkout"] : [],
-    "-b",
-    o.branch,
-    dir,
-    baseCommit
+    ...exists ? [dir, o.branch] : ["-b", o.branch, dir, baseCommit]
   ]);
+  const startCommit = exists ? git(repo, ["rev-parse", `refs/heads/${o.branch}`]) : baseCommit;
   try {
     if (win) git(dir, ["config", "core.longpaths", "true"]);
     if (sparse) {
@@ -10402,8 +10401,8 @@ async function createWorktree(o) {
       git(dir, ["read-tree", "-mu", "HEAD"]);
     }
     const head = git(dir, ["rev-parse", "HEAD"]);
-    if (head !== baseCommit)
-      throw new WorktreeError(`new worktree is at ${head}, expected ${baseCommit}`);
+    if (head !== startCommit)
+      throw new WorktreeError(`new worktree is at ${head}, expected ${startCommit}`);
     if (git(dir, ["status", "--porcelain"]) !== "")
       throw new WorktreeError("new worktree is not clean");
     await updateRegistry(repo, (r) => [

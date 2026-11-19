@@ -150,6 +150,7 @@ Types: `run.start run.end run.paused preflight.fail killswitch.on killswitch.off
 | `arima-publish` | 0 ok, 2 usage, 12 kill switch, 14 GitHub token missing, 31 branch refused (protected path, secret, attribution, scope), 32 push or GitHub refused |
 | `arima-merge` | 0 merged, 2 usage, 12 kill switch, 14 GitHub token missing, 30 refused (each missing condition named), 32 GitHub refused or unreachable |
 | `arima-cost` | 0 ok, 1 ledger or bills file unreadable, 2 usage, 10 config invalid, 11 `--sync` while a run holds the lock (after waiting 60 s) |
+| `arima-dispatch` | 0 day completed, 1 sync or step failed, 2 usage, 4 nothing to do, 5 phase not ready, 10 config invalid, 11 run lock held, 12 kill switch on or unreadable, 13 budget cap reached, 14 credential missing, 75 paused (usage limit or kill switch mid-run) |
 | `arima-status` | 0 ok, 1 other error, 2 usage, 10 invalid config |
 
 Planned scripts reserve these codes (final values are fixed by the package that builds each; the table is the plan, not yet code):

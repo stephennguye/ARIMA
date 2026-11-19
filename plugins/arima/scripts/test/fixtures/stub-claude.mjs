@@ -107,6 +107,51 @@ switch (mode) {
     console.log(JSON.stringify(base));
     break;
   }
+  case 'by_unit': {
+    // The dispatcher's stub agent: the answer comes from STUB_DIR/<role>-<kind>[.<n>].txt, n = call number
+    // (1-based) of that role and kind; __RUN_ID__ and __ITEM__ are filled in. A <role>-<kind>.commit file
+    // makes the agent commit a change in its working directory first, like a developer would.
+    const { existsSync, readFileSync: rf, writeFileSync: wf, mkdirSync } = await import('node:fs');
+    const { spawnSync } = await import('node:child_process');
+    const dir = process.env.STUB_DIR;
+    const key = `${process.env.ARIMA_ROLE}-${process.env.ARIMA_KIND}`;
+    const counter = `${dir}/.count-${key}`;
+    const n = (existsSync(counter) ? Number(rf(counter, 'utf8')) : 0) + 1;
+    wf(counter, String(n));
+    if (existsSync(`${dir}/${key}.commit`)) {
+      mkdirSync(`${process.cwd()}/src`, { recursive: true });
+      wf(
+        `${process.cwd()}/src/${process.env.ARIMA_ITEM}-${n}.ts`,
+        'export const x = ' + n + ';' + String.fromCharCode(10),
+      );
+      const g = (...a) =>
+        spawnSync('git', ['-c', 'user.name=Stub', '-c', 'user.email=stub@example.invalid', ...a], {
+          cwd: process.cwd(),
+        });
+      g('add', '-A');
+      g('commit', '-q', '-m', `feat(${process.env.ARIMA_ITEM}): stub change ${n}`);
+    }
+    if (existsSync(`${dir}/${key}.usage`)) {
+      console.log(
+        JSON.stringify({
+          ...base,
+          is_error: true,
+          result: 'Claude usage limit reached. Your limit will reset at 7pm.',
+          total_cost_usd: 0,
+        }),
+      );
+      process.exitCode = 1;
+      break;
+    }
+    const file = [`${dir}/${key}.${n}.txt`, `${dir}/${key}.txt`].find((f) => existsSync(f));
+    base.result = file
+      ? rf(file, 'utf8')
+          .replaceAll('__RUN_ID__', process.env.ARIMA_RUN_ID ?? '')
+          .replaceAll('__ITEM__', process.env.ARIMA_ITEM ?? '')
+      : 'no report';
+    console.log(JSON.stringify(base));
+    break;
+  }
   case 'hang':
     setInterval(() => undefined, 1000);
     break;

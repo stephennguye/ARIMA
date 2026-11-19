@@ -697,6 +697,20 @@ export async function handleHook(
 
   if (kind === 'pre-tool-use') {
     try {
+      // Kill switch (RD-F02-9): once `.arima/PAUSE` exists every tool call is blocked, so a pause
+      // stops a run that is already going, not only the next one (spec 11.1).
+      if (env['ARIMA_ROLE'] !== undefined && existsSync(path.join(projectDir, '.arima', 'PAUSE'))) {
+        await log(projectDir, 'tool.blocked', env, {
+          ...describe(tool, toolInput),
+          rule: 'kill-switch',
+          reason: 'ARIMA is paused',
+        });
+        return {
+          exitCode: 2,
+          stderr:
+            'ARIMA is paused (the kill switch is on), so every action is blocked until a human resumes it. Stop work and end your reply.',
+        };
+      }
       const ctx: GuardContext = {
         role: env['ARIMA_ROLE'],
         defaultBranch: defaultBranchOf(projectDir),

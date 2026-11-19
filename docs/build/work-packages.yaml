@@ -408,7 +408,7 @@ packages:
   - id: WP-120
     stage: 1
     track: engine
-    status: ready
+    status: done
     title: "Dispatcher and daily run skeleton: arima-dispatch, /arima:run --dry-run --only"
     deps:
       - WP-102

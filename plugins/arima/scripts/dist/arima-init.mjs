@@ -21328,11 +21328,12 @@ async function runPreflight(opts) {
       readAlertHistory(opts.projectDir),
       today
     )) {
-      await appendEvent(opts.projectDir, {
-        type: "budget.alert",
-        actor: "system",
-        data: { scope: a.scope, threshold: a.threshold, spent: a.spent, cap: a.cap, date: today }
-      });
+      if (opts.record !== false)
+        await appendEvent(opts.projectDir, {
+          type: "budget.alert",
+          actor: "system",
+          data: { scope: a.scope, threshold: a.threshold, spent: a.spent, cap: a.cap, date: today }
+        });
       check2.warning = `${a.scope} budget passed ${Math.round(a.threshold * 100)}%`;
     }
     checks.push(check2);
@@ -21353,11 +21354,12 @@ async function runPreflight(opts) {
   }
   const failed = checks.filter((c) => !c.ok);
   for (const f of failed) {
-    await appendEvent(opts.projectDir, {
-      type: "preflight.fail",
-      actor: "system",
-      data: { check: f.check, detail: f.detail }
-    });
+    if (opts.record !== false)
+      await appendEvent(opts.projectDir, {
+        type: "preflight.fail",
+        actor: "system",
+        data: { check: f.check, detail: f.detail }
+      });
   }
   const exitCode = failed[0] ? CODE[failed[0].check] : PREFLIGHT_EXIT.ok;
   let acquired = false;
@@ -21370,11 +21372,12 @@ async function runPreflight(opts) {
         detail: "lost the race for .arima/run.lock"
       };
       checks.push(c);
-      await appendEvent(opts.projectDir, {
-        type: "preflight.fail",
-        actor: "system",
-        data: { check: c.check, detail: c.detail }
-      });
+      if (opts.record !== false)
+        await appendEvent(opts.projectDir, {
+          type: "preflight.fail",
+          actor: "system",
+          data: { check: c.check, detail: c.detail }
+        });
       return { ok: false, exitCode: PREFLIGHT_EXIT.locked, checks, acquired };
     }
   }

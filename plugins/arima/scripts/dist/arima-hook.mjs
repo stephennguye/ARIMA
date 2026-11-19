@@ -8800,6 +8800,17 @@ async function handleHook(kind2, input, env = process.env) {
   const toolInput = input.tool_input ?? {};
   if (kind2 === "pre-tool-use") {
     try {
+      if (env["ARIMA_ROLE"] !== void 0 && existsSync3(path5.join(projectDir, ".arima", "PAUSE"))) {
+        await log(projectDir, "tool.blocked", env, {
+          ...describe(tool, toolInput),
+          rule: "kill-switch",
+          reason: "ARIMA is paused"
+        });
+        return {
+          exitCode: 2,
+          stderr: "ARIMA is paused (the kill switch is on), so every action is blocked until a human resumes it. Stop work and end your reply."
+        };
+      }
       const ctx = {
         role: env["ARIMA_ROLE"],
         defaultBranch: defaultBranchOf(projectDir)

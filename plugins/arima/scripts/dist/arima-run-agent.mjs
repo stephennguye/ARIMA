@@ -19911,6 +19911,7 @@ function childEnv(base, o) {
   env["ARIMA_RUN_ID"] = o.runId;
   env["ARIMA_ROLE"] = o.role;
   env["ARIMA_ITEM"] = o.item;
+  if (o.kind !== void 0) env["ARIMA_KIND"] = o.kind;
   const attrs = [
     `arima.project=${safe(o.projectKey)}`,
     `arima.phase=${o.phase}`,
@@ -19964,17 +19965,33 @@ function runProcess(bin, args, opts) {
     let stdout = "";
     let stderr = "";
     let timedOut = false;
+    let switchKilled = false;
     let settled = false;
+    let poller;
     const finish = (r) => {
       if (settled) return;
       settled = true;
       clearTimeout(timer);
-      resolve2(r);
+      if (poller !== void 0) clearInterval(poller);
+      resolve2(switchKilled ? { ...r, switchKilled: true } : r);
     };
     const timer = setTimeout(() => {
       timedOut = true;
       killTree(child.pid);
     }, opts.timeoutMs);
+    if (opts.poll !== void 0 && opts.poll.everyMs > 0) {
+      let checking = false;
+      poller = setInterval(() => {
+        if (checking || settled) return;
+        checking = true;
+        opts.poll?.isOn().then((on) => {
+          if (on && !settled) {
+            switchKilled = true;
+            killTree(child.pid);
+          }
+        }).catch(() => void 0).finally(() => checking = false);
+      }, opts.poll.everyMs);
+    }
     child.stdout.on("data", (d) => stdout += d.toString("utf8"));
     child.stderr.on("data", (d) => stderr += d.toString("utf8"));
     child.on(
@@ -20013,6 +20030,13 @@ function writeRunReport(projectDir, runId, body) {
 `, "utf8");
 }
 var localDay = (d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+var remotePauseOf = (o) => o.killSwitch.remotePause ?? (() => Promise.resolve(
+  remotePauseFlag({
+    projectDir: o.projectDir,
+    ...o.config.stateBranch ? { branch: o.config.stateBranch } : {},
+    ...o.config.defaultBranch ? { defaultBranch: o.config.defaultBranch } : {}
+  })
+));
 async function assertMayDispatch(o, now) {
   const refuse = async (stop, message, exitCode) => {
     await appendEvent(o.projectDir, {
@@ -20075,8 +20099,8 @@ async function runAgent(o) {
       `budget ${o.budgetUsd} exceeds budget.per_run_cap ${o.config.perRunCap} in arima.yaml (spec \xA713.5)`
     );
   }
-  if (!existsSync7(o.promptFile)) throw new Error(`prompt file not found: ${o.promptFile}`);
-  const prompt = readFileSync8(o.promptFile, "utf8");
+  if (o.buildPrompt === void 0 && !existsSync7(o.promptFile))
+    throw new Error(`prompt file not found: ${o.promptFile}`);
   const cwd = path13.resolve(o.cwd ?? o.projectDir);
   const root = pluginRoot();
   const scriptsGlob = path13.join(root, "scripts", "dist").replace(/\\/g, "/");
@@ -20084,6 +20108,7 @@ async function runAgent(o) {
   const now = o.now ?? /* @__PURE__ */ new Date();
   await assertMayDispatch(o, now);
   const runId = await issueRunId(o.projectDir, now);
+  const prompt = o.buildPrompt !== void 0 ? await o.buildPrompt(runId) : readFileSync8(o.promptFile, "utf8");
   const startedAt = now.toISOString();
   const attempt = o.attempt ?? 1;
   await appendEvent(o.projectDir, {
@@ -20100,7 +20125,8 @@ async function runAgent(o) {
     runId,
     projectKey: o.config.projectKey,
     projectDir: path13.resolve(o.projectDir),
-    config: o.config
+    config: o.config,
+    ...o.kind !== void 0 ? { kind: o.kind } : {}
   });
   Object.assign(env, o.extraEnv ?? {});
   const bin = o.claudeBin ?? process.env["ARIMA_CLAUDE_BIN"] ?? "claude";
@@ -20109,7 +20135,11 @@ async function runAgent(o) {
     cwd,
     env,
     input: prompt,
-    timeoutMs: o.config.maxRunMinutes * 6e4
+    timeoutMs: o.config.maxRunMinutes * 6e4,
+    poll: {
+      everyMs: o.killSwitchPollMs ?? 3e4,
+      isOn: async () => (await checkKillSwitch(o.projectDir, o.killSwitch.notion, remotePauseOf(o))).on
+    }
   });
   const elapsed = Date.now() - t0;
   let parsed;
@@ -20133,7 +20163,8 @@ async function runAgent(o) {
   if (o.config.tier !== void 0) ctx.model_tier = o.config.tier;
   if (o.milestone !== void 0) ctx.milestone = o.milestone;
   if (o.reworkReason !== void 0) ctx.rework_reason = o.reworkReason;
-  const paused = isUsageLimit(parsed, spawned.stderr, spawned.stdout);
+  const switchKilled = spawned.switchKilled === true;
+  const paused = switchKilled || isUsageLimit(parsed, spawned.stderr, spawned.stdout);
   let row;
   if (parsed !== void 0) {
     row = buildLedgerRow(
@@ -20141,16 +20172,16 @@ async function runAgent(o) {
       paused ? { ...ctx, result: "paused" } : ctx,
       readLedger(o.projectDir)
     );
-    if (paused) row.subtype = "usage_limit_pause";
+    if (paused) row.subtype = switchKilled ? "kill_switch" : "usage_limit_pause";
   } else {
-    const subtype = paused ? "usage_limit_pause" : spawned.timedOut ? "timeout" : spawned.spawnError !== void 0 ? "spawn_error" : "unparseable_output";
+    const subtype = paused ? switchKilled ? "kill_switch" : "usage_limit_pause" : spawned.timedOut ? "timeout" : spawned.spawnError !== void 0 ? "spawn_error" : "unparseable_output";
     row = buildLedgerRow(
       { type: "result", subtype, is_error: true, duration_ms: elapsed },
       { ...ctx, result: paused ? "paused" : "error" }
     );
   }
   let collected;
-  if (row.result === "paused") row.reason = "usage_limit";
+  if (row.result === "paused") row.reason = switchKilled ? "kill_switch" : "usage_limit";
   else if (row.subtype === "error_max_turns") row.reason = "cap_turns";
   else if (row.subtype === "error_max_budget_usd") row.reason = "cap_budget";
   else if (o.kind !== void 0 && row.result === "pass") {
@@ -20196,7 +20227,7 @@ async function runAgent(o) {
       actor: o.role,
       run_id: runId,
       item: o.item,
-      data: { reason: "usage_limit", cost_usd: row.cost_usd }
+      data: { reason: switchKilled ? "kill_switch" : "usage_limit", cost_usd: row.cost_usd }
     });
   } else {
     await appendEvent(o.projectDir, {

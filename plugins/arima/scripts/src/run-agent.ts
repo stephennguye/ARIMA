@@ -81,6 +81,13 @@ export interface RunAgentOptions {
   budgetUsd: number;
   maxTurns: number;
   promptFile: string;
+  /**
+   * Builds the prompt once the run id exists (a run packet names its run id, and the report must
+   * quote it). When set, `promptFile` is not read.
+   */
+  buildPrompt?: (runId: string) => string | Promise<string>;
+  /** How often a running child is checked against the kill switch, in ms (default 30,000; 0 turns it off). RD-F02-9. */
+  killSwitchPollMs?: number;
   cwd?: string;
   phase: number;
   attempt?: number;
@@ -231,6 +238,8 @@ export function childEnv(
     config: AgentConfig;
     /** Lets the hooks find .arima/ from a worktree (spec §11.3 audit). */
     projectDir?: string;
+    /** The unit kind, for stub agents and audit; informational. */
+    kind?: string;
   },
 ): NodeJS.ProcessEnv {
   // An ALLOW-LIST, not a block-list: a run gets what it needs to work and nothing else, so cloud
@@ -260,6 +269,7 @@ export function childEnv(
   env['ARIMA_RUN_ID'] = o.runId;
   env['ARIMA_ROLE'] = o.role;
   env['ARIMA_ITEM'] = o.item;
+  if (o.kind !== undefined) env['ARIMA_KIND'] = o.kind;
   const attrs = [
     `arima.project=${safe(o.projectKey)}`,
     `arima.phase=${o.phase}`,
@@ -316,13 +326,21 @@ interface Spawned {
   stdout: string;
   stderr: string;
   timedOut: boolean;
+  /** The kill switch turned on while the child ran and the tree was killed (RD-F02-9). */
+  switchKilled?: boolean;
   spawnError?: string;
 }
 
 function runProcess(
   bin: string,
   args: string[],
-  opts: { cwd: string; env: NodeJS.ProcessEnv; input: string; timeoutMs: number },
+  opts: {
+    cwd: string;
+    env: NodeJS.ProcessEnv;
+    input: string;
+    timeoutMs: number;
+    poll?: { everyMs: number; isOn: () => Promise<boolean> };
+  },
 ): Promise<Spawned> {
   return new Promise((resolve) => {
     const isScript = /\.(?:m?js|cjs)$/.test(bin);
@@ -337,17 +355,37 @@ function runProcess(
     let stdout = '';
     let stderr = '';
     let timedOut = false;
+    let switchKilled = false;
     let settled = false;
+    let poller: ReturnType<typeof setInterval> | undefined;
     const finish = (r: Spawned): void => {
       if (settled) return;
       settled = true;
       clearTimeout(timer);
-      resolve(r);
+      if (poller !== undefined) clearInterval(poller);
+      resolve(switchKilled ? { ...r, switchKilled: true } : r);
     };
     const timer = setTimeout(() => {
       timedOut = true;
       killTree(child.pid);
     }, opts.timeoutMs);
+    if (opts.poll !== undefined && opts.poll.everyMs > 0) {
+      let checking = false;
+      poller = setInterval(() => {
+        if (checking || settled) return;
+        checking = true;
+        opts.poll
+          ?.isOn()
+          .then((on) => {
+            if (on && !settled) {
+              switchKilled = true;
+              killTree(child.pid);
+            }
+          })
+          .catch(() => undefined)
+          .finally(() => (checking = false));
+      }, opts.poll.everyMs);
+    }
     child.stdout.on('data', (d: Buffer) => (stdout += d.toString('utf8')));
     child.stderr.on('data', (d: Buffer) => (stderr += d.toString('utf8')));
     child.on('error', (e) =>
@@ -394,6 +432,17 @@ const localDay = (d: Date): string =>
  * dispatch"): refuses to start a run while the kill switch file is present or the daily or project
  * budget is used up. Records a hardstop.hit event when it refuses.
  */
+const remotePauseOf = (o: RunAgentOptions): (() => Promise<boolean | undefined>) =>
+  o.killSwitch.remotePause ??
+  ((): Promise<boolean | undefined> =>
+    Promise.resolve(
+      remotePauseFlag({
+        projectDir: o.projectDir,
+        ...(o.config.stateBranch ? { branch: o.config.stateBranch } : {}),
+        ...(o.config.defaultBranch ? { defaultBranch: o.config.defaultBranch } : {}),
+      }),
+    ));
+
 async function assertMayDispatch(o: RunAgentOptions, now: Date): Promise<void> {
   const refuse = async (stop: string, message: string, exitCode: number): Promise<never> => {
     await appendEvent(o.projectDir, {
@@ -464,8 +513,8 @@ export async function runAgent(o: RunAgentOptions): Promise<RunAgentOutcome> {
       `budget ${o.budgetUsd} exceeds budget.per_run_cap ${o.config.perRunCap} in arima.yaml (spec §13.5)`,
     );
   }
-  if (!existsSync(o.promptFile)) throw new Error(`prompt file not found: ${o.promptFile}`);
-  const prompt = readFileSync(o.promptFile, 'utf8');
+  if (o.buildPrompt === undefined && !existsSync(o.promptFile))
+    throw new Error(`prompt file not found: ${o.promptFile}`);
   const cwd = path.resolve(o.cwd ?? o.projectDir);
   const root = pluginRoot();
   const scriptsGlob = path.join(root, 'scripts', 'dist').replace(/\\/g, '/');
@@ -476,6 +525,8 @@ export async function runAgent(o: RunAgentOptions): Promise<RunAgentOutcome> {
   const now = o.now ?? new Date();
   await assertMayDispatch(o, now);
   const runId = await issueRunId(o.projectDir, now);
+  const prompt =
+    o.buildPrompt !== undefined ? await o.buildPrompt(runId) : readFileSync(o.promptFile, 'utf8');
   const startedAt = now.toISOString();
   const attempt = o.attempt ?? 1;
   await appendEvent(o.projectDir, {
@@ -494,6 +545,7 @@ export async function runAgent(o: RunAgentOptions): Promise<RunAgentOutcome> {
     projectKey: o.config.projectKey,
     projectDir: path.resolve(o.projectDir),
     config: o.config,
+    ...(o.kind !== undefined ? { kind: o.kind } : {}),
   });
   Object.assign(env, o.extraEnv ?? {});
   const bin = o.claudeBin ?? process.env['ARIMA_CLAUDE_BIN'] ?? 'claude';
@@ -503,6 +555,11 @@ export async function runAgent(o: RunAgentOptions): Promise<RunAgentOutcome> {
     env,
     input: prompt,
     timeoutMs: o.config.maxRunMinutes * 60_000,
+    poll: {
+      everyMs: o.killSwitchPollMs ?? 30_000,
+      isOn: async () =>
+        (await checkKillSwitch(o.projectDir, o.killSwitch.notion, remotePauseOf(o))).on,
+    },
   });
   const elapsed = Date.now() - t0;
 
@@ -529,7 +586,8 @@ export async function runAgent(o: RunAgentOptions): Promise<RunAgentOutcome> {
   if (o.milestone !== undefined) ctx.milestone = o.milestone;
   if (o.reworkReason !== undefined) ctx.rework_reason = o.reworkReason;
 
-  const paused = isUsageLimit(parsed, spawned.stderr, spawned.stdout);
+  const switchKilled = spawned.switchKilled === true;
+  const paused = switchKilled || isUsageLimit(parsed, spawned.stderr, spawned.stdout);
   let row: LedgerRow;
   if (parsed !== undefined) {
     row = buildLedgerRow(
@@ -537,10 +595,12 @@ export async function runAgent(o: RunAgentOptions): Promise<RunAgentOutcome> {
       paused ? { ...ctx, result: 'paused' } : ctx,
       readLedger(o.projectDir),
     );
-    if (paused) row.subtype = 'usage_limit_pause';
+    if (paused) row.subtype = switchKilled ? 'kill_switch' : 'usage_limit_pause';
   } else {
     const subtype = paused
-      ? 'usage_limit_pause'
+      ? switchKilled
+        ? 'kill_switch'
+        : 'usage_limit_pause'
       : spawned.timedOut
         ? 'timeout'
         : spawned.spawnError !== undefined
@@ -552,7 +612,7 @@ export async function runAgent(o: RunAgentOptions): Promise<RunAgentOutcome> {
     );
   }
   let collected: Collected | undefined;
-  if (row.result === 'paused') row.reason = 'usage_limit';
+  if (row.result === 'paused') row.reason = switchKilled ? 'kill_switch' : 'usage_limit';
   else if (row.subtype === 'error_max_turns') row.reason = 'cap_turns';
   else if (row.subtype === 'error_max_budget_usd') row.reason = 'cap_budget';
   else if (o.kind !== undefined && row.result === 'pass') {
@@ -600,7 +660,7 @@ export async function runAgent(o: RunAgentOptions): Promise<RunAgentOutcome> {
       actor: o.role,
       run_id: runId,
       item: o.item,
-      data: { reason: 'usage_limit', cost_usd: row.cost_usd },
+      data: { reason: switchKilled ? 'kill_switch' : 'usage_limit', cost_usd: row.cost_usd },
     });
   } else {
     await appendEvent(o.projectDir, {
