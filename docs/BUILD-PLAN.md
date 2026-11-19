@@ -1,3 +1,5 @@
+> **History.** The v0.1 task list below is complete. The live plan is `docs/build/02-stages.md` and `docs/build/work-packages.yaml`.
+
 # ARIMA build plan
 
 Five increments (spec §15.3). v0.1 is broken into tasks with acceptance criteria; later increments are outlined and get detailed when the previous one ships. Tick a task only when every acceptance criterion holds, tests pass and `claude plugin validate ./plugins/arima` passes.

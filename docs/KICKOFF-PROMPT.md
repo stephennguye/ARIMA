@@ -1,3 +1,5 @@
+> **History.** A new session should start from `docs/build/00-handoff.md`.
+
 # Kickoff prompt for Claude Code
 
 Open a terminal in WSL 2 at the repo root and start Claude Code. Paste:

@@ -1020,3 +1020,23 @@ describe('Notion reads retry transient network errors, writes never do', () => {
     expect(n).toBe(1);
   });
 });
+
+describe('outbox entry ids become file names, so they are restricted', () => {
+  it.each(['../evil', 'a/b', 'a\b', '..', '.hidden', '', 'x'.repeat(81), 'a b'])(
+    'rejects id %j',
+    (id) => {
+      const dir = tempDir('arima-outbox-');
+      expect(() =>
+        enqueue(
+          dir,
+          entry({
+            id,
+            op: 'create',
+            database: 'stories',
+            properties: { ID: 'US-1', Title: 't' },
+          }),
+        ),
+      ).toThrow(/Invalid outbox entry/);
+    },
+  );
+});

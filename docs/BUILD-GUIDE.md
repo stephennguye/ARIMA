@@ -1,3 +1,5 @@
+> **Superseded in part.** The stage plan, work packages, contracts, agent cards and verification rules now live in `docs/build/` (start at `docs/build/00-handoff.md`). Sections 2 to 4 of this guide (ground rules, Anthropic practices, definition of done) still stand and are restated in `docs/build/01-architecture.md`; section 5 (the steps) is history.
+
 # How we build ARIMA, step by step
 
 This guide says what we build next, in what order, how each piece is built and checked, and how Anthropic's plugin best practices are part of every step rather than something added at the end. It pairs with `docs/PRODUCT-GUIDE.md` (what the finished product does). The master spec stays the authority; `docs/BUILD-PLAN.md` keeps the detailed task list and gets new tasks from this guide as each stage starts.
