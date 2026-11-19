@@ -325,7 +325,7 @@ packages:
   - id: WP-109
     stage: 1
     track: engine
-    status: ready
+    status: done
     title: "Queue: plan-the-day order (spec 7.2.4), WIP and parallelism, review-queue limit"
     deps:
       - WP-107
@@ -340,7 +340,7 @@ packages:
   - id: WP-110
     stage: 1
     track: engine
-    status: planned
+    status: ready
     title: "Worktree manager: create/remove per run, branch and path conventions, Windows long paths"
     deps:
       - WP-001
@@ -474,7 +474,7 @@ packages:
   - id: WP-131
     stage: 1
     track: skill
-    status: planned
+    status: ready
     title: Cost roll-up per story/role/phase, Notion cost log, /arima:cost
     deps:
       - WP-003
@@ -492,7 +492,7 @@ packages:
   - id: WP-141
     stage: 1
     track: engine
-    status: planned
+    status: ready
     title: "Question and decision protocol (minimal): records, blocking vs assume-and-log, batching into the digest, hard-stop matters never assumed"
     deps:
       - WP-104
@@ -561,7 +561,7 @@ packages:
   - id: WP-132
     stage: 1
     track: skill
-    status: planned
+    status: ready
     title: "Delivery metrics from the ledger and events: lead, cycle, touch, queue, human wait, flow efficiency, rework share, first-pass QA, estimate accuracy; DORA"
     deps:
       - WP-003
@@ -578,7 +578,7 @@ packages:
   - id: WP-160
     stage: 1
     track: engine
-    status: planned
+    status: ready
     title: Interactive commands respect the run lock (spec 12.4)
     deps:
       - WP-004
@@ -611,7 +611,7 @@ packages:
   - id: WP-191
     stage: 1
     track: engine
-    status: planned
+    status: ready
     title: "Hermetic runs decision: isolate user settings, load plugin explicitly"
     deps:
       - WP-004
@@ -627,7 +627,7 @@ packages:
   - id: WP-195
     stage: 1
     track: contracts
-    status: planned
+    status: ready
     title: "Upgrade test: a v0.1 .arima/ and config migrate and load"
     deps:
       - WP-003
@@ -815,7 +815,7 @@ packages:
   - id: WP-216
     stage: 2
     track: skill
-    status: planned
+    status: ready
     title: "/arima:plan: milestone of 8-12 points by priority"
     deps:
       - WP-109
