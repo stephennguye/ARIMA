@@ -28,7 +28,7 @@ The owner steers by commands, answers only critical-blocker questions and review
 
 1. **Approved by the owner on 2026-11-19:** the 28 template section lists and the 21 spec amendments (applied to the spec as version 0.5). The v0.1.1 tag has **not** been confirmed: do not create it unless the owner says so.
 2. Builder: WP-102 (packet builder). Read `03-contracts.md` sections 3.1 and 3.2, and `features/F02-run-dispatcher.md`. Then WP-103 (report collector; `checkReport()` in `src/report.ts` already holds the kind rules) and WP-104.
-3. WP-101 is done (2026-11-19): schemas `agent-report`, `question`, `finding`, `decision`, `work-unit`; 23 new event types; `reason` on the ledger row; `kinds.ts`, `reasons.ts`, `report.ts`; G-03 (preflight `needs.github`, `--no-github`); `arima-init` exit 7; `arima-ids` added to the registry; `contracts.test.ts` keeps the contract lists and the exit-code registry equal to the code. All checks were green on this branch (850 tests).
+3. WP-101 is done (2026-11-19): schemas `agent-report`, `question`, `finding`, `decision`, `work-unit`; 23 new event types; `reason` on the ledger row; `kinds.ts`, `reasons.ts`, `report.ts`; G-03 (preflight `needs.github`, `--no-github`); `arima-init` exit 7; `arima-ids` added to the registry; `contracts.test.ts` keeps the contract lists and the exit-code registry equal to the code. All checks were green on this branch (845 tests, 31 files).
 4. WP-201 is done (ADR-0007: reference stack, local Docker).
 
 ## Open owner decisions
