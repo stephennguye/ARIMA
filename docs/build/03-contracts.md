@@ -144,6 +144,7 @@ Types: `run.start run.end run.paused preflight.fail killswitch.on killswitch.off
 | `arima-notion` | 0 ok, 1 verification failed / Notion error / entries rejected, in conflict or deferred, 2 usage |
 | `arima-hook` | 0 allow, 2 block, 1 usage |
 | `arima-packet` | 0 ok, 2 usage, 20 packet invalid |
+| `arima-worktree` | 0 ok, 1 git failure or refusal, 2 usage |
 | `arima-status` | 0 ok, 1 other error, 2 usage, 10 invalid config |
 
 Planned scripts reserve these codes (final values are fixed by the package that builds each; the table is the plan, not yet code):
@@ -154,7 +155,6 @@ Planned scripts reserve these codes (final values are fixed by the package that 
 | `arima-notion` additions | 11 run lock held after waiting 60 s, 12 paused (push) |
 | `arima-publish` | 0, 2, 12, 14, 31, 32 |
 | `arima-merge` | 0 merged, 2, 12, 30 refused (CI, QA or review missing), 32 |
-| `arima-worktree` | 0, 1, 2 |
 | `arima-gate` | 0, 2, 40 to 43 criteria unmet, 10-14 |
 | `arima-meeting` | 0, 2, 3, 10-14 |
 | `arima-digest`, `arima-cost` | 0, 1, 2, 10, 11 |

@@ -340,7 +340,7 @@ packages:
   - id: WP-110
     stage: 1
     track: engine
-    status: ready
+    status: done
     title: "Worktree manager: create/remove per run, branch and path conventions, Windows long paths"
     deps:
       - WP-001
@@ -355,7 +355,7 @@ packages:
   - id: WP-111
     stage: 1
     track: safety
-    status: planned
+    status: ready
     title: "Host publish script arima-publish: pushes the story branch and opens the PR; agents hold no push credential"
     deps:
       - WP-110
