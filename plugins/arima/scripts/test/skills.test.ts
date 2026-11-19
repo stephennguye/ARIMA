@@ -20,7 +20,7 @@ const binNames = readdirSync(path.join(PLUGIN_ROOT, 'scripts', 'src', 'bin'))
   .map((f) => f.replace(/\.ts$/, ''));
 
 describe('skills (spec §14)', () => {
-  it.each(['init', 'status', 'pause', 'cost'])('%s has valid frontmatter', (name) => {
+  it.each(['init', 'status', 'pause', 'cost', 'plan'])('%s has valid frontmatter', (name) => {
     const { front } = skill(name);
     expect(front['name']).toBe(name);
     expect(String(front['description']).length).toBeGreaterThan(30);
@@ -32,11 +32,12 @@ describe('skills (spec §14)', () => {
   it('consequential commands are user-invoked only; status may be model-invoked', () => {
     expect(skill('init').front['disable-model-invocation']).toBe(true);
     expect(skill('pause').front['disable-model-invocation']).toBe(true);
+    expect(skill('plan').front['disable-model-invocation']).toBe(true);
     expect(skill('status').front['disable-model-invocation']).toBeUndefined();
   });
 
   it('only reference scripts that exist (src/bin), and none grants unrestricted Bash', () => {
-    for (const name of ['init', 'status', 'pause', 'cost']) {
+    for (const name of ['init', 'status', 'pause', 'cost', 'plan']) {
       const { front, body } = skill(name);
       const refs = [
         ...`${String(front['allowed-tools'])}\n${body}`.matchAll(

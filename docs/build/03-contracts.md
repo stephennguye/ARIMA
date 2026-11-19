@@ -152,6 +152,7 @@ Types: `run.start run.end run.paused preflight.fail killswitch.on killswitch.off
 | `arima-cost` | 0 ok, 1 ledger or bills file unreadable, 2 usage, 10 config invalid, 11 `--sync` while a run holds the lock (after waiting 60 s) |
 | `arima-dispatch` | 0 day completed, 1 sync or step failed, 2 usage, 4 nothing to do, 5 phase not ready, 10 config invalid, 11 run lock held, 12 kill switch on or unreadable, 13 budget cap reached, 14 credential missing, 75 paused (usage limit or kill switch mid-run) |
 | `arima-env` | 0 ok, 1 failed (design check, build, backup or restore), 2 usage, 10 config invalid, 12 kill switch on (`up`, `backup`), 14 Docker not running, 70 refused (production or any other environment name: no flag, variable or approval changes this), 71 smoke failed or services unhealthy (staging: the previous version is restored), 72 capacity limit (port in use or no free preview port). Local Docker; staging and preview only: `check`, `status`, `logs`, `smoke`, `up`, `down`, `backup`, `restore-test` |
+| `arima-plan` | 0 ok (or shown with `--dry-run`), 1 failed (for example the milestone to revise is not in the mirror), 2 usage, 4 nothing to plan, 10 config invalid, 11 a run holds the lock (after waiting 60 s), 12 kill switch is on, 13 the story budgets exceed the remaining project budget |
 | `arima-egress-proxy` | 0 stopped by a signal, 2 usage (bad `--port`); runs inside the sandbox sidecar only; allow-listed HTTPS hosts tunnelled, everything else refused with 403 |
 | `arima-status` | 0 ok, 1 other error, 2 usage, 10 invalid config |
 
@@ -164,7 +165,7 @@ Planned scripts reserve these codes (final values are fixed by the package that 
 | `arima-meeting` | 0, 2, 3, 10-14 |
 | `arima-digest` | 0, 1, 2, 10, 11 |
 | `arima-release` (RC tag, version tag with SBOM, production deploy, rollback; human-run) | 0, 2, 12, 14, 40, 50 to 54 |
-| `arima-phase`, `arima-plan`, `arima-assign`, `arima-hypercare`, `arima-incident`, `arima-cr`, `arima-lessons`, `arima-judge` | fixed by WP-320, WP-216, WP-232, WP-403, WP-336, WP-217, WP-150 |
+| `arima-phase`, `arima-assign`, `arima-hypercare`, `arima-incident`, `arima-cr`, `arima-lessons`, `arima-judge` | fixed by WP-320, WP-216, WP-232, WP-403, WP-336, WP-217, WP-150 |
 
 ## 9. Ticket state machine `[SPEC]` 7.1, `[BUILT]` by WP-107 (`src/state-machine.ts`; table-driven, exhaustively tested)
 

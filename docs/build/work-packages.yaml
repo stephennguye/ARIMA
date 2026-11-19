@@ -815,7 +815,7 @@ packages:
   - id: WP-216
     stage: 2
     track: skill
-    status: ready
+    status: done
     title: "/arima:plan: milestone of 8-12 points by priority"
     deps:
       - WP-109
