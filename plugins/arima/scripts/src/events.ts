@@ -25,6 +25,7 @@ export type EventType =
   | 'state.push'
   | 'state.pull'
   | 'budget.alert'
+  | 'sandbox.finished'
   | 'hardstop.hit'
   | 'agent.stop'
   | 'report.accepted'

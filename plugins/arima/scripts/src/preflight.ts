@@ -2,6 +2,7 @@ import { appendEvent } from './events.js';
 import { budgetStatus, newBudgetAlerts, readAlertHistory } from './budget.js';
 import { validateProject } from './config.js';
 import { checkKillSwitch } from './killswitch.js';
+import { dockerReady } from './sandbox.js';
 import { remotePauseFlag } from './state.js';
 import type { PauseSwitchPort } from './notion/port.js';
 import { acquireRunLock, lockStatus } from './runlock.js';
@@ -17,7 +18,7 @@ export const PREFLIGHT_EXIT = {
   env: 14,
 } as const;
 
-export type CheckName = 'config' | 'kill_switch' | 'run_lock' | 'budget' | 'env';
+export type CheckName = 'config' | 'kill_switch' | 'run_lock' | 'budget' | 'env' | 'docker';
 
 export interface CheckResult {
   check: CheckName;
@@ -47,6 +48,8 @@ export interface PreflightOptions {
   needs?: { github?: boolean };
   /** Write `preflight.fail` and `budget.alert` events. False for a dry run, which writes nothing (default true). */
   record?: boolean;
+  /** Asks whether the Docker daemon answers (tests); defaults to `docker info`. */
+  dockerCheck?: () => Promise<{ ok: boolean; detail: string }>;
   /** Reads the PAUSE file on the remote state branch; defaults to a real git fetch. */
   statePause?: () => Promise<boolean | undefined>;
 }
@@ -57,6 +60,7 @@ const CODE: Record<CheckName, number> = {
   run_lock: PREFLIGHT_EXIT.locked,
   budget: PREFLIGHT_EXIT.budget,
   env: PREFLIGHT_EXIT.env,
+  docker: PREFLIGHT_EXIT.env,
 };
 
 const localDate = (d: Date): string =>
@@ -88,7 +92,7 @@ export async function runPreflight(opts: PreflightOptions): Promise<PreflightRes
         budget: { project_cap: number; daily_cap: number; alert_thresholds: number[] };
         notion: { root_page_id: string; token_env: string };
         github: { machine_token_env?: string };
-        runtime: { auth: string };
+        runtime: { auth: string; sandbox?: string };
         telemetry?: { otel_enabled?: boolean; endpoint_env?: string };
       }
     | undefined;
@@ -184,6 +188,12 @@ export async function runPreflight(opts: PreflightOptions): Promise<PreflightRes
           ? `all ${required.length} required variables are set`
           : `missing environment variable(s): ${missing.join(', ')}`,
     });
+  }
+
+  // 6. the Docker daemon, when roles run in a sandbox (WP-190, ADR-0006)
+  if (arima?.runtime.sandbox === 'docker') {
+    const d = await (opts.dockerCheck ?? dockerReady)();
+    checks.push({ check: 'docker', ok: d.ok, detail: d.detail });
   }
 
   const failed = checks.filter((c) => !c.ok);

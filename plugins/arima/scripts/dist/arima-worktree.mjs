@@ -40,7 +40,7 @@ var require_formats = __commonJS({
     }
     exports.fullFormats = {
       // date: http://tools.ietf.org/html/rfc3339#section-5.6
-      date: fmtDef(date, compareDate),
+      date: fmtDef(date2, compareDate),
       // date-time: http://tools.ietf.org/html/rfc3339#section-5.6
       time: fmtDef(getTime(true), compareTime),
       "date-time": fmtDef(getDateTime(true), compareDateTime),
@@ -106,7 +106,7 @@ var require_formats = __commonJS({
     }
     var DATE = /^(\d\d\d\d)-(\d\d)-(\d\d)$/;
     var DAYS = [0, 31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
-    function date(str) {
+    function date2(str) {
       const matches = DATE.exec(str);
       if (!matches)
         return false;
@@ -175,7 +175,7 @@ var require_formats = __commonJS({
       const time = getTime(strictTimeZone);
       return function date_time(str) {
         const dateTime = str.split(DATE_TIME_SEPARATOR);
-        return dateTime.length === 2 && date(dateTime[0]) && time(dateTime[1]);
+        return dateTime.length === 2 && date2(dateTime[0]) && time(dateTime[1]);
       };
     }
     function compareDateTime(dt1, dt2) {
@@ -393,7 +393,7 @@ var require_scope = __commonJS({
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.ValueScope = exports.ValueScopeName = exports.Scope = exports.varKinds = exports.UsedValueState = void 0;
     var code_1 = require_code();
-    var ValueError = class extends Error {
+    var ValueError2 = class extends Error {
       constructor(name) {
         super(`CodeGen: "code" for ${name} not defined`);
         this.value = name.value;
@@ -519,7 +519,7 @@ var require_scope = __commonJS({
             } else if (c = getCode === null || getCode === void 0 ? void 0 : getCode(name)) {
               code2 = (0, code_1._)`${code2}${c}${this.opts._n}`;
             } else {
-              throw new ValueError(name);
+              throw new ValueError2(name);
             }
             nameSet.set(name, UsedValueState.Completed);
           });
@@ -1741,7 +1741,7 @@ var require_dataType = __commonJS({
     exports.coerceAndCheckDataType = coerceAndCheckDataType;
     var COERCIBLE = /* @__PURE__ */ new Set(["string", "number", "integer", "boolean", "null"]);
     function coerceToTypes(types, coerceTypes) {
-      return coerceTypes ? types.filter((t) => COERCIBLE.has(t) || coerceTypes === "array" && t === "array") : [];
+      return coerceTypes ? types.filter((t2) => COERCIBLE.has(t2) || coerceTypes === "array" && t2 === "array") : [];
     }
     function coerceData(it, types, coerceTo) {
       const { gen, data, opts } = it;
@@ -1751,9 +1751,9 @@ var require_dataType = __commonJS({
         gen.if((0, codegen_1._)`${dataType} == 'object' && Array.isArray(${data}) && ${data}.length == 1`, () => gen.assign(data, (0, codegen_1._)`${data}[0]`).assign(dataType, (0, codegen_1._)`typeof ${data}`).if(checkDataTypes(types, data, opts.strictNumbers), () => gen.assign(coerced, data)));
       }
       gen.if((0, codegen_1._)`${coerced} !== undefined`);
-      for (const t of coerceTo) {
-        if (COERCIBLE.has(t) || t === "array" && opts.coerceTypes === "array") {
-          coerceSpecificType(t);
+      for (const t2 of coerceTo) {
+        if (COERCIBLE.has(t2) || t2 === "array" && opts.coerceTypes === "array") {
+          coerceSpecificType(t2);
         }
       }
       gen.else();
@@ -1763,8 +1763,8 @@ var require_dataType = __commonJS({
         gen.assign(data, coerced);
         assignParentData(it, coerced);
       });
-      function coerceSpecificType(t) {
-        switch (t) {
+      function coerceSpecificType(t2) {
+        switch (t2) {
           case "string":
             gen.elseIf((0, codegen_1._)`${dataType} == "number" || ${dataType} == "boolean"`).assign(coerced, (0, codegen_1._)`"" + ${data}`).elseIf((0, codegen_1._)`${data} === null`).assign(coerced, (0, codegen_1._)`""`);
             return;
@@ -1836,8 +1836,8 @@ var require_dataType = __commonJS({
       }
       if (types.number)
         delete types.integer;
-      for (const t in types)
-        cond = (0, codegen_1.and)(cond, checkDataType(t, data, strictNums, correct));
+      for (const t2 in types)
+        cond = (0, codegen_1.and)(cond, checkDataType(t2, data, strictNums, correct));
       return cond;
     }
     exports.checkDataTypes = checkDataTypes;
@@ -2752,9 +2752,9 @@ var require_validate = __commonJS({
         it.dataTypes = types;
         return;
       }
-      types.forEach((t) => {
-        if (!includesType(it.dataTypes, t)) {
-          strictTypesError(it, `type "${t}" not allowed by context "${it.dataTypes.join(",")}"`);
+      types.forEach((t2) => {
+        if (!includesType(it.dataTypes, t2)) {
+          strictTypesError(it, `type "${t2}" not allowed by context "${it.dataTypes.join(",")}"`);
         }
       });
       narrowSchemaTypes(it, types);
@@ -2770,7 +2770,7 @@ var require_validate = __commonJS({
         const rule = rules[keyword];
         if (typeof rule == "object" && (0, applicability_1.shouldUseRule)(it.schema, rule)) {
           const { type } = rule.definition;
-          if (type.length && !type.some((t) => hasApplicableType(ts, t))) {
+          if (type.length && !type.some((t2) => hasApplicableType(ts, t2))) {
             strictTypesError(it, `missing type "${type.join(",")}" for keyword "${keyword}"`);
           }
         }
@@ -2779,15 +2779,15 @@ var require_validate = __commonJS({
     function hasApplicableType(schTs, kwdT) {
       return schTs.includes(kwdT) || kwdT === "number" && schTs.includes("integer");
     }
-    function includesType(ts, t) {
-      return ts.includes(t) || t === "integer" && ts.includes("number");
+    function includesType(ts, t2) {
+      return ts.includes(t2) || t2 === "integer" && ts.includes("number");
     }
     function narrowSchemaTypes(it, withTypes) {
       const ts = [];
-      for (const t of it.dataTypes) {
-        if (includesType(withTypes, t))
-          ts.push(t);
-        else if (withTypes.includes("integer") && t === "number")
+      for (const t2 of it.dataTypes) {
+        if (includesType(withTypes, t2))
+          ts.push(t2);
+        else if (withTypes.includes("integer") && t2 === "number")
           ts.push("integer");
       }
       it.dataTypes = ts;
@@ -4274,18 +4274,18 @@ var require_fast_uri = __commonJS({
         return true;
       }
       if (!options.unicodeSupport && (!schemeHandler || !schemeHandler.unicodeSupport) && parsed.host && !isIPLiteral(parsed.host) && (options.domainHost || schemeHandler && schemeHandler.domainHost) && isIP === false && nonSimpleDomain(parsed.host)) {
-        let url;
+        let url2;
         try {
-          url = new URL("http://" + parsed.host);
+          url2 = new URL("http://" + parsed.host);
         } catch (e) {
           parsed.error = parsed.error || "Host's domain name can not be converted to ASCII: " + e;
           return true;
         }
-        if (!isHostOnlyURL(url)) {
+        if (!isHostOnlyURL(url2)) {
           parsed.error = parsed.error || MALFORMED_HOST_ERROR;
           return true;
         }
-        parsed.host = url.hostname;
+        parsed.host = url2.hostname;
       }
       return false;
     }
@@ -4294,8 +4294,8 @@ var require_fast_uri = __commonJS({
         parsed.host && isIP === false && !isIPLiteral(parsed.host) && (options.domainHost || schemeHandler && schemeHandler.domainHost) && FORBIDDEN_DOMAIN_HOST_CHARACTER.test(parsed.host)
       );
     }
-    function isHostOnlyURL(url) {
-      return url.username === "" && url.password === "" && url.port === "" && url.pathname === "/" && url.search === "" && url.hash === "" && url.hostname !== "";
+    function isHostOnlyURL(url2) {
+      return url2.username === "" && url2.password === "" && url2.port === "" && url2.pathname === "/" && url2.search === "" && url2.hash === "" && url2.hostname !== "";
     }
     function parseWithStatus(uri, opts) {
       const options = Object.assign({}, opts);
@@ -4851,7 +4851,7 @@ var require_core = __commonJS({
           type: (0, dataType_1.getJSONTypes)(def.type),
           schemaType: (0, dataType_1.getJSONTypes)(def.schemaType)
         };
-        (0, util_1.eachItem)(keyword, definition.type.length === 0 ? (k) => addRule.call(this, k, definition) : (k) => definition.type.forEach((t) => addRule.call(this, k, definition, t)));
+        (0, util_1.eachItem)(keyword, definition.type.length === 0 ? (k) => addRule.call(this, k, definition) : (k) => definition.type.forEach((t2) => addRule.call(this, k, definition, t2)));
         return this;
       }
       getKeyword(keyword) {
@@ -4880,7 +4880,7 @@ var require_core = __commonJS({
       errorsText(errors = this.errors, { separator = ", ", dataVar = "data" } = {}) {
         if (!errors || errors.length === 0)
           return "No errors";
-        return errors.map((e) => `${dataVar}${e.instancePath} ${e.message}`).reduce((text, msg) => text + separator + msg);
+        return errors.map((e) => `${dataVar}${e.instancePath} ${e.message}`).reduce((text2, msg) => text2 + separator + msg);
       }
       $dataMetaSchema(metaSchema, keywordsJsonPointers) {
         const rules = this.RULES.all;
@@ -5050,7 +5050,7 @@ var require_core = __commonJS({
       if (dataType && post)
         throw new Error('keyword with "post" flag cannot have "type"');
       const { RULES } = this;
-      let ruleGroup = post ? RULES.post : RULES.rules.find(({ type: t }) => t === dataType);
+      let ruleGroup = post ? RULES.post : RULES.rules.find(({ type: t2 }) => t2 === dataType);
       if (!ruleGroup) {
         ruleGroup = { type: dataType, rules: [] };
         RULES.rules.push(ruleGroup);
@@ -5598,7 +5598,7 @@ var require_uniqueItems = __commonJS({
           gen.if((0, codegen_1._)`${i} > 1`, () => (canOptimize() ? loopN : loopN2)(i, j));
         }
         function canOptimize() {
-          return itemTypes.length > 0 && !itemTypes.some((t) => t === "object" || t === "array");
+          return itemTypes.length > 0 && !itemTypes.some((t2) => t2 === "object" || t2 === "array");
         }
         function loopN(i, j) {
           const item = gen.name("item");
@@ -9252,12 +9252,12 @@ var require_Client = __commonJS({
         const { path: path4, method, query, body, formDataParams, auth } = args;
         (0, errors_1.validateRequestPath)(path4);
         this.log(logging_1.LogLevel.INFO, "request start", { method, path: path4 });
-        const url = this.buildRequestUrl(path4, query);
+        const url2 = this.buildRequestUrl(path4, query);
         const bodyAsJsonString = this.serializeBody(body);
         const headers = this.buildRequestHeaders(args.headers, auth, bodyAsJsonString);
         const formData = this.buildFormData(formDataParams, headers);
         return this.executeWithRetry({
-          url,
+          url: url2,
           method,
           path: path4,
           headers,
@@ -9272,11 +9272,11 @@ var require_Client = __commonJS({
         const { path: path4, method, query, body, auth } = args;
         (0, errors_1.validateRequestPath)(path4);
         this.log(logging_1.LogLevel.INFO, "stream request start", { method, path: path4 });
-        const url = this.buildRequestUrl(path4, query);
+        const url2 = this.buildRequestUrl(path4, query);
         const bodyAsJsonString = this.serializeBody(body);
         const headers = this.buildRequestHeaders(args.headers, auth, bodyAsJsonString);
         const response = await this.executeWithRetry({
-          url,
+          url: url2,
           method,
           path: path4,
           headers,
@@ -9335,21 +9335,21 @@ var require_Client = __commonJS({
        * Builds the full URL with query parameters.
        */
       buildRequestUrl(path4, query) {
-        const url = new URL(`${__classPrivateFieldGet(this, _Client_prefixUrl, "f")}${path4}`);
+        const url2 = new URL(`${__classPrivateFieldGet(this, _Client_prefixUrl, "f")}${path4}`);
         if (query) {
           for (const [key, value] of Object.entries(query)) {
             if (value !== void 0 && value !== null) {
               if (Array.isArray(value)) {
                 for (const val of value) {
-                  url.searchParams.append(key, decodeURIComponent(val));
+                  url2.searchParams.append(key, decodeURIComponent(val));
                 }
               } else {
-                url.searchParams.append(key, String(value));
+                url2.searchParams.append(key, String(value));
               }
             }
           }
         }
-        return url;
+        return url2;
       }
       /**
        * Serializes the request body to JSON string if non-empty.
@@ -9422,12 +9422,12 @@ var require_Client = __commonJS({
        * Executes the request with retry logic.
        */
       async executeWithRetry(args, execute) {
-        const { url, method, path: path4, headers, body } = args;
+        const { url: url2, method, path: path4, headers, body } = args;
         let attempt = 0;
         while (true) {
           try {
             return await execute({
-              url,
+              url: url2,
               method,
               path: path4,
               headers,
@@ -9458,8 +9458,8 @@ var require_Client = __commonJS({
        * Executes a single HTTP request (no retry).
        */
       async executeSingleRequest(args) {
-        const { url, method, path: path4, headers, body } = args;
-        const response = await errors_1.RequestTimeoutError.rejectAfterTimeout(__classPrivateFieldGet(this, _Client_fetch, "f").call(this, url.toString(), {
+        const { url: url2, method, path: path4, headers, body } = args;
+        const response = await errors_1.RequestTimeoutError.rejectAfterTimeout(__classPrivateFieldGet(this, _Client_fetch, "f").call(this, url2.toString(), {
           method: method.toUpperCase(),
           headers,
           body,
@@ -9483,8 +9483,8 @@ var require_Client = __commonJS({
        * retried; once a stream has opened, its events are never replayed.
        */
       async executeSingleStreamRequest(args) {
-        const { url, method, body } = args;
-        const response = await errors_1.RequestTimeoutError.rejectAfterTimeout(__classPrivateFieldGet(this, _Client_fetch, "f").call(this, url.toString(), {
+        const { url: url2, method, body } = args;
+        const response = await errors_1.RequestTimeoutError.rejectAfterTimeout(__classPrivateFieldGet(this, _Client_fetch, "f").call(this, url2.toString(), {
           method: method.toUpperCase(),
           headers: args.headers,
           body,
@@ -9570,9 +9570,9 @@ var require_Client = __commonJS({
         if (!isNaN(seconds) && seconds >= 0) {
           return seconds * 1e3;
         }
-        const date = Date.parse(retryAfterValue);
-        if (!isNaN(date)) {
-          const delayMs = date - Date.now();
+        const date2 = Date.parse(retryAfterValue);
+        if (!isNaN(date2)) {
+          const delayMs = date2 - Date.now();
           return delayMs > 0 ? delayMs : 0;
         }
         return void 0;
@@ -10242,6 +10242,448 @@ var GIT_READ = [
   ...bash("git fetch")
 ];
 var NPM_TEST = [...bash("npm test"), ...bash("npm run"), ...bash("npm ci")];
+
+// plugins/arima/scripts/src/ids.ts
+var ID_WIDTHS = {
+  REQ: 3,
+  NFR: 3,
+  EP: 2,
+  US: 3,
+  TC: 4,
+  BUG: 3,
+  ADR: 4,
+  RISK: 3,
+  DEC: 4,
+  Q: 3,
+  MS: 2,
+  CR: 3,
+  INC: 3,
+  LES: 3
+};
+var ID_PREFIXES = Object.keys(ID_WIDTHS);
+
+// plugins/arima/scripts/src/notion/schema.ts
+var ROLE_OPTIONS = [
+  "orchestrator",
+  "ba",
+  "ux",
+  "architect",
+  "tech-lead",
+  "developer",
+  "qa",
+  "security",
+  "devops",
+  "human"
+];
+var MOSCOW = ["Must", "Should", "Could", "Won't"];
+var PRIORITY_P = ["P1", "P2", "P3", "P4"];
+var t = (name) => ({ name, type: "title" });
+var text = (name, extra = {}) => ({
+  name,
+  type: "rich_text",
+  ...extra
+});
+var num = (name) => ({ name, type: "number" });
+var date = (name) => ({ name, type: "date" });
+var check = (name, extra = {}) => ({
+  name,
+  type: "checkbox",
+  ...extra
+});
+var url = (name) => ({ name, type: "url" });
+var people = (name, extra = {}) => ({
+  name,
+  type: "people",
+  ...extra
+});
+var select = (name, options, extra = {}) => ({
+  name,
+  type: "select",
+  options,
+  ...extra
+});
+var rel = (name, target, reverse) => ({
+  name,
+  type: "relation",
+  relation: { target, reverse }
+});
+var DATABASES = [
+  {
+    key: "gates",
+    title: "Gates",
+    props: [
+      t("Gate"),
+      num("Phase"),
+      select(
+        "Status",
+        ["Not ready", "Ready for review", "Approved", "Approved with conditions", "Rejected"],
+        {
+          humanOnlyValues: ["Approved", "Approved with conditions", "Rejected"]
+        }
+      ),
+      people("Approvers", { humanOnly: true }),
+      people("Decided by", { humanOnly: true }),
+      date("Decided on"),
+      text("Conditions"),
+      text("Comments"),
+      rel("Documents", "documents", "Gates")
+    ]
+  },
+  {
+    key: "requirements",
+    title: "Requirements",
+    props: [
+      t("ID"),
+      text("Title"),
+      select("Type", ["Functional", "NFR", "Security"]),
+      select("Priority", MOSCOW),
+      select("Status", ["Draft", "Approved", "Changed", "Retired"]),
+      text("Baseline version"),
+      {
+        name: "Test results",
+        type: "rollup",
+        rollup: { relation: "Test Cases", property: "Last result", fn: "show_original" }
+      },
+      {
+        name: "Coverage",
+        type: "formula",
+        formula: 'if(contains(prop("Test results"), "Pass"), "Covered", "Not covered")'
+      },
+      rel("Stories", "stories", "Requirements"),
+      rel("Test Cases", "test_cases", "Requirements"),
+      rel("Change Requests", "change_requests", "Requirements")
+    ]
+  },
+  {
+    key: "epics",
+    title: "Epics",
+    props: [
+      t("ID"),
+      text("Title"),
+      select("Status", ["Planned", "In progress", "Done", "Cancelled"]),
+      rel("Requirements", "requirements", "Epics"),
+      rel("Stories", "stories", "Epic"),
+      rel("Milestones", "milestones", "Epics")
+    ]
+  },
+  {
+    key: "stories",
+    title: "Stories",
+    props: [
+      t("ID"),
+      text("Title"),
+      select("Type", ["Story", "Bug fix", "Tech task", "Spike"]),
+      select("Status", [
+        "Backlog",
+        "Ready",
+        "In Progress",
+        "In Review",
+        "In QA",
+        "PO Acceptance",
+        "Done",
+        "Released",
+        "Blocked",
+        "Cancelled"
+      ]),
+      num("Priority"),
+      select("Complexity", ["S", "M", "L"]),
+      text("Acceptance criteria"),
+      select("Assigned role", ROLE_OPTIONS),
+      people("Assignee"),
+      url("PR link"),
+      num("Attempt"),
+      num("Budget USD"),
+      {
+        name: "Cost USD",
+        type: "rollup",
+        rollup: { relation: "Cost log", property: "Cost USD", fn: "sum" }
+      },
+      text("Blocked reason"),
+      date("Started"),
+      date("Done"),
+      rel("Milestone", "milestones", "Stories"),
+      rel("Test Cases", "test_cases", "Story"),
+      rel("Bugs", "bugs", "Story"),
+      rel("Questions", "questions", "Story"),
+      rel("Cost log", "cost_log", "Story")
+    ]
+  },
+  {
+    key: "test_cases",
+    title: "Test Cases",
+    props: [
+      t("ID"),
+      text("Title"),
+      select("Type", ["unit", "integration", "e2e", "manual", "UAT"]),
+      check("Automated"),
+      select("Last result", ["Pass", "Fail", "Blocked", "Not run"]),
+      date("Last run"),
+      text("Test path")
+    ]
+  },
+  {
+    key: "bugs",
+    title: "Bugs",
+    props: [
+      t("ID"),
+      text("Title"),
+      select("Severity", ["S1", "S2", "S3", "S4"]),
+      select("Priority", PRIORITY_P),
+      select("Status", ["Open", "In progress", "Fixed", "Verified", "Closed", "Cancelled"]),
+      select("Environment", ["local", "preview", "staging", "production"]),
+      select("Found by", ROLE_OPTIONS),
+      text("Steps"),
+      text("Expected"),
+      text("Actual"),
+      { name: "Evidence", type: "files" },
+      rel("Release", "releases", "Bugs")
+    ]
+  },
+  {
+    key: "milestones",
+    title: "Milestones",
+    props: [
+      t("ID"),
+      text("Name"),
+      select("Status", ["Planned", "Active", "Review", "Done"]),
+      date("Start"),
+      date("End"),
+      num("Budget USD"),
+      {
+        name: "Cost USD",
+        type: "rollup",
+        rollup: { relation: "Cost log", property: "Cost USD", fn: "sum" }
+      }
+    ]
+  },
+  {
+    key: "documents",
+    title: "Documents",
+    props: [
+      t("Title"),
+      select("Type", [
+        "Project brief",
+        "PRD",
+        "URS",
+        "SRS",
+        "Charter",
+        "Budget plan",
+        "Feasibility note",
+        "Compliance screen",
+        "Glossary",
+        "Personas and journeys",
+        "Security requirements",
+        "DPIA",
+        "Master Test Plan",
+        "SAD",
+        "ADR",
+        "OpenAPI",
+        "Data model",
+        "Threat model",
+        "Environment matrix",
+        "Report",
+        "Runbook",
+        "Release notes",
+        "Guide",
+        "Other"
+      ]),
+      num("Phase"),
+      select("Owner role", ROLE_OPTIONS),
+      text("Version"),
+      select("Status", ["Draft", "In review", "Approved", "Superseded"]),
+      select("Master", ["Notion", "GitHub"]),
+      url("Link"),
+      date("Last synced")
+    ]
+  },
+  {
+    key: "decisions",
+    title: "Decisions",
+    props: [
+      t("ID"),
+      text("Summary"),
+      select("Made by", ROLE_OPTIONS),
+      text("Options considered"),
+      text("Chosen"),
+      check("Reversible"),
+      check("Veto", { humanOnly: true }),
+      text("Veto reason", { humanOnly: true }),
+      date("Date"),
+      text("Item")
+    ]
+  },
+  {
+    key: "questions",
+    title: "Questions",
+    props: [
+      t("ID"),
+      text("Question"),
+      select("Asked by", ROLE_OPTIONS),
+      text("Options"),
+      text("Recommendation"),
+      check("Blocking"),
+      text("Default"),
+      date("Expires"),
+      text("Answer", { humanOnly: true }),
+      people("Answered by", { humanOnly: true }),
+      select("Status", ["Open", "Answered", "Expired", "Withdrawn"]),
+      text("Item")
+    ]
+  },
+  {
+    key: "meetings",
+    title: "Meetings",
+    props: [
+      t("ID"),
+      select("Type", [
+        "Standup",
+        "Requirements review",
+        "Design review",
+        "Milestone review",
+        "Go/No-Go",
+        "Postmortem",
+        "Retro"
+      ]),
+      date("Date"),
+      { name: "Participants", type: "multi_select", options: ROLE_OPTIONS },
+      text("Decisions"),
+      text("Action items"),
+      num("Cost USD"),
+      rel("Stories", "stories", "Meetings"),
+      rel("Gates", "gates", "Meetings")
+    ]
+  },
+  {
+    key: "digests",
+    title: "Digests",
+    props: [
+      t("Date"),
+      text("Summary"),
+      text("Shipped"),
+      text("Awaiting you"),
+      num("Spend today"),
+      num("Month to date"),
+      people("Reviewed by"),
+      num("Minutes spent")
+    ]
+  },
+  {
+    key: "releases",
+    title: "Releases",
+    props: [
+      t("Version"),
+      select("Status", [
+        "Planned",
+        "Candidate",
+        "Awaiting approval",
+        "Approved",
+        "Deployed",
+        "Rolled back"
+      ]),
+      date("Date"),
+      select("Prod deploy approval", ["Pending", "Approved", "Rejected"], { humanOnly: true }),
+      people("Prod deploy approver", { humanOnly: true }),
+      text("Notes"),
+      rel("Stories", "stories", "Releases")
+    ]
+  },
+  {
+    key: "incidents",
+    title: "Incidents",
+    props: [
+      t("ID"),
+      select("Priority", PRIORITY_P),
+      select("Status", ["Open", "Mitigated", "Resolved", "Closed"]),
+      date("Started"),
+      date("Mitigated"),
+      date("Resolved"),
+      url("Postmortem link"),
+      rel("Release", "releases", "Incidents"),
+      rel("Actions", "stories", "Incident actions")
+    ]
+  },
+  {
+    key: "change_requests",
+    title: "Change Requests",
+    props: [
+      t("ID"),
+      text("Title"),
+      text("Requester"),
+      select("Status", [
+        "Submitted",
+        "Impact analysis",
+        "Pending decision",
+        "Approved",
+        "Rejected",
+        "Withdrawn"
+      ]),
+      text("Impact"),
+      num("Cost estimate"),
+      text("Schedule impact"),
+      select("Decision", ["Pending", "Approved", "Rejected"], { humanOnly: true }),
+      people("Approver", { humanOnly: true }),
+      rel("Stories", "stories", "Change Requests")
+    ]
+  },
+  {
+    key: "risks",
+    title: "Risks",
+    props: [
+      t("ID"),
+      text("Title"),
+      num("Probability"),
+      num("Impact"),
+      { name: "Score", type: "formula", formula: 'prop("Probability") * prop("Impact")' },
+      select("Owner role", ROLE_OPTIONS),
+      text("Mitigation"),
+      select("Status", ["Open", "Mitigating", "Accepted", "Closed"]),
+      text("Items")
+    ]
+  },
+  {
+    key: "lessons",
+    title: "Lessons",
+    props: [
+      t("ID"),
+      select("Proposed by", ROLE_OPTIONS),
+      text("Change"),
+      select("Scope", ["project", "upstream"]),
+      select("Status", ["Proposed", "Approved", "Rejected", "Applied"]),
+      rel("Milestone", "milestones", "Lessons")
+    ]
+  },
+  {
+    key: "cost_log",
+    title: "Cost log",
+    props: [
+      t("Date"),
+      select("Role", ROLE_OPTIONS),
+      num("Phase"),
+      num("Runs"),
+      num("Input tokens"),
+      num("Output tokens"),
+      num("Cache-read tokens"),
+      num("Cost USD"),
+      num("Agent minutes"),
+      num("Rework"),
+      text("Item"),
+      rel("Milestone", "milestones", "Cost log")
+    ]
+  },
+  {
+    key: "human_tasks",
+    title: "Human tasks",
+    props: [
+      t("Task"),
+      people("Assignee"),
+      select("Role", ROLE_OPTIONS),
+      url("Template link"),
+      date("Due"),
+      select("Status", ["Open", "In progress", "Done", "Cancelled"]),
+      text("Item")
+    ]
+  }
+];
 
 // plugins/arima/scripts/src/run-agent.ts
 function killTree(pid) {

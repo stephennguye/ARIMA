@@ -177,6 +177,9 @@
         "scheduler": { "enum": ["windows-task-scheduler", "cron", "github-actions"] },
         "auth": { "enum": ["seat", "api_key"] },
         "allow_usage_credits": { "type": "boolean" },
+        "sandbox": { "enum": ["docker", "none"], "default": "none", "description": "docker: run each role in a container on a per-run clone, with no push credential and egress only through an allow-list proxy (ADR-0006, WP-190). none: run on the host; the local safety layers are advisory for developer and QA runs." },
+        "sandbox_image": { "type": "string", "minLength": 1, "description": "Image for sandboxed runs. Default arima-sandbox:1 (build it from plugins/arima/templates/sandbox)." },
+        "sandbox_allow": { "type": "array", "items": { "type": "string", "minLength": 1 }, "description": "Extra hosts a sandboxed role may reach (HTTPS only), besides api.anthropic.com and the package registry. A leading *. matches subdomains." },
         "isolate_user_settings": { "type": "boolean", "default": true, "description": "Run roles with only the project settings: the user's own settings, plugins, MCP servers and slash commands are not loaded (WP-191). Leave true unless a smoke run shows a reason." }
       }
     },

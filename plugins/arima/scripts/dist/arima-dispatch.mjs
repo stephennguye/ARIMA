@@ -3264,8 +3264,8 @@ var require_utils = __commonJS({
       }
       return ind;
     }
-    function removeDotSegments(path31) {
-      let input = path31;
+    function removeDotSegments(path32) {
+      let input = path32;
       const output = [];
       let nextSlash = -1;
       let len = 0;
@@ -3339,11 +3339,11 @@ var require_utils = __commonJS({
       }
       return output.join("");
     }
-    function removeDotSegmentsRelative(path31) {
-      if (path31 === "" || path31[0] === "/") {
-        return removeDotSegments(path31);
+    function removeDotSegmentsRelative(path32) {
+      if (path32 === "" || path32[0] === "/") {
+        return removeDotSegments(path32);
       }
-      const segments = path31.split("/");
+      const segments = path32.split("/");
       const last = segments.length - 1;
       const output = [];
       let trailingDirectory = false;
@@ -3706,8 +3706,8 @@ var require_schemes = __commonJS({
       }
       if (wsComponent.resourceName) {
         const queryIndex = wsComponent.resourceName.indexOf("?");
-        const path31 = queryIndex === -1 ? wsComponent.resourceName : wsComponent.resourceName.slice(0, queryIndex);
-        wsComponent.path = path31 && path31 !== "/" ? path31 : void 0;
+        const path32 = queryIndex === -1 ? wsComponent.resourceName : wsComponent.resourceName.slice(0, queryIndex);
+        wsComponent.path = path32 && path32 !== "/" ? path32 : void 0;
         wsComponent.query = queryIndex === -1 ? void 0 : wsComponent.resourceName.slice(queryIndex + 1);
         wsComponent.resourceName = void 0;
       }
@@ -8158,17 +8158,17 @@ var require_visit = __commonJS({
     visit.BREAK = BREAK;
     visit.SKIP = SKIP;
     visit.REMOVE = REMOVE;
-    function visit_(key, node, visitor, path31) {
-      const ctrl = callVisitor(key, node, visitor, path31);
+    function visit_(key, node, visitor, path32) {
+      const ctrl = callVisitor(key, node, visitor, path32);
       if (identity.isNode(ctrl) || identity.isPair(ctrl)) {
-        replaceNode(key, path31, ctrl);
-        return visit_(key, ctrl, visitor, path31);
+        replaceNode(key, path32, ctrl);
+        return visit_(key, ctrl, visitor, path32);
       }
       if (typeof ctrl !== "symbol") {
         if (identity.isCollection(node)) {
-          path31 = Object.freeze(path31.concat(node));
+          path32 = Object.freeze(path32.concat(node));
           for (let i = 0; i < node.items.length; ++i) {
-            const ci = visit_(i, node.items[i], visitor, path31);
+            const ci = visit_(i, node.items[i], visitor, path32);
             if (typeof ci === "number")
               i = ci - 1;
             else if (ci === BREAK)
@@ -8179,13 +8179,13 @@ var require_visit = __commonJS({
             }
           }
         } else if (identity.isPair(node)) {
-          path31 = Object.freeze(path31.concat(node));
-          const ck = visit_("key", node.key, visitor, path31);
+          path32 = Object.freeze(path32.concat(node));
+          const ck = visit_("key", node.key, visitor, path32);
           if (ck === BREAK)
             return BREAK;
           else if (ck === REMOVE)
             node.key = null;
-          const cv = visit_("value", node.value, visitor, path31);
+          const cv = visit_("value", node.value, visitor, path32);
           if (cv === BREAK)
             return BREAK;
           else if (cv === REMOVE)
@@ -8206,17 +8206,17 @@ var require_visit = __commonJS({
     visitAsync.BREAK = BREAK;
     visitAsync.SKIP = SKIP;
     visitAsync.REMOVE = REMOVE;
-    async function visitAsync_(key, node, visitor, path31) {
-      const ctrl = await callVisitor(key, node, visitor, path31);
+    async function visitAsync_(key, node, visitor, path32) {
+      const ctrl = await callVisitor(key, node, visitor, path32);
       if (identity.isNode(ctrl) || identity.isPair(ctrl)) {
-        replaceNode(key, path31, ctrl);
-        return visitAsync_(key, ctrl, visitor, path31);
+        replaceNode(key, path32, ctrl);
+        return visitAsync_(key, ctrl, visitor, path32);
       }
       if (typeof ctrl !== "symbol") {
         if (identity.isCollection(node)) {
-          path31 = Object.freeze(path31.concat(node));
+          path32 = Object.freeze(path32.concat(node));
           for (let i = 0; i < node.items.length; ++i) {
-            const ci = await visitAsync_(i, node.items[i], visitor, path31);
+            const ci = await visitAsync_(i, node.items[i], visitor, path32);
             if (typeof ci === "number")
               i = ci - 1;
             else if (ci === BREAK)
@@ -8227,13 +8227,13 @@ var require_visit = __commonJS({
             }
           }
         } else if (identity.isPair(node)) {
-          path31 = Object.freeze(path31.concat(node));
-          const ck = await visitAsync_("key", node.key, visitor, path31);
+          path32 = Object.freeze(path32.concat(node));
+          const ck = await visitAsync_("key", node.key, visitor, path32);
           if (ck === BREAK)
             return BREAK;
           else if (ck === REMOVE)
             node.key = null;
-          const cv = await visitAsync_("value", node.value, visitor, path31);
+          const cv = await visitAsync_("value", node.value, visitor, path32);
           if (cv === BREAK)
             return BREAK;
           else if (cv === REMOVE)
@@ -8260,23 +8260,23 @@ var require_visit = __commonJS({
       }
       return visitor;
     }
-    function callVisitor(key, node, visitor, path31) {
+    function callVisitor(key, node, visitor, path32) {
       if (typeof visitor === "function")
-        return visitor(key, node, path31);
+        return visitor(key, node, path32);
       if (identity.isMap(node))
-        return visitor.Map?.(key, node, path31);
+        return visitor.Map?.(key, node, path32);
       if (identity.isSeq(node))
-        return visitor.Seq?.(key, node, path31);
+        return visitor.Seq?.(key, node, path32);
       if (identity.isPair(node))
-        return visitor.Pair?.(key, node, path31);
+        return visitor.Pair?.(key, node, path32);
       if (identity.isScalar(node))
-        return visitor.Scalar?.(key, node, path31);
+        return visitor.Scalar?.(key, node, path32);
       if (identity.isAlias(node))
-        return visitor.Alias?.(key, node, path31);
+        return visitor.Alias?.(key, node, path32);
       return void 0;
     }
-    function replaceNode(key, path31, node) {
-      const parent = path31[path31.length - 1];
+    function replaceNode(key, path32, node) {
+      const parent = path32[path32.length - 1];
       if (identity.isCollection(parent)) {
         parent.items[key] = node;
       } else if (identity.isPair(parent)) {
@@ -8888,10 +8888,10 @@ var require_Collection = __commonJS({
     var createNode = require_createNode();
     var identity = require_identity();
     var Node = require_Node();
-    function collectionFromPath(schema, path31, value) {
+    function collectionFromPath(schema, path32, value) {
       let v = value;
-      for (let i = path31.length - 1; i >= 0; --i) {
-        const k = path31[i];
+      for (let i = path32.length - 1; i >= 0; --i) {
+        const k = path32[i];
         if (typeof k === "number" && Number.isInteger(k) && k >= 0) {
           const a = [];
           a[k] = v;
@@ -8910,7 +8910,7 @@ var require_Collection = __commonJS({
         sourceObjects: /* @__PURE__ */ new Map()
       });
     }
-    var isEmptyPath = (path31) => path31 == null || typeof path31 === "object" && !!path31[Symbol.iterator]().next().done;
+    var isEmptyPath = (path32) => path32 == null || typeof path32 === "object" && !!path32[Symbol.iterator]().next().done;
     var Collection = class extends Node.NodeBase {
       constructor(type, schema) {
         super(type);
@@ -8940,11 +8940,11 @@ var require_Collection = __commonJS({
        * be a Pair instance or a `{ key, value }` object, which may not have a key
        * that already exists in the map.
        */
-      addIn(path31, value) {
-        if (isEmptyPath(path31))
+      addIn(path32, value) {
+        if (isEmptyPath(path32))
           this.add(value);
         else {
-          const [key, ...rest] = path31;
+          const [key, ...rest] = path32;
           const node = this.get(key, true);
           if (identity.isCollection(node))
             node.addIn(rest, value);
@@ -8958,8 +8958,8 @@ var require_Collection = __commonJS({
        * Removes a value from the collection.
        * @returns `true` if the item was found and removed.
        */
-      deleteIn(path31) {
-        const [key, ...rest] = path31;
+      deleteIn(path32) {
+        const [key, ...rest] = path32;
         if (rest.length === 0)
           return this.delete(key);
         const node = this.get(key, true);
@@ -8973,8 +8973,8 @@ var require_Collection = __commonJS({
        * scalar values from their surrounding node; to disable set `keepScalar` to
        * `true` (collections are always returned intact).
        */
-      getIn(path31, keepScalar) {
-        const [key, ...rest] = path31;
+      getIn(path32, keepScalar) {
+        const [key, ...rest] = path32;
         const node = this.get(key, true);
         if (rest.length === 0)
           return !keepScalar && identity.isScalar(node) ? node.value : node;
@@ -8992,8 +8992,8 @@ var require_Collection = __commonJS({
       /**
        * Checks if the collection includes a value with the key `key`.
        */
-      hasIn(path31) {
-        const [key, ...rest] = path31;
+      hasIn(path32) {
+        const [key, ...rest] = path32;
         if (rest.length === 0)
           return this.has(key);
         const node = this.get(key, true);
@@ -9003,8 +9003,8 @@ var require_Collection = __commonJS({
        * Sets a value in this collection. For `!!set`, `value` needs to be a
        * boolean to add/remove the item from the set.
        */
-      setIn(path31, value) {
-        const [key, ...rest] = path31;
+      setIn(path32, value) {
+        const [key, ...rest] = path32;
         if (rest.length === 0) {
           this.set(key, value);
         } else {
@@ -11519,9 +11519,9 @@ var require_Document = __commonJS({
           this.contents.add(value);
       }
       /** Adds a value to the document. */
-      addIn(path31, value) {
+      addIn(path32, value) {
         if (assertCollection(this.contents))
-          this.contents.addIn(path31, value);
+          this.contents.addIn(path32, value);
       }
       /**
        * Create a new `Alias` node, ensuring that the target `node` has the required anchor.
@@ -11596,14 +11596,14 @@ var require_Document = __commonJS({
        * Removes a value from the document.
        * @returns `true` if the item was found and removed.
        */
-      deleteIn(path31) {
-        if (Collection.isEmptyPath(path31)) {
+      deleteIn(path32) {
+        if (Collection.isEmptyPath(path32)) {
           if (this.contents == null)
             return false;
           this.contents = null;
           return true;
         }
-        return assertCollection(this.contents) ? this.contents.deleteIn(path31) : false;
+        return assertCollection(this.contents) ? this.contents.deleteIn(path32) : false;
       }
       /**
        * Returns item at `key`, or `undefined` if not found. By default unwraps
@@ -11618,10 +11618,10 @@ var require_Document = __commonJS({
        * scalar values from their surrounding node; to disable set `keepScalar` to
        * `true` (collections are always returned intact).
        */
-      getIn(path31, keepScalar) {
-        if (Collection.isEmptyPath(path31))
+      getIn(path32, keepScalar) {
+        if (Collection.isEmptyPath(path32))
           return !keepScalar && identity.isScalar(this.contents) ? this.contents.value : this.contents;
-        return identity.isCollection(this.contents) ? this.contents.getIn(path31, keepScalar) : void 0;
+        return identity.isCollection(this.contents) ? this.contents.getIn(path32, keepScalar) : void 0;
       }
       /**
        * Checks if the document includes a value with the key `key`.
@@ -11632,10 +11632,10 @@ var require_Document = __commonJS({
       /**
        * Checks if the document includes a value at `path`.
        */
-      hasIn(path31) {
-        if (Collection.isEmptyPath(path31))
+      hasIn(path32) {
+        if (Collection.isEmptyPath(path32))
           return this.contents !== void 0;
-        return identity.isCollection(this.contents) ? this.contents.hasIn(path31) : false;
+        return identity.isCollection(this.contents) ? this.contents.hasIn(path32) : false;
       }
       /**
        * Sets a value in this document. For `!!set`, `value` needs to be a
@@ -11652,13 +11652,13 @@ var require_Document = __commonJS({
        * Sets a value in this document. For `!!set`, `value` needs to be a
        * boolean to add/remove the item from the set.
        */
-      setIn(path31, value) {
-        if (Collection.isEmptyPath(path31)) {
+      setIn(path32, value) {
+        if (Collection.isEmptyPath(path32)) {
           this.contents = value;
         } else if (this.contents == null) {
-          this.contents = Collection.collectionFromPath(this.schema, Array.from(path31), value);
+          this.contents = Collection.collectionFromPath(this.schema, Array.from(path32), value);
         } else if (assertCollection(this.contents)) {
-          this.contents.setIn(path31, value);
+          this.contents.setIn(path32, value);
         }
       }
       /**
@@ -13619,9 +13619,9 @@ var require_cst_visit = __commonJS({
     visit.BREAK = BREAK;
     visit.SKIP = SKIP;
     visit.REMOVE = REMOVE;
-    visit.itemAtPath = (cst, path31) => {
+    visit.itemAtPath = (cst, path32) => {
       let item = cst;
-      for (const [field, index] of path31) {
+      for (const [field, index] of path32) {
         const tok = item?.[field];
         if (tok && "items" in tok) {
           item = tok.items[index];
@@ -13630,23 +13630,23 @@ var require_cst_visit = __commonJS({
       }
       return item;
     };
-    visit.parentCollection = (cst, path31) => {
-      const parent = visit.itemAtPath(cst, path31.slice(0, -1));
-      const field = path31[path31.length - 1][0];
+    visit.parentCollection = (cst, path32) => {
+      const parent = visit.itemAtPath(cst, path32.slice(0, -1));
+      const field = path32[path32.length - 1][0];
       const coll = parent?.[field];
       if (coll && "items" in coll)
         return coll;
       throw new Error("Parent collection not found");
     };
-    function _visit(path31, item, visitor) {
-      let ctrl = visitor(item, path31);
+    function _visit(path32, item, visitor) {
+      let ctrl = visitor(item, path32);
       if (typeof ctrl === "symbol")
         return ctrl;
       for (const field of ["key", "value"]) {
         const token = item[field];
         if (token && "items" in token) {
           for (let i = 0; i < token.items.length; ++i) {
-            const ci = _visit(Object.freeze(path31.concat([[field, i]])), token.items[i], visitor);
+            const ci = _visit(Object.freeze(path32.concat([[field, i]])), token.items[i], visitor);
             if (typeof ci === "number")
               i = ci - 1;
             else if (ci === BREAK)
@@ -13657,10 +13657,10 @@ var require_cst_visit = __commonJS({
             }
           }
           if (typeof ctrl === "function" && field === "key")
-            ctrl = ctrl(item, path31);
+            ctrl = ctrl(item, path32);
         }
       }
-      return typeof ctrl === "function" ? ctrl(item, path31) : ctrl;
+      return typeof ctrl === "function" ? ctrl(item, path32) : ctrl;
     }
     exports.visit = visit;
   }
@@ -16713,19 +16713,19 @@ var require_errors3 = __commonJS({
       }
     };
     exports.BrowserTokenNotAllowedError = BrowserTokenNotAllowedError;
-    function validateRequestPath(path31) {
-      if (path31.includes("..")) {
-        throw new InvalidPathParameterError(`Request path "${path31}" contains path traversal sequence ".."`);
+    function validateRequestPath(path32) {
+      if (path32.includes("..")) {
+        throw new InvalidPathParameterError(`Request path "${path32}" contains path traversal sequence ".."`);
       }
-      if (/%2e/i.test(path31)) {
+      if (/%2e/i.test(path32)) {
         let decoded;
         try {
-          decoded = decodeURIComponent(path31);
+          decoded = decodeURIComponent(path32);
         } catch {
           return;
         }
         if (decoded.includes("..")) {
-          throw new InvalidPathParameterError(`Request path "${path31}" contains encoded path traversal sequence`);
+          throw new InvalidPathParameterError(`Request path "${path32}" contains encoded path traversal sequence`);
         }
       }
     }
@@ -17409,17 +17409,17 @@ var require_Client = __commonJS({
        * Sends a request.
        */
       async request(args) {
-        const { path: path31, method, query, body, formDataParams, auth } = args;
-        (0, errors_1.validateRequestPath)(path31);
-        this.log(logging_1.LogLevel.INFO, "request start", { method, path: path31 });
-        const url2 = this.buildRequestUrl(path31, query);
+        const { path: path32, method, query, body, formDataParams, auth } = args;
+        (0, errors_1.validateRequestPath)(path32);
+        this.log(logging_1.LogLevel.INFO, "request start", { method, path: path32 });
+        const url2 = this.buildRequestUrl(path32, query);
         const bodyAsJsonString = this.serializeBody(body);
         const headers = this.buildRequestHeaders(args.headers, auth, bodyAsJsonString);
         const formData = this.buildFormData(formDataParams, headers);
         return this.executeWithRetry({
           url: url2,
           method,
-          path: path31,
+          path: path32,
           headers,
           body: bodyAsJsonString !== null && bodyAsJsonString !== void 0 ? bodyAsJsonString : formData
         }, (request) => this.executeSingleRequest(request));
@@ -17429,20 +17429,20 @@ var require_Client = __commonJS({
        */
       async *streamRequest(args, parseEvent) {
         var _a;
-        const { path: path31, method, query, body, auth } = args;
-        (0, errors_1.validateRequestPath)(path31);
-        this.log(logging_1.LogLevel.INFO, "stream request start", { method, path: path31 });
-        const url2 = this.buildRequestUrl(path31, query);
+        const { path: path32, method, query, body, auth } = args;
+        (0, errors_1.validateRequestPath)(path32);
+        this.log(logging_1.LogLevel.INFO, "stream request start", { method, path: path32 });
+        const url2 = this.buildRequestUrl(path32, query);
         const bodyAsJsonString = this.serializeBody(body);
         const headers = this.buildRequestHeaders(args.headers, auth, bodyAsJsonString);
         const response = await this.executeWithRetry({
           url: url2,
           method,
-          path: path31,
+          path: path32,
           headers,
           body: bodyAsJsonString
         }, (request) => this.executeSingleStreamRequest(request));
-        this.log(logging_1.LogLevel.INFO, "stream request opened", { method, path: path31 });
+        this.log(logging_1.LogLevel.INFO, "stream request opened", { method, path: path32 });
         if (response.body === void 0 || response.body === null) {
           for (const frame of takeSseFrames({
             content: await response.text(),
@@ -17494,8 +17494,8 @@ var require_Client = __commonJS({
       /**
        * Builds the full URL with query parameters.
        */
-      buildRequestUrl(path31, query) {
-        const url2 = new URL(`${__classPrivateFieldGet(this, _Client_prefixUrl, "f")}${path31}`);
+      buildRequestUrl(path32, query) {
+        const url2 = new URL(`${__classPrivateFieldGet(this, _Client_prefixUrl, "f")}${path32}`);
         if (query) {
           for (const [key, value] of Object.entries(query)) {
             if (value !== void 0 && value !== null) {
@@ -17582,14 +17582,14 @@ var require_Client = __commonJS({
        * Executes the request with retry logic.
        */
       async executeWithRetry(args, execute) {
-        const { url: url2, method, path: path31, headers, body } = args;
+        const { url: url2, method, path: path32, headers, body } = args;
         let attempt = 0;
         while (true) {
           try {
             return await execute({
               url: url2,
               method,
-              path: path31,
+              path: path32,
               headers,
               body
             });
@@ -17602,7 +17602,7 @@ var require_Client = __commonJS({
               const delayMs = this.calculateRetryDelay(error, attempt);
               this.log(logging_1.LogLevel.INFO, "retrying request", {
                 method,
-                path: path31,
+                path: path32,
                 attempt: attempt + 1,
                 delayMs
               });
@@ -17618,7 +17618,7 @@ var require_Client = __commonJS({
        * Executes a single HTTP request (no retry).
        */
       async executeSingleRequest(args) {
-        const { url: url2, method, path: path31, headers, body } = args;
+        const { url: url2, method, path: path32, headers, body } = args;
         const response = await errors_1.RequestTimeoutError.rejectAfterTimeout(__classPrivateFieldGet(this, _Client_fetch, "f").call(this, url2.toString(), {
           method: method.toUpperCase(),
           headers,
@@ -17632,7 +17632,7 @@ var require_Client = __commonJS({
         const responseJson = JSON.parse(responseText);
         this.log(logging_1.LogLevel.INFO, "request success", {
           method,
-          path: path31,
+          path: path32,
           ...this.extractRequestId(responseJson)
         });
         return responseJson;
@@ -18298,7 +18298,7 @@ var require_src = __commonJS({
 });
 
 // plugins/arima/scripts/src/cli/dispatch-cli.ts
-import path30 from "node:path";
+import path31 from "node:path";
 import { parseArgs } from "node:util";
 
 // plugins/arima/scripts/src/config.ts
@@ -18637,8 +18637,8 @@ var REQUIRED_HARD_STOPS = HARD_STOPS;
 // plugins/arima/scripts/src/dispatch.ts
 import { execFileSync as execFileSync5 } from "node:child_process";
 import { createHash as createHash3 } from "node:crypto";
-import { existsSync as existsSync22, readFileSync as readFileSync21 } from "node:fs";
-import path29 from "node:path";
+import { existsSync as existsSync23, readFileSync as readFileSync22 } from "node:fs";
+import path30 from "node:path";
 
 // plugins/arima/scripts/src/dispatch-units.ts
 var flat = (n) => ({ S: n, M: n, L: n });
@@ -21690,13 +21690,13 @@ async function checkKillSwitch(projectDir, notion, remotePause) {
 }
 
 // plugins/arima/scripts/src/merge.ts
-import { existsSync as existsSync19 } from "node:fs";
-import path26 from "node:path";
+import { existsSync as existsSync20 } from "node:fs";
+import path27 from "node:path";
 
 // plugins/arima/scripts/src/publish.ts
 import { execFileSync as execFileSync4, spawnSync } from "node:child_process";
-import { existsSync as existsSync18, readdirSync as readdirSync6 } from "node:fs";
-import path25 from "node:path";
+import { existsSync as existsSync19, readdirSync as readdirSync7 } from "node:fs";
+import path26 from "node:path";
 
 // plugins/arima/scripts/src/attribution.ts
 var PATTERNS2 = [
@@ -22139,14 +22139,14 @@ function checkRemotePrivacy(r, o) {
 
 // plugins/arima/scripts/src/worktree.ts
 import { execFileSync as execFileSync3 } from "node:child_process";
-import { existsSync as existsSync17, mkdirSync as mkdirSync15, readFileSync as readFileSync18, rmSync as rmSync3 } from "node:fs";
-import path24 from "node:path";
+import { existsSync as existsSync18, mkdirSync as mkdirSync16, readFileSync as readFileSync19, rmSync as rmSync4 } from "node:fs";
+import path25 from "node:path";
 import { setTimeout as sleep3 } from "node:timers/promises";
 
 // plugins/arima/scripts/src/run-agent.ts
 import { execFileSync as execFileSync2, spawn } from "node:child_process";
-import { existsSync as existsSync16, mkdirSync as mkdirSync14, readFileSync as readFileSync17, writeFileSync as writeFileSync5 } from "node:fs";
-import path23 from "node:path";
+import { existsSync as existsSync17, mkdirSync as mkdirSync15, readFileSync as readFileSync18, writeFileSync as writeFileSync6 } from "node:fs";
+import path24 from "node:path";
 
 // plugins/arima/scripts/src/budget.ts
 var round2 = (n) => Math.round(n * 1e6) / 1e6;
@@ -22395,6 +22395,338 @@ async function issueRunId(projectDir, now = /* @__PURE__ */ new Date()) {
   });
 }
 
+// plugins/arima/scripts/src/sandbox.ts
+import { execFile } from "node:child_process";
+import {
+  chmodSync,
+  existsSync as existsSync16,
+  mkdirSync as mkdirSync14,
+  mkdtempSync as mkdtempSync2,
+  readFileSync as readFileSync17,
+  readdirSync as readdirSync6,
+  rmSync as rmSync3,
+  writeFileSync as writeFileSync5
+} from "node:fs";
+import { tmpdir as tmpdir2 } from "node:os";
+import path23 from "node:path";
+var SANDBOX_IMAGE_DEFAULT = "arima-sandbox:1";
+var CONTAINER_WORK = "/work";
+var CONTAINER_PLUGIN = "/plugin";
+var EGRESS_ALLOW_DEFAULT = [
+  "api.anthropic.com",
+  "registry.npmjs.org",
+  "statsig.anthropic.com"
+];
+var realExec = (file, args, opts = {}) => new Promise((resolve2) => {
+  const child = execFile(
+    file,
+    args,
+    {
+      cwd: opts.cwd,
+      timeout: opts.timeoutMs ?? 12e4,
+      maxBuffer: 32 * 1024 * 1024,
+      windowsHide: true,
+      env: { ...process.env, GIT_TERMINAL_PROMPT: "0" }
+    },
+    (err, stdout, stderr) => {
+      const code2 = err === null ? 0 : typeof err.code === "number" ? err.code : 1;
+      resolve2({ code: code2, stdout: String(stdout), stderr: String(stderr) });
+    }
+  );
+  if (opts.input !== void 0) child.stdin?.end(opts.input);
+});
+async function dockerReady(exec = realExec) {
+  const r = await exec("docker", ["info", "--format", "{{.ServerVersion}}"], { timeoutMs: 2e4 });
+  if (r.code === 0 && r.stdout.trim() !== "")
+    return { ok: true, detail: `Docker is running (server ${r.stdout.trim()})` };
+  return {
+    ok: false,
+    detail: "runtime.sandbox is docker but the Docker daemon is not answering; start Docker Desktop"
+  };
+}
+var FORBIDDEN_MOUNT = /(docker\.sock|[\\/]\.claude\b|[\\/]\.config[\\/]arima|[\\/]\.ssh\b|[\\/]\.git(?:[\\/]|$|:))/i;
+function unsafeDockerArgs(args) {
+  const bad = [];
+  const has = (a) => args.includes(a);
+  if (has("--privileged")) bad.push("--privileged");
+  if (args.some((a) => a.startsWith("--cap-add"))) bad.push("--cap-add");
+  if (args.some((a, i) => (a === "--network" || a === "--net") && args[i + 1] === "host"))
+    bad.push("host network");
+  if (args.some((a) => /^--(pid|ipc|userns|uts)=?host$/.test(a))) bad.push("host namespace");
+  args.forEach((a, i) => {
+    if ((a === "-v" || a === "--volume" || a === "--mount") && args[i + 1] !== void 0) {
+      if (FORBIDDEN_MOUNT.test(args[i + 1])) bad.push(`mount ${args[i + 1]}`);
+    }
+  });
+  if (!has("--cap-drop")) bad.push("capabilities not dropped");
+  if (!args.includes("no-new-privileges")) bad.push("no-new-privileges missing");
+  return bad;
+}
+function assertSafeDockerArgs(args) {
+  const bad = unsafeDockerArgs(args);
+  if (bad.length > 0) throw new Error(`refusing an unsafe sandbox: ${bad.join(", ")}`);
+}
+function buildDockerRunArgs(i) {
+  const args = [
+    "run",
+    "--rm",
+    "-i",
+    "--init",
+    "--name",
+    i.name,
+    "--network",
+    i.network,
+    "--cap-drop",
+    "ALL",
+    "--security-opt",
+    "no-new-privileges",
+    "--pids-limit",
+    String(i.pids ?? 512),
+    "--memory",
+    i.memory ?? "4g",
+    "--env-file",
+    i.envFile,
+    "-v",
+    `${i.cloneDir}:${CONTAINER_WORK}:rw`,
+    "-v",
+    `${i.pluginDir}:${CONTAINER_PLUGIN}:ro`,
+    "-w",
+    CONTAINER_WORK
+  ];
+  if (i.user !== void 0) args.push("--user", i.user);
+  args.push(i.image, ...i.command);
+  assertSafeDockerArgs(args);
+  return args;
+}
+var CONTAINER_ENV_KEEP = /^(ARIMA_(RUN_ID|ROLE|ITEM|KIND)|OTEL_|ANTHROPIC_|CLAUDE_CODE_OAUTH_TOKEN|GH_TOKEN|ARIMA_NOTION_TOKEN|NOTION_)/;
+function containerEnv(hostEnv, extra = {}) {
+  const env = {
+    HOME: "/home/node",
+    PATH: "/usr/local/bin:/usr/bin:/bin",
+    ARIMA_PROJECT_DIR: CONTAINER_WORK,
+    CLAUDE_PLUGIN_ROOT: CONTAINER_PLUGIN
+  };
+  for (const [k, v] of Object.entries(hostEnv)) {
+    if (v === void 0) continue;
+    if (CONTAINER_ENV_KEEP.test(k) || (extra.keep ?? []).includes(k)) env[k] = v;
+  }
+  if (extra.oauthToken !== void 0) env["CLAUDE_CODE_OAUTH_TOKEN"] = extra.oauthToken;
+  if (extra.proxy !== void 0) {
+    for (const k of ["HTTPS_PROXY", "HTTP_PROXY", "https_proxy", "http_proxy"])
+      env[k] = extra.proxy;
+    env["NO_PROXY"] = "localhost,127.0.0.1";
+  }
+  env["ARIMA_PROJECT_DIR"] = CONTAINER_WORK;
+  return env;
+}
+function writeEnvFile(dir, env) {
+  const file = path23.join(dir, "env");
+  for (const [k, v] of Object.entries(env))
+    if (/[\r\n]/.test(v) || !/^[A-Za-z_][A-Za-z0-9_]*$/.test(k))
+      throw new Error(`environment variable ${k} cannot be passed to a container`);
+  writeFileSync5(
+    file,
+    `${Object.entries(env).map(([k, v]) => `${k}=${v}`).join("\n")}
+`,
+    {
+      mode: 384
+    }
+  );
+  try {
+    chmodSync(file, 384);
+  } catch {
+  }
+  return file;
+}
+async function makeClone(exec, source, branch, base = tmpdir2()) {
+  const root = mkdtempSync2(path23.join(base, "arima-sbx-"));
+  const dir = path23.join(root, "work");
+  const r = await exec("git", [
+    "clone",
+    "--quiet",
+    "--no-hardlinks",
+    "--branch",
+    branch,
+    source,
+    dir
+  ]);
+  if (r.code !== 0) {
+    rmSync3(root, { recursive: true, force: true });
+    throw new Error(`could not clone ${branch} for the sandbox: ${r.stderr.trim()}`);
+  }
+  await exec("git", ["remote", "remove", "origin"], { cwd: dir });
+  mkdirSync14(path23.join(dir, ".arima", "outbox"), { recursive: true });
+  const info = path23.join(dir, ".git", "info");
+  mkdirSync14(info, { recursive: true });
+  writeFileSync5(path23.join(info, "exclude"), ".arima/\n", { flag: "a" });
+  return { dir, root };
+}
+function disposeClone(c) {
+  rmSync3(c.root, { recursive: true, force: true, maxRetries: 3 });
+}
+async function importCommits(exec, worktree, clone, branch) {
+  const before = await exec("git", ["rev-parse", "HEAD"], { cwd: worktree });
+  const r = await exec("git", ["pull", "--ff-only", "--quiet", clone.dir, branch], {
+    cwd: worktree
+  });
+  if (r.code !== 0)
+    return {
+      ok: false,
+      commits: 0,
+      detail: `the sandbox commits could not be fast-forwarded: ${r.stderr.trim()}`
+    };
+  const n = await exec("git", ["rev-list", "--count", `${before.stdout.trim()}..HEAD`], {
+    cwd: worktree
+  });
+  return { ok: true, commits: Number(n.stdout.trim()) || 0, detail: "ok" };
+}
+var AUDIT_TYPES = /* @__PURE__ */ new Set(["tool.used", "tool.blocked"]);
+async function importArima(projectDir, clone, who) {
+  const rejected = [];
+  let outbox = 0;
+  let events = 0;
+  const env = { ARIMA_RUN_ID: who.runId, ARIMA_ROLE: who.role };
+  const ob = path23.join(clone.dir, ".arima", "outbox");
+  if (existsSync16(ob)) {
+    const validate = getValidator("outbox");
+    for (const name of readdirSync6(ob).filter((f) => f.endsWith(".json")).sort()) {
+      try {
+        const entry = migrateRecord(
+          "outbox",
+          JSON.parse(readFileSync17(path23.join(ob, name), "utf8"))
+        );
+        if (!validate(entry)) throw new Error("invalid outbox entry");
+        enqueue(projectDir, entry, { env });
+        outbox += 1;
+      } catch (e) {
+        rejected.push(`${name}: ${e.message}`);
+      }
+    }
+  }
+  const evFile = path23.join(clone.dir, ".arima", "events.jsonl");
+  if (existsSync16(evFile)) {
+    for (const [i, line] of readFileSync17(evFile, "utf8").split("\n").entries()) {
+      if (line.trim() === "") continue;
+      try {
+        const ev = JSON.parse(line);
+        if (!AUDIT_TYPES.has(ev.type))
+          throw new Error(`event type ${String(ev.type)} is not importable`);
+        await appendEvent(projectDir, {
+          type: ev.type,
+          actor: who.role,
+          run_id: who.runId,
+          ...ev.item !== void 0 ? { item: ev.item } : {},
+          ...ev.data !== void 0 ? { data: ev.data } : {}
+        });
+        events += 1;
+      } catch (e) {
+        rejected.push(`events.jsonl:${i + 1}: ${e.message}`);
+      }
+    }
+  }
+  return { outbox, events, rejected };
+}
+var safeName = (s) => s.replace(/[^A-Za-z0-9_.-]/g, "-");
+async function openSandbox(o) {
+  const exec = o.exec ?? realExec;
+  const image = o.image ?? SANDBOX_IMAGE_DEFAULT;
+  const id = safeName(o.runId);
+  const net = `arima-net-${id}`;
+  const proxyName = `arima-egress-${id}`;
+  const container = `arima-run-${id}`;
+  const branchOut = await exec("git", ["rev-parse", "--abbrev-ref", "HEAD"], { cwd: o.worktree });
+  const branch = branchOut.stdout.trim();
+  if (branchOut.code !== 0 || branch === "" || branch === "HEAD")
+    throw new Error(
+      `the worktree ${o.worktree} is not on a branch, so it cannot be cloned for the sandbox`
+    );
+  const cleanup = [];
+  const undo = async () => {
+    for (const f of cleanup.reverse()) await f().catch(() => void 0);
+  };
+  try {
+    const clone = await makeClone(exec, o.worktree, branch, o.tmp);
+    cleanup.push(() => Promise.resolve(disposeClone(clone)));
+    const created = await exec("docker", ["network", "create", "--internal", net]);
+    if (created.code !== 0)
+      throw new Error(`could not create the sandbox network: ${created.stderr.trim()}`);
+    cleanup.push(() => exec("docker", ["network", "rm", net]));
+    const allow = [...EGRESS_ALLOW_DEFAULT, ...o.allow ?? []];
+    const sidecar = [
+      "run",
+      "-d",
+      "--rm",
+      "--name",
+      proxyName,
+      "--network",
+      net,
+      "--cap-drop",
+      "ALL",
+      "--security-opt",
+      "no-new-privileges",
+      "--read-only",
+      "-v",
+      `${o.pluginDir}:${CONTAINER_PLUGIN}:ro`,
+      image,
+      "node",
+      `${CONTAINER_PLUGIN}/scripts/dist/arima-egress-proxy.mjs`,
+      "--allow",
+      allow.join(","),
+      "--host",
+      "0.0.0.0",
+      "--port",
+      "3128"
+    ];
+    assertSafeDockerArgs(sidecar);
+    const s = await exec("docker", sidecar);
+    if (s.code !== 0) throw new Error(`could not start the egress proxy: ${s.stderr.trim()}`);
+    cleanup.push(() => exec("docker", ["rm", "-f", proxyName]));
+    const c = await exec("docker", ["network", "connect", "bridge", proxyName]);
+    if (c.code !== 0)
+      throw new Error(`could not connect the egress proxy outward: ${c.stderr.trim()}`);
+    const env = containerEnv(o.hostEnv, {
+      proxy: `http://${proxyName}:3128`,
+      oauthToken: o.oauthToken,
+      ...o.keep ? { keep: o.keep } : {}
+    });
+    const envFile = writeEnvFile(clone.root, env);
+    const user = typeof process.getuid === "function" ? `${process.getuid()}:${process.getgid?.() ?? 0}` : void 0;
+    return {
+      clone,
+      container,
+      dockerArgs: (command) => buildDockerRunArgs({
+        name: container,
+        image,
+        cloneDir: clone.dir,
+        pluginDir: o.pluginDir,
+        envFile,
+        network: net,
+        command,
+        ...user !== void 0 ? { user } : {}
+      }),
+      kill: async () => {
+        await exec("docker", ["kill", container]);
+      },
+      finish: async () => {
+        try {
+          const commits = await importCommits(exec, o.worktree, clone, branch);
+          const imported = await importArima(o.projectDir, clone, {
+            runId: o.runId,
+            role: o.role
+          });
+          return { commits, imported };
+        } finally {
+          await exec("docker", ["rm", "-f", container]).catch(() => void 0);
+          await undo();
+        }
+      }
+    };
+  } catch (e) {
+    await undo();
+    throw e;
+  }
+}
+
 // plugins/arima/scripts/src/run-agent.ts
 var EXIT = { ok: 0, failed: 1, usage: 2, blocked: 3, paused: 75 };
 var DispatchRefused = class extends Error {
@@ -22522,7 +22854,7 @@ var ISOLATION_FLAGS = [
   "--strict-mcp-config",
   "--disable-slash-commands"
 ];
-function buildClaudeArgs(o, agentName, scriptsGlob) {
+function buildClaudeArgs(o, agentName, scriptsGlob, pluginDir = pluginRoot()) {
   const args = [
     "-p",
     "--output-format",
@@ -22538,7 +22870,7 @@ function buildClaudeArgs(o, agentName, scriptsGlob) {
     "--disallowedTools",
     deniedTools(o.role).join(",")
   ];
-  args.push("--plugin-dir", pluginRoot());
+  args.push("--plugin-dir", pluginDir);
   if (o.config.isolateUserSettings !== false) args.push(...ISOLATION_FLAGS);
   if (o.config.model !== void 0) args.push("--model", o.config.model);
   if (agentName !== void 0) args.push("--agent", agentName);
@@ -22572,6 +22904,7 @@ function runProcess(bin, args, opts) {
     const timer = setTimeout(() => {
       timedOut = true;
       killTree(child.pid);
+      opts.onKill?.();
     }, opts.timeoutMs);
     if (opts.poll !== void 0 && opts.poll.everyMs > 0) {
       let checking = false;
@@ -22582,6 +22915,7 @@ function runProcess(bin, args, opts) {
           if (on && !settled) {
             switchKilled = true;
             killTree(child.pid);
+            opts.onKill?.();
           }
         }).catch(() => void 0).finally(() => checking = false);
       }, opts.poll.everyMs);
@@ -22610,8 +22944,8 @@ function exitFor(result) {
   }
 }
 function writeRunReport(projectDir, runId, body) {
-  const dir = path23.join(projectDir, ".arima", "runs");
-  mkdirSync14(dir, { recursive: true });
+  const dir = path24.join(projectDir, ".arima", "runs");
+  mkdirSync15(dir, { recursive: true });
   let text3 = JSON.stringify(body, null, 2);
   if (findSecrets(text3).length > 0) {
     text3 = JSON.stringify(
@@ -22620,7 +22954,7 @@ function writeRunReport(projectDir, runId, body) {
       2
     );
   }
-  writeFileSync5(path23.join(dir, `${runId}.json`), `${text3}
+  writeFileSync6(path24.join(dir, `${runId}.json`), `${text3}
 `, "utf8");
 }
 var localDay = (d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
@@ -22693,16 +23027,16 @@ async function runAgent(o) {
       `budget ${o.budgetUsd} exceeds budget.per_run_cap ${o.config.perRunCap} in arima.yaml (spec \xA713.5)`
     );
   }
-  if (o.buildPrompt === void 0 && !existsSync16(o.promptFile))
+  if (o.buildPrompt === void 0 && !existsSync17(o.promptFile))
     throw new Error(`prompt file not found: ${o.promptFile}`);
-  const cwd = path23.resolve(o.cwd ?? o.projectDir);
+  const cwd = path24.resolve(o.cwd ?? o.projectDir);
   const root = pluginRoot();
-  const scriptsGlob = path23.join(root, "scripts", "dist").replace(/\\/g, "/");
-  const agentName = o.agent ?? (existsSync16(path23.join(root, "agents", `${o.role}.md`)) ? `arima:${o.role}` : void 0);
+  const scriptsGlob = path24.join(root, "scripts", "dist").replace(/\\/g, "/");
+  const agentName = o.agent ?? (existsSync17(path24.join(root, "agents", `${o.role}.md`)) ? `arima:${o.role}` : void 0);
   const now = o.now ?? /* @__PURE__ */ new Date();
   await assertMayDispatch(o, now);
   const runId = await issueRunId(o.projectDir, now);
-  const prompt = o.buildPrompt !== void 0 ? await o.buildPrompt(runId) : readFileSync17(o.promptFile, "utf8");
+  const prompt = o.buildPrompt !== void 0 ? await o.buildPrompt(runId) : readFileSync18(o.promptFile, "utf8");
   const startedAt = now.toISOString();
   const attempt = o.attempt ?? 1;
   await appendEvent(o.projectDir, {
@@ -22718,23 +23052,80 @@ async function runAgent(o) {
     phase: o.phase,
     runId,
     projectKey: o.config.projectKey,
-    projectDir: path23.resolve(o.projectDir),
+    projectDir: path24.resolve(o.projectDir),
     config: o.config,
     ...o.kind !== void 0 ? { kind: o.kind } : {}
   });
   Object.assign(env, o.extraEnv ?? {});
   const bin = o.claudeBin ?? process.env["ARIMA_CLAUDE_BIN"] ?? "claude";
   const t0 = Date.now();
-  const spawned = await runProcess(bin, buildClaudeArgs(o, agentName, scriptsGlob), {
-    cwd,
-    env,
-    input: prompt,
-    timeoutMs: o.config.maxRunMinutes * 6e4,
-    poll: {
-      everyMs: o.killSwitchPollMs ?? 3e4,
-      isOn: async () => (await checkKillSwitch(o.projectDir, o.killSwitch.notion, remotePauseOf(o))).on
+  let sandbox;
+  let launch = {
+    bin,
+    args: buildClaudeArgs(o, agentName, scriptsGlob),
+    env
+  };
+  if (o.config.sandbox === "docker") {
+    const base = o.env ?? process.env;
+    sandbox = await openSandbox({
+      ...o.sandboxExec ? { exec: o.sandboxExec } : {},
+      ...o.config.sandboxImage ? { image: o.config.sandboxImage } : {},
+      ...o.config.sandboxAllow ? { allow: o.config.sandboxAllow } : {},
+      pluginDir: root,
+      worktree: cwd,
+      projectDir: o.projectDir,
+      runId,
+      role: o.role,
+      hostEnv: env,
+      keep: Object.keys(o.extraEnv ?? {}),
+      oauthToken: base["ARIMA_SANDBOX_OAUTH_TOKEN"] ?? base["CLAUDE_CODE_OAUTH_TOKEN"]
+    });
+    const inner = buildClaudeArgs(
+      o,
+      agentName,
+      `${CONTAINER_PLUGIN}/scripts/dist`,
+      CONTAINER_PLUGIN
+    );
+    launch = {
+      bin: o.dockerBin ?? "docker",
+      args: sandbox.dockerArgs(["claude", ...inner]),
+      env: { ...base }
+    };
+  }
+  const box = sandbox;
+  let spawned;
+  try {
+    spawned = await runProcess(launch.bin, launch.args, {
+      cwd,
+      env: launch.env,
+      ...box ? { onKill: () => void box.kill() } : {},
+      input: prompt,
+      timeoutMs: o.config.maxRunMinutes * 6e4,
+      poll: {
+        everyMs: o.killSwitchPollMs ?? 3e4,
+        isOn: async () => (await checkKillSwitch(o.projectDir, o.killSwitch.notion, remotePauseOf(o))).on
+      }
+    });
+  } finally {
+    if (box) {
+      const done = await box.finish().catch((e) => ({
+        commits: { ok: false, commits: 0, detail: String(e) },
+        imported: { outbox: 0, events: 0, rejected: [] }
+      }));
+      await appendEvent(o.projectDir, {
+        type: "sandbox.finished",
+        actor: "system",
+        run_id: runId,
+        data: {
+          commits: done.commits.commits,
+          commits_ok: done.commits.ok,
+          outbox: done.imported.outbox,
+          events: done.imported.events,
+          rejected: done.imported.rejected.length
+        }
+      }).catch(() => void 0);
     }
-  });
+  }
   const elapsed = Date.now() - t0;
   let parsed;
   try {
@@ -22894,6 +23285,9 @@ function agentConfigFrom(arima, role) {
     tier: tier === "strong" || tier === "standard" || tier === "fast" ? tier : void 0,
     auth: get("runtime.auth") === "api_key" ? "api_key" : "seat",
     isolateUserSettings: get("runtime.isolate_user_settings") === false ? false : true,
+    sandbox: get("runtime.sandbox") === "docker" ? "docker" : "none",
+    sandboxImage: typeof get("runtime.sandbox_image") === "string" ? get("runtime.sandbox_image") : void 0,
+    sandboxAllow: Array.isArray(get("runtime.sandbox_allow")) ? get("runtime.sandbox_allow").map(String) : void 0,
     projectCap: Number(get("budget.project_cap")),
     dailyCap: Number(get("budget.daily_cap")),
     stateBranch: typeof get("github.state_branch") === "string" ? get("github.state_branch") : void 0,
@@ -22947,18 +23341,18 @@ function branchFor(item, title) {
 var BRANCH = /^(?:feat|fix|hotfix|chore|qa)\/[A-Za-z0-9][A-Za-z0-9._-]*(?:\/[A-Za-z0-9][A-Za-z0-9._-]*)*$/;
 var isProtected = (branch, o) => ["main", "master", o.defaultBranch ?? "main", o.stateBranch ?? "arima-state"].includes(branch);
 var worktreeRoot = (projectDir) => {
-  const repo = path24.resolve(projectDir);
-  return path24.join(path24.dirname(repo), `${path24.basename(repo)}-wt`);
+  const repo = path25.resolve(projectDir);
+  return path25.join(path25.dirname(repo), `${path25.basename(repo)}-wt`);
 };
-var worktreePath = (projectDir, branch) => path24.join(worktreeRoot(projectDir), ...branch.split("/"));
-var registryFile = (projectDir) => path24.join(worktreeRoot(projectDir), "registry.json");
+var worktreePath = (projectDir, branch) => path25.join(worktreeRoot(projectDir), ...branch.split("/"));
+var registryFile = (projectDir) => path25.join(worktreeRoot(projectDir), "registry.json");
 function readRegistry(projectDir) {
   const f = registryFile(projectDir);
-  return existsSync17(f) ? JSON.parse(readFileSync18(f, "utf8")) : [];
+  return existsSync18(f) ? JSON.parse(readFileSync19(f, "utf8")) : [];
 }
 async function updateRegistry(projectDir, change) {
   const f = registryFile(projectDir);
-  mkdirSync15(path24.dirname(f), { recursive: true });
+  mkdirSync16(path25.dirname(f), { recursive: true });
   await withFileLock(
     `${f}.lock`,
     () => writeFileAtomic(f, `${JSON.stringify(change(readRegistry(projectDir)), null, 2)}
@@ -22967,7 +23361,7 @@ async function updateRegistry(projectDir, change) {
 }
 var SPARSE_PATH = /^(?![/.-])(?!.*\.\.)(?!.*[*?[\]\\!#])[A-Za-z0-9_@. /-]+\/?$/;
 async function createWorktree(o) {
-  const repo = path24.resolve(o.projectDir);
+  const repo = path25.resolve(o.projectDir);
   if (!BRANCH.test(o.branch) || o.branch.includes("..") || o.branch.endsWith(".lock"))
     throw new WorktreeError(
       `"${o.branch}" is not a branch name ARIMA creates (feat/, fix/, hotfix/, chore/ or qa/ then letters, digits, . _ -)`
@@ -22981,13 +23375,13 @@ async function createWorktree(o) {
       `branch ${o.branch} already exists; STOP (remove it, or this is a re-dispatch of a unit that was not cleaned up)`
     );
   const dir = worktreePath(repo, o.branch);
-  if (existsSync17(dir)) throw new WorktreeError(`${dir} already exists; STOP`);
+  if (existsSync18(dir)) throw new WorktreeError(`${dir} already exists; STOP`);
   for (const p of o.sparse ?? [])
     if (!SPARSE_PATH.test(p))
       throw new WorktreeError(
         `sparse path "${p}" must be a plain relative path inside the repository`
       );
-  mkdirSync15(path24.dirname(dir), { recursive: true });
+  mkdirSync16(path25.dirname(dir), { recursive: true });
   const cfg = win ? ["-c", "core.longpaths=true"] : [];
   const sparse = o.sparse !== void 0 && o.sparse.length > 0;
   git2(repo, [
@@ -23031,33 +23425,33 @@ async function createWorktree(o) {
   }
 }
 var same = (a, b) => {
-  const n = (p) => path24.resolve(p).replaceAll("\\", "/").replace(/\/+$/, "");
+  const n = (p) => path25.resolve(p).replaceAll("\\", "/").replace(/\/+$/, "");
   return win ? n(a).toLowerCase() === n(b).toLowerCase() : n(a) === n(b);
 };
 async function removeWorktree(o) {
-  const repo = path24.resolve(o.projectDir);
+  const repo = path25.resolve(o.projectDir);
   if (isProtected(o.branch, o))
     throw new WorktreeError(`refusing to remove the protected branch "${o.branch}"`);
   const dir = worktreePath(repo, o.branch);
-  if (same(dir, repo) || same(dir, path24.join(repo, ".arima")))
+  if (same(dir, repo) || same(dir, path25.join(repo, ".arima")))
     throw new WorktreeError("refusing to remove the main or state worktree");
   for (const pid of o.pids ?? []) killTree(pid);
-  let removed = !existsSync17(dir);
+  let removed = !existsSync18(dir);
   for (let i = 0; i < 5 && !removed; i++) {
     try {
       git2(repo, ["worktree", "remove", "--force", dir]);
       removed = true;
     } catch {
       await sleep3(100 * 2 ** i);
-      removed = !existsSync17(dir);
+      removed = !existsSync18(dir);
     }
   }
   if (!removed) {
     try {
-      rmSync3(dir, { recursive: true, force: true, maxRetries: 5, retryDelay: 100 });
+      rmSync4(dir, { recursive: true, force: true, maxRetries: 5, retryDelay: 100 });
     } catch {
     }
-    removed = !existsSync17(dir);
+    removed = !existsSync18(dir);
   }
   gitOk2(repo, ["worktree", "prune"]);
   if (o.deleteBranch === true && gitOk2(repo, ["show-ref", "--verify", "--quiet", `refs/heads/${o.branch}`]))
@@ -23074,11 +23468,11 @@ var alive = (pid) => {
   }
 };
 async function pruneWorktrees(o) {
-  const repo = path24.resolve(o.projectDir);
+  const repo = path25.resolve(o.projectDir);
   const isAlive = o.isAlive ?? alive;
   const res = { removed: [], kept: [], forgotten: [] };
   for (const w of readRegistry(repo)) {
-    if (!existsSync17(w.path)) {
+    if (!existsSync18(w.path)) {
       res.forgotten.push(w.path);
       await updateRegistry(repo, (r) => r.filter((x) => x.path !== w.path));
       continue;
@@ -23183,7 +23577,7 @@ function checkBranch(i) {
   if ([i.defaultBranch, i.stateBranch ?? "arima-state", "main", "master"].includes(i.branch))
     refuse2(`"${i.branch}" is a protected branch; it is never published from here`, "guard_blocked");
   const dir = worktreePath(i.projectDir, i.branch);
-  if (!existsSync18(dir)) refuse2(`there is no worktree for ${i.branch} at ${dir}`);
+  if (!existsSync19(dir)) refuse2(`there is no worktree for ${i.branch} at ${dir}`);
   const head = git3(dir, ["rev-parse", "--abbrev-ref", "HEAD"]);
   if (head !== i.branch) refuse2(`the worktree is on "${head}", not ${i.branch}`);
   if (git3(dir, ["status", "--porcelain"]) !== "")
@@ -23366,7 +23760,7 @@ ${i.body}`, loadSecretAllowlist(i.projectDir));
   });
   if (/^US-\d+$/.test(i.item)) {
     const taken = new Set(
-      existsSync18(outboxDir(i.projectDir)) ? readdirSync6(outboxDir(i.projectDir)) : []
+      existsSync19(outboxDir(i.projectDir)) ? readdirSync7(outboxDir(i.projectDir)) : []
     );
     let n = 1;
     while (taken.has(`pub-${i.runId}-${i.item}-${n}.json`)) n += 1;
@@ -23433,7 +23827,7 @@ async function postReview(i) {
     );
   const gh = i.gh ?? ghRunner;
   const call = (body) => gh(["api", `repos/${i.repo}/pulls/${i.pr}/reviews`, "--method", "POST", "--input", "-"], {
-    cwd: path25.resolve(i.projectDir),
+    cwd: path26.resolve(i.projectDir),
     env: ghEnv(i.token),
     input: body
   });
@@ -23644,7 +24038,7 @@ function gatherFacts(i, pr) {
   const notPassed = caseIds.filter(
     (id) => findRow(cases, id)?.properties["Last result"] !== "Pass"
   );
-  const ui = existsSync19(path26.join(i.projectDir, "design", "screens", i.item));
+  const ui = existsSync20(path27.join(i.projectDir, "design", "screens", i.item));
   const dq = verdictAfterLastPush(i.projectDir, i.item, "ux", "design-qa");
   return {
     prOpen,
@@ -23680,7 +24074,7 @@ async function mergePr(i) {
     );
   const gh = i.gh ?? ghRunner;
   const env = { ...process.env, GH_PROMPT_DISABLED: "1", GH_TOKEN: i.token };
-  const run = (args) => gh(args, { cwd: path26.resolve(i.projectDir), env });
+  const run = (args) => gh(args, { cwd: path27.resolve(i.projectDir), env });
   const view = run([
     "pr",
     "view",
@@ -24120,11 +24514,11 @@ function validatePacket(text3) {
 }
 
 // plugins/arima/scripts/src/runlock.ts
-import { existsSync as existsSync20, mkdirSync as mkdirSync16, readFileSync as readFileSync19, rmSync as rmSync4, writeFileSync as writeFileSync6 } from "node:fs";
+import { existsSync as existsSync21, mkdirSync as mkdirSync17, readFileSync as readFileSync20, rmSync as rmSync5, writeFileSync as writeFileSync7 } from "node:fs";
 import { hostname } from "node:os";
-import path27 from "node:path";
+import path28 from "node:path";
 function runLockFile(projectDir) {
-  return path27.join(projectDir, ".arima", "run.lock");
+  return path28.join(projectDir, ".arima", "run.lock");
 }
 function alive2(pid) {
   try {
@@ -24136,10 +24530,10 @@ function alive2(pid) {
 }
 function lockStatus(projectDir, staleAfterMs, now = Date.now()) {
   const file = runLockFile(projectDir);
-  if (!existsSync20(file)) return { held: false, stale: false };
+  if (!existsSync21(file)) return { held: false, stale: false };
   let lock;
   try {
-    lock = JSON.parse(readFileSync19(file, "utf8"));
+    lock = JSON.parse(readFileSync20(file, "utf8"));
   } catch {
     return { held: false, stale: true };
   }
@@ -24151,7 +24545,7 @@ function lockStatus(projectDir, staleAfterMs, now = Date.now()) {
 }
 function acquireRunLock(projectDir, runId, staleAfterMs) {
   const file = runLockFile(projectDir);
-  mkdirSync16(path27.dirname(file), { recursive: true });
+  mkdirSync17(path28.dirname(file), { recursive: true });
   const body = {
     pid: process.pid,
     run_id: runId,
@@ -24160,27 +24554,27 @@ function acquireRunLock(projectDir, runId, staleAfterMs) {
   };
   for (let attempt = 0; attempt < 2; attempt++) {
     try {
-      writeFileSync6(file, `${JSON.stringify(body)}
+      writeFileSync7(file, `${JSON.stringify(body)}
 `, { flag: "wx" });
       return true;
     } catch (e) {
       if (e.code !== "EEXIST") throw e;
       const status = lockStatus(projectDir, staleAfterMs);
       if (status.held) return false;
-      rmSync4(file, { force: true });
+      rmSync5(file, { force: true });
     }
   }
   return false;
 }
 function releaseRunLock(projectDir, runId) {
   const file = runLockFile(projectDir);
-  if (!existsSync20(file)) return false;
+  if (!existsSync21(file)) return false;
   try {
-    const lock = JSON.parse(readFileSync19(file, "utf8"));
+    const lock = JSON.parse(readFileSync20(file, "utf8"));
     if (lock.run_id !== runId) return false;
   } catch {
   }
-  rmSync4(file, { force: true });
+  rmSync5(file, { force: true });
   return true;
 }
 
@@ -24199,7 +24593,8 @@ var CODE = {
   kill_switch: PREFLIGHT_EXIT.killSwitch,
   run_lock: PREFLIGHT_EXIT.locked,
   budget: PREFLIGHT_EXIT.budget,
-  env: PREFLIGHT_EXIT.env
+  env: PREFLIGHT_EXIT.env,
+  docker: PREFLIGHT_EXIT.env
 };
 var localDate = (d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 async function runPreflight(opts) {
@@ -24282,6 +24677,10 @@ async function runPreflight(opts) {
       ok: missing.length === 0,
       detail: missing.length === 0 ? `all ${required.length} required variables are set` : `missing environment variable(s): ${missing.join(", ")}`
     });
+  }
+  if (arima?.runtime.sandbox === "docker") {
+    const d = await (opts.dockerCheck ?? dockerReady)();
+    checks.push({ check: "docker", ok: d.ok, detail: d.detail });
   }
   const failed = checks.filter((c) => !c.ok);
   for (const f of failed) {
@@ -24576,8 +24975,8 @@ function storiesFromMirror(projectDir, cfg, pr = {}) {
 }
 
 // plugins/arima/scripts/src/cost.ts
-import { existsSync as existsSync21, readFileSync as readFileSync20, readdirSync as readdirSync7 } from "node:fs";
-import path28 from "node:path";
+import { existsSync as existsSync22, readFileSync as readFileSync21, readdirSync as readdirSync8 } from "node:fs";
+import path29 from "node:path";
 var MICRO = 1e6;
 var micro = (usd2) => Math.round(usd2 * MICRO);
 var usd = (m) => m / MICRO;
@@ -24741,10 +25140,10 @@ var properties = (r) => ({
 function pendingCostLogKeys(projectDir) {
   const dir = outboxDir(projectDir);
   const keys = /* @__PURE__ */ new Set();
-  if (!existsSync21(dir)) return keys;
-  for (const f of readdirSync7(dir).filter((n) => n.endsWith(".json"))) {
+  if (!existsSync22(dir)) return keys;
+  for (const f of readdirSync8(dir).filter((n) => n.endsWith(".json"))) {
     try {
-      const e = JSON.parse(readFileSync20(path28.join(dir, f), "utf8"));
+      const e = JSON.parse(readFileSync21(path29.join(dir, f), "utf8"));
       if (e.database !== "cost_log") continue;
       const k = e.op === "create" ? e.properties?.["Date"] : e.item_id;
       if (typeof k === "string") keys.add(k);
@@ -24894,7 +25293,7 @@ async function runDispatch(o) {
   if (!cfgResult.ok || cfgResult.arima === void 0 || cfgResult.team === void 0)
     return fail(
       DISPATCH_EXIT.config,
-      cfgResult.errors.map((e) => `${path29.basename(e.file)}:${e.line}: ${e.message}`).join("\n")
+      cfgResult.errors.map((e) => `${path30.basename(e.file)}:${e.line}: ${e.message}`).join("\n")
     );
   const cfg = cfgResult.arima;
   const team = cfgResult.team;
@@ -24951,8 +25350,8 @@ async function runDispatch(o) {
       if (e?.run_id === void 0) return void 0;
       try {
         return JSON.parse(
-          readFileSync21(
-            path29.join(o.projectDir, ".arima", "runs", `${e.run_id}.report.json`),
+          readFileSync22(
+            path30.join(o.projectDir, ".arima", "runs", `${e.run_id}.report.json`),
             "utf8"
           )
         );
@@ -25390,7 +25789,7 @@ async function runDispatch(o) {
     }
     async function publishDevelop(unit, report, branch) {
       const criteria = report.criteria_map ?? [];
-      const ui = existsSync22(path29.join(o.projectDir, "design", "screens", unit.item));
+      const ui = existsSync23(path30.join(o.projectDir, "design", "screens", unit.item));
       const body = renderPrBody({
         items: [unit.item],
         summary: report.summary,
@@ -25585,7 +25984,7 @@ async function runDispatch(o) {
   }
 }
 function branchExists(projectDir, branch) {
-  return existsSync22(worktreePath(projectDir, branch)) ? true : gitHasBranch(projectDir, branch);
+  return existsSync23(worktreePath(projectDir, branch)) ? true : gitHasBranch(projectDir, branch);
 }
 function gitHasBranch(projectDir, branch) {
   try {
@@ -25687,7 +26086,7 @@ ${DISPATCH_USAGE}
 `);
     return DISPATCH_EXIT.usage;
   }
-  const projectDir = path30.resolve(io.cwd, v.project ?? ".");
+  const projectDir = path31.resolve(io.cwd, v.project ?? ".");
   const env = deps.env ?? process.env;
   let wired = deps;
   if (deps.wired !== true) {

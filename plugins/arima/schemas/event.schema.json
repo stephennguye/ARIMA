@@ -19,7 +19,7 @@
         "question.raised", "question.answered", "decision.made", "decision.vetoed",
         "tool.used", "tool.blocked",
         "state.push", "state.pull",
-        "budget.alert", "hardstop.hit", "agent.stop",
+        "budget.alert", "hardstop.hit", "agent.stop", "sandbox.finished",
         "report.accepted", "report.rejected", "unit.dispatched", "unit.retried",
         "merge.done", "merge.refused", "pr.published",
         "deploy.staging", "deploy.preview", "deploy.production", "deploy.rollback",

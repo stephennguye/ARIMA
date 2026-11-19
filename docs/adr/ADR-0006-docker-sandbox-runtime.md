@@ -1,6 +1,6 @@
 # ADR-0006: `runtime.sandbox: docker | none` for unattended agent runs
 
-- Status: Accepted in principle by D-37 (2026-11-18); amended 2026-11-19 (D-47, D-49); design only, not yet built (implements decision D-36 and answers the sandbox gap in spec issue S6 and judge review #2, finding 3)
+- Status: Accepted in principle by D-37 (2026-11-18); amended 2026-11-19 (D-47, D-49); built in WP-190 (2026-11-20; live check in docs/process/reviews/2026-11-20-wp190-docker-sandbox-live.md; the egress allow-list is enforced by a sidecar proxy on an `--internal` network) (implements decision D-36 and answers the sandbox gap in spec issue S6 and judge review #2, finding 3)
 - Date: 2026-11-18
 
 ## Context

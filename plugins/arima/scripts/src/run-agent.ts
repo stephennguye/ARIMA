@@ -24,6 +24,8 @@ import {
   mayHoldNotionToken,
 } from './roles.js';
 import { issueRunId } from './runid.js';
+import { CONTAINER_PLUGIN, openSandbox } from './sandbox.js';
+import type { Exec, Sandbox } from './sandbox.js';
 
 /** Process exit codes of `arima-run-agent`. */
 export const EXIT = { ok: 0, failed: 1, usage: 2, blocked: 3, paused: 75 } as const;
@@ -43,6 +45,10 @@ export interface AgentConfig {
    * widen a role's tools nor cost tokens. The ARIMA plugin itself is always loaded with --plugin-dir.
    */
   isolateUserSettings?: boolean | undefined;
+  /** runtime.sandbox (WP-190): `docker` runs the role in a container on a per-run clone. Default none. */
+  sandbox?: 'docker' | 'none' | undefined;
+  sandboxImage?: string | undefined;
+  sandboxAllow?: string[] | undefined;
   /** runtime.auth: with 'api_key' the ANTHROPIC_* variables are passed to the child. */
   auth?: 'seat' | 'api_key' | undefined;
   /** Caps re-checked before every dispatch (spec §13.5). Required: a missing cap is not "no limit". */
@@ -112,6 +118,10 @@ export interface RunAgentOptions {
   killSwitch: DispatchKillSwitch;
   /** Executable to run instead of `claude` (tests, or a non-PATH install). */
   claudeBin?: string;
+  /** Test seam for the docker and git commands of the sandbox (WP-190). */
+  sandboxExec?: Exec;
+  /** The `docker` executable (tests substitute a stub). */
+  dockerBin?: string;
   /** The environment the child is built FROM (an allow-list is applied); defaults to process.env. */
   env?: NodeJS.ProcessEnv;
   /** Variables passed to the child as given, on top of the allow-list (tests, explicit opt-ins). */
@@ -295,6 +305,7 @@ export function buildClaudeArgs(
   o: RunAgentOptions,
   agentName: string | undefined,
   scriptsGlob: string,
+  pluginDir: string = pluginRoot(),
 ): string[] {
   const args = [
     '-p',
@@ -313,7 +324,7 @@ export function buildClaudeArgs(
   ];
   // Load this plugin explicitly, so the guard hooks and the arima:<role> agents are active in the
   // run even if the plugin is not installed for this user (development, CI, another machine).
-  args.push('--plugin-dir', pluginRoot());
+  args.push('--plugin-dir', pluginDir);
   if (o.config.isolateUserSettings !== false) args.push(...ISOLATION_FLAGS);
   if (o.config.model !== undefined) args.push('--model', o.config.model);
   if (agentName !== undefined) args.push('--agent', agentName);
@@ -340,6 +351,8 @@ function runProcess(
     input: string;
     timeoutMs: number;
     poll?: { everyMs: number; isOn: () => Promise<boolean> };
+    /** Called whenever the process tree is killed (a sandbox must also stop its container). */
+    onKill?: () => void;
   },
 ): Promise<Spawned> {
   return new Promise((resolve) => {
@@ -368,6 +381,7 @@ function runProcess(
     const timer = setTimeout(() => {
       timedOut = true;
       killTree(child.pid);
+      opts.onKill?.();
     }, opts.timeoutMs);
     if (opts.poll !== undefined && opts.poll.everyMs > 0) {
       let checking = false;
@@ -380,6 +394,7 @@ function runProcess(
             if (on && !settled) {
               switchKilled = true;
               killTree(child.pid);
+              opts.onKill?.();
             }
           })
           .catch(() => undefined)
@@ -550,17 +565,75 @@ export async function runAgent(o: RunAgentOptions): Promise<RunAgentOutcome> {
   Object.assign(env, o.extraEnv ?? {});
   const bin = o.claudeBin ?? process.env['ARIMA_CLAUDE_BIN'] ?? 'claude';
   const t0 = Date.now();
-  const spawned = await runProcess(bin, buildClaudeArgs(o, agentName, scriptsGlob), {
-    cwd,
+  let sandbox: Sandbox | undefined;
+  let launch: { bin: string; args: string[]; env: NodeJS.ProcessEnv } = {
+    bin,
+    args: buildClaudeArgs(o, agentName, scriptsGlob),
     env,
-    input: prompt,
-    timeoutMs: o.config.maxRunMinutes * 60_000,
-    poll: {
-      everyMs: o.killSwitchPollMs ?? 30_000,
-      isOn: async () =>
-        (await checkKillSwitch(o.projectDir, o.killSwitch.notion, remotePauseOf(o))).on,
-    },
-  });
+  };
+  if (o.config.sandbox === 'docker') {
+    const base = o.env ?? process.env;
+    sandbox = await openSandbox({
+      ...(o.sandboxExec ? { exec: o.sandboxExec } : {}),
+      ...(o.config.sandboxImage ? { image: o.config.sandboxImage } : {}),
+      ...(o.config.sandboxAllow ? { allow: o.config.sandboxAllow } : {}),
+      pluginDir: root,
+      worktree: cwd,
+      projectDir: o.projectDir,
+      runId,
+      role: o.role,
+      hostEnv: env,
+      keep: Object.keys(o.extraEnv ?? {}),
+      oauthToken: base['ARIMA_SANDBOX_OAUTH_TOKEN'] ?? base['CLAUDE_CODE_OAUTH_TOKEN'],
+    });
+    const inner = buildClaudeArgs(
+      o,
+      agentName,
+      `${CONTAINER_PLUGIN}/scripts/dist`,
+      CONTAINER_PLUGIN,
+    );
+    // The docker client needs the host's own environment; the role's variables go in the env file.
+    launch = {
+      bin: o.dockerBin ?? 'docker',
+      args: sandbox.dockerArgs(['claude', ...inner]),
+      env: { ...base },
+    };
+  }
+  const box = sandbox;
+  let spawned: Spawned;
+  try {
+    spawned = await runProcess(launch.bin, launch.args, {
+      cwd,
+      env: launch.env,
+      ...(box ? { onKill: () => void box.kill() } : {}),
+      input: prompt,
+      timeoutMs: o.config.maxRunMinutes * 60_000,
+      poll: {
+        everyMs: o.killSwitchPollMs ?? 30_000,
+        isOn: async () =>
+          (await checkKillSwitch(o.projectDir, o.killSwitch.notion, remotePauseOf(o))).on,
+      },
+    });
+  } finally {
+    if (box) {
+      const done = await box.finish().catch((e: unknown) => ({
+        commits: { ok: false, commits: 0, detail: String(e) },
+        imported: { outbox: 0, events: 0, rejected: [] as string[] },
+      }));
+      await appendEvent(o.projectDir, {
+        type: 'sandbox.finished',
+        actor: 'system',
+        run_id: runId,
+        data: {
+          commits: done.commits.commits,
+          commits_ok: done.commits.ok,
+          outbox: done.imported.outbox,
+          events: done.imported.events,
+          rejected: done.imported.rejected.length,
+        },
+      }).catch(() => undefined);
+    }
+  }
   const elapsed = Date.now() - t0;
 
   let parsed: ClaudeResult | undefined;
@@ -771,6 +844,14 @@ export function agentConfigFrom(arima: Record<string, unknown>, role: Role): Age
     tier: tier === 'strong' || tier === 'standard' || tier === 'fast' ? tier : undefined,
     auth: get('runtime.auth') === 'api_key' ? 'api_key' : 'seat',
     isolateUserSettings: get('runtime.isolate_user_settings') === false ? false : true,
+    sandbox: get('runtime.sandbox') === 'docker' ? 'docker' : 'none',
+    sandboxImage:
+      typeof get('runtime.sandbox_image') === 'string'
+        ? (get('runtime.sandbox_image') as string)
+        : undefined,
+    sandboxAllow: Array.isArray(get('runtime.sandbox_allow'))
+      ? (get('runtime.sandbox_allow') as unknown[]).map(String)
+      : undefined,
     projectCap: Number(get('budget.project_cap')),
     dailyCap: Number(get('budget.daily_cap')),
     stateBranch:

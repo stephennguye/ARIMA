@@ -19617,7 +19617,8 @@ var CODE = {
   kill_switch: PREFLIGHT_EXIT.killSwitch,
   run_lock: PREFLIGHT_EXIT.locked,
   budget: PREFLIGHT_EXIT.budget,
-  env: PREFLIGHT_EXIT.env
+  env: PREFLIGHT_EXIT.env,
+  docker: PREFLIGHT_EXIT.env
 };
 
 // plugins/arima/scripts/src/runid.ts

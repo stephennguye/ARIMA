@@ -20938,6 +20938,36 @@ function readAlertHistory(projectDir) {
   return readEvents(projectDir).filter((e) => e.type === "budget.alert");
 }
 
+// plugins/arima/scripts/src/sandbox.ts
+import { execFile } from "node:child_process";
+var realExec = (file, args, opts = {}) => new Promise((resolve2) => {
+  const child = execFile(
+    file,
+    args,
+    {
+      cwd: opts.cwd,
+      timeout: opts.timeoutMs ?? 12e4,
+      maxBuffer: 32 * 1024 * 1024,
+      windowsHide: true,
+      env: { ...process.env, GIT_TERMINAL_PROMPT: "0" }
+    },
+    (err, stdout, stderr) => {
+      const code2 = err === null ? 0 : typeof err.code === "number" ? err.code : 1;
+      resolve2({ code: code2, stdout: String(stdout), stderr: String(stderr) });
+    }
+  );
+  if (opts.input !== void 0) child.stdin?.end(opts.input);
+});
+async function dockerReady(exec = realExec) {
+  const r = await exec("docker", ["info", "--format", "{{.ServerVersion}}"], { timeoutMs: 2e4 });
+  if (r.code === 0 && r.stdout.trim() !== "")
+    return { ok: true, detail: `Docker is running (server ${r.stdout.trim()})` };
+  return {
+    ok: false,
+    detail: "runtime.sandbox is docker but the Docker daemon is not answering; start Docker Desktop"
+  };
+}
+
 // plugins/arima/scripts/src/state.ts
 import { execFileSync } from "node:child_process";
 import {
@@ -21316,7 +21346,8 @@ var CODE = {
   kill_switch: PREFLIGHT_EXIT.killSwitch,
   run_lock: PREFLIGHT_EXIT.locked,
   budget: PREFLIGHT_EXIT.budget,
-  env: PREFLIGHT_EXIT.env
+  env: PREFLIGHT_EXIT.env,
+  docker: PREFLIGHT_EXIT.env
 };
 var localDate = (d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 async function runPreflight(opts) {
@@ -21399,6 +21430,10 @@ async function runPreflight(opts) {
       ok: missing.length === 0,
       detail: missing.length === 0 ? `all ${required.length} required variables are set` : `missing environment variable(s): ${missing.join(", ")}`
     });
+  }
+  if (arima?.runtime.sandbox === "docker") {
+    const d = await (opts.dockerCheck ?? dockerReady)();
+    checks.push({ check: "docker", ok: d.ok, detail: d.detail });
   }
   const failed = checks.filter((c) => !c.ok);
   for (const f of failed) {

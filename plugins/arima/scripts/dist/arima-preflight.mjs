@@ -196,7 +196,7 @@ var require_scope = __commonJS({
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.ValueScope = exports.ValueScopeName = exports.Scope = exports.varKinds = exports.UsedValueState = void 0;
     var code_1 = require_code();
-    var ValueError = class extends Error {
+    var ValueError2 = class extends Error {
       constructor(name) {
         super(`CodeGen: "code" for ${name} not defined`);
         this.value = name.value;
@@ -322,7 +322,7 @@ var require_scope = __commonJS({
             } else if (c = getCode === null || getCode === void 0 ? void 0 : getCode(name)) {
               code2 = (0, code_1._)`${code2}${c}${this.opts._n}`;
             } else {
-              throw new ValueError(name);
+              throw new ValueError2(name);
             }
             nameSet.set(name, UsedValueState.Completed);
           });
@@ -1544,7 +1544,7 @@ var require_dataType = __commonJS({
     exports.coerceAndCheckDataType = coerceAndCheckDataType;
     var COERCIBLE = /* @__PURE__ */ new Set(["string", "number", "integer", "boolean", "null"]);
     function coerceToTypes(types, coerceTypes) {
-      return coerceTypes ? types.filter((t) => COERCIBLE.has(t) || coerceTypes === "array" && t === "array") : [];
+      return coerceTypes ? types.filter((t2) => COERCIBLE.has(t2) || coerceTypes === "array" && t2 === "array") : [];
     }
     function coerceData(it, types, coerceTo) {
       const { gen, data, opts } = it;
@@ -1554,9 +1554,9 @@ var require_dataType = __commonJS({
         gen.if((0, codegen_1._)`${dataType} == 'object' && Array.isArray(${data}) && ${data}.length == 1`, () => gen.assign(data, (0, codegen_1._)`${data}[0]`).assign(dataType, (0, codegen_1._)`typeof ${data}`).if(checkDataTypes(types, data, opts.strictNumbers), () => gen.assign(coerced, data)));
       }
       gen.if((0, codegen_1._)`${coerced} !== undefined`);
-      for (const t of coerceTo) {
-        if (COERCIBLE.has(t) || t === "array" && opts.coerceTypes === "array") {
-          coerceSpecificType(t);
+      for (const t2 of coerceTo) {
+        if (COERCIBLE.has(t2) || t2 === "array" && opts.coerceTypes === "array") {
+          coerceSpecificType(t2);
         }
       }
       gen.else();
@@ -1566,8 +1566,8 @@ var require_dataType = __commonJS({
         gen.assign(data, coerced);
         assignParentData(it, coerced);
       });
-      function coerceSpecificType(t) {
-        switch (t) {
+      function coerceSpecificType(t2) {
+        switch (t2) {
           case "string":
             gen.elseIf((0, codegen_1._)`${dataType} == "number" || ${dataType} == "boolean"`).assign(coerced, (0, codegen_1._)`"" + ${data}`).elseIf((0, codegen_1._)`${data} === null`).assign(coerced, (0, codegen_1._)`""`);
             return;
@@ -1639,8 +1639,8 @@ var require_dataType = __commonJS({
       }
       if (types.number)
         delete types.integer;
-      for (const t in types)
-        cond = (0, codegen_1.and)(cond, checkDataType(t, data, strictNums, correct));
+      for (const t2 in types)
+        cond = (0, codegen_1.and)(cond, checkDataType(t2, data, strictNums, correct));
       return cond;
     }
     exports.checkDataTypes = checkDataTypes;
@@ -2555,9 +2555,9 @@ var require_validate = __commonJS({
         it.dataTypes = types;
         return;
       }
-      types.forEach((t) => {
-        if (!includesType(it.dataTypes, t)) {
-          strictTypesError(it, `type "${t}" not allowed by context "${it.dataTypes.join(",")}"`);
+      types.forEach((t2) => {
+        if (!includesType(it.dataTypes, t2)) {
+          strictTypesError(it, `type "${t2}" not allowed by context "${it.dataTypes.join(",")}"`);
         }
       });
       narrowSchemaTypes(it, types);
@@ -2573,7 +2573,7 @@ var require_validate = __commonJS({
         const rule = rules[keyword];
         if (typeof rule == "object" && (0, applicability_1.shouldUseRule)(it.schema, rule)) {
           const { type } = rule.definition;
-          if (type.length && !type.some((t) => hasApplicableType(ts, t))) {
+          if (type.length && !type.some((t2) => hasApplicableType(ts, t2))) {
             strictTypesError(it, `missing type "${type.join(",")}" for keyword "${keyword}"`);
           }
         }
@@ -2582,15 +2582,15 @@ var require_validate = __commonJS({
     function hasApplicableType(schTs, kwdT) {
       return schTs.includes(kwdT) || kwdT === "number" && schTs.includes("integer");
     }
-    function includesType(ts, t) {
-      return ts.includes(t) || t === "integer" && ts.includes("number");
+    function includesType(ts, t2) {
+      return ts.includes(t2) || t2 === "integer" && ts.includes("number");
     }
     function narrowSchemaTypes(it, withTypes) {
       const ts = [];
-      for (const t of it.dataTypes) {
-        if (includesType(withTypes, t))
-          ts.push(t);
-        else if (withTypes.includes("integer") && t === "number")
+      for (const t2 of it.dataTypes) {
+        if (includesType(withTypes, t2))
+          ts.push(t2);
+        else if (withTypes.includes("integer") && t2 === "number")
           ts.push("integer");
       }
       it.dataTypes = ts;
@@ -4077,18 +4077,18 @@ var require_fast_uri = __commonJS({
         return true;
       }
       if (!options.unicodeSupport && (!schemeHandler || !schemeHandler.unicodeSupport) && parsed.host && !isIPLiteral(parsed.host) && (options.domainHost || schemeHandler && schemeHandler.domainHost) && isIP === false && nonSimpleDomain(parsed.host)) {
-        let url;
+        let url2;
         try {
-          url = new URL("http://" + parsed.host);
+          url2 = new URL("http://" + parsed.host);
         } catch (e) {
           parsed.error = parsed.error || "Host's domain name can not be converted to ASCII: " + e;
           return true;
         }
-        if (!isHostOnlyURL(url)) {
+        if (!isHostOnlyURL(url2)) {
           parsed.error = parsed.error || MALFORMED_HOST_ERROR;
           return true;
         }
-        parsed.host = url.hostname;
+        parsed.host = url2.hostname;
       }
       return false;
     }
@@ -4097,8 +4097,8 @@ var require_fast_uri = __commonJS({
         parsed.host && isIP === false && !isIPLiteral(parsed.host) && (options.domainHost || schemeHandler && schemeHandler.domainHost) && FORBIDDEN_DOMAIN_HOST_CHARACTER.test(parsed.host)
       );
     }
-    function isHostOnlyURL(url) {
-      return url.username === "" && url.password === "" && url.port === "" && url.pathname === "/" && url.search === "" && url.hash === "" && url.hostname !== "";
+    function isHostOnlyURL(url2) {
+      return url2.username === "" && url2.password === "" && url2.port === "" && url2.pathname === "/" && url2.search === "" && url2.hash === "" && url2.hostname !== "";
     }
     function parseWithStatus(uri, opts) {
       const options = Object.assign({}, opts);
@@ -4654,7 +4654,7 @@ var require_core = __commonJS({
           type: (0, dataType_1.getJSONTypes)(def.type),
           schemaType: (0, dataType_1.getJSONTypes)(def.schemaType)
         };
-        (0, util_1.eachItem)(keyword, definition.type.length === 0 ? (k) => addRule.call(this, k, definition) : (k) => definition.type.forEach((t) => addRule.call(this, k, definition, t)));
+        (0, util_1.eachItem)(keyword, definition.type.length === 0 ? (k) => addRule.call(this, k, definition) : (k) => definition.type.forEach((t2) => addRule.call(this, k, definition, t2)));
         return this;
       }
       getKeyword(keyword) {
@@ -4683,7 +4683,7 @@ var require_core = __commonJS({
       errorsText(errors = this.errors, { separator = ", ", dataVar = "data" } = {}) {
         if (!errors || errors.length === 0)
           return "No errors";
-        return errors.map((e) => `${dataVar}${e.instancePath} ${e.message}`).reduce((text, msg) => text + separator + msg);
+        return errors.map((e) => `${dataVar}${e.instancePath} ${e.message}`).reduce((text2, msg) => text2 + separator + msg);
       }
       $dataMetaSchema(metaSchema, keywordsJsonPointers) {
         const rules = this.RULES.all;
@@ -4853,7 +4853,7 @@ var require_core = __commonJS({
       if (dataType && post)
         throw new Error('keyword with "post" flag cannot have "type"');
       const { RULES } = this;
-      let ruleGroup = post ? RULES.post : RULES.rules.find(({ type: t }) => t === dataType);
+      let ruleGroup = post ? RULES.post : RULES.rules.find(({ type: t2 }) => t2 === dataType);
       if (!ruleGroup) {
         ruleGroup = { type: dataType, rules: [] };
         RULES.rules.push(ruleGroup);
@@ -5401,7 +5401,7 @@ var require_uniqueItems = __commonJS({
           gen.if((0, codegen_1._)`${i} > 1`, () => (canOptimize() ? loopN : loopN2)(i, j));
         }
         function canOptimize() {
-          return itemTypes.length > 0 && !itemTypes.some((t) => t === "object" || t === "array");
+          return itemTypes.length > 0 && !itemTypes.some((t2) => t2 === "object" || t2 === "array");
         }
         function loopN(i, j) {
           const item = gen.name("item");
@@ -7526,7 +7526,7 @@ var require_formats = __commonJS({
     }
     exports.fullFormats = {
       // date: http://tools.ietf.org/html/rfc3339#section-5.6
-      date: fmtDef(date, compareDate),
+      date: fmtDef(date2, compareDate),
       // date-time: http://tools.ietf.org/html/rfc3339#section-5.6
       time: fmtDef(getTime(true), compareTime),
       "date-time": fmtDef(getDateTime(true), compareDateTime),
@@ -7592,7 +7592,7 @@ var require_formats = __commonJS({
     }
     var DATE = /^(\d\d\d\d)-(\d\d)-(\d\d)$/;
     var DAYS = [0, 31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
-    function date(str) {
+    function date2(str) {
       const matches = DATE.exec(str);
       if (!matches)
         return false;
@@ -7661,7 +7661,7 @@ var require_formats = __commonJS({
       const time = getTime(strictTimeZone);
       return function date_time(str) {
         const dateTime = str.split(DATE_TIME_SEPARATOR);
-        return dateTime.length === 2 && date(dateTime[0]) && time(dateTime[1]);
+        return dateTime.length === 2 && date2(dateTime[0]) && time(dateTime[1]);
       };
     }
     function compareDateTime(dt1, dt2) {
@@ -8816,13 +8816,13 @@ var require_createNode = __commonJS({
     var defaultTagPrefix = "tag:yaml.org,2002:";
     function findTagObject(value, tagName, tags) {
       if (tagName) {
-        const match = tags.filter((t) => t.tag === tagName);
-        const tagObj = match.find((t) => !t.format) ?? match[0];
+        const match = tags.filter((t2) => t2.tag === tagName);
+        const tagObj = match.find((t2) => !t2.format) ?? match[0];
         if (!tagObj)
           throw new Error(`Tag ${tagName} not found`);
         return tagObj;
       }
-      return tags.find((t) => t.identify?.(value) && !t.format);
+      return tags.find((t2) => t2.identify?.(value) && !t2.format);
     }
     function createNode(value, tagName, ctx) {
       if (identity.isDocument(value))
@@ -9048,14 +9048,14 @@ var require_foldFlowLines = __commonJS({
     var FOLD_FLOW = "flow";
     var FOLD_BLOCK = "block";
     var FOLD_QUOTED = "quoted";
-    function foldFlowLines(text, indent, mode = "flow", { indentAtStart, lineWidth = 80, minContentWidth = 20, onFold, onOverflow } = {}) {
+    function foldFlowLines(text2, indent, mode = "flow", { indentAtStart, lineWidth = 80, minContentWidth = 20, onFold, onOverflow } = {}) {
       if (!lineWidth || lineWidth < 0)
-        return text;
+        return text2;
       if (lineWidth < minContentWidth)
         minContentWidth = 0;
       const endStep = Math.max(1 + minContentWidth, 1 + lineWidth - indent.length);
-      if (text.length <= endStep)
-        return text;
+      if (text2.length <= endStep)
+        return text2;
       const folds = [];
       const escapedFolds = {};
       let end = lineWidth - indent.length;
@@ -9072,14 +9072,14 @@ var require_foldFlowLines = __commonJS({
       let escStart = -1;
       let escEnd = -1;
       if (mode === FOLD_BLOCK) {
-        i = consumeMoreIndentedLines(text, i, indent.length);
+        i = consumeMoreIndentedLines(text2, i, indent.length);
         if (i !== -1)
           end = i + endStep;
       }
-      for (let ch; ch = text[i += 1]; ) {
+      for (let ch; ch = text2[i += 1]; ) {
         if (mode === FOLD_QUOTED && ch === "\\") {
           escStart = i;
-          switch (text[i + 1]) {
+          switch (text2[i + 1]) {
             case "x":
               i += 3;
               break;
@@ -9096,12 +9096,12 @@ var require_foldFlowLines = __commonJS({
         }
         if (ch === "\n") {
           if (mode === FOLD_BLOCK)
-            i = consumeMoreIndentedLines(text, i, indent.length);
+            i = consumeMoreIndentedLines(text2, i, indent.length);
           end = i + indent.length + endStep;
           split = void 0;
         } else {
           if (ch === " " && prev && prev !== " " && prev !== "\n" && prev !== "	") {
-            const next = text[i + 1];
+            const next = text2[i + 1];
             if (next && next !== " " && next !== "\n" && next !== "	")
               split = i;
           }
@@ -9113,12 +9113,12 @@ var require_foldFlowLines = __commonJS({
             } else if (mode === FOLD_QUOTED) {
               while (prev === " " || prev === "	") {
                 prev = ch;
-                ch = text[i += 1];
+                ch = text2[i += 1];
                 overflow = true;
               }
               const j = i > escEnd + 1 ? i - 2 : escStart - 1;
               if (escapedFolds[j])
-                return text;
+                return text2;
               folds.push(j);
               escapedFolds[j] = true;
               end = j + endStep;
@@ -9133,39 +9133,39 @@ var require_foldFlowLines = __commonJS({
       if (overflow && onOverflow)
         onOverflow();
       if (folds.length === 0)
-        return text;
+        return text2;
       if (onFold)
         onFold();
-      let res = text.slice(0, folds[0]);
+      let res = text2.slice(0, folds[0]);
       for (let i2 = 0; i2 < folds.length; ++i2) {
         const fold = folds[i2];
-        const end2 = folds[i2 + 1] || text.length;
+        const end2 = folds[i2 + 1] || text2.length;
         if (fold === 0)
           res = `
-${indent}${text.slice(0, end2)}`;
+${indent}${text2.slice(0, end2)}`;
         else {
           if (mode === FOLD_QUOTED && escapedFolds[fold])
-            res += `${text[fold]}\\`;
+            res += `${text2[fold]}\\`;
           res += `
-${indent}${text.slice(fold + 1, end2)}`;
+${indent}${text2.slice(fold + 1, end2)}`;
         }
       }
       return res;
     }
-    function consumeMoreIndentedLines(text, i, indent) {
+    function consumeMoreIndentedLines(text2, i, indent) {
       let end = i;
       let start = i + 1;
-      let ch = text[start];
+      let ch = text2[start];
       while (ch === " " || ch === "	") {
         if (i < start + indent) {
-          ch = text[++i];
+          ch = text2[++i];
         } else {
           do {
-            ch = text[++i];
+            ch = text2[++i];
           } while (ch && ch !== "\n");
           end = i;
           start = i + 1;
-          ch = text[start];
+          ch = text2[start];
         }
       }
       return end;
@@ -9449,10 +9449,10 @@ ${indent}`);
       let res = _stringify(type);
       if (res === null) {
         const { defaultKeyType, defaultStringType } = ctx.options;
-        const t = implicitKey && defaultKeyType || defaultStringType;
-        res = _stringify(t);
+        const t2 = implicitKey && defaultKeyType || defaultStringType;
+        res = _stringify(t2);
         if (res === null)
-          throw new Error(`Unsupported default string type ${t}`);
+          throw new Error(`Unsupported default string type ${t2}`);
       }
       return res;
     }
@@ -9512,24 +9512,24 @@ var require_stringify = __commonJS({
     }
     function getTagObject(tags, item) {
       if (item.tag) {
-        const match = tags.filter((t) => t.tag === item.tag);
+        const match = tags.filter((t2) => t2.tag === item.tag);
         if (match.length > 0)
-          return match.find((t) => t.format === item.format) ?? match[0];
+          return match.find((t2) => t2.format === item.format) ?? match[0];
       }
       let tagObj = void 0;
       let obj;
       if (identity.isScalar(item)) {
         obj = item.value;
-        let match = tags.filter((t) => t.identify?.(obj));
+        let match = tags.filter((t2) => t2.identify?.(obj));
         if (match.length > 1) {
-          const testMatch = match.filter((t) => t.test);
+          const testMatch = match.filter((t2) => t2.test);
           if (testMatch.length > 0)
             match = testMatch;
         }
-        tagObj = match.find((t) => t.format === item.format) ?? match.find((t) => !t.format);
+        tagObj = match.find((t2) => t2.format === item.format) ?? match.find((t2) => !t2.format);
       } else {
         obj = item;
-        tagObj = tags.find((t) => t.nodeClass && obj instanceof t.nodeClass);
+        tagObj = tags.find((t2) => t2.nodeClass && obj instanceof t2.nodeClass);
       }
       if (!tagObj) {
         const name = obj?.constructor?.name ?? (obj === null ? "null" : typeof obj);
@@ -10426,9 +10426,9 @@ var require_stringifyNumber = __commonJS({
     function stringifyNumber({ format, minFractionDigits, tag, value }) {
       if (typeof value === "bigint")
         return String(value);
-      const num = typeof value === "number" ? value : Number(value);
-      if (!isFinite(num))
-        return isNaN(num) ? ".nan" : num < 0 ? "-.inf" : ".inf";
+      const num2 = typeof value === "number" ? value : Number(value);
+      if (!isFinite(num2))
+        return isNaN(num2) ? ".nan" : num2 < 0 ? "-.inf" : ".inf";
       let n = Object.is(value, -0) ? "-0" : JSON.stringify(value);
       if (!format && minFractionDigits && (!tag || tag === "tag:yaml.org,2002:float") && /^-?\d/.test(n) && !n.includes("e")) {
         let i = n.indexOf(".");
@@ -10468,8 +10468,8 @@ var require_float = __commonJS({
       test: /^[-+]?(?:\.[0-9]+|[0-9]+(?:\.[0-9]*)?)[eE][-+]?[0-9]+$/,
       resolve: (str) => parseFloat(str),
       stringify(node) {
-        const num = Number(node.value);
-        return isFinite(num) ? num.toExponential() : stringifyNumber.stringifyNumber(node);
+        const num2 = Number(node.value);
+        return isFinite(num2) ? num2.toExponential() : stringifyNumber.stringifyNumber(node);
       }
     };
     var float = {
@@ -10908,8 +10908,8 @@ var require_float2 = __commonJS({
       test: /^[-+]?(?:[0-9][0-9_]*)?(?:\.[0-9_]*)?[eE][-+]?[0-9]+$/,
       resolve: (str) => parseFloat(str.replace(/_/g, "")),
       stringify(node) {
-        const num = Number(node.value);
-        return isFinite(num) ? num.toExponential() : stringifyNumber.stringifyNumber(node);
+        const num2 = Number(node.value);
+        return isFinite(num2) ? num2.toExponential() : stringifyNumber.stringifyNumber(node);
       }
     };
     var float = {
@@ -11111,23 +11111,23 @@ var require_timestamp = __commonJS({
     function parseSexagesimal(str, asBigInt) {
       const sign = str[0];
       const parts = sign === "-" || sign === "+" ? str.substring(1) : str;
-      const num = (n) => asBigInt ? BigInt(n) : Number(n);
-      const res = parts.replace(/_/g, "").split(":").reduce((res2, p) => res2 * num(60) + num(p), num(0));
-      return sign === "-" ? num(-1) * res : res;
+      const num2 = (n) => asBigInt ? BigInt(n) : Number(n);
+      const res = parts.replace(/_/g, "").split(":").reduce((res2, p) => res2 * num2(60) + num2(p), num2(0));
+      return sign === "-" ? num2(-1) * res : res;
     }
     function stringifySexagesimal(node) {
       let { value } = node;
-      let num = (n) => n;
+      let num2 = (n) => n;
       if (typeof value === "bigint")
-        num = (n) => BigInt(n);
+        num2 = (n) => BigInt(n);
       else if (isNaN(value) || !isFinite(value))
         return stringifyNumber.stringifyNumber(node);
       let sign = "";
       if (value < 0) {
         sign = "-";
-        value *= num(-1);
+        value *= num2(-1);
       }
-      const _60 = num(60);
+      const _60 = num2(60);
       const parts = [value % _60];
       if (value < 60) {
         parts.unshift(0);
@@ -11173,15 +11173,15 @@ var require_timestamp = __commonJS({
           throw new Error("!!timestamp expects a date, starting with yyyy-mm-dd");
         const [, year, month, day, hour, minute, second] = match.map(Number);
         const millisec = match[7] ? Number((match[7] + "00").substr(1, 3)) : 0;
-        let date = Date.UTC(year, month - 1, day, hour || 0, minute || 0, second || 0, millisec);
+        let date2 = Date.UTC(year, month - 1, day, hour || 0, minute || 0, second || 0, millisec);
         const tz = match[8];
         if (tz && tz !== "Z") {
           let d = parseSexagesimal(tz, false);
           if (Math.abs(d) < 30)
             d *= 60;
-          date -= 6e4 * d;
+          date2 -= 6e4 * d;
         }
-        return new Date(date);
+        return new Date(date2);
       },
       stringify: ({ value }) => value?.toISOString().replace(/(T00:00:00)?\.000Z$/, "") ?? ""
     };
@@ -12458,7 +12458,7 @@ var require_compose_collection = __commonJS({
       if (!tagToken || !tagName || tagName === "!" || tagName === YAMLMap.YAMLMap.tagName && expType === "map" || tagName === YAMLSeq.YAMLSeq.tagName && expType === "seq") {
         return resolveCollection(CN, ctx, token, onError, tagName);
       }
-      let tag = ctx.schema.tags.find((t) => t.tag === tagName && t.collection === expType);
+      let tag = ctx.schema.tags.find((t2) => t2.tag === tagName && t2.collection === expType);
       if (!tag) {
         const kt = ctx.schema.knownTags[tagName];
         if (kt?.collection === expType) {
@@ -12679,7 +12679,7 @@ var require_resolve_flow_scalar = __commonJS({
       const { offset, type, source, end } = scalar;
       let _type;
       let value;
-      const _onError = (rel, code2, msg) => onError(offset + rel, code2, msg);
+      const _onError = (rel2, code2, msg) => onError(offset + rel2, code2, msg);
       switch (type) {
         case "scalar":
           _type = Scalar.Scalar.PLAIN;
@@ -17412,12 +17412,12 @@ var require_Client = __commonJS({
         const { path: path12, method, query, body, formDataParams, auth } = args;
         (0, errors_1.validateRequestPath)(path12);
         this.log(logging_1.LogLevel.INFO, "request start", { method, path: path12 });
-        const url = this.buildRequestUrl(path12, query);
+        const url2 = this.buildRequestUrl(path12, query);
         const bodyAsJsonString = this.serializeBody(body);
         const headers = this.buildRequestHeaders(args.headers, auth, bodyAsJsonString);
         const formData = this.buildFormData(formDataParams, headers);
         return this.executeWithRetry({
-          url,
+          url: url2,
           method,
           path: path12,
           headers,
@@ -17432,11 +17432,11 @@ var require_Client = __commonJS({
         const { path: path12, method, query, body, auth } = args;
         (0, errors_1.validateRequestPath)(path12);
         this.log(logging_1.LogLevel.INFO, "stream request start", { method, path: path12 });
-        const url = this.buildRequestUrl(path12, query);
+        const url2 = this.buildRequestUrl(path12, query);
         const bodyAsJsonString = this.serializeBody(body);
         const headers = this.buildRequestHeaders(args.headers, auth, bodyAsJsonString);
         const response = await this.executeWithRetry({
-          url,
+          url: url2,
           method,
           path: path12,
           headers,
@@ -17495,21 +17495,21 @@ var require_Client = __commonJS({
        * Builds the full URL with query parameters.
        */
       buildRequestUrl(path12, query) {
-        const url = new URL(`${__classPrivateFieldGet(this, _Client_prefixUrl, "f")}${path12}`);
+        const url2 = new URL(`${__classPrivateFieldGet(this, _Client_prefixUrl, "f")}${path12}`);
         if (query) {
           for (const [key, value] of Object.entries(query)) {
             if (value !== void 0 && value !== null) {
               if (Array.isArray(value)) {
                 for (const val of value) {
-                  url.searchParams.append(key, decodeURIComponent(val));
+                  url2.searchParams.append(key, decodeURIComponent(val));
                 }
               } else {
-                url.searchParams.append(key, String(value));
+                url2.searchParams.append(key, String(value));
               }
             }
           }
         }
-        return url;
+        return url2;
       }
       /**
        * Serializes the request body to JSON string if non-empty.
@@ -17582,12 +17582,12 @@ var require_Client = __commonJS({
        * Executes the request with retry logic.
        */
       async executeWithRetry(args, execute) {
-        const { url, method, path: path12, headers, body } = args;
+        const { url: url2, method, path: path12, headers, body } = args;
         let attempt = 0;
         while (true) {
           try {
             return await execute({
-              url,
+              url: url2,
               method,
               path: path12,
               headers,
@@ -17618,8 +17618,8 @@ var require_Client = __commonJS({
        * Executes a single HTTP request (no retry).
        */
       async executeSingleRequest(args) {
-        const { url, method, path: path12, headers, body } = args;
-        const response = await errors_1.RequestTimeoutError.rejectAfterTimeout(__classPrivateFieldGet(this, _Client_fetch, "f").call(this, url.toString(), {
+        const { url: url2, method, path: path12, headers, body } = args;
+        const response = await errors_1.RequestTimeoutError.rejectAfterTimeout(__classPrivateFieldGet(this, _Client_fetch, "f").call(this, url2.toString(), {
           method: method.toUpperCase(),
           headers,
           body,
@@ -17643,8 +17643,8 @@ var require_Client = __commonJS({
        * retried; once a stream has opened, its events are never replayed.
        */
       async executeSingleStreamRequest(args) {
-        const { url, method, body } = args;
-        const response = await errors_1.RequestTimeoutError.rejectAfterTimeout(__classPrivateFieldGet(this, _Client_fetch, "f").call(this, url.toString(), {
+        const { url: url2, method, body } = args;
+        const response = await errors_1.RequestTimeoutError.rejectAfterTimeout(__classPrivateFieldGet(this, _Client_fetch, "f").call(this, url2.toString(), {
           method: method.toUpperCase(),
           headers: args.headers,
           body,
@@ -17730,9 +17730,9 @@ var require_Client = __commonJS({
         if (!isNaN(seconds) && seconds >= 0) {
           return seconds * 1e3;
         }
-        const date = Date.parse(retryAfterValue);
-        if (!isNaN(date)) {
-          const delayMs = date - Date.now();
+        const date2 = Date.parse(retryAfterValue);
+        if (!isNaN(date2)) {
+          const delayMs = date2 - Date.now();
           return delayMs > 0 ? delayMs : 0;
         }
         return void 0;
@@ -18397,9 +18397,9 @@ var YamlSource = class {
   doc;
   lines = new import_yaml.LineCounter();
   parseErrors = [];
-  constructor(file, text = readFileSync2(file, "utf8")) {
+  constructor(file, text2 = readFileSync2(file, "utf8")) {
     this.file = file;
-    this.doc = (0, import_yaml.parseDocument)(text, { lineCounter: this.lines, prettyErrors: false });
+    this.doc = (0, import_yaml.parseDocument)(text2, { lineCounter: this.lines, prettyErrors: false });
     for (const e of this.doc.errors) {
       this.parseErrors.push({
         line: e.linePos?.[0]?.line ?? 1,
@@ -18702,7 +18702,7 @@ async function withBackoff(fn, o = {}) {
 
 // plugins/arima/scripts/src/notion/port.ts
 var PAUSE_TODO_TEXT = "Pause ARIMA";
-var plain = (rt) => (rt ?? []).map((t) => t.plain_text ?? "").join("");
+var plain = (rt) => (rt ?? []).map((t2) => t2.plain_text ?? "").join("");
 function toDatabaseInfo(raw) {
   const dataSourceId = raw.data_sources?.[0]?.id;
   if (dataSourceId === void 0) throw new Error(`database ${raw.id} has no data source`);
@@ -18770,7 +18770,7 @@ function createNotionPort(client, throttle = new Throttle(), backoff = {}) {
     async setTodoChecked(blockId, checked) {
       await call(() => client.blocks.update({ block_id: blockId, to_do: { checked } }));
     },
-    async appendTodo(pageId, text, checked) {
+    async appendTodo(pageId, text2, checked) {
       const res = await call(
         () => client.blocks.children.append({
           block_id: pageId,
@@ -18778,7 +18778,7 @@ function createNotionPort(client, throttle = new Throttle(), backoff = {}) {
             {
               object: "block",
               type: "to_do",
-              to_do: { rich_text: [{ type: "text", text: { content: text } }], checked }
+              to_do: { rich_text: [{ type: "text", text: { content: text2 } }], checked }
             }
           ]
         })
@@ -18787,7 +18787,7 @@ function createNotionPort(client, throttle = new Throttle(), backoff = {}) {
       if (id === void 0) throw new Error("Notion did not return the created block");
       return id;
     },
-    async appendParagraph(pageId, text) {
+    async appendParagraph(pageId, text2) {
       const res = await call(
         () => client.blocks.children.append({
           block_id: pageId,
@@ -18795,7 +18795,7 @@ function createNotionPort(client, throttle = new Throttle(), backoff = {}) {
             {
               object: "block",
               type: "paragraph",
-              paragraph: { rich_text: [{ type: "text", text: { content: text } }] }
+              paragraph: { rich_text: [{ type: "text", text: { content: text2 } }] }
             }
           ]
         })
@@ -19002,13 +19002,13 @@ var PATTERNS = [
 function fingerprint(match) {
   return `sha256:${createHash("sha256").update(match).digest("hex").slice(0, 16)}`;
 }
-function scan(text) {
-  const unescaped = text.replace(/\\[nrt]/g, " ").replace(/\\"/g, '"');
+function scan(text2) {
+  const unescaped = text2.replace(/\\[nrt]/g, " ").replace(/\\"/g, '"');
   const out = [];
   const seen = /* @__PURE__ */ new Set();
   for (const p of PATTERNS) {
-    for (const t of text === unescaped ? [text] : [text, unescaped]) {
-      for (const m of t.matchAll(new RegExp(p.re.source, p.re.flags))) {
+    for (const t2 of text2 === unescaped ? [text2] : [text2, unescaped]) {
+      for (const m of t2.matchAll(new RegExp(p.re.source, p.re.flags))) {
         const groups = m.slice(1).map((x) => x ?? "");
         if (p.accept && !p.accept(m[0], groups)) continue;
         const f = fingerprint(m[0]);
@@ -19020,14 +19020,14 @@ function scan(text) {
   }
   return out;
 }
-function scanSecrets(text, allowed = /* @__PURE__ */ new Set()) {
-  return scan(text).filter((f) => !allowed.has(f.fingerprint));
+function scanSecrets(text2, allowed = /* @__PURE__ */ new Set()) {
+  return scan(text2).filter((f) => !allowed.has(f.fingerprint));
 }
-function findSecrets(text, allowed = /* @__PURE__ */ new Set()) {
-  return [...new Set(scanSecrets(text, allowed).map((f) => f.rule))];
+function findSecrets(text2, allowed = /* @__PURE__ */ new Set()) {
+  return [...new Set(scanSecrets(text2, allowed).map((f) => f.rule))];
 }
-function assertNoSecrets(text, where) {
-  const found = findSecrets(text);
+function assertNoSecrets(text2, where) {
+  const found = findSecrets(text2);
   if (found.length > 0) {
     throw new Error(
       `Refusing to write ${where}: content looks like a secret (${found.join(", ")})`
@@ -19186,7 +19186,7 @@ async function checkKillSwitch(projectDir, notion, remotePause) {
   if (notion !== null) {
     try {
       const todos = await notion.port.listTodoBlocks(notion.rootPageId);
-      const sw = todos.find((t) => t.text.trim() === PAUSE_TODO_TEXT);
+      const sw = todos.find((t2) => t2.text.trim() === PAUSE_TODO_TEXT);
       if (sw === void 0) {
         remote = "missing";
         detail = `the "${PAUSE_TODO_TEXT}" to-do is missing from the Notion root page, so ARIMA cannot tell whether it is paused; run /arima:pause --resume to recreate it`;
@@ -19222,6 +19222,494 @@ async function checkKillSwitch(projectDir, notion, remotePause) {
     detail += stateBranch === false ? "; the remote state branch has no PAUSE file" : "; the remote state branch could not be checked either, so only the local PAUSE file was consulted";
   }
   return { on, file, notion: remote, stateBranch, detail };
+}
+
+// plugins/arima/scripts/src/sandbox.ts
+import { execFile } from "node:child_process";
+
+// plugins/arima/scripts/src/roles.ts
+var bash = (cmd) => [`Bash(${cmd})`, `Bash(${cmd} *)`];
+var GIT_READ = [
+  ...bash("git status"),
+  ...bash("git diff"),
+  ...bash("git log"),
+  ...bash("git show"),
+  ...bash("git rev-parse"),
+  ...bash("git ls-files"),
+  ...bash("git branch --list"),
+  ...bash("git fetch")
+];
+var NPM_TEST = [...bash("npm test"), ...bash("npm run"), ...bash("npm ci")];
+
+// plugins/arima/scripts/src/ids.ts
+var ID_WIDTHS = {
+  REQ: 3,
+  NFR: 3,
+  EP: 2,
+  US: 3,
+  TC: 4,
+  BUG: 3,
+  ADR: 4,
+  RISK: 3,
+  DEC: 4,
+  Q: 3,
+  MS: 2,
+  CR: 3,
+  INC: 3,
+  LES: 3
+};
+var ID_PREFIXES = Object.keys(ID_WIDTHS);
+
+// plugins/arima/scripts/src/notion/schema.ts
+var ROLE_OPTIONS = [
+  "orchestrator",
+  "ba",
+  "ux",
+  "architect",
+  "tech-lead",
+  "developer",
+  "qa",
+  "security",
+  "devops",
+  "human"
+];
+var MOSCOW = ["Must", "Should", "Could", "Won't"];
+var PRIORITY_P = ["P1", "P2", "P3", "P4"];
+var t = (name) => ({ name, type: "title" });
+var text = (name, extra = {}) => ({
+  name,
+  type: "rich_text",
+  ...extra
+});
+var num = (name) => ({ name, type: "number" });
+var date = (name) => ({ name, type: "date" });
+var check = (name, extra = {}) => ({
+  name,
+  type: "checkbox",
+  ...extra
+});
+var url = (name) => ({ name, type: "url" });
+var people = (name, extra = {}) => ({
+  name,
+  type: "people",
+  ...extra
+});
+var select = (name, options, extra = {}) => ({
+  name,
+  type: "select",
+  options,
+  ...extra
+});
+var rel = (name, target, reverse) => ({
+  name,
+  type: "relation",
+  relation: { target, reverse }
+});
+var DATABASES = [
+  {
+    key: "gates",
+    title: "Gates",
+    props: [
+      t("Gate"),
+      num("Phase"),
+      select(
+        "Status",
+        ["Not ready", "Ready for review", "Approved", "Approved with conditions", "Rejected"],
+        {
+          humanOnlyValues: ["Approved", "Approved with conditions", "Rejected"]
+        }
+      ),
+      people("Approvers", { humanOnly: true }),
+      people("Decided by", { humanOnly: true }),
+      date("Decided on"),
+      text("Conditions"),
+      text("Comments"),
+      rel("Documents", "documents", "Gates")
+    ]
+  },
+  {
+    key: "requirements",
+    title: "Requirements",
+    props: [
+      t("ID"),
+      text("Title"),
+      select("Type", ["Functional", "NFR", "Security"]),
+      select("Priority", MOSCOW),
+      select("Status", ["Draft", "Approved", "Changed", "Retired"]),
+      text("Baseline version"),
+      {
+        name: "Test results",
+        type: "rollup",
+        rollup: { relation: "Test Cases", property: "Last result", fn: "show_original" }
+      },
+      {
+        name: "Coverage",
+        type: "formula",
+        formula: 'if(contains(prop("Test results"), "Pass"), "Covered", "Not covered")'
+      },
+      rel("Stories", "stories", "Requirements"),
+      rel("Test Cases", "test_cases", "Requirements"),
+      rel("Change Requests", "change_requests", "Requirements")
+    ]
+  },
+  {
+    key: "epics",
+    title: "Epics",
+    props: [
+      t("ID"),
+      text("Title"),
+      select("Status", ["Planned", "In progress", "Done", "Cancelled"]),
+      rel("Requirements", "requirements", "Epics"),
+      rel("Stories", "stories", "Epic"),
+      rel("Milestones", "milestones", "Epics")
+    ]
+  },
+  {
+    key: "stories",
+    title: "Stories",
+    props: [
+      t("ID"),
+      text("Title"),
+      select("Type", ["Story", "Bug fix", "Tech task", "Spike"]),
+      select("Status", [
+        "Backlog",
+        "Ready",
+        "In Progress",
+        "In Review",
+        "In QA",
+        "PO Acceptance",
+        "Done",
+        "Released",
+        "Blocked",
+        "Cancelled"
+      ]),
+      num("Priority"),
+      select("Complexity", ["S", "M", "L"]),
+      text("Acceptance criteria"),
+      select("Assigned role", ROLE_OPTIONS),
+      people("Assignee"),
+      url("PR link"),
+      num("Attempt"),
+      num("Budget USD"),
+      {
+        name: "Cost USD",
+        type: "rollup",
+        rollup: { relation: "Cost log", property: "Cost USD", fn: "sum" }
+      },
+      text("Blocked reason"),
+      date("Started"),
+      date("Done"),
+      rel("Milestone", "milestones", "Stories"),
+      rel("Test Cases", "test_cases", "Story"),
+      rel("Bugs", "bugs", "Story"),
+      rel("Questions", "questions", "Story"),
+      rel("Cost log", "cost_log", "Story")
+    ]
+  },
+  {
+    key: "test_cases",
+    title: "Test Cases",
+    props: [
+      t("ID"),
+      text("Title"),
+      select("Type", ["unit", "integration", "e2e", "manual", "UAT"]),
+      check("Automated"),
+      select("Last result", ["Pass", "Fail", "Blocked", "Not run"]),
+      date("Last run"),
+      text("Test path")
+    ]
+  },
+  {
+    key: "bugs",
+    title: "Bugs",
+    props: [
+      t("ID"),
+      text("Title"),
+      select("Severity", ["S1", "S2", "S3", "S4"]),
+      select("Priority", PRIORITY_P),
+      select("Status", ["Open", "In progress", "Fixed", "Verified", "Closed", "Cancelled"]),
+      select("Environment", ["local", "preview", "staging", "production"]),
+      select("Found by", ROLE_OPTIONS),
+      text("Steps"),
+      text("Expected"),
+      text("Actual"),
+      { name: "Evidence", type: "files" },
+      rel("Release", "releases", "Bugs")
+    ]
+  },
+  {
+    key: "milestones",
+    title: "Milestones",
+    props: [
+      t("ID"),
+      text("Name"),
+      select("Status", ["Planned", "Active", "Review", "Done"]),
+      date("Start"),
+      date("End"),
+      num("Budget USD"),
+      {
+        name: "Cost USD",
+        type: "rollup",
+        rollup: { relation: "Cost log", property: "Cost USD", fn: "sum" }
+      }
+    ]
+  },
+  {
+    key: "documents",
+    title: "Documents",
+    props: [
+      t("Title"),
+      select("Type", [
+        "Project brief",
+        "PRD",
+        "URS",
+        "SRS",
+        "Charter",
+        "Budget plan",
+        "Feasibility note",
+        "Compliance screen",
+        "Glossary",
+        "Personas and journeys",
+        "Security requirements",
+        "DPIA",
+        "Master Test Plan",
+        "SAD",
+        "ADR",
+        "OpenAPI",
+        "Data model",
+        "Threat model",
+        "Environment matrix",
+        "Report",
+        "Runbook",
+        "Release notes",
+        "Guide",
+        "Other"
+      ]),
+      num("Phase"),
+      select("Owner role", ROLE_OPTIONS),
+      text("Version"),
+      select("Status", ["Draft", "In review", "Approved", "Superseded"]),
+      select("Master", ["Notion", "GitHub"]),
+      url("Link"),
+      date("Last synced")
+    ]
+  },
+  {
+    key: "decisions",
+    title: "Decisions",
+    props: [
+      t("ID"),
+      text("Summary"),
+      select("Made by", ROLE_OPTIONS),
+      text("Options considered"),
+      text("Chosen"),
+      check("Reversible"),
+      check("Veto", { humanOnly: true }),
+      text("Veto reason", { humanOnly: true }),
+      date("Date"),
+      text("Item")
+    ]
+  },
+  {
+    key: "questions",
+    title: "Questions",
+    props: [
+      t("ID"),
+      text("Question"),
+      select("Asked by", ROLE_OPTIONS),
+      text("Options"),
+      text("Recommendation"),
+      check("Blocking"),
+      text("Default"),
+      date("Expires"),
+      text("Answer", { humanOnly: true }),
+      people("Answered by", { humanOnly: true }),
+      select("Status", ["Open", "Answered", "Expired", "Withdrawn"]),
+      text("Item")
+    ]
+  },
+  {
+    key: "meetings",
+    title: "Meetings",
+    props: [
+      t("ID"),
+      select("Type", [
+        "Standup",
+        "Requirements review",
+        "Design review",
+        "Milestone review",
+        "Go/No-Go",
+        "Postmortem",
+        "Retro"
+      ]),
+      date("Date"),
+      { name: "Participants", type: "multi_select", options: ROLE_OPTIONS },
+      text("Decisions"),
+      text("Action items"),
+      num("Cost USD"),
+      rel("Stories", "stories", "Meetings"),
+      rel("Gates", "gates", "Meetings")
+    ]
+  },
+  {
+    key: "digests",
+    title: "Digests",
+    props: [
+      t("Date"),
+      text("Summary"),
+      text("Shipped"),
+      text("Awaiting you"),
+      num("Spend today"),
+      num("Month to date"),
+      people("Reviewed by"),
+      num("Minutes spent")
+    ]
+  },
+  {
+    key: "releases",
+    title: "Releases",
+    props: [
+      t("Version"),
+      select("Status", [
+        "Planned",
+        "Candidate",
+        "Awaiting approval",
+        "Approved",
+        "Deployed",
+        "Rolled back"
+      ]),
+      date("Date"),
+      select("Prod deploy approval", ["Pending", "Approved", "Rejected"], { humanOnly: true }),
+      people("Prod deploy approver", { humanOnly: true }),
+      text("Notes"),
+      rel("Stories", "stories", "Releases")
+    ]
+  },
+  {
+    key: "incidents",
+    title: "Incidents",
+    props: [
+      t("ID"),
+      select("Priority", PRIORITY_P),
+      select("Status", ["Open", "Mitigated", "Resolved", "Closed"]),
+      date("Started"),
+      date("Mitigated"),
+      date("Resolved"),
+      url("Postmortem link"),
+      rel("Release", "releases", "Incidents"),
+      rel("Actions", "stories", "Incident actions")
+    ]
+  },
+  {
+    key: "change_requests",
+    title: "Change Requests",
+    props: [
+      t("ID"),
+      text("Title"),
+      text("Requester"),
+      select("Status", [
+        "Submitted",
+        "Impact analysis",
+        "Pending decision",
+        "Approved",
+        "Rejected",
+        "Withdrawn"
+      ]),
+      text("Impact"),
+      num("Cost estimate"),
+      text("Schedule impact"),
+      select("Decision", ["Pending", "Approved", "Rejected"], { humanOnly: true }),
+      people("Approver", { humanOnly: true }),
+      rel("Stories", "stories", "Change Requests")
+    ]
+  },
+  {
+    key: "risks",
+    title: "Risks",
+    props: [
+      t("ID"),
+      text("Title"),
+      num("Probability"),
+      num("Impact"),
+      { name: "Score", type: "formula", formula: 'prop("Probability") * prop("Impact")' },
+      select("Owner role", ROLE_OPTIONS),
+      text("Mitigation"),
+      select("Status", ["Open", "Mitigating", "Accepted", "Closed"]),
+      text("Items")
+    ]
+  },
+  {
+    key: "lessons",
+    title: "Lessons",
+    props: [
+      t("ID"),
+      select("Proposed by", ROLE_OPTIONS),
+      text("Change"),
+      select("Scope", ["project", "upstream"]),
+      select("Status", ["Proposed", "Approved", "Rejected", "Applied"]),
+      rel("Milestone", "milestones", "Lessons")
+    ]
+  },
+  {
+    key: "cost_log",
+    title: "Cost log",
+    props: [
+      t("Date"),
+      select("Role", ROLE_OPTIONS),
+      num("Phase"),
+      num("Runs"),
+      num("Input tokens"),
+      num("Output tokens"),
+      num("Cache-read tokens"),
+      num("Cost USD"),
+      num("Agent minutes"),
+      num("Rework"),
+      text("Item"),
+      rel("Milestone", "milestones", "Cost log")
+    ]
+  },
+  {
+    key: "human_tasks",
+    title: "Human tasks",
+    props: [
+      t("Task"),
+      people("Assignee"),
+      select("Role", ROLE_OPTIONS),
+      url("Template link"),
+      date("Due"),
+      select("Status", ["Open", "In progress", "Done", "Cancelled"]),
+      text("Item")
+    ]
+  }
+];
+
+// plugins/arima/scripts/src/sandbox.ts
+var realExec = (file, args, opts = {}) => new Promise((resolve2) => {
+  const child = execFile(
+    file,
+    args,
+    {
+      cwd: opts.cwd,
+      timeout: opts.timeoutMs ?? 12e4,
+      maxBuffer: 32 * 1024 * 1024,
+      windowsHide: true,
+      env: { ...process.env, GIT_TERMINAL_PROMPT: "0" }
+    },
+    (err, stdout, stderr) => {
+      const code2 = err === null ? 0 : typeof err.code === "number" ? err.code : 1;
+      resolve2({ code: code2, stdout: String(stdout), stderr: String(stderr) });
+    }
+  );
+  if (opts.input !== void 0) child.stdin?.end(opts.input);
+});
+async function dockerReady(exec = realExec) {
+  const r = await exec("docker", ["info", "--format", "{{.ServerVersion}}"], { timeoutMs: 2e4 });
+  if (r.code === 0 && r.stdout.trim() !== "")
+    return { ok: true, detail: `Docker is running (server ${r.stdout.trim()})` };
+  return {
+    ok: false,
+    detail: "runtime.sandbox is docker but the Docker daemon is not answering; start Docker Desktop"
+  };
 }
 
 // plugins/arima/scripts/src/state.ts
@@ -19392,7 +19880,8 @@ var CODE = {
   kill_switch: PREFLIGHT_EXIT.killSwitch,
   run_lock: PREFLIGHT_EXIT.locked,
   budget: PREFLIGHT_EXIT.budget,
-  env: PREFLIGHT_EXIT.env
+  env: PREFLIGHT_EXIT.env,
+  docker: PREFLIGHT_EXIT.env
 };
 var localDate = (d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 async function runPreflight(opts) {
@@ -19441,7 +19930,7 @@ async function runPreflight(opts) {
       alertThresholds: arima.budget.alert_thresholds
     };
     const status = budgetStatus(opts.projectDir, limits, today);
-    const check = {
+    const check2 = {
       check: "budget",
       ok: status.ok,
       detail: status.ok ? `project ${status.projectSpent}/${status.projectCap}, today ${status.daySpent}/${status.dailyCap} (est. USD)` : `budget exhausted: ${status.exhausted.join(" and ")} (project ${status.projectSpent}/${status.projectCap}, today ${status.daySpent}/${status.dailyCap})`
@@ -19458,9 +19947,9 @@ async function runPreflight(opts) {
           actor: "system",
           data: { scope: a.scope, threshold: a.threshold, spent: a.spent, cap: a.cap, date: today }
         });
-      check.warning = `${a.scope} budget passed ${Math.round(a.threshold * 100)}%`;
+      check2.warning = `${a.scope} budget passed ${Math.round(a.threshold * 100)}%`;
     }
-    checks.push(check);
+    checks.push(check2);
   }
   if (arima) {
     const required = [arima.notion.token_env];
@@ -19475,6 +19964,10 @@ async function runPreflight(opts) {
       ok: missing.length === 0,
       detail: missing.length === 0 ? `all ${required.length} required variables are set` : `missing environment variable(s): ${missing.join(", ")}`
     });
+  }
+  if (arima?.runtime.sandbox === "docker") {
+    const d = await (opts.dockerCheck ?? dockerReady)();
+    checks.push({ check: "docker", ok: d.ok, detail: d.detail });
   }
   const failed = checks.filter((c) => !c.ok);
   for (const f of failed) {

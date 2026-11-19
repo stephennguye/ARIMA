@@ -196,7 +196,7 @@ var require_scope = __commonJS({
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.ValueScope = exports.ValueScopeName = exports.Scope = exports.varKinds = exports.UsedValueState = void 0;
     var code_1 = require_code();
-    var ValueError = class extends Error {
+    var ValueError2 = class extends Error {
       constructor(name) {
         super(`CodeGen: "code" for ${name} not defined`);
         this.value = name.value;
@@ -322,7 +322,7 @@ var require_scope = __commonJS({
             } else if (c = getCode === null || getCode === void 0 ? void 0 : getCode(name)) {
               code2 = (0, code_1._)`${code2}${c}${this.opts._n}`;
             } else {
-              throw new ValueError(name);
+              throw new ValueError2(name);
             }
             nameSet.set(name, UsedValueState.Completed);
           });
@@ -1544,7 +1544,7 @@ var require_dataType = __commonJS({
     exports.coerceAndCheckDataType = coerceAndCheckDataType;
     var COERCIBLE = /* @__PURE__ */ new Set(["string", "number", "integer", "boolean", "null"]);
     function coerceToTypes(types, coerceTypes) {
-      return coerceTypes ? types.filter((t) => COERCIBLE.has(t) || coerceTypes === "array" && t === "array") : [];
+      return coerceTypes ? types.filter((t2) => COERCIBLE.has(t2) || coerceTypes === "array" && t2 === "array") : [];
     }
     function coerceData(it, types, coerceTo) {
       const { gen, data, opts } = it;
@@ -1554,9 +1554,9 @@ var require_dataType = __commonJS({
         gen.if((0, codegen_1._)`${dataType} == 'object' && Array.isArray(${data}) && ${data}.length == 1`, () => gen.assign(data, (0, codegen_1._)`${data}[0]`).assign(dataType, (0, codegen_1._)`typeof ${data}`).if(checkDataTypes(types, data, opts.strictNumbers), () => gen.assign(coerced, data)));
       }
       gen.if((0, codegen_1._)`${coerced} !== undefined`);
-      for (const t of coerceTo) {
-        if (COERCIBLE.has(t) || t === "array" && opts.coerceTypes === "array") {
-          coerceSpecificType(t);
+      for (const t2 of coerceTo) {
+        if (COERCIBLE.has(t2) || t2 === "array" && opts.coerceTypes === "array") {
+          coerceSpecificType(t2);
         }
       }
       gen.else();
@@ -1566,8 +1566,8 @@ var require_dataType = __commonJS({
         gen.assign(data, coerced);
         assignParentData(it, coerced);
       });
-      function coerceSpecificType(t) {
-        switch (t) {
+      function coerceSpecificType(t2) {
+        switch (t2) {
           case "string":
             gen.elseIf((0, codegen_1._)`${dataType} == "number" || ${dataType} == "boolean"`).assign(coerced, (0, codegen_1._)`"" + ${data}`).elseIf((0, codegen_1._)`${data} === null`).assign(coerced, (0, codegen_1._)`""`);
             return;
@@ -1639,8 +1639,8 @@ var require_dataType = __commonJS({
       }
       if (types.number)
         delete types.integer;
-      for (const t in types)
-        cond = (0, codegen_1.and)(cond, checkDataType(t, data, strictNums, correct));
+      for (const t2 in types)
+        cond = (0, codegen_1.and)(cond, checkDataType(t2, data, strictNums, correct));
       return cond;
     }
     exports.checkDataTypes = checkDataTypes;
@@ -2555,9 +2555,9 @@ var require_validate = __commonJS({
         it.dataTypes = types;
         return;
       }
-      types.forEach((t) => {
-        if (!includesType(it.dataTypes, t)) {
-          strictTypesError(it, `type "${t}" not allowed by context "${it.dataTypes.join(",")}"`);
+      types.forEach((t2) => {
+        if (!includesType(it.dataTypes, t2)) {
+          strictTypesError(it, `type "${t2}" not allowed by context "${it.dataTypes.join(",")}"`);
         }
       });
       narrowSchemaTypes(it, types);
@@ -2573,7 +2573,7 @@ var require_validate = __commonJS({
         const rule = rules[keyword];
         if (typeof rule == "object" && (0, applicability_1.shouldUseRule)(it.schema, rule)) {
           const { type } = rule.definition;
-          if (type.length && !type.some((t) => hasApplicableType(ts, t))) {
+          if (type.length && !type.some((t2) => hasApplicableType(ts, t2))) {
             strictTypesError(it, `missing type "${type.join(",")}" for keyword "${keyword}"`);
           }
         }
@@ -2582,15 +2582,15 @@ var require_validate = __commonJS({
     function hasApplicableType(schTs, kwdT) {
       return schTs.includes(kwdT) || kwdT === "number" && schTs.includes("integer");
     }
-    function includesType(ts, t) {
-      return ts.includes(t) || t === "integer" && ts.includes("number");
+    function includesType(ts, t2) {
+      return ts.includes(t2) || t2 === "integer" && ts.includes("number");
     }
     function narrowSchemaTypes(it, withTypes) {
       const ts = [];
-      for (const t of it.dataTypes) {
-        if (includesType(withTypes, t))
-          ts.push(t);
-        else if (withTypes.includes("integer") && t === "number")
+      for (const t2 of it.dataTypes) {
+        if (includesType(withTypes, t2))
+          ts.push(t2);
+        else if (withTypes.includes("integer") && t2 === "number")
           ts.push("integer");
       }
       it.dataTypes = ts;
@@ -3264,8 +3264,8 @@ var require_utils = __commonJS({
       }
       return ind;
     }
-    function removeDotSegments(path15) {
-      let input = path15;
+    function removeDotSegments(path19) {
+      let input = path19;
       const output = [];
       let nextSlash = -1;
       let len = 0;
@@ -3339,11 +3339,11 @@ var require_utils = __commonJS({
       }
       return output.join("");
     }
-    function removeDotSegmentsRelative(path15) {
-      if (path15 === "" || path15[0] === "/") {
-        return removeDotSegments(path15);
+    function removeDotSegmentsRelative(path19) {
+      if (path19 === "" || path19[0] === "/") {
+        return removeDotSegments(path19);
       }
-      const segments = path15.split("/");
+      const segments = path19.split("/");
       const last = segments.length - 1;
       const output = [];
       let trailingDirectory = false;
@@ -3706,8 +3706,8 @@ var require_schemes = __commonJS({
       }
       if (wsComponent.resourceName) {
         const queryIndex = wsComponent.resourceName.indexOf("?");
-        const path15 = queryIndex === -1 ? wsComponent.resourceName : wsComponent.resourceName.slice(0, queryIndex);
-        wsComponent.path = path15 && path15 !== "/" ? path15 : void 0;
+        const path19 = queryIndex === -1 ? wsComponent.resourceName : wsComponent.resourceName.slice(0, queryIndex);
+        wsComponent.path = path19 && path19 !== "/" ? path19 : void 0;
         wsComponent.query = queryIndex === -1 ? void 0 : wsComponent.resourceName.slice(queryIndex + 1);
         wsComponent.resourceName = void 0;
       }
@@ -4077,18 +4077,18 @@ var require_fast_uri = __commonJS({
         return true;
       }
       if (!options.unicodeSupport && (!schemeHandler || !schemeHandler.unicodeSupport) && parsed.host && !isIPLiteral(parsed.host) && (options.domainHost || schemeHandler && schemeHandler.domainHost) && isIP === false && nonSimpleDomain(parsed.host)) {
-        let url;
+        let url2;
         try {
-          url = new URL("http://" + parsed.host);
+          url2 = new URL("http://" + parsed.host);
         } catch (e) {
           parsed.error = parsed.error || "Host's domain name can not be converted to ASCII: " + e;
           return true;
         }
-        if (!isHostOnlyURL(url)) {
+        if (!isHostOnlyURL(url2)) {
           parsed.error = parsed.error || MALFORMED_HOST_ERROR;
           return true;
         }
-        parsed.host = url.hostname;
+        parsed.host = url2.hostname;
       }
       return false;
     }
@@ -4097,8 +4097,8 @@ var require_fast_uri = __commonJS({
         parsed.host && isIP === false && !isIPLiteral(parsed.host) && (options.domainHost || schemeHandler && schemeHandler.domainHost) && FORBIDDEN_DOMAIN_HOST_CHARACTER.test(parsed.host)
       );
     }
-    function isHostOnlyURL(url) {
-      return url.username === "" && url.password === "" && url.port === "" && url.pathname === "/" && url.search === "" && url.hash === "" && url.hostname !== "";
+    function isHostOnlyURL(url2) {
+      return url2.username === "" && url2.password === "" && url2.port === "" && url2.pathname === "/" && url2.search === "" && url2.hash === "" && url2.hostname !== "";
     }
     function parseWithStatus(uri, opts) {
       const options = Object.assign({}, opts);
@@ -4654,7 +4654,7 @@ var require_core = __commonJS({
           type: (0, dataType_1.getJSONTypes)(def.type),
           schemaType: (0, dataType_1.getJSONTypes)(def.schemaType)
         };
-        (0, util_1.eachItem)(keyword, definition.type.length === 0 ? (k) => addRule.call(this, k, definition) : (k) => definition.type.forEach((t) => addRule.call(this, k, definition, t)));
+        (0, util_1.eachItem)(keyword, definition.type.length === 0 ? (k) => addRule.call(this, k, definition) : (k) => definition.type.forEach((t2) => addRule.call(this, k, definition, t2)));
         return this;
       }
       getKeyword(keyword) {
@@ -4683,7 +4683,7 @@ var require_core = __commonJS({
       errorsText(errors = this.errors, { separator = ", ", dataVar = "data" } = {}) {
         if (!errors || errors.length === 0)
           return "No errors";
-        return errors.map((e) => `${dataVar}${e.instancePath} ${e.message}`).reduce((text, msg) => text + separator + msg);
+        return errors.map((e) => `${dataVar}${e.instancePath} ${e.message}`).reduce((text2, msg) => text2 + separator + msg);
       }
       $dataMetaSchema(metaSchema, keywordsJsonPointers) {
         const rules = this.RULES.all;
@@ -4853,7 +4853,7 @@ var require_core = __commonJS({
       if (dataType && post)
         throw new Error('keyword with "post" flag cannot have "type"');
       const { RULES } = this;
-      let ruleGroup = post ? RULES.post : RULES.rules.find(({ type: t }) => t === dataType);
+      let ruleGroup = post ? RULES.post : RULES.rules.find(({ type: t2 }) => t2 === dataType);
       if (!ruleGroup) {
         ruleGroup = { type: dataType, rules: [] };
         RULES.rules.push(ruleGroup);
@@ -5401,7 +5401,7 @@ var require_uniqueItems = __commonJS({
           gen.if((0, codegen_1._)`${i} > 1`, () => (canOptimize() ? loopN : loopN2)(i, j));
         }
         function canOptimize() {
-          return itemTypes.length > 0 && !itemTypes.some((t) => t === "object" || t === "array");
+          return itemTypes.length > 0 && !itemTypes.some((t2) => t2 === "object" || t2 === "array");
         }
         function loopN(i, j) {
           const item = gen.name("item");
@@ -7526,7 +7526,7 @@ var require_formats = __commonJS({
     }
     exports.fullFormats = {
       // date: http://tools.ietf.org/html/rfc3339#section-5.6
-      date: fmtDef(date, compareDate),
+      date: fmtDef(date2, compareDate),
       // date-time: http://tools.ietf.org/html/rfc3339#section-5.6
       time: fmtDef(getTime(true), compareTime),
       "date-time": fmtDef(getDateTime(true), compareDateTime),
@@ -7592,7 +7592,7 @@ var require_formats = __commonJS({
     }
     var DATE = /^(\d\d\d\d)-(\d\d)-(\d\d)$/;
     var DAYS = [0, 31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
-    function date(str) {
+    function date2(str) {
       const matches = DATE.exec(str);
       if (!matches)
         return false;
@@ -7661,7 +7661,7 @@ var require_formats = __commonJS({
       const time = getTime(strictTimeZone);
       return function date_time(str) {
         const dateTime = str.split(DATE_TIME_SEPARATOR);
-        return dateTime.length === 2 && date(dateTime[0]) && time(dateTime[1]);
+        return dateTime.length === 2 && date2(dateTime[0]) && time(dateTime[1]);
       };
     }
     function compareDateTime(dt1, dt2) {
@@ -8158,17 +8158,17 @@ var require_visit = __commonJS({
     visit.BREAK = BREAK;
     visit.SKIP = SKIP;
     visit.REMOVE = REMOVE;
-    function visit_(key, node, visitor, path15) {
-      const ctrl = callVisitor(key, node, visitor, path15);
+    function visit_(key, node, visitor, path19) {
+      const ctrl = callVisitor(key, node, visitor, path19);
       if (identity.isNode(ctrl) || identity.isPair(ctrl)) {
-        replaceNode(key, path15, ctrl);
-        return visit_(key, ctrl, visitor, path15);
+        replaceNode(key, path19, ctrl);
+        return visit_(key, ctrl, visitor, path19);
       }
       if (typeof ctrl !== "symbol") {
         if (identity.isCollection(node)) {
-          path15 = Object.freeze(path15.concat(node));
+          path19 = Object.freeze(path19.concat(node));
           for (let i = 0; i < node.items.length; ++i) {
-            const ci = visit_(i, node.items[i], visitor, path15);
+            const ci = visit_(i, node.items[i], visitor, path19);
             if (typeof ci === "number")
               i = ci - 1;
             else if (ci === BREAK)
@@ -8179,13 +8179,13 @@ var require_visit = __commonJS({
             }
           }
         } else if (identity.isPair(node)) {
-          path15 = Object.freeze(path15.concat(node));
-          const ck = visit_("key", node.key, visitor, path15);
+          path19 = Object.freeze(path19.concat(node));
+          const ck = visit_("key", node.key, visitor, path19);
           if (ck === BREAK)
             return BREAK;
           else if (ck === REMOVE)
             node.key = null;
-          const cv = visit_("value", node.value, visitor, path15);
+          const cv = visit_("value", node.value, visitor, path19);
           if (cv === BREAK)
             return BREAK;
           else if (cv === REMOVE)
@@ -8206,17 +8206,17 @@ var require_visit = __commonJS({
     visitAsync.BREAK = BREAK;
     visitAsync.SKIP = SKIP;
     visitAsync.REMOVE = REMOVE;
-    async function visitAsync_(key, node, visitor, path15) {
-      const ctrl = await callVisitor(key, node, visitor, path15);
+    async function visitAsync_(key, node, visitor, path19) {
+      const ctrl = await callVisitor(key, node, visitor, path19);
       if (identity.isNode(ctrl) || identity.isPair(ctrl)) {
-        replaceNode(key, path15, ctrl);
-        return visitAsync_(key, ctrl, visitor, path15);
+        replaceNode(key, path19, ctrl);
+        return visitAsync_(key, ctrl, visitor, path19);
       }
       if (typeof ctrl !== "symbol") {
         if (identity.isCollection(node)) {
-          path15 = Object.freeze(path15.concat(node));
+          path19 = Object.freeze(path19.concat(node));
           for (let i = 0; i < node.items.length; ++i) {
-            const ci = await visitAsync_(i, node.items[i], visitor, path15);
+            const ci = await visitAsync_(i, node.items[i], visitor, path19);
             if (typeof ci === "number")
               i = ci - 1;
             else if (ci === BREAK)
@@ -8227,13 +8227,13 @@ var require_visit = __commonJS({
             }
           }
         } else if (identity.isPair(node)) {
-          path15 = Object.freeze(path15.concat(node));
-          const ck = await visitAsync_("key", node.key, visitor, path15);
+          path19 = Object.freeze(path19.concat(node));
+          const ck = await visitAsync_("key", node.key, visitor, path19);
           if (ck === BREAK)
             return BREAK;
           else if (ck === REMOVE)
             node.key = null;
-          const cv = await visitAsync_("value", node.value, visitor, path15);
+          const cv = await visitAsync_("value", node.value, visitor, path19);
           if (cv === BREAK)
             return BREAK;
           else if (cv === REMOVE)
@@ -8260,23 +8260,23 @@ var require_visit = __commonJS({
       }
       return visitor;
     }
-    function callVisitor(key, node, visitor, path15) {
+    function callVisitor(key, node, visitor, path19) {
       if (typeof visitor === "function")
-        return visitor(key, node, path15);
+        return visitor(key, node, path19);
       if (identity.isMap(node))
-        return visitor.Map?.(key, node, path15);
+        return visitor.Map?.(key, node, path19);
       if (identity.isSeq(node))
-        return visitor.Seq?.(key, node, path15);
+        return visitor.Seq?.(key, node, path19);
       if (identity.isPair(node))
-        return visitor.Pair?.(key, node, path15);
+        return visitor.Pair?.(key, node, path19);
       if (identity.isScalar(node))
-        return visitor.Scalar?.(key, node, path15);
+        return visitor.Scalar?.(key, node, path19);
       if (identity.isAlias(node))
-        return visitor.Alias?.(key, node, path15);
+        return visitor.Alias?.(key, node, path19);
       return void 0;
     }
-    function replaceNode(key, path15, node) {
-      const parent = path15[path15.length - 1];
+    function replaceNode(key, path19, node) {
+      const parent = path19[path19.length - 1];
       if (identity.isCollection(parent)) {
         parent.items[key] = node;
       } else if (identity.isPair(parent)) {
@@ -8816,13 +8816,13 @@ var require_createNode = __commonJS({
     var defaultTagPrefix = "tag:yaml.org,2002:";
     function findTagObject(value, tagName, tags) {
       if (tagName) {
-        const match = tags.filter((t) => t.tag === tagName);
-        const tagObj = match.find((t) => !t.format) ?? match[0];
+        const match = tags.filter((t2) => t2.tag === tagName);
+        const tagObj = match.find((t2) => !t2.format) ?? match[0];
         if (!tagObj)
           throw new Error(`Tag ${tagName} not found`);
         return tagObj;
       }
-      return tags.find((t) => t.identify?.(value) && !t.format);
+      return tags.find((t2) => t2.identify?.(value) && !t2.format);
     }
     function createNode(value, tagName, ctx) {
       if (identity.isDocument(value))
@@ -8888,10 +8888,10 @@ var require_Collection = __commonJS({
     var createNode = require_createNode();
     var identity = require_identity();
     var Node = require_Node();
-    function collectionFromPath(schema, path15, value) {
+    function collectionFromPath(schema, path19, value) {
       let v = value;
-      for (let i = path15.length - 1; i >= 0; --i) {
-        const k = path15[i];
+      for (let i = path19.length - 1; i >= 0; --i) {
+        const k = path19[i];
         if (typeof k === "number" && Number.isInteger(k) && k >= 0) {
           const a = [];
           a[k] = v;
@@ -8910,7 +8910,7 @@ var require_Collection = __commonJS({
         sourceObjects: /* @__PURE__ */ new Map()
       });
     }
-    var isEmptyPath = (path15) => path15 == null || typeof path15 === "object" && !!path15[Symbol.iterator]().next().done;
+    var isEmptyPath = (path19) => path19 == null || typeof path19 === "object" && !!path19[Symbol.iterator]().next().done;
     var Collection = class extends Node.NodeBase {
       constructor(type, schema) {
         super(type);
@@ -8940,11 +8940,11 @@ var require_Collection = __commonJS({
        * be a Pair instance or a `{ key, value }` object, which may not have a key
        * that already exists in the map.
        */
-      addIn(path15, value) {
-        if (isEmptyPath(path15))
+      addIn(path19, value) {
+        if (isEmptyPath(path19))
           this.add(value);
         else {
-          const [key, ...rest] = path15;
+          const [key, ...rest] = path19;
           const node = this.get(key, true);
           if (identity.isCollection(node))
             node.addIn(rest, value);
@@ -8958,8 +8958,8 @@ var require_Collection = __commonJS({
        * Removes a value from the collection.
        * @returns `true` if the item was found and removed.
        */
-      deleteIn(path15) {
-        const [key, ...rest] = path15;
+      deleteIn(path19) {
+        const [key, ...rest] = path19;
         if (rest.length === 0)
           return this.delete(key);
         const node = this.get(key, true);
@@ -8973,8 +8973,8 @@ var require_Collection = __commonJS({
        * scalar values from their surrounding node; to disable set `keepScalar` to
        * `true` (collections are always returned intact).
        */
-      getIn(path15, keepScalar) {
-        const [key, ...rest] = path15;
+      getIn(path19, keepScalar) {
+        const [key, ...rest] = path19;
         const node = this.get(key, true);
         if (rest.length === 0)
           return !keepScalar && identity.isScalar(node) ? node.value : node;
@@ -8992,8 +8992,8 @@ var require_Collection = __commonJS({
       /**
        * Checks if the collection includes a value with the key `key`.
        */
-      hasIn(path15) {
-        const [key, ...rest] = path15;
+      hasIn(path19) {
+        const [key, ...rest] = path19;
         if (rest.length === 0)
           return this.has(key);
         const node = this.get(key, true);
@@ -9003,8 +9003,8 @@ var require_Collection = __commonJS({
        * Sets a value in this collection. For `!!set`, `value` needs to be a
        * boolean to add/remove the item from the set.
        */
-      setIn(path15, value) {
-        const [key, ...rest] = path15;
+      setIn(path19, value) {
+        const [key, ...rest] = path19;
         if (rest.length === 0) {
           this.set(key, value);
         } else {
@@ -9048,14 +9048,14 @@ var require_foldFlowLines = __commonJS({
     var FOLD_FLOW = "flow";
     var FOLD_BLOCK = "block";
     var FOLD_QUOTED = "quoted";
-    function foldFlowLines(text, indent, mode = "flow", { indentAtStart, lineWidth = 80, minContentWidth = 20, onFold, onOverflow } = {}) {
+    function foldFlowLines(text2, indent, mode = "flow", { indentAtStart, lineWidth = 80, minContentWidth = 20, onFold, onOverflow } = {}) {
       if (!lineWidth || lineWidth < 0)
-        return text;
+        return text2;
       if (lineWidth < minContentWidth)
         minContentWidth = 0;
       const endStep = Math.max(1 + minContentWidth, 1 + lineWidth - indent.length);
-      if (text.length <= endStep)
-        return text;
+      if (text2.length <= endStep)
+        return text2;
       const folds = [];
       const escapedFolds = {};
       let end = lineWidth - indent.length;
@@ -9072,14 +9072,14 @@ var require_foldFlowLines = __commonJS({
       let escStart = -1;
       let escEnd = -1;
       if (mode === FOLD_BLOCK) {
-        i = consumeMoreIndentedLines(text, i, indent.length);
+        i = consumeMoreIndentedLines(text2, i, indent.length);
         if (i !== -1)
           end = i + endStep;
       }
-      for (let ch; ch = text[i += 1]; ) {
+      for (let ch; ch = text2[i += 1]; ) {
         if (mode === FOLD_QUOTED && ch === "\\") {
           escStart = i;
-          switch (text[i + 1]) {
+          switch (text2[i + 1]) {
             case "x":
               i += 3;
               break;
@@ -9096,12 +9096,12 @@ var require_foldFlowLines = __commonJS({
         }
         if (ch === "\n") {
           if (mode === FOLD_BLOCK)
-            i = consumeMoreIndentedLines(text, i, indent.length);
+            i = consumeMoreIndentedLines(text2, i, indent.length);
           end = i + indent.length + endStep;
           split = void 0;
         } else {
           if (ch === " " && prev && prev !== " " && prev !== "\n" && prev !== "	") {
-            const next = text[i + 1];
+            const next = text2[i + 1];
             if (next && next !== " " && next !== "\n" && next !== "	")
               split = i;
           }
@@ -9113,12 +9113,12 @@ var require_foldFlowLines = __commonJS({
             } else if (mode === FOLD_QUOTED) {
               while (prev === " " || prev === "	") {
                 prev = ch;
-                ch = text[i += 1];
+                ch = text2[i += 1];
                 overflow = true;
               }
               const j = i > escEnd + 1 ? i - 2 : escStart - 1;
               if (escapedFolds[j])
-                return text;
+                return text2;
               folds.push(j);
               escapedFolds[j] = true;
               end = j + endStep;
@@ -9133,39 +9133,39 @@ var require_foldFlowLines = __commonJS({
       if (overflow && onOverflow)
         onOverflow();
       if (folds.length === 0)
-        return text;
+        return text2;
       if (onFold)
         onFold();
-      let res = text.slice(0, folds[0]);
+      let res = text2.slice(0, folds[0]);
       for (let i2 = 0; i2 < folds.length; ++i2) {
         const fold = folds[i2];
-        const end2 = folds[i2 + 1] || text.length;
+        const end2 = folds[i2 + 1] || text2.length;
         if (fold === 0)
           res = `
-${indent}${text.slice(0, end2)}`;
+${indent}${text2.slice(0, end2)}`;
         else {
           if (mode === FOLD_QUOTED && escapedFolds[fold])
-            res += `${text[fold]}\\`;
+            res += `${text2[fold]}\\`;
           res += `
-${indent}${text.slice(fold + 1, end2)}`;
+${indent}${text2.slice(fold + 1, end2)}`;
         }
       }
       return res;
     }
-    function consumeMoreIndentedLines(text, i, indent) {
+    function consumeMoreIndentedLines(text2, i, indent) {
       let end = i;
       let start = i + 1;
-      let ch = text[start];
+      let ch = text2[start];
       while (ch === " " || ch === "	") {
         if (i < start + indent) {
-          ch = text[++i];
+          ch = text2[++i];
         } else {
           do {
-            ch = text[++i];
+            ch = text2[++i];
           } while (ch && ch !== "\n");
           end = i;
           start = i + 1;
-          ch = text[start];
+          ch = text2[start];
         }
       }
       return end;
@@ -9449,10 +9449,10 @@ ${indent}`);
       let res = _stringify(type);
       if (res === null) {
         const { defaultKeyType, defaultStringType } = ctx.options;
-        const t = implicitKey && defaultKeyType || defaultStringType;
-        res = _stringify(t);
+        const t2 = implicitKey && defaultKeyType || defaultStringType;
+        res = _stringify(t2);
         if (res === null)
-          throw new Error(`Unsupported default string type ${t}`);
+          throw new Error(`Unsupported default string type ${t2}`);
       }
       return res;
     }
@@ -9512,24 +9512,24 @@ var require_stringify = __commonJS({
     }
     function getTagObject(tags, item) {
       if (item.tag) {
-        const match = tags.filter((t) => t.tag === item.tag);
+        const match = tags.filter((t2) => t2.tag === item.tag);
         if (match.length > 0)
-          return match.find((t) => t.format === item.format) ?? match[0];
+          return match.find((t2) => t2.format === item.format) ?? match[0];
       }
       let tagObj = void 0;
       let obj;
       if (identity.isScalar(item)) {
         obj = item.value;
-        let match = tags.filter((t) => t.identify?.(obj));
+        let match = tags.filter((t2) => t2.identify?.(obj));
         if (match.length > 1) {
-          const testMatch = match.filter((t) => t.test);
+          const testMatch = match.filter((t2) => t2.test);
           if (testMatch.length > 0)
             match = testMatch;
         }
-        tagObj = match.find((t) => t.format === item.format) ?? match.find((t) => !t.format);
+        tagObj = match.find((t2) => t2.format === item.format) ?? match.find((t2) => !t2.format);
       } else {
         obj = item;
-        tagObj = tags.find((t) => t.nodeClass && obj instanceof t.nodeClass);
+        tagObj = tags.find((t2) => t2.nodeClass && obj instanceof t2.nodeClass);
       }
       if (!tagObj) {
         const name = obj?.constructor?.name ?? (obj === null ? "null" : typeof obj);
@@ -10426,9 +10426,9 @@ var require_stringifyNumber = __commonJS({
     function stringifyNumber({ format, minFractionDigits, tag, value }) {
       if (typeof value === "bigint")
         return String(value);
-      const num = typeof value === "number" ? value : Number(value);
-      if (!isFinite(num))
-        return isNaN(num) ? ".nan" : num < 0 ? "-.inf" : ".inf";
+      const num2 = typeof value === "number" ? value : Number(value);
+      if (!isFinite(num2))
+        return isNaN(num2) ? ".nan" : num2 < 0 ? "-.inf" : ".inf";
       let n = Object.is(value, -0) ? "-0" : JSON.stringify(value);
       if (!format && minFractionDigits && (!tag || tag === "tag:yaml.org,2002:float") && /^-?\d/.test(n) && !n.includes("e")) {
         let i = n.indexOf(".");
@@ -10468,8 +10468,8 @@ var require_float = __commonJS({
       test: /^[-+]?(?:\.[0-9]+|[0-9]+(?:\.[0-9]*)?)[eE][-+]?[0-9]+$/,
       resolve: (str) => parseFloat(str),
       stringify(node) {
-        const num = Number(node.value);
-        return isFinite(num) ? num.toExponential() : stringifyNumber.stringifyNumber(node);
+        const num2 = Number(node.value);
+        return isFinite(num2) ? num2.toExponential() : stringifyNumber.stringifyNumber(node);
       }
     };
     var float = {
@@ -10908,8 +10908,8 @@ var require_float2 = __commonJS({
       test: /^[-+]?(?:[0-9][0-9_]*)?(?:\.[0-9_]*)?[eE][-+]?[0-9]+$/,
       resolve: (str) => parseFloat(str.replace(/_/g, "")),
       stringify(node) {
-        const num = Number(node.value);
-        return isFinite(num) ? num.toExponential() : stringifyNumber.stringifyNumber(node);
+        const num2 = Number(node.value);
+        return isFinite(num2) ? num2.toExponential() : stringifyNumber.stringifyNumber(node);
       }
     };
     var float = {
@@ -11111,23 +11111,23 @@ var require_timestamp = __commonJS({
     function parseSexagesimal(str, asBigInt) {
       const sign = str[0];
       const parts = sign === "-" || sign === "+" ? str.substring(1) : str;
-      const num = (n) => asBigInt ? BigInt(n) : Number(n);
-      const res = parts.replace(/_/g, "").split(":").reduce((res2, p) => res2 * num(60) + num(p), num(0));
-      return sign === "-" ? num(-1) * res : res;
+      const num2 = (n) => asBigInt ? BigInt(n) : Number(n);
+      const res = parts.replace(/_/g, "").split(":").reduce((res2, p) => res2 * num2(60) + num2(p), num2(0));
+      return sign === "-" ? num2(-1) * res : res;
     }
     function stringifySexagesimal(node) {
       let { value } = node;
-      let num = (n) => n;
+      let num2 = (n) => n;
       if (typeof value === "bigint")
-        num = (n) => BigInt(n);
+        num2 = (n) => BigInt(n);
       else if (isNaN(value) || !isFinite(value))
         return stringifyNumber.stringifyNumber(node);
       let sign = "";
       if (value < 0) {
         sign = "-";
-        value *= num(-1);
+        value *= num2(-1);
       }
-      const _60 = num(60);
+      const _60 = num2(60);
       const parts = [value % _60];
       if (value < 60) {
         parts.unshift(0);
@@ -11173,15 +11173,15 @@ var require_timestamp = __commonJS({
           throw new Error("!!timestamp expects a date, starting with yyyy-mm-dd");
         const [, year, month, day, hour, minute, second] = match.map(Number);
         const millisec = match[7] ? Number((match[7] + "00").substr(1, 3)) : 0;
-        let date = Date.UTC(year, month - 1, day, hour || 0, minute || 0, second || 0, millisec);
+        let date2 = Date.UTC(year, month - 1, day, hour || 0, minute || 0, second || 0, millisec);
         const tz = match[8];
         if (tz && tz !== "Z") {
           let d = parseSexagesimal(tz, false);
           if (Math.abs(d) < 30)
             d *= 60;
-          date -= 6e4 * d;
+          date2 -= 6e4 * d;
         }
-        return new Date(date);
+        return new Date(date2);
       },
       stringify: ({ value }) => value?.toISOString().replace(/(T00:00:00)?\.000Z$/, "") ?? ""
     };
@@ -11519,9 +11519,9 @@ var require_Document = __commonJS({
           this.contents.add(value);
       }
       /** Adds a value to the document. */
-      addIn(path15, value) {
+      addIn(path19, value) {
         if (assertCollection(this.contents))
-          this.contents.addIn(path15, value);
+          this.contents.addIn(path19, value);
       }
       /**
        * Create a new `Alias` node, ensuring that the target `node` has the required anchor.
@@ -11596,14 +11596,14 @@ var require_Document = __commonJS({
        * Removes a value from the document.
        * @returns `true` if the item was found and removed.
        */
-      deleteIn(path15) {
-        if (Collection.isEmptyPath(path15)) {
+      deleteIn(path19) {
+        if (Collection.isEmptyPath(path19)) {
           if (this.contents == null)
             return false;
           this.contents = null;
           return true;
         }
-        return assertCollection(this.contents) ? this.contents.deleteIn(path15) : false;
+        return assertCollection(this.contents) ? this.contents.deleteIn(path19) : false;
       }
       /**
        * Returns item at `key`, or `undefined` if not found. By default unwraps
@@ -11618,10 +11618,10 @@ var require_Document = __commonJS({
        * scalar values from their surrounding node; to disable set `keepScalar` to
        * `true` (collections are always returned intact).
        */
-      getIn(path15, keepScalar) {
-        if (Collection.isEmptyPath(path15))
+      getIn(path19, keepScalar) {
+        if (Collection.isEmptyPath(path19))
           return !keepScalar && identity.isScalar(this.contents) ? this.contents.value : this.contents;
-        return identity.isCollection(this.contents) ? this.contents.getIn(path15, keepScalar) : void 0;
+        return identity.isCollection(this.contents) ? this.contents.getIn(path19, keepScalar) : void 0;
       }
       /**
        * Checks if the document includes a value with the key `key`.
@@ -11632,10 +11632,10 @@ var require_Document = __commonJS({
       /**
        * Checks if the document includes a value at `path`.
        */
-      hasIn(path15) {
-        if (Collection.isEmptyPath(path15))
+      hasIn(path19) {
+        if (Collection.isEmptyPath(path19))
           return this.contents !== void 0;
-        return identity.isCollection(this.contents) ? this.contents.hasIn(path15) : false;
+        return identity.isCollection(this.contents) ? this.contents.hasIn(path19) : false;
       }
       /**
        * Sets a value in this document. For `!!set`, `value` needs to be a
@@ -11652,13 +11652,13 @@ var require_Document = __commonJS({
        * Sets a value in this document. For `!!set`, `value` needs to be a
        * boolean to add/remove the item from the set.
        */
-      setIn(path15, value) {
-        if (Collection.isEmptyPath(path15)) {
+      setIn(path19, value) {
+        if (Collection.isEmptyPath(path19)) {
           this.contents = value;
         } else if (this.contents == null) {
-          this.contents = Collection.collectionFromPath(this.schema, Array.from(path15), value);
+          this.contents = Collection.collectionFromPath(this.schema, Array.from(path19), value);
         } else if (assertCollection(this.contents)) {
-          this.contents.setIn(path15, value);
+          this.contents.setIn(path19, value);
         }
       }
       /**
@@ -12458,7 +12458,7 @@ var require_compose_collection = __commonJS({
       if (!tagToken || !tagName || tagName === "!" || tagName === YAMLMap.YAMLMap.tagName && expType === "map" || tagName === YAMLSeq.YAMLSeq.tagName && expType === "seq") {
         return resolveCollection(CN, ctx, token, onError, tagName);
       }
-      let tag = ctx.schema.tags.find((t) => t.tag === tagName && t.collection === expType);
+      let tag = ctx.schema.tags.find((t2) => t2.tag === tagName && t2.collection === expType);
       if (!tag) {
         const kt = ctx.schema.knownTags[tagName];
         if (kt?.collection === expType) {
@@ -12679,7 +12679,7 @@ var require_resolve_flow_scalar = __commonJS({
       const { offset, type, source, end } = scalar;
       let _type;
       let value;
-      const _onError = (rel, code2, msg) => onError(offset + rel, code2, msg);
+      const _onError = (rel2, code2, msg) => onError(offset + rel2, code2, msg);
       switch (type) {
         case "scalar":
           _type = Scalar.Scalar.PLAIN;
@@ -13619,9 +13619,9 @@ var require_cst_visit = __commonJS({
     visit.BREAK = BREAK;
     visit.SKIP = SKIP;
     visit.REMOVE = REMOVE;
-    visit.itemAtPath = (cst, path15) => {
+    visit.itemAtPath = (cst, path19) => {
       let item = cst;
-      for (const [field, index] of path15) {
+      for (const [field, index] of path19) {
         const tok = item?.[field];
         if (tok && "items" in tok) {
           item = tok.items[index];
@@ -13630,23 +13630,23 @@ var require_cst_visit = __commonJS({
       }
       return item;
     };
-    visit.parentCollection = (cst, path15) => {
-      const parent = visit.itemAtPath(cst, path15.slice(0, -1));
-      const field = path15[path15.length - 1][0];
+    visit.parentCollection = (cst, path19) => {
+      const parent = visit.itemAtPath(cst, path19.slice(0, -1));
+      const field = path19[path19.length - 1][0];
       const coll = parent?.[field];
       if (coll && "items" in coll)
         return coll;
       throw new Error("Parent collection not found");
     };
-    function _visit(path15, item, visitor) {
-      let ctrl = visitor(item, path15);
+    function _visit(path19, item, visitor) {
+      let ctrl = visitor(item, path19);
       if (typeof ctrl === "symbol")
         return ctrl;
       for (const field of ["key", "value"]) {
         const token = item[field];
         if (token && "items" in token) {
           for (let i = 0; i < token.items.length; ++i) {
-            const ci = _visit(Object.freeze(path15.concat([[field, i]])), token.items[i], visitor);
+            const ci = _visit(Object.freeze(path19.concat([[field, i]])), token.items[i], visitor);
             if (typeof ci === "number")
               i = ci - 1;
             else if (ci === BREAK)
@@ -13657,10 +13657,10 @@ var require_cst_visit = __commonJS({
             }
           }
           if (typeof ctrl === "function" && field === "key")
-            ctrl = ctrl(item, path15);
+            ctrl = ctrl(item, path19);
         }
       }
-      return typeof ctrl === "function" ? ctrl(item, path15) : ctrl;
+      return typeof ctrl === "function" ? ctrl(item, path19) : ctrl;
     }
     exports.visit = visit;
   }
@@ -16713,19 +16713,19 @@ var require_errors3 = __commonJS({
       }
     };
     exports.BrowserTokenNotAllowedError = BrowserTokenNotAllowedError;
-    function validateRequestPath(path15) {
-      if (path15.includes("..")) {
-        throw new InvalidPathParameterError(`Request path "${path15}" contains path traversal sequence ".."`);
+    function validateRequestPath(path19) {
+      if (path19.includes("..")) {
+        throw new InvalidPathParameterError(`Request path "${path19}" contains path traversal sequence ".."`);
       }
-      if (/%2e/i.test(path15)) {
+      if (/%2e/i.test(path19)) {
         let decoded;
         try {
-          decoded = decodeURIComponent(path15);
+          decoded = decodeURIComponent(path19);
         } catch {
           return;
         }
         if (decoded.includes("..")) {
-          throw new InvalidPathParameterError(`Request path "${path15}" contains encoded path traversal sequence`);
+          throw new InvalidPathParameterError(`Request path "${path19}" contains encoded path traversal sequence`);
         }
       }
     }
@@ -17409,17 +17409,17 @@ var require_Client = __commonJS({
        * Sends a request.
        */
       async request(args) {
-        const { path: path15, method, query, body, formDataParams, auth } = args;
-        (0, errors_1.validateRequestPath)(path15);
-        this.log(logging_1.LogLevel.INFO, "request start", { method, path: path15 });
-        const url = this.buildRequestUrl(path15, query);
+        const { path: path19, method, query, body, formDataParams, auth } = args;
+        (0, errors_1.validateRequestPath)(path19);
+        this.log(logging_1.LogLevel.INFO, "request start", { method, path: path19 });
+        const url2 = this.buildRequestUrl(path19, query);
         const bodyAsJsonString = this.serializeBody(body);
         const headers = this.buildRequestHeaders(args.headers, auth, bodyAsJsonString);
         const formData = this.buildFormData(formDataParams, headers);
         return this.executeWithRetry({
-          url,
+          url: url2,
           method,
-          path: path15,
+          path: path19,
           headers,
           body: bodyAsJsonString !== null && bodyAsJsonString !== void 0 ? bodyAsJsonString : formData
         }, (request) => this.executeSingleRequest(request));
@@ -17429,20 +17429,20 @@ var require_Client = __commonJS({
        */
       async *streamRequest(args, parseEvent) {
         var _a;
-        const { path: path15, method, query, body, auth } = args;
-        (0, errors_1.validateRequestPath)(path15);
-        this.log(logging_1.LogLevel.INFO, "stream request start", { method, path: path15 });
-        const url = this.buildRequestUrl(path15, query);
+        const { path: path19, method, query, body, auth } = args;
+        (0, errors_1.validateRequestPath)(path19);
+        this.log(logging_1.LogLevel.INFO, "stream request start", { method, path: path19 });
+        const url2 = this.buildRequestUrl(path19, query);
         const bodyAsJsonString = this.serializeBody(body);
         const headers = this.buildRequestHeaders(args.headers, auth, bodyAsJsonString);
         const response = await this.executeWithRetry({
-          url,
+          url: url2,
           method,
-          path: path15,
+          path: path19,
           headers,
           body: bodyAsJsonString
         }, (request) => this.executeSingleStreamRequest(request));
-        this.log(logging_1.LogLevel.INFO, "stream request opened", { method, path: path15 });
+        this.log(logging_1.LogLevel.INFO, "stream request opened", { method, path: path19 });
         if (response.body === void 0 || response.body === null) {
           for (const frame of takeSseFrames({
             content: await response.text(),
@@ -17494,22 +17494,22 @@ var require_Client = __commonJS({
       /**
        * Builds the full URL with query parameters.
        */
-      buildRequestUrl(path15, query) {
-        const url = new URL(`${__classPrivateFieldGet(this, _Client_prefixUrl, "f")}${path15}`);
+      buildRequestUrl(path19, query) {
+        const url2 = new URL(`${__classPrivateFieldGet(this, _Client_prefixUrl, "f")}${path19}`);
         if (query) {
           for (const [key, value] of Object.entries(query)) {
             if (value !== void 0 && value !== null) {
               if (Array.isArray(value)) {
                 for (const val of value) {
-                  url.searchParams.append(key, decodeURIComponent(val));
+                  url2.searchParams.append(key, decodeURIComponent(val));
                 }
               } else {
-                url.searchParams.append(key, String(value));
+                url2.searchParams.append(key, String(value));
               }
             }
           }
         }
-        return url;
+        return url2;
       }
       /**
        * Serializes the request body to JSON string if non-empty.
@@ -17582,14 +17582,14 @@ var require_Client = __commonJS({
        * Executes the request with retry logic.
        */
       async executeWithRetry(args, execute) {
-        const { url, method, path: path15, headers, body } = args;
+        const { url: url2, method, path: path19, headers, body } = args;
         let attempt = 0;
         while (true) {
           try {
             return await execute({
-              url,
+              url: url2,
               method,
-              path: path15,
+              path: path19,
               headers,
               body
             });
@@ -17602,7 +17602,7 @@ var require_Client = __commonJS({
               const delayMs = this.calculateRetryDelay(error, attempt);
               this.log(logging_1.LogLevel.INFO, "retrying request", {
                 method,
-                path: path15,
+                path: path19,
                 attempt: attempt + 1,
                 delayMs
               });
@@ -17618,8 +17618,8 @@ var require_Client = __commonJS({
        * Executes a single HTTP request (no retry).
        */
       async executeSingleRequest(args) {
-        const { url, method, path: path15, headers, body } = args;
-        const response = await errors_1.RequestTimeoutError.rejectAfterTimeout(__classPrivateFieldGet(this, _Client_fetch, "f").call(this, url.toString(), {
+        const { url: url2, method, path: path19, headers, body } = args;
+        const response = await errors_1.RequestTimeoutError.rejectAfterTimeout(__classPrivateFieldGet(this, _Client_fetch, "f").call(this, url2.toString(), {
           method: method.toUpperCase(),
           headers,
           body,
@@ -17632,7 +17632,7 @@ var require_Client = __commonJS({
         const responseJson = JSON.parse(responseText);
         this.log(logging_1.LogLevel.INFO, "request success", {
           method,
-          path: path15,
+          path: path19,
           ...this.extractRequestId(responseJson)
         });
         return responseJson;
@@ -17643,8 +17643,8 @@ var require_Client = __commonJS({
        * retried; once a stream has opened, its events are never replayed.
        */
       async executeSingleStreamRequest(args) {
-        const { url, method, body } = args;
-        const response = await errors_1.RequestTimeoutError.rejectAfterTimeout(__classPrivateFieldGet(this, _Client_fetch, "f").call(this, url.toString(), {
+        const { url: url2, method, body } = args;
+        const response = await errors_1.RequestTimeoutError.rejectAfterTimeout(__classPrivateFieldGet(this, _Client_fetch, "f").call(this, url2.toString(), {
           method: method.toUpperCase(),
           headers: args.headers,
           body,
@@ -17730,9 +17730,9 @@ var require_Client = __commonJS({
         if (!isNaN(seconds) && seconds >= 0) {
           return seconds * 1e3;
         }
-        const date = Date.parse(retryAfterValue);
-        if (!isNaN(date)) {
-          const delayMs = date - Date.now();
+        const date2 = Date.parse(retryAfterValue);
+        if (!isNaN(date2)) {
+          const delayMs = date2 - Date.now();
           return delayMs > 0 ? delayMs : 0;
         }
         return void 0;
@@ -18298,7 +18298,7 @@ var require_src = __commonJS({
 });
 
 // plugins/arima/scripts/src/cli/run-agent-cli.ts
-import path14 from "node:path";
+import path18 from "node:path";
 import { parseArgs } from "node:util";
 
 // plugins/arima/scripts/src/config.ts
@@ -18397,9 +18397,9 @@ var YamlSource = class {
   doc;
   lines = new import_yaml.LineCounter();
   parseErrors = [];
-  constructor(file, text = readFileSync2(file, "utf8")) {
+  constructor(file, text2 = readFileSync2(file, "utf8")) {
     this.file = file;
-    this.doc = (0, import_yaml.parseDocument)(text, { lineCounter: this.lines, prettyErrors: false });
+    this.doc = (0, import_yaml.parseDocument)(text2, { lineCounter: this.lines, prettyErrors: false });
     for (const e of this.doc.errors) {
       this.parseErrors.push({
         line: e.linePos?.[0]?.line ?? 1,
@@ -18909,7 +18909,7 @@ async function withBackoff(fn, o = {}) {
 
 // plugins/arima/scripts/src/notion/port.ts
 var PAUSE_TODO_TEXT = "Pause ARIMA";
-var plain = (rt) => (rt ?? []).map((t) => t.plain_text ?? "").join("");
+var plain = (rt) => (rt ?? []).map((t2) => t2.plain_text ?? "").join("");
 function toDatabaseInfo(raw) {
   const dataSourceId = raw.data_sources?.[0]?.id;
   if (dataSourceId === void 0) throw new Error(`database ${raw.id} has no data source`);
@@ -18977,7 +18977,7 @@ function createNotionPort(client, throttle = new Throttle(), backoff = {}) {
     async setTodoChecked(blockId, checked) {
       await call(() => client.blocks.update({ block_id: blockId, to_do: { checked } }));
     },
-    async appendTodo(pageId, text, checked) {
+    async appendTodo(pageId, text2, checked) {
       const res = await call(
         () => client.blocks.children.append({
           block_id: pageId,
@@ -18985,7 +18985,7 @@ function createNotionPort(client, throttle = new Throttle(), backoff = {}) {
             {
               object: "block",
               type: "to_do",
-              to_do: { rich_text: [{ type: "text", text: { content: text } }], checked }
+              to_do: { rich_text: [{ type: "text", text: { content: text2 } }], checked }
             }
           ]
         })
@@ -18994,7 +18994,7 @@ function createNotionPort(client, throttle = new Throttle(), backoff = {}) {
       if (id === void 0) throw new Error("Notion did not return the created block");
       return id;
     },
-    async appendParagraph(pageId, text) {
+    async appendParagraph(pageId, text2) {
       const res = await call(
         () => client.blocks.children.append({
           block_id: pageId,
@@ -19002,7 +19002,7 @@ function createNotionPort(client, throttle = new Throttle(), backoff = {}) {
             {
               object: "block",
               type: "paragraph",
-              paragraph: { rich_text: [{ type: "text", text: { content: text } }] }
+              paragraph: { rich_text: [{ type: "text", text: { content: text2 } }] }
             }
           ]
         })
@@ -19111,15 +19111,15 @@ function createNotionPortFromToken(token) {
 
 // plugins/arima/scripts/src/run-agent.ts
 import { execFileSync as execFileSync2, spawn } from "node:child_process";
-import { existsSync as existsSync7, mkdirSync as mkdirSync7, readFileSync as readFileSync8, writeFileSync as writeFileSync4 } from "node:fs";
-import path13 from "node:path";
+import { existsSync as existsSync11, mkdirSync as mkdirSync10, readFileSync as readFileSync12, writeFileSync as writeFileSync6 } from "node:fs";
+import path17 from "node:path";
 
 // plugins/arima/scripts/src/events.ts
-import path6 from "node:path";
+import path7 from "node:path";
 
 // plugins/arima/scripts/src/lib/jsonl.ts
-import { appendFileSync, existsSync as existsSync3, mkdirSync, readFileSync as readFileSync4 } from "node:fs";
-import path5 from "node:path";
+import { appendFileSync, existsSync as existsSync4, mkdirSync, readFileSync as readFileSync5 } from "node:fs";
+import path6 from "node:path";
 
 // plugins/arima/scripts/src/lib/filelock.ts
 import { closeSync, openSync, statSync, unlinkSync, writeSync } from "node:fs";
@@ -19166,6 +19166,8 @@ async function withFileLock(lockPath, fn, { timeoutMs = 15e3, staleMs = 3e4, ret
 }
 
 // plugins/arima/scripts/src/lib/secrets.ts
+import { existsSync as existsSync3, readFileSync as readFileSync4 } from "node:fs";
+import path5 from "node:path";
 import { createHash } from "node:crypto";
 function entropy(s) {
   if (s.length === 0) return 0;
@@ -19214,13 +19216,13 @@ var PATTERNS = [
 function fingerprint(match) {
   return `sha256:${createHash("sha256").update(match).digest("hex").slice(0, 16)}`;
 }
-function scan(text) {
-  const unescaped = text.replace(/\\[nrt]/g, " ").replace(/\\"/g, '"');
+function scan(text2) {
+  const unescaped = text2.replace(/\\[nrt]/g, " ").replace(/\\"/g, '"');
   const out = [];
   const seen = /* @__PURE__ */ new Set();
   for (const p of PATTERNS) {
-    for (const t of text === unescaped ? [text] : [text, unescaped]) {
-      for (const m of t.matchAll(new RegExp(p.re.source, p.re.flags))) {
+    for (const t2 of text2 === unescaped ? [text2] : [text2, unescaped]) {
+      for (const m of t2.matchAll(new RegExp(p.re.source, p.re.flags))) {
         const groups = m.slice(1).map((x) => x ?? "");
         if (p.accept && !p.accept(m[0], groups)) continue;
         const f = fingerprint(m[0]);
@@ -19232,19 +19234,33 @@ function scan(text) {
   }
   return out;
 }
-function scanSecrets(text, allowed = /* @__PURE__ */ new Set()) {
-  return scan(text).filter((f) => !allowed.has(f.fingerprint));
+function scanSecrets(text2, allowed = /* @__PURE__ */ new Set()) {
+  return scan(text2).filter((f) => !allowed.has(f.fingerprint));
 }
-function findSecrets(text, allowed = /* @__PURE__ */ new Set()) {
-  return [...new Set(scanSecrets(text, allowed).map((f) => f.rule))];
+function findSecrets(text2, allowed = /* @__PURE__ */ new Set()) {
+  return [...new Set(scanSecrets(text2, allowed).map((f) => f.rule))];
 }
-function assertNoSecrets(text, where) {
-  const found = findSecrets(text);
+function assertNoSecrets(text2, where) {
+  const found = findSecrets(text2);
   if (found.length > 0) {
     throw new Error(
       `Refusing to write ${where}: content looks like a secret (${found.join(", ")})`
     );
   }
+}
+function readAllowlistFile(file) {
+  return existsSync3(file) ? parseAllowlist(readFileSync4(file, "utf8")) : /* @__PURE__ */ new Set();
+}
+function loadSecretAllowlist(projectDir) {
+  return readAllowlistFile(path5.join(projectDir, ".arima", "secret-allowlist.txt"));
+}
+function parseAllowlist(text2) {
+  const out = /* @__PURE__ */ new Set();
+  for (const line of text2.split(/\r?\n/)) {
+    const m = /^\s*(sha256:[0-9a-f]{16})\s*(?:#.*)?$/i.exec(line);
+    if (m) out.add(m[1].toLowerCase());
+  }
+  return out;
 }
 
 // plugins/arima/scripts/src/lib/migrate.ts
@@ -19287,18 +19303,18 @@ async function appendJsonl(file, schema, record) {
     );
   }
   const line = JSON.stringify(record);
-  assertNoSecrets(line, path5.basename(file));
-  mkdirSync(path5.dirname(file), { recursive: true });
+  assertNoSecrets(line, path6.basename(file));
+  mkdirSync(path6.dirname(file), { recursive: true });
   await withFileLock(`${file}.lock`, () => {
     appendFileSync(file, `${line}
 `, "utf8");
   });
 }
 function readJsonl(file, schema) {
-  if (!existsSync3(file)) return [];
+  if (!existsSync4(file)) return [];
   const validate = getValidator(schema);
   const out = [];
-  const lines = readFileSync4(file, "utf8").split("\n");
+  const lines = readFileSync5(file, "utf8").split("\n");
   lines.forEach((raw, i) => {
     if (raw.trim() === "") return;
     let parsed;
@@ -19324,7 +19340,7 @@ function readJsonl(file, schema) {
 
 // plugins/arima/scripts/src/events.ts
 function eventsFile(projectDir) {
-  return path6.join(projectDir, ".arima", "events.jsonl");
+  return path7.join(projectDir, ".arima", "events.jsonl");
 }
 async function appendEvent(projectDir, event) {
   const full = { ...event, ts: event.ts ?? (/* @__PURE__ */ new Date()).toISOString() };
@@ -19333,9 +19349,9 @@ async function appendEvent(projectDir, event) {
 }
 
 // plugins/arima/scripts/src/ledger.ts
-import path7 from "node:path";
+import path8 from "node:path";
 function ledgerFile(projectDir) {
-  return path7.join(projectDir, ".arima", "ledger.jsonl");
+  return path8.join(projectDir, ".arima", "ledger.jsonl");
 }
 function parseClaudeResult(stdout) {
   let parsed;
@@ -19422,19 +19438,19 @@ function budgetStatus(projectDir, limits, today) {
 }
 
 // plugins/arima/scripts/src/killswitch.ts
-import { existsSync as existsSync4, mkdirSync as mkdirSync2, readFileSync as readFileSync5, rmSync, writeFileSync } from "node:fs";
-import path8 from "node:path";
+import { existsSync as existsSync5, mkdirSync as mkdirSync2, readFileSync as readFileSync6, rmSync, writeFileSync } from "node:fs";
+import path9 from "node:path";
 function pauseFile(projectDir) {
-  return path8.join(projectDir, ".arima", "PAUSE");
+  return path9.join(projectDir, ".arima", "PAUSE");
 }
 async function checkKillSwitch(projectDir, notion, remotePause) {
-  const file = existsSync4(pauseFile(projectDir));
+  const file = existsSync5(pauseFile(projectDir));
   let remote = "unchecked";
   let detail = "";
   if (notion !== null) {
     try {
       const todos = await notion.port.listTodoBlocks(notion.rootPageId);
-      const sw = todos.find((t) => t.text.trim() === PAUSE_TODO_TEXT);
+      const sw = todos.find((t2) => t2.text.trim() === PAUSE_TODO_TEXT);
       if (sw === void 0) {
         remote = "missing";
         detail = `the "${PAUSE_TODO_TEXT}" to-do is missing from the Notion root page, so ARIMA cannot tell whether it is paused; run /arima:pause --resume to recreate it`;
@@ -19463,7 +19479,7 @@ async function checkKillSwitch(projectDir, notion, remotePause) {
     ];
     detail = reasons.filter(Boolean).join(" and ");
     if (file) {
-      const first = readFileSync5(pauseFile(projectDir), "utf8").split("\n")[0] ?? "";
+      const first = readFileSync6(pauseFile(projectDir), "utf8").split("\n")[0] ?? "";
       if (first.trim() !== "") detail += ` (${first.trim()})`;
     }
   } else if (remote === "unreachable") {
@@ -19477,17 +19493,17 @@ import { execFileSync } from "node:child_process";
 import {
   appendFileSync as appendFileSync2,
   cpSync,
-  existsSync as existsSync5,
+  existsSync as existsSync6,
   mkdirSync as mkdirSync3,
   mkdtempSync,
-  readFileSync as readFileSync6,
+  readFileSync as readFileSync7,
   realpathSync,
   readdirSync as readdirSync3,
   rmSync as rmSync2,
   statSync as statSync2,
   writeFileSync as writeFileSync2
 } from "node:fs";
-import path9 from "node:path";
+import path10 from "node:path";
 var StateError = class extends Error {
 };
 var DEFAULT_BRANCH = "arima-state";
@@ -19515,8 +19531,8 @@ function gitOk(cwd, args) {
   }
 }
 function resolve(o) {
-  const repo = path9.resolve(o.projectDir);
-  if (!existsSync5(repo) || !gitOk(repo, ["rev-parse", "--git-dir"])) {
+  const repo = path10.resolve(o.projectDir);
+  if (!existsSync6(repo) || !gitOk(repo, ["rev-parse", "--git-dir"])) {
     throw new StateError(`${repo} is not a git repository`);
   }
   const norm = (p) => {
@@ -19534,7 +19550,7 @@ function resolve(o) {
   }
   const remote = o.remote ?? "origin";
   const hasRemote = git(repo, ["remote"]).split("\n").includes(remote);
-  return { repo, stateDir: path9.join(repo, ".arima"), branch, remote, hasRemote };
+  return { repo, stateDir: path10.join(repo, ".arima"), branch, remote, hasRemote };
 }
 function remotePauseFlag(o) {
   let r;
@@ -19560,11 +19576,15 @@ function remotePauseFlag(o) {
   return gitOk(r.repo, ["cat-file", "-e", `${ref}:PAUSE`]);
 }
 
+// plugins/arima/scripts/src/notion/mirror.ts
+import { existsSync as existsSync7, mkdirSync as mkdirSync5, readFileSync as readFileSync8 } from "node:fs";
+import path12 from "node:path";
+
 // plugins/arima/scripts/src/lib/atomic-file.ts
 import { mkdirSync as mkdirSync4, renameSync, unlinkSync as unlinkSync2, writeFileSync as writeFileSync3 } from "node:fs";
-import path10 from "node:path";
+import path11 from "node:path";
 function writeFileAtomic(file, content) {
-  mkdirSync4(path10.dirname(file), { recursive: true });
+  mkdirSync4(path11.dirname(file), { recursive: true });
   const tmp = `${file}.${process.pid}.tmp`;
   writeFileSync3(tmp, content, "utf8");
   for (let attempt = 0; ; attempt++) {
@@ -19584,6 +19604,22 @@ function writeFileAtomic(file, content) {
       throw e;
     }
   }
+}
+
+// plugins/arima/scripts/src/notion/mirror.ts
+var mirrorDir = (projectDir) => path12.join(projectDir, ".arima", "mirror");
+var mirrorFile = (projectDir, db) => path12.join(mirrorDir(projectDir), `${db}.json`);
+function readMirror(projectDir, db) {
+  const file = mirrorFile(projectDir, db);
+  if (!existsSync7(file)) return void 0;
+  return JSON.parse(readFileSync8(file, "utf8"));
+}
+function findRow(m, id) {
+  if (m === void 0) return void 0;
+  const byId = m.rows.filter((r) => r.id === id);
+  if (byId.length > 1) throw new Error(`${byId.length} rows in ${m.database} have the ID "${id}"`);
+  if (byId[0] !== void 0) return byId[0];
+  return m.rows.find((r) => r.page_id === id);
 }
 
 // plugins/arima/scripts/src/story-budget.ts
@@ -19632,8 +19668,8 @@ async function recordStoryBudgetHit(projectDir, item, b, role) {
 }
 
 // plugins/arima/scripts/src/report-collector.ts
-import { mkdirSync as mkdirSync5 } from "node:fs";
-import path11 from "node:path";
+import { mkdirSync as mkdirSync6 } from "node:fs";
+import path13 from "node:path";
 
 // plugins/arima/scripts/src/report.ts
 var CRITERIA_REQUIRED = [
@@ -19759,7 +19795,7 @@ function extractReport(message) {
   if (!only.closed) return { error: "the arima-report block is never closed" };
   return { json: only.body };
 }
-var reportFile = (projectDir, runId) => path11.join(projectDir, ".arima", "runs", `${runId}.report.json`);
+var reportFile = (projectDir, runId) => path13.join(projectDir, ".arima", "runs", `${runId}.report.json`);
 async function collectReport(i) {
   const reject = async (reason, errors2) => {
     await appendEvent(i.projectDir, {
@@ -19785,9 +19821,9 @@ async function collectReport(i) {
   } catch {
     return reject("report_invalid", ["the arima-report block is not valid JSON"]);
   }
-  const check = checkReport(parsed, { role: i.role, kind: i.kind });
-  if (!check.ok)
-    return reject(check.evidenceMissing ? "evidence_missing" : "report_invalid", check.errors);
+  const check2 = checkReport(parsed, { role: i.role, kind: i.kind });
+  if (!check2.ok)
+    return reject(check2.evidenceMissing ? "evidence_missing" : "report_invalid", check2.errors);
   const report = parsed;
   const errors = [];
   if (report.run_id !== i.runId)
@@ -19796,7 +19832,7 @@ async function collectReport(i) {
     errors.push(`item: report says "${report.item}" but the unit's item is "${i.item}"`);
   if (errors.length > 0) return reject("report_invalid", errors);
   const file = reportFile(i.projectDir, i.runId);
-  mkdirSync5(path11.dirname(file), { recursive: true });
+  mkdirSync6(path13.dirname(file), { recursive: true });
   writeFileAtomic(file, `${JSON.stringify(report, null, 2)}
 `);
   await appendEvent(i.projectDir, {
@@ -19815,18 +19851,18 @@ async function collectReport(i) {
 }
 
 // plugins/arima/scripts/src/runid.ts
-import { existsSync as existsSync6, mkdirSync as mkdirSync6, readFileSync as readFileSync7 } from "node:fs";
-import path12 from "node:path";
+import { existsSync as existsSync8, mkdirSync as mkdirSync7, readFileSync as readFileSync9 } from "node:fs";
+import path14 from "node:path";
 var pad = (n, w = 2) => String(n).padStart(w, "0");
 async function issueRunId(projectDir, now = /* @__PURE__ */ new Date()) {
   const day = `${now.getFullYear()}${pad(now.getMonth() + 1)}${pad(now.getDate())}`;
   const hhmm = `${pad(now.getHours())}${pad(now.getMinutes())}`;
-  const file = path12.join(projectDir, ".arima", "state", "run-seq.json");
-  mkdirSync6(path12.dirname(file), { recursive: true });
+  const file = path14.join(projectDir, ".arima", "state", "run-seq.json");
+  mkdirSync7(path14.dirname(file), { recursive: true });
   return withFileLock(`${file}.lock`, () => {
     let state = { day, last: 0 };
-    if (existsSync6(file)) {
-      const parsed = JSON.parse(readFileSync7(file, "utf8"));
+    if (existsSync8(file)) {
+      const parsed = JSON.parse(readFileSync9(file, "utf8"));
       if (parsed.day === day && Number.isInteger(parsed.last))
         state = { day, last: parsed.last };
     }
@@ -19835,6 +19871,833 @@ async function issueRunId(projectDir, now = /* @__PURE__ */ new Date()) {
 `);
     return `r-${day}-${hhmm}-${pad(state.last)}`;
   });
+}
+
+// plugins/arima/scripts/src/sandbox.ts
+import { execFile } from "node:child_process";
+import {
+  chmodSync,
+  existsSync as existsSync10,
+  mkdirSync as mkdirSync9,
+  mkdtempSync as mkdtempSync2,
+  readFileSync as readFileSync11,
+  readdirSync as readdirSync5,
+  rmSync as rmSync3,
+  writeFileSync as writeFileSync5
+} from "node:fs";
+import { tmpdir } from "node:os";
+import path16 from "node:path";
+
+// plugins/arima/scripts/src/notion/outbox.ts
+import {
+  existsSync as existsSync9,
+  mkdirSync as mkdirSync8,
+  readFileSync as readFileSync10,
+  readdirSync as readdirSync4,
+  renameSync as renameSync2,
+  writeFileSync as writeFileSync4
+} from "node:fs";
+import path15 from "node:path";
+
+// plugins/arima/scripts/src/ids.ts
+var ID_WIDTHS = {
+  REQ: 3,
+  NFR: 3,
+  EP: 2,
+  US: 3,
+  TC: 4,
+  BUG: 3,
+  ADR: 4,
+  RISK: 3,
+  DEC: 4,
+  Q: 3,
+  MS: 2,
+  CR: 3,
+  INC: 3,
+  LES: 3
+};
+var ID_PREFIXES = Object.keys(ID_WIDTHS);
+
+// plugins/arima/scripts/src/notion/schema.ts
+var ROLE_OPTIONS = [
+  "orchestrator",
+  "ba",
+  "ux",
+  "architect",
+  "tech-lead",
+  "developer",
+  "qa",
+  "security",
+  "devops",
+  "human"
+];
+var MOSCOW = ["Must", "Should", "Could", "Won't"];
+var PRIORITY_P = ["P1", "P2", "P3", "P4"];
+var t = (name) => ({ name, type: "title" });
+var text = (name, extra = {}) => ({
+  name,
+  type: "rich_text",
+  ...extra
+});
+var num = (name) => ({ name, type: "number" });
+var date = (name) => ({ name, type: "date" });
+var check = (name, extra = {}) => ({
+  name,
+  type: "checkbox",
+  ...extra
+});
+var url = (name) => ({ name, type: "url" });
+var people = (name, extra = {}) => ({
+  name,
+  type: "people",
+  ...extra
+});
+var select = (name, options, extra = {}) => ({
+  name,
+  type: "select",
+  options,
+  ...extra
+});
+var rel = (name, target, reverse) => ({
+  name,
+  type: "relation",
+  relation: { target, reverse }
+});
+var DATABASES = [
+  {
+    key: "gates",
+    title: "Gates",
+    props: [
+      t("Gate"),
+      num("Phase"),
+      select(
+        "Status",
+        ["Not ready", "Ready for review", "Approved", "Approved with conditions", "Rejected"],
+        {
+          humanOnlyValues: ["Approved", "Approved with conditions", "Rejected"]
+        }
+      ),
+      people("Approvers", { humanOnly: true }),
+      people("Decided by", { humanOnly: true }),
+      date("Decided on"),
+      text("Conditions"),
+      text("Comments"),
+      rel("Documents", "documents", "Gates")
+    ]
+  },
+  {
+    key: "requirements",
+    title: "Requirements",
+    props: [
+      t("ID"),
+      text("Title"),
+      select("Type", ["Functional", "NFR", "Security"]),
+      select("Priority", MOSCOW),
+      select("Status", ["Draft", "Approved", "Changed", "Retired"]),
+      text("Baseline version"),
+      {
+        name: "Test results",
+        type: "rollup",
+        rollup: { relation: "Test Cases", property: "Last result", fn: "show_original" }
+      },
+      {
+        name: "Coverage",
+        type: "formula",
+        formula: 'if(contains(prop("Test results"), "Pass"), "Covered", "Not covered")'
+      },
+      rel("Stories", "stories", "Requirements"),
+      rel("Test Cases", "test_cases", "Requirements"),
+      rel("Change Requests", "change_requests", "Requirements")
+    ]
+  },
+  {
+    key: "epics",
+    title: "Epics",
+    props: [
+      t("ID"),
+      text("Title"),
+      select("Status", ["Planned", "In progress", "Done", "Cancelled"]),
+      rel("Requirements", "requirements", "Epics"),
+      rel("Stories", "stories", "Epic"),
+      rel("Milestones", "milestones", "Epics")
+    ]
+  },
+  {
+    key: "stories",
+    title: "Stories",
+    props: [
+      t("ID"),
+      text("Title"),
+      select("Type", ["Story", "Bug fix", "Tech task", "Spike"]),
+      select("Status", [
+        "Backlog",
+        "Ready",
+        "In Progress",
+        "In Review",
+        "In QA",
+        "PO Acceptance",
+        "Done",
+        "Released",
+        "Blocked",
+        "Cancelled"
+      ]),
+      num("Priority"),
+      select("Complexity", ["S", "M", "L"]),
+      text("Acceptance criteria"),
+      select("Assigned role", ROLE_OPTIONS),
+      people("Assignee"),
+      url("PR link"),
+      num("Attempt"),
+      num("Budget USD"),
+      {
+        name: "Cost USD",
+        type: "rollup",
+        rollup: { relation: "Cost log", property: "Cost USD", fn: "sum" }
+      },
+      text("Blocked reason"),
+      date("Started"),
+      date("Done"),
+      rel("Milestone", "milestones", "Stories"),
+      rel("Test Cases", "test_cases", "Story"),
+      rel("Bugs", "bugs", "Story"),
+      rel("Questions", "questions", "Story"),
+      rel("Cost log", "cost_log", "Story")
+    ]
+  },
+  {
+    key: "test_cases",
+    title: "Test Cases",
+    props: [
+      t("ID"),
+      text("Title"),
+      select("Type", ["unit", "integration", "e2e", "manual", "UAT"]),
+      check("Automated"),
+      select("Last result", ["Pass", "Fail", "Blocked", "Not run"]),
+      date("Last run"),
+      text("Test path")
+    ]
+  },
+  {
+    key: "bugs",
+    title: "Bugs",
+    props: [
+      t("ID"),
+      text("Title"),
+      select("Severity", ["S1", "S2", "S3", "S4"]),
+      select("Priority", PRIORITY_P),
+      select("Status", ["Open", "In progress", "Fixed", "Verified", "Closed", "Cancelled"]),
+      select("Environment", ["local", "preview", "staging", "production"]),
+      select("Found by", ROLE_OPTIONS),
+      text("Steps"),
+      text("Expected"),
+      text("Actual"),
+      { name: "Evidence", type: "files" },
+      rel("Release", "releases", "Bugs")
+    ]
+  },
+  {
+    key: "milestones",
+    title: "Milestones",
+    props: [
+      t("ID"),
+      text("Name"),
+      select("Status", ["Planned", "Active", "Review", "Done"]),
+      date("Start"),
+      date("End"),
+      num("Budget USD"),
+      {
+        name: "Cost USD",
+        type: "rollup",
+        rollup: { relation: "Cost log", property: "Cost USD", fn: "sum" }
+      }
+    ]
+  },
+  {
+    key: "documents",
+    title: "Documents",
+    props: [
+      t("Title"),
+      select("Type", [
+        "Project brief",
+        "PRD",
+        "URS",
+        "SRS",
+        "Charter",
+        "Budget plan",
+        "Feasibility note",
+        "Compliance screen",
+        "Glossary",
+        "Personas and journeys",
+        "Security requirements",
+        "DPIA",
+        "Master Test Plan",
+        "SAD",
+        "ADR",
+        "OpenAPI",
+        "Data model",
+        "Threat model",
+        "Environment matrix",
+        "Report",
+        "Runbook",
+        "Release notes",
+        "Guide",
+        "Other"
+      ]),
+      num("Phase"),
+      select("Owner role", ROLE_OPTIONS),
+      text("Version"),
+      select("Status", ["Draft", "In review", "Approved", "Superseded"]),
+      select("Master", ["Notion", "GitHub"]),
+      url("Link"),
+      date("Last synced")
+    ]
+  },
+  {
+    key: "decisions",
+    title: "Decisions",
+    props: [
+      t("ID"),
+      text("Summary"),
+      select("Made by", ROLE_OPTIONS),
+      text("Options considered"),
+      text("Chosen"),
+      check("Reversible"),
+      check("Veto", { humanOnly: true }),
+      text("Veto reason", { humanOnly: true }),
+      date("Date"),
+      text("Item")
+    ]
+  },
+  {
+    key: "questions",
+    title: "Questions",
+    props: [
+      t("ID"),
+      text("Question"),
+      select("Asked by", ROLE_OPTIONS),
+      text("Options"),
+      text("Recommendation"),
+      check("Blocking"),
+      text("Default"),
+      date("Expires"),
+      text("Answer", { humanOnly: true }),
+      people("Answered by", { humanOnly: true }),
+      select("Status", ["Open", "Answered", "Expired", "Withdrawn"]),
+      text("Item")
+    ]
+  },
+  {
+    key: "meetings",
+    title: "Meetings",
+    props: [
+      t("ID"),
+      select("Type", [
+        "Standup",
+        "Requirements review",
+        "Design review",
+        "Milestone review",
+        "Go/No-Go",
+        "Postmortem",
+        "Retro"
+      ]),
+      date("Date"),
+      { name: "Participants", type: "multi_select", options: ROLE_OPTIONS },
+      text("Decisions"),
+      text("Action items"),
+      num("Cost USD"),
+      rel("Stories", "stories", "Meetings"),
+      rel("Gates", "gates", "Meetings")
+    ]
+  },
+  {
+    key: "digests",
+    title: "Digests",
+    props: [
+      t("Date"),
+      text("Summary"),
+      text("Shipped"),
+      text("Awaiting you"),
+      num("Spend today"),
+      num("Month to date"),
+      people("Reviewed by"),
+      num("Minutes spent")
+    ]
+  },
+  {
+    key: "releases",
+    title: "Releases",
+    props: [
+      t("Version"),
+      select("Status", [
+        "Planned",
+        "Candidate",
+        "Awaiting approval",
+        "Approved",
+        "Deployed",
+        "Rolled back"
+      ]),
+      date("Date"),
+      select("Prod deploy approval", ["Pending", "Approved", "Rejected"], { humanOnly: true }),
+      people("Prod deploy approver", { humanOnly: true }),
+      text("Notes"),
+      rel("Stories", "stories", "Releases")
+    ]
+  },
+  {
+    key: "incidents",
+    title: "Incidents",
+    props: [
+      t("ID"),
+      select("Priority", PRIORITY_P),
+      select("Status", ["Open", "Mitigated", "Resolved", "Closed"]),
+      date("Started"),
+      date("Mitigated"),
+      date("Resolved"),
+      url("Postmortem link"),
+      rel("Release", "releases", "Incidents"),
+      rel("Actions", "stories", "Incident actions")
+    ]
+  },
+  {
+    key: "change_requests",
+    title: "Change Requests",
+    props: [
+      t("ID"),
+      text("Title"),
+      text("Requester"),
+      select("Status", [
+        "Submitted",
+        "Impact analysis",
+        "Pending decision",
+        "Approved",
+        "Rejected",
+        "Withdrawn"
+      ]),
+      text("Impact"),
+      num("Cost estimate"),
+      text("Schedule impact"),
+      select("Decision", ["Pending", "Approved", "Rejected"], { humanOnly: true }),
+      people("Approver", { humanOnly: true }),
+      rel("Stories", "stories", "Change Requests")
+    ]
+  },
+  {
+    key: "risks",
+    title: "Risks",
+    props: [
+      t("ID"),
+      text("Title"),
+      num("Probability"),
+      num("Impact"),
+      { name: "Score", type: "formula", formula: 'prop("Probability") * prop("Impact")' },
+      select("Owner role", ROLE_OPTIONS),
+      text("Mitigation"),
+      select("Status", ["Open", "Mitigating", "Accepted", "Closed"]),
+      text("Items")
+    ]
+  },
+  {
+    key: "lessons",
+    title: "Lessons",
+    props: [
+      t("ID"),
+      select("Proposed by", ROLE_OPTIONS),
+      text("Change"),
+      select("Scope", ["project", "upstream"]),
+      select("Status", ["Proposed", "Approved", "Rejected", "Applied"]),
+      rel("Milestone", "milestones", "Lessons")
+    ]
+  },
+  {
+    key: "cost_log",
+    title: "Cost log",
+    props: [
+      t("Date"),
+      select("Role", ROLE_OPTIONS),
+      num("Phase"),
+      num("Runs"),
+      num("Input tokens"),
+      num("Output tokens"),
+      num("Cache-read tokens"),
+      num("Cost USD"),
+      num("Agent minutes"),
+      num("Rework"),
+      text("Item"),
+      rel("Milestone", "milestones", "Cost log")
+    ]
+  },
+  {
+    key: "human_tasks",
+    title: "Human tasks",
+    props: [
+      t("Task"),
+      people("Assignee"),
+      select("Role", ROLE_OPTIONS),
+      url("Template link"),
+      date("Due"),
+      select("Status", ["Open", "In progress", "Done", "Cancelled"]),
+      text("Item")
+    ]
+  }
+];
+
+// plugins/arima/scripts/src/notion/outbox.ts
+var outboxDir = (projectDir) => path15.join(projectDir, ".arima", "outbox");
+function secretsIn(entry, allowed = /* @__PURE__ */ new Set()) {
+  return findSecrets(
+    JSON.stringify({ p: entry.properties ?? {}, c: entry.content_markdown ?? "" }),
+    allowed
+  );
+}
+function enqueue(projectDir, entry, opts = {}) {
+  const env = opts.env ?? process.env;
+  if (env["ARIMA_RUN_ID"] !== void 0 && env["ARIMA_RUN_ID"] !== entry.run_id)
+    throw new Error(
+      `entry ${entry.id} names run ${entry.run_id}, but this process is run ${env["ARIMA_RUN_ID"]}`
+    );
+  if (env["ARIMA_ROLE"] !== void 0 && env["ARIMA_ROLE"] !== entry.role)
+    throw new Error(
+      `entry ${entry.id} names role ${entry.role}, but this process runs as ${env["ARIMA_ROLE"]}`
+    );
+  const validate = getValidator("outbox");
+  if (!validate(entry)) {
+    throw new Error(
+      `Invalid outbox entry: ${(validate.errors ?? []).map(describeError).join("; ")}`
+    );
+  }
+  const leaked = secretsIn(entry, loadSecretAllowlist(projectDir));
+  if (leaked.length > 0) {
+    throw new Error(
+      `Refusing outbox entry ${entry.id}: it looks like it contains a secret (${leaked.join(", ")})`
+    );
+  }
+  if (entry.base_values === void 0 && (entry.op === "update" || entry.op === "retire") && entry.item_id !== void 0) {
+    const row = findRow(readMirror(projectDir, entry.database), entry.item_id);
+    if (row !== void 0) {
+      const names = entry.op === "retire" ? ["Status"] : Object.keys(entry.properties ?? {});
+      entry = {
+        ...entry,
+        base_values: Object.fromEntries(names.map((n) => [n, row.properties[n] ?? null]))
+      };
+    }
+  }
+  const dir = outboxDir(projectDir);
+  mkdirSync8(dir, { recursive: true });
+  const file = path15.join(dir, `${entry.id}.json`);
+  if (existsSync9(file)) throw new Error(`outbox entry ${entry.id} already exists`);
+  writeFileAtomic(file, `${JSON.stringify(entry, null, 2)}
+`);
+  return file;
+}
+
+// plugins/arima/scripts/src/sandbox.ts
+var SANDBOX_IMAGE_DEFAULT = "arima-sandbox:1";
+var CONTAINER_WORK = "/work";
+var CONTAINER_PLUGIN = "/plugin";
+var EGRESS_ALLOW_DEFAULT = [
+  "api.anthropic.com",
+  "registry.npmjs.org",
+  "statsig.anthropic.com"
+];
+var realExec = (file, args, opts = {}) => new Promise((resolve2) => {
+  const child = execFile(
+    file,
+    args,
+    {
+      cwd: opts.cwd,
+      timeout: opts.timeoutMs ?? 12e4,
+      maxBuffer: 32 * 1024 * 1024,
+      windowsHide: true,
+      env: { ...process.env, GIT_TERMINAL_PROMPT: "0" }
+    },
+    (err, stdout, stderr) => {
+      const code2 = err === null ? 0 : typeof err.code === "number" ? err.code : 1;
+      resolve2({ code: code2, stdout: String(stdout), stderr: String(stderr) });
+    }
+  );
+  if (opts.input !== void 0) child.stdin?.end(opts.input);
+});
+var FORBIDDEN_MOUNT = /(docker\.sock|[\\/]\.claude\b|[\\/]\.config[\\/]arima|[\\/]\.ssh\b|[\\/]\.git(?:[\\/]|$|:))/i;
+function unsafeDockerArgs(args) {
+  const bad = [];
+  const has = (a) => args.includes(a);
+  if (has("--privileged")) bad.push("--privileged");
+  if (args.some((a) => a.startsWith("--cap-add"))) bad.push("--cap-add");
+  if (args.some((a, i) => (a === "--network" || a === "--net") && args[i + 1] === "host"))
+    bad.push("host network");
+  if (args.some((a) => /^--(pid|ipc|userns|uts)=?host$/.test(a))) bad.push("host namespace");
+  args.forEach((a, i) => {
+    if ((a === "-v" || a === "--volume" || a === "--mount") && args[i + 1] !== void 0) {
+      if (FORBIDDEN_MOUNT.test(args[i + 1])) bad.push(`mount ${args[i + 1]}`);
+    }
+  });
+  if (!has("--cap-drop")) bad.push("capabilities not dropped");
+  if (!args.includes("no-new-privileges")) bad.push("no-new-privileges missing");
+  return bad;
+}
+function assertSafeDockerArgs(args) {
+  const bad = unsafeDockerArgs(args);
+  if (bad.length > 0) throw new Error(`refusing an unsafe sandbox: ${bad.join(", ")}`);
+}
+function buildDockerRunArgs(i) {
+  const args = [
+    "run",
+    "--rm",
+    "-i",
+    "--init",
+    "--name",
+    i.name,
+    "--network",
+    i.network,
+    "--cap-drop",
+    "ALL",
+    "--security-opt",
+    "no-new-privileges",
+    "--pids-limit",
+    String(i.pids ?? 512),
+    "--memory",
+    i.memory ?? "4g",
+    "--env-file",
+    i.envFile,
+    "-v",
+    `${i.cloneDir}:${CONTAINER_WORK}:rw`,
+    "-v",
+    `${i.pluginDir}:${CONTAINER_PLUGIN}:ro`,
+    "-w",
+    CONTAINER_WORK
+  ];
+  if (i.user !== void 0) args.push("--user", i.user);
+  args.push(i.image, ...i.command);
+  assertSafeDockerArgs(args);
+  return args;
+}
+var CONTAINER_ENV_KEEP = /^(ARIMA_(RUN_ID|ROLE|ITEM|KIND)|OTEL_|ANTHROPIC_|CLAUDE_CODE_OAUTH_TOKEN|GH_TOKEN|ARIMA_NOTION_TOKEN|NOTION_)/;
+function containerEnv(hostEnv, extra = {}) {
+  const env = {
+    HOME: "/home/node",
+    PATH: "/usr/local/bin:/usr/bin:/bin",
+    ARIMA_PROJECT_DIR: CONTAINER_WORK,
+    CLAUDE_PLUGIN_ROOT: CONTAINER_PLUGIN
+  };
+  for (const [k, v] of Object.entries(hostEnv)) {
+    if (v === void 0) continue;
+    if (CONTAINER_ENV_KEEP.test(k) || (extra.keep ?? []).includes(k)) env[k] = v;
+  }
+  if (extra.oauthToken !== void 0) env["CLAUDE_CODE_OAUTH_TOKEN"] = extra.oauthToken;
+  if (extra.proxy !== void 0) {
+    for (const k of ["HTTPS_PROXY", "HTTP_PROXY", "https_proxy", "http_proxy"])
+      env[k] = extra.proxy;
+    env["NO_PROXY"] = "localhost,127.0.0.1";
+  }
+  env["ARIMA_PROJECT_DIR"] = CONTAINER_WORK;
+  return env;
+}
+function writeEnvFile(dir, env) {
+  const file = path16.join(dir, "env");
+  for (const [k, v] of Object.entries(env))
+    if (/[\r\n]/.test(v) || !/^[A-Za-z_][A-Za-z0-9_]*$/.test(k))
+      throw new Error(`environment variable ${k} cannot be passed to a container`);
+  writeFileSync5(
+    file,
+    `${Object.entries(env).map(([k, v]) => `${k}=${v}`).join("\n")}
+`,
+    {
+      mode: 384
+    }
+  );
+  try {
+    chmodSync(file, 384);
+  } catch {
+  }
+  return file;
+}
+async function makeClone(exec, source, branch, base = tmpdir()) {
+  const root = mkdtempSync2(path16.join(base, "arima-sbx-"));
+  const dir = path16.join(root, "work");
+  const r = await exec("git", [
+    "clone",
+    "--quiet",
+    "--no-hardlinks",
+    "--branch",
+    branch,
+    source,
+    dir
+  ]);
+  if (r.code !== 0) {
+    rmSync3(root, { recursive: true, force: true });
+    throw new Error(`could not clone ${branch} for the sandbox: ${r.stderr.trim()}`);
+  }
+  await exec("git", ["remote", "remove", "origin"], { cwd: dir });
+  mkdirSync9(path16.join(dir, ".arima", "outbox"), { recursive: true });
+  const info = path16.join(dir, ".git", "info");
+  mkdirSync9(info, { recursive: true });
+  writeFileSync5(path16.join(info, "exclude"), ".arima/\n", { flag: "a" });
+  return { dir, root };
+}
+function disposeClone(c) {
+  rmSync3(c.root, { recursive: true, force: true, maxRetries: 3 });
+}
+async function importCommits(exec, worktree, clone, branch) {
+  const before = await exec("git", ["rev-parse", "HEAD"], { cwd: worktree });
+  const r = await exec("git", ["pull", "--ff-only", "--quiet", clone.dir, branch], {
+    cwd: worktree
+  });
+  if (r.code !== 0)
+    return {
+      ok: false,
+      commits: 0,
+      detail: `the sandbox commits could not be fast-forwarded: ${r.stderr.trim()}`
+    };
+  const n = await exec("git", ["rev-list", "--count", `${before.stdout.trim()}..HEAD`], {
+    cwd: worktree
+  });
+  return { ok: true, commits: Number(n.stdout.trim()) || 0, detail: "ok" };
+}
+var AUDIT_TYPES = /* @__PURE__ */ new Set(["tool.used", "tool.blocked"]);
+async function importArima(projectDir, clone, who) {
+  const rejected = [];
+  let outbox = 0;
+  let events = 0;
+  const env = { ARIMA_RUN_ID: who.runId, ARIMA_ROLE: who.role };
+  const ob = path16.join(clone.dir, ".arima", "outbox");
+  if (existsSync10(ob)) {
+    const validate = getValidator("outbox");
+    for (const name of readdirSync5(ob).filter((f) => f.endsWith(".json")).sort()) {
+      try {
+        const entry = migrateRecord(
+          "outbox",
+          JSON.parse(readFileSync11(path16.join(ob, name), "utf8"))
+        );
+        if (!validate(entry)) throw new Error("invalid outbox entry");
+        enqueue(projectDir, entry, { env });
+        outbox += 1;
+      } catch (e) {
+        rejected.push(`${name}: ${e.message}`);
+      }
+    }
+  }
+  const evFile = path16.join(clone.dir, ".arima", "events.jsonl");
+  if (existsSync10(evFile)) {
+    for (const [i, line] of readFileSync11(evFile, "utf8").split("\n").entries()) {
+      if (line.trim() === "") continue;
+      try {
+        const ev = JSON.parse(line);
+        if (!AUDIT_TYPES.has(ev.type))
+          throw new Error(`event type ${String(ev.type)} is not importable`);
+        await appendEvent(projectDir, {
+          type: ev.type,
+          actor: who.role,
+          run_id: who.runId,
+          ...ev.item !== void 0 ? { item: ev.item } : {},
+          ...ev.data !== void 0 ? { data: ev.data } : {}
+        });
+        events += 1;
+      } catch (e) {
+        rejected.push(`events.jsonl:${i + 1}: ${e.message}`);
+      }
+    }
+  }
+  return { outbox, events, rejected };
+}
+var safeName = (s) => s.replace(/[^A-Za-z0-9_.-]/g, "-");
+async function openSandbox(o) {
+  const exec = o.exec ?? realExec;
+  const image = o.image ?? SANDBOX_IMAGE_DEFAULT;
+  const id = safeName(o.runId);
+  const net = `arima-net-${id}`;
+  const proxyName = `arima-egress-${id}`;
+  const container = `arima-run-${id}`;
+  const branchOut = await exec("git", ["rev-parse", "--abbrev-ref", "HEAD"], { cwd: o.worktree });
+  const branch = branchOut.stdout.trim();
+  if (branchOut.code !== 0 || branch === "" || branch === "HEAD")
+    throw new Error(
+      `the worktree ${o.worktree} is not on a branch, so it cannot be cloned for the sandbox`
+    );
+  const cleanup = [];
+  const undo = async () => {
+    for (const f of cleanup.reverse()) await f().catch(() => void 0);
+  };
+  try {
+    const clone = await makeClone(exec, o.worktree, branch, o.tmp);
+    cleanup.push(() => Promise.resolve(disposeClone(clone)));
+    const created = await exec("docker", ["network", "create", "--internal", net]);
+    if (created.code !== 0)
+      throw new Error(`could not create the sandbox network: ${created.stderr.trim()}`);
+    cleanup.push(() => exec("docker", ["network", "rm", net]));
+    const allow = [...EGRESS_ALLOW_DEFAULT, ...o.allow ?? []];
+    const sidecar = [
+      "run",
+      "-d",
+      "--rm",
+      "--name",
+      proxyName,
+      "--network",
+      net,
+      "--cap-drop",
+      "ALL",
+      "--security-opt",
+      "no-new-privileges",
+      "--read-only",
+      "-v",
+      `${o.pluginDir}:${CONTAINER_PLUGIN}:ro`,
+      image,
+      "node",
+      `${CONTAINER_PLUGIN}/scripts/dist/arima-egress-proxy.mjs`,
+      "--allow",
+      allow.join(","),
+      "--host",
+      "0.0.0.0",
+      "--port",
+      "3128"
+    ];
+    assertSafeDockerArgs(sidecar);
+    const s = await exec("docker", sidecar);
+    if (s.code !== 0) throw new Error(`could not start the egress proxy: ${s.stderr.trim()}`);
+    cleanup.push(() => exec("docker", ["rm", "-f", proxyName]));
+    const c = await exec("docker", ["network", "connect", "bridge", proxyName]);
+    if (c.code !== 0)
+      throw new Error(`could not connect the egress proxy outward: ${c.stderr.trim()}`);
+    const env = containerEnv(o.hostEnv, {
+      proxy: `http://${proxyName}:3128`,
+      oauthToken: o.oauthToken,
+      ...o.keep ? { keep: o.keep } : {}
+    });
+    const envFile = writeEnvFile(clone.root, env);
+    const user = typeof process.getuid === "function" ? `${process.getuid()}:${process.getgid?.() ?? 0}` : void 0;
+    return {
+      clone,
+      container,
+      dockerArgs: (command) => buildDockerRunArgs({
+        name: container,
+        image,
+        cloneDir: clone.dir,
+        pluginDir: o.pluginDir,
+        envFile,
+        network: net,
+        command,
+        ...user !== void 0 ? { user } : {}
+      }),
+      kill: async () => {
+        await exec("docker", ["kill", container]);
+      },
+      finish: async () => {
+        try {
+          const commits = await importCommits(exec, o.worktree, clone, branch);
+          const imported = await importArima(o.projectDir, clone, {
+            runId: o.runId,
+            role: o.role
+          });
+          return { commits, imported };
+        } finally {
+          await exec("docker", ["rm", "-f", container]).catch(() => void 0);
+          await undo();
+        }
+      }
+    };
+  } catch (e) {
+    await undo();
+    throw e;
+  }
 }
 
 // plugins/arima/scripts/src/run-agent.ts
@@ -19964,7 +20827,7 @@ var ISOLATION_FLAGS = [
   "--strict-mcp-config",
   "--disable-slash-commands"
 ];
-function buildClaudeArgs(o, agentName, scriptsGlob) {
+function buildClaudeArgs(o, agentName, scriptsGlob, pluginDir = pluginRoot()) {
   const args = [
     "-p",
     "--output-format",
@@ -19980,7 +20843,7 @@ function buildClaudeArgs(o, agentName, scriptsGlob) {
     "--disallowedTools",
     deniedTools(o.role).join(",")
   ];
-  args.push("--plugin-dir", pluginRoot());
+  args.push("--plugin-dir", pluginDir);
   if (o.config.isolateUserSettings !== false) args.push(...ISOLATION_FLAGS);
   if (o.config.model !== void 0) args.push("--model", o.config.model);
   if (agentName !== void 0) args.push("--agent", agentName);
@@ -20014,6 +20877,7 @@ function runProcess(bin, args, opts) {
     const timer = setTimeout(() => {
       timedOut = true;
       killTree(child.pid);
+      opts.onKill?.();
     }, opts.timeoutMs);
     if (opts.poll !== void 0 && opts.poll.everyMs > 0) {
       let checking = false;
@@ -20024,6 +20888,7 @@ function runProcess(bin, args, opts) {
           if (on && !settled) {
             switchKilled = true;
             killTree(child.pid);
+            opts.onKill?.();
           }
         }).catch(() => void 0).finally(() => checking = false);
       }, opts.poll.everyMs);
@@ -20052,17 +20917,17 @@ function exitFor(result) {
   }
 }
 function writeRunReport(projectDir, runId, body) {
-  const dir = path13.join(projectDir, ".arima", "runs");
-  mkdirSync7(dir, { recursive: true });
-  let text = JSON.stringify(body, null, 2);
-  if (findSecrets(text).length > 0) {
-    text = JSON.stringify(
+  const dir = path17.join(projectDir, ".arima", "runs");
+  mkdirSync10(dir, { recursive: true });
+  let text2 = JSON.stringify(body, null, 2);
+  if (findSecrets(text2).length > 0) {
+    text2 = JSON.stringify(
       { run_id: runId, note: "report withheld: content looked like a secret" },
       null,
       2
     );
   }
-  writeFileSync4(path13.join(dir, `${runId}.json`), `${text}
+  writeFileSync6(path17.join(dir, `${runId}.json`), `${text2}
 `, "utf8");
 }
 var localDay = (d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
@@ -20135,16 +21000,16 @@ async function runAgent(o) {
       `budget ${o.budgetUsd} exceeds budget.per_run_cap ${o.config.perRunCap} in arima.yaml (spec \xA713.5)`
     );
   }
-  if (o.buildPrompt === void 0 && !existsSync7(o.promptFile))
+  if (o.buildPrompt === void 0 && !existsSync11(o.promptFile))
     throw new Error(`prompt file not found: ${o.promptFile}`);
-  const cwd = path13.resolve(o.cwd ?? o.projectDir);
+  const cwd = path17.resolve(o.cwd ?? o.projectDir);
   const root = pluginRoot();
-  const scriptsGlob = path13.join(root, "scripts", "dist").replace(/\\/g, "/");
-  const agentName = o.agent ?? (existsSync7(path13.join(root, "agents", `${o.role}.md`)) ? `arima:${o.role}` : void 0);
+  const scriptsGlob = path17.join(root, "scripts", "dist").replace(/\\/g, "/");
+  const agentName = o.agent ?? (existsSync11(path17.join(root, "agents", `${o.role}.md`)) ? `arima:${o.role}` : void 0);
   const now = o.now ?? /* @__PURE__ */ new Date();
   await assertMayDispatch(o, now);
   const runId = await issueRunId(o.projectDir, now);
-  const prompt = o.buildPrompt !== void 0 ? await o.buildPrompt(runId) : readFileSync8(o.promptFile, "utf8");
+  const prompt = o.buildPrompt !== void 0 ? await o.buildPrompt(runId) : readFileSync12(o.promptFile, "utf8");
   const startedAt = now.toISOString();
   const attempt = o.attempt ?? 1;
   await appendEvent(o.projectDir, {
@@ -20160,23 +21025,80 @@ async function runAgent(o) {
     phase: o.phase,
     runId,
     projectKey: o.config.projectKey,
-    projectDir: path13.resolve(o.projectDir),
+    projectDir: path17.resolve(o.projectDir),
     config: o.config,
     ...o.kind !== void 0 ? { kind: o.kind } : {}
   });
   Object.assign(env, o.extraEnv ?? {});
   const bin = o.claudeBin ?? process.env["ARIMA_CLAUDE_BIN"] ?? "claude";
   const t0 = Date.now();
-  const spawned = await runProcess(bin, buildClaudeArgs(o, agentName, scriptsGlob), {
-    cwd,
-    env,
-    input: prompt,
-    timeoutMs: o.config.maxRunMinutes * 6e4,
-    poll: {
-      everyMs: o.killSwitchPollMs ?? 3e4,
-      isOn: async () => (await checkKillSwitch(o.projectDir, o.killSwitch.notion, remotePauseOf(o))).on
+  let sandbox;
+  let launch = {
+    bin,
+    args: buildClaudeArgs(o, agentName, scriptsGlob),
+    env
+  };
+  if (o.config.sandbox === "docker") {
+    const base = o.env ?? process.env;
+    sandbox = await openSandbox({
+      ...o.sandboxExec ? { exec: o.sandboxExec } : {},
+      ...o.config.sandboxImage ? { image: o.config.sandboxImage } : {},
+      ...o.config.sandboxAllow ? { allow: o.config.sandboxAllow } : {},
+      pluginDir: root,
+      worktree: cwd,
+      projectDir: o.projectDir,
+      runId,
+      role: o.role,
+      hostEnv: env,
+      keep: Object.keys(o.extraEnv ?? {}),
+      oauthToken: base["ARIMA_SANDBOX_OAUTH_TOKEN"] ?? base["CLAUDE_CODE_OAUTH_TOKEN"]
+    });
+    const inner = buildClaudeArgs(
+      o,
+      agentName,
+      `${CONTAINER_PLUGIN}/scripts/dist`,
+      CONTAINER_PLUGIN
+    );
+    launch = {
+      bin: o.dockerBin ?? "docker",
+      args: sandbox.dockerArgs(["claude", ...inner]),
+      env: { ...base }
+    };
+  }
+  const box = sandbox;
+  let spawned;
+  try {
+    spawned = await runProcess(launch.bin, launch.args, {
+      cwd,
+      env: launch.env,
+      ...box ? { onKill: () => void box.kill() } : {},
+      input: prompt,
+      timeoutMs: o.config.maxRunMinutes * 6e4,
+      poll: {
+        everyMs: o.killSwitchPollMs ?? 3e4,
+        isOn: async () => (await checkKillSwitch(o.projectDir, o.killSwitch.notion, remotePauseOf(o))).on
+      }
+    });
+  } finally {
+    if (box) {
+      const done = await box.finish().catch((e) => ({
+        commits: { ok: false, commits: 0, detail: String(e) },
+        imported: { outbox: 0, events: 0, rejected: [] }
+      }));
+      await appendEvent(o.projectDir, {
+        type: "sandbox.finished",
+        actor: "system",
+        run_id: runId,
+        data: {
+          commits: done.commits.commits,
+          commits_ok: done.commits.ok,
+          outbox: done.imported.outbox,
+          events: done.imported.events,
+          rejected: done.imported.rejected.length
+        }
+      }).catch(() => void 0);
     }
-  });
+  }
   const elapsed = Date.now() - t0;
   let parsed;
   try {
@@ -20308,6 +21230,9 @@ function agentConfigFrom(arima, role) {
     tier: tier === "strong" || tier === "standard" || tier === "fast" ? tier : void 0,
     auth: get("runtime.auth") === "api_key" ? "api_key" : "seat",
     isolateUserSettings: get("runtime.isolate_user_settings") === false ? false : true,
+    sandbox: get("runtime.sandbox") === "docker" ? "docker" : "none",
+    sandboxImage: typeof get("runtime.sandbox_image") === "string" ? get("runtime.sandbox_image") : void 0,
+    sandboxAllow: Array.isArray(get("runtime.sandbox_allow")) ? get("runtime.sandbox_allow").map(String) : void 0,
     projectCap: Number(get("budget.project_cap")),
     dailyCap: Number(get("budget.daily_cap")),
     stateBranch: typeof get("github.state_branch") === "string" ? get("github.state_branch") : void 0,
@@ -20400,7 +21325,7 @@ ${USAGE}
 `);
     return EXIT.usage;
   }
-  const projectDir = path14.resolve(io.cwd, values["project"] ?? ".");
+  const projectDir = path18.resolve(io.cwd, values["project"] ?? ".");
   const config = validateProject(projectDir);
   if (!config.ok || config.arima === void 0) {
     for (const e of config.errors) io.err(`${e.file}:${e.line}: ${e.message}
@@ -20431,13 +21356,13 @@ ${USAGE}
       item,
       budgetUsd: budget,
       maxTurns,
-      promptFile: path14.resolve(io.cwd, promptFile),
+      promptFile: path18.resolve(io.cwd, promptFile),
       phase,
       attempt,
       config: agentConfigFrom(config.arima, role),
       killSwitch,
       extraEnv: passthroughEnv(),
-      ...values["cwd"] !== void 0 ? { cwd: path14.resolve(io.cwd, values["cwd"]) } : {},
+      ...values["cwd"] !== void 0 ? { cwd: path18.resolve(io.cwd, values["cwd"]) } : {},
       ...values["milestone"] !== void 0 ? { milestone: values["milestone"] } : {},
       ...rework !== void 0 ? { reworkReason: rework } : {},
       ...values["session"] !== void 0 ? { sessionId: values["session"] } : {},
