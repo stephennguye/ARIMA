@@ -8,7 +8,12 @@ import type { PauseSwitchPort } from './notion/port.js';
 import { remotePauseFlag } from './state.js';
 import { buildLedgerRow, appendLedgerRow, parseClaudeResult, readLedger } from './ledger.js';
 import type { ClaudeResult, LedgerRow, Role, RunContext, RunResult } from './ledger.js';
+import type { UnitKind } from './kinds.js';
 import { pluginRoot } from './lib/paths.js';
+import type { ReasonCode } from './reasons.js';
+import { collectReport } from './report-collector.js';
+import type { Collected } from './report-collector.js';
+import type { AgentReport } from './report.js';
 import { findSecrets } from './lib/secrets.js';
 import {
   allowedTools,
@@ -77,6 +82,12 @@ export interface RunAgentOptions {
   /** Resume an earlier session (cost in the ledger is then the difference, spec §13.6). */
   sessionId?: string;
   agent?: string;
+  /**
+   * The work-unit kind. When set, the final message must end in a valid `arima-report` block
+   * (03-contracts 3.3): it is extracted, validated and stored, and a missing or invalid one makes
+   * the run a `fail` with reason `report_invalid` (or `evidence_missing`, `secret_in_output`).
+   */
+  kind?: UnitKind;
   config: AgentConfig;
   killSwitch: DispatchKillSwitch;
   /** Executable to run instead of `claude` (tests, or a non-PATH install). */
@@ -95,6 +106,10 @@ export interface RunAgentOutcome {
   costUsd: number;
   sessionId?: string;
   exitCode: number;
+  /** Why a run failed, blocked or paused (03-contracts 9b). */
+  reason?: ReasonCode;
+  /** The validated report, when `kind` was set and the report was accepted. */
+  report?: AgentReport;
 }
 
 const USAGE_LIMIT_RE =
@@ -500,6 +515,33 @@ export async function runAgent(o: RunAgentOptions): Promise<RunAgentOutcome> {
       { ...ctx, result: paused ? 'paused' : 'error' },
     );
   }
+  let collected: Collected | undefined;
+  if (row.result === 'paused') row.reason = 'usage_limit';
+  else if (row.subtype === 'error_max_turns') row.reason = 'cap_turns';
+  else if (row.subtype === 'error_max_budget_usd') row.reason = 'cap_budget';
+  else if (o.kind !== undefined && row.result === 'pass') {
+    try {
+      collected = await collectReport({
+        projectDir: o.projectDir,
+        runId,
+        role: o.role,
+        kind: o.kind,
+        item: o.item,
+        message: parsed?.result,
+      });
+    } catch (e) {
+      collected = {
+        ok: false,
+        reason: 'report_invalid',
+        errors: [e instanceof Error ? e.message : String(e)],
+      };
+    }
+    if (!collected.ok) {
+      row.result = 'fail';
+      if (collected.reason) row.reason = collected.reason;
+    } else if (collected.report?.status === 'failed') row.result = 'fail';
+    else if (collected.report?.status !== 'done') row.result = 'blocked';
+  }
   await appendLedgerRow(o.projectDir, row);
 
   writeRunReport(o.projectDir, runId, {
@@ -511,6 +553,8 @@ export async function runAgent(o: RunAgentOptions): Promise<RunAgentOutcome> {
     result_text: parsed?.result,
     errors: parsed?.errors,
     terminal_reason: parsed?.terminal_reason,
+    reason: row.reason,
+    report_errors: collected?.ok === false ? collected.errors : undefined,
     stderr_tail: spawned.stderr.slice(-2000),
   });
 
@@ -545,7 +589,62 @@ export async function runAgent(o: RunAgentOptions): Promise<RunAgentOutcome> {
     exitCode: exitFor(row.result),
   };
   if (row.session_id !== undefined) outcome.sessionId = row.session_id;
+  if (row.reason !== undefined) outcome.reason = row.reason;
+  if (collected?.report !== undefined) outcome.report = collected.report;
   return outcome;
+}
+
+export interface UnitOptions extends RunAgentOptions {
+  kind: UnitKind;
+  /** Story budget left before this unit starts; defaults to `budgetUsd`. Caps the retry. */
+  storyRemainingUsd?: number;
+}
+
+export interface UnitOutcome extends RunAgentOutcome {
+  /** Every run of the unit, in order (one, or two when the first failed). */
+  runs: RunAgentOutcome[];
+  /** True when the unit failed twice (or could not be retried): the item must be Blocked and a question raised (spec 7.12). */
+  blocked: boolean;
+}
+
+/**
+ * Runs one work unit with the retry rule of spec 7.12: a failed run (error, or a missing or
+ * invalid report) is retried once with the same packet and `min(per_run_cap, remaining story
+ * budget)` after what the first run spent; a second failure blocks the unit. A pause, a cap stop
+ * (`blocked`) or a refused dispatch is never retried. `beforeRetry` lets the dispatcher make a
+ * fresh worktree.
+ */
+export async function runUnit(
+  o: UnitOptions,
+  hooks: { beforeRetry?: (first: RunAgentOutcome) => Promise<void> | void } = {},
+): Promise<UnitOutcome> {
+  const first = await runAgent(o);
+  const failed = first.result === 'fail' || first.result === 'error';
+  if (!failed) return { ...first, runs: [first], blocked: false };
+
+  const remaining = (o.storyRemainingUsd ?? o.budgetUsd) - first.costUsd;
+  const retryBudget = Math.min(o.config.perRunCap, remaining);
+  if (!(retryBudget > 0)) {
+    const out: UnitOutcome = { ...first, runs: [first], blocked: true };
+    out.reason = 'story_budget';
+    return out;
+  }
+  await appendEvent(o.projectDir, {
+    type: 'unit.retried',
+    actor: 'system',
+    run_id: first.runId,
+    ...(o.item !== 'none' ? { item: o.item } : {}),
+    data: {
+      role: o.role,
+      kind: o.kind,
+      reason: first.reason ?? first.subtype,
+      budget_usd: retryBudget,
+    },
+  });
+  await hooks.beforeRetry?.(first);
+  const second = await runAgent({ ...o, budgetUsd: retryBudget });
+  const failedAgain = second.result === 'fail' || second.result === 'error';
+  return { ...second, runs: [first, second], blocked: failedAgain };
 }
 
 /** Reads the fields the wrapper needs from a validated arima.yaml document. */

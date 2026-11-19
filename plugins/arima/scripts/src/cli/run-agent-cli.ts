@@ -2,6 +2,7 @@ import path from 'node:path';
 import { parseArgs } from 'node:util';
 import { validateProject } from '../config.js';
 import type { Io } from './config-cli.js';
+import { UNIT_KINDS, isUnitKind } from '../kinds.js';
 import { isRole, ROLES } from '../roles.js';
 import { createNotionPortFromToken } from '../notion/port.js';
 import type { PauseSwitchPort } from '../notion/port.js';
@@ -16,6 +17,7 @@ export interface RunAgentCliDeps {
 export const USAGE = `Usage: arima-run-agent --role <role> --item <ID|none> --budget <usd> --max-turns <n> --prompt-file <file>
          [--cwd <worktree>] [--project <dir>] [--phase <0-8>] [--attempt <n>] [--milestone MS-NN]
          [--rework-reason failed_review|failed_qa|vetoed|bug|other] [--session <id>] [--agent <name>]
+         [--kind <unit kind>]   (the final message must then end in a valid arima-report block)
 Roles: ${ROLES.join(' ')}
 Exit codes: 0 pass, 1 failed/error, 2 usage or config, 3 blocked (turn or budget cap), 12 kill switch is on, 13 budget used up, 75 paused (usage limit)`;
 
@@ -64,6 +66,7 @@ export async function runAgentCli(
         'rework-reason': { type: 'string' },
         session: { type: 'string' },
         agent: { type: 'string' },
+        kind: { type: 'string' },
       },
     }).values as Record<string, string | undefined>;
   } catch (e) {
@@ -79,6 +82,7 @@ export async function runAgentCli(
   const phase = values['phase'] === undefined ? 4 : Number(values['phase']);
   const attempt = values['attempt'] === undefined ? 1 : Number(values['attempt']);
   const rework = values['rework-reason'];
+  const kind = values['kind'];
 
   const problems: string[] = [];
   if (role === undefined || !isRole(role))
@@ -92,6 +96,8 @@ export async function runAgentCli(
   if (!Number.isInteger(phase) || phase < 0 || phase > 8) problems.push('--phase must be 0-8');
   if (!Number.isInteger(attempt) || attempt < 1)
     problems.push('--attempt must be a positive integer');
+  if (kind !== undefined && !isUnitKind(kind))
+    problems.push(`--kind must be one of: ${UNIT_KINDS.join(', ')}`);
   if (rework !== undefined && !(REWORK as readonly string[]).includes(rework)) {
     problems.push(`--rework-reason must be one of: ${REWORK.join(', ')}`);
   }
@@ -151,12 +157,14 @@ export async function runAgentCli(
       ...(rework !== undefined ? { reworkReason: rework as (typeof REWORK)[number] } : {}),
       ...(values['session'] !== undefined ? { sessionId: values['session'] } : {}),
       ...(values['agent'] !== undefined ? { agent: values['agent'] } : {}),
+      ...(kind !== undefined && isUnitKind(kind) ? { kind } : {}),
     });
     io.out(
       `${JSON.stringify({
         run_id: outcome.runId,
         result: outcome.result,
         subtype: outcome.subtype,
+        ...(outcome.reason !== undefined ? { reason: outcome.reason } : {}),
         cost_usd: outcome.costUsd,
         ...(outcome.sessionId !== undefined ? { session_id: outcome.sessionId } : {}),
       })}\n`,

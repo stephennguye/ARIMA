@@ -3264,8 +3264,8 @@ var require_utils = __commonJS({
       }
       return ind;
     }
-    function removeDotSegments(path14) {
-      let input = path14;
+    function removeDotSegments(path15) {
+      let input = path15;
       const output = [];
       let nextSlash = -1;
       let len = 0;
@@ -3339,11 +3339,11 @@ var require_utils = __commonJS({
       }
       return output.join("");
     }
-    function removeDotSegmentsRelative(path14) {
-      if (path14 === "" || path14[0] === "/") {
-        return removeDotSegments(path14);
+    function removeDotSegmentsRelative(path15) {
+      if (path15 === "" || path15[0] === "/") {
+        return removeDotSegments(path15);
       }
-      const segments = path14.split("/");
+      const segments = path15.split("/");
       const last = segments.length - 1;
       const output = [];
       let trailingDirectory = false;
@@ -3706,8 +3706,8 @@ var require_schemes = __commonJS({
       }
       if (wsComponent.resourceName) {
         const queryIndex = wsComponent.resourceName.indexOf("?");
-        const path14 = queryIndex === -1 ? wsComponent.resourceName : wsComponent.resourceName.slice(0, queryIndex);
-        wsComponent.path = path14 && path14 !== "/" ? path14 : void 0;
+        const path15 = queryIndex === -1 ? wsComponent.resourceName : wsComponent.resourceName.slice(0, queryIndex);
+        wsComponent.path = path15 && path15 !== "/" ? path15 : void 0;
         wsComponent.query = queryIndex === -1 ? void 0 : wsComponent.resourceName.slice(queryIndex + 1);
         wsComponent.resourceName = void 0;
       }
@@ -8158,17 +8158,17 @@ var require_visit = __commonJS({
     visit.BREAK = BREAK;
     visit.SKIP = SKIP;
     visit.REMOVE = REMOVE;
-    function visit_(key, node, visitor, path14) {
-      const ctrl = callVisitor(key, node, visitor, path14);
+    function visit_(key, node, visitor, path15) {
+      const ctrl = callVisitor(key, node, visitor, path15);
       if (identity.isNode(ctrl) || identity.isPair(ctrl)) {
-        replaceNode(key, path14, ctrl);
-        return visit_(key, ctrl, visitor, path14);
+        replaceNode(key, path15, ctrl);
+        return visit_(key, ctrl, visitor, path15);
       }
       if (typeof ctrl !== "symbol") {
         if (identity.isCollection(node)) {
-          path14 = Object.freeze(path14.concat(node));
+          path15 = Object.freeze(path15.concat(node));
           for (let i = 0; i < node.items.length; ++i) {
-            const ci = visit_(i, node.items[i], visitor, path14);
+            const ci = visit_(i, node.items[i], visitor, path15);
             if (typeof ci === "number")
               i = ci - 1;
             else if (ci === BREAK)
@@ -8179,13 +8179,13 @@ var require_visit = __commonJS({
             }
           }
         } else if (identity.isPair(node)) {
-          path14 = Object.freeze(path14.concat(node));
-          const ck = visit_("key", node.key, visitor, path14);
+          path15 = Object.freeze(path15.concat(node));
+          const ck = visit_("key", node.key, visitor, path15);
           if (ck === BREAK)
             return BREAK;
           else if (ck === REMOVE)
             node.key = null;
-          const cv = visit_("value", node.value, visitor, path14);
+          const cv = visit_("value", node.value, visitor, path15);
           if (cv === BREAK)
             return BREAK;
           else if (cv === REMOVE)
@@ -8206,17 +8206,17 @@ var require_visit = __commonJS({
     visitAsync.BREAK = BREAK;
     visitAsync.SKIP = SKIP;
     visitAsync.REMOVE = REMOVE;
-    async function visitAsync_(key, node, visitor, path14) {
-      const ctrl = await callVisitor(key, node, visitor, path14);
+    async function visitAsync_(key, node, visitor, path15) {
+      const ctrl = await callVisitor(key, node, visitor, path15);
       if (identity.isNode(ctrl) || identity.isPair(ctrl)) {
-        replaceNode(key, path14, ctrl);
-        return visitAsync_(key, ctrl, visitor, path14);
+        replaceNode(key, path15, ctrl);
+        return visitAsync_(key, ctrl, visitor, path15);
       }
       if (typeof ctrl !== "symbol") {
         if (identity.isCollection(node)) {
-          path14 = Object.freeze(path14.concat(node));
+          path15 = Object.freeze(path15.concat(node));
           for (let i = 0; i < node.items.length; ++i) {
-            const ci = await visitAsync_(i, node.items[i], visitor, path14);
+            const ci = await visitAsync_(i, node.items[i], visitor, path15);
             if (typeof ci === "number")
               i = ci - 1;
             else if (ci === BREAK)
@@ -8227,13 +8227,13 @@ var require_visit = __commonJS({
             }
           }
         } else if (identity.isPair(node)) {
-          path14 = Object.freeze(path14.concat(node));
-          const ck = await visitAsync_("key", node.key, visitor, path14);
+          path15 = Object.freeze(path15.concat(node));
+          const ck = await visitAsync_("key", node.key, visitor, path15);
           if (ck === BREAK)
             return BREAK;
           else if (ck === REMOVE)
             node.key = null;
-          const cv = await visitAsync_("value", node.value, visitor, path14);
+          const cv = await visitAsync_("value", node.value, visitor, path15);
           if (cv === BREAK)
             return BREAK;
           else if (cv === REMOVE)
@@ -8260,23 +8260,23 @@ var require_visit = __commonJS({
       }
       return visitor;
     }
-    function callVisitor(key, node, visitor, path14) {
+    function callVisitor(key, node, visitor, path15) {
       if (typeof visitor === "function")
-        return visitor(key, node, path14);
+        return visitor(key, node, path15);
       if (identity.isMap(node))
-        return visitor.Map?.(key, node, path14);
+        return visitor.Map?.(key, node, path15);
       if (identity.isSeq(node))
-        return visitor.Seq?.(key, node, path14);
+        return visitor.Seq?.(key, node, path15);
       if (identity.isPair(node))
-        return visitor.Pair?.(key, node, path14);
+        return visitor.Pair?.(key, node, path15);
       if (identity.isScalar(node))
-        return visitor.Scalar?.(key, node, path14);
+        return visitor.Scalar?.(key, node, path15);
       if (identity.isAlias(node))
-        return visitor.Alias?.(key, node, path14);
+        return visitor.Alias?.(key, node, path15);
       return void 0;
     }
-    function replaceNode(key, path14, node) {
-      const parent = path14[path14.length - 1];
+    function replaceNode(key, path15, node) {
+      const parent = path15[path15.length - 1];
       if (identity.isCollection(parent)) {
         parent.items[key] = node;
       } else if (identity.isPair(parent)) {
@@ -8888,10 +8888,10 @@ var require_Collection = __commonJS({
     var createNode = require_createNode();
     var identity = require_identity();
     var Node = require_Node();
-    function collectionFromPath(schema, path14, value) {
+    function collectionFromPath(schema, path15, value) {
       let v = value;
-      for (let i = path14.length - 1; i >= 0; --i) {
-        const k = path14[i];
+      for (let i = path15.length - 1; i >= 0; --i) {
+        const k = path15[i];
         if (typeof k === "number" && Number.isInteger(k) && k >= 0) {
           const a = [];
           a[k] = v;
@@ -8910,7 +8910,7 @@ var require_Collection = __commonJS({
         sourceObjects: /* @__PURE__ */ new Map()
       });
     }
-    var isEmptyPath = (path14) => path14 == null || typeof path14 === "object" && !!path14[Symbol.iterator]().next().done;
+    var isEmptyPath = (path15) => path15 == null || typeof path15 === "object" && !!path15[Symbol.iterator]().next().done;
     var Collection = class extends Node.NodeBase {
       constructor(type, schema) {
         super(type);
@@ -8940,11 +8940,11 @@ var require_Collection = __commonJS({
        * be a Pair instance or a `{ key, value }` object, which may not have a key
        * that already exists in the map.
        */
-      addIn(path14, value) {
-        if (isEmptyPath(path14))
+      addIn(path15, value) {
+        if (isEmptyPath(path15))
           this.add(value);
         else {
-          const [key, ...rest] = path14;
+          const [key, ...rest] = path15;
           const node = this.get(key, true);
           if (identity.isCollection(node))
             node.addIn(rest, value);
@@ -8958,8 +8958,8 @@ var require_Collection = __commonJS({
        * Removes a value from the collection.
        * @returns `true` if the item was found and removed.
        */
-      deleteIn(path14) {
-        const [key, ...rest] = path14;
+      deleteIn(path15) {
+        const [key, ...rest] = path15;
         if (rest.length === 0)
           return this.delete(key);
         const node = this.get(key, true);
@@ -8973,8 +8973,8 @@ var require_Collection = __commonJS({
        * scalar values from their surrounding node; to disable set `keepScalar` to
        * `true` (collections are always returned intact).
        */
-      getIn(path14, keepScalar) {
-        const [key, ...rest] = path14;
+      getIn(path15, keepScalar) {
+        const [key, ...rest] = path15;
         const node = this.get(key, true);
         if (rest.length === 0)
           return !keepScalar && identity.isScalar(node) ? node.value : node;
@@ -8992,8 +8992,8 @@ var require_Collection = __commonJS({
       /**
        * Checks if the collection includes a value with the key `key`.
        */
-      hasIn(path14) {
-        const [key, ...rest] = path14;
+      hasIn(path15) {
+        const [key, ...rest] = path15;
         if (rest.length === 0)
           return this.has(key);
         const node = this.get(key, true);
@@ -9003,8 +9003,8 @@ var require_Collection = __commonJS({
        * Sets a value in this collection. For `!!set`, `value` needs to be a
        * boolean to add/remove the item from the set.
        */
-      setIn(path14, value) {
-        const [key, ...rest] = path14;
+      setIn(path15, value) {
+        const [key, ...rest] = path15;
         if (rest.length === 0) {
           this.set(key, value);
         } else {
@@ -11519,9 +11519,9 @@ var require_Document = __commonJS({
           this.contents.add(value);
       }
       /** Adds a value to the document. */
-      addIn(path14, value) {
+      addIn(path15, value) {
         if (assertCollection(this.contents))
-          this.contents.addIn(path14, value);
+          this.contents.addIn(path15, value);
       }
       /**
        * Create a new `Alias` node, ensuring that the target `node` has the required anchor.
@@ -11596,14 +11596,14 @@ var require_Document = __commonJS({
        * Removes a value from the document.
        * @returns `true` if the item was found and removed.
        */
-      deleteIn(path14) {
-        if (Collection.isEmptyPath(path14)) {
+      deleteIn(path15) {
+        if (Collection.isEmptyPath(path15)) {
           if (this.contents == null)
             return false;
           this.contents = null;
           return true;
         }
-        return assertCollection(this.contents) ? this.contents.deleteIn(path14) : false;
+        return assertCollection(this.contents) ? this.contents.deleteIn(path15) : false;
       }
       /**
        * Returns item at `key`, or `undefined` if not found. By default unwraps
@@ -11618,10 +11618,10 @@ var require_Document = __commonJS({
        * scalar values from their surrounding node; to disable set `keepScalar` to
        * `true` (collections are always returned intact).
        */
-      getIn(path14, keepScalar) {
-        if (Collection.isEmptyPath(path14))
+      getIn(path15, keepScalar) {
+        if (Collection.isEmptyPath(path15))
           return !keepScalar && identity.isScalar(this.contents) ? this.contents.value : this.contents;
-        return identity.isCollection(this.contents) ? this.contents.getIn(path14, keepScalar) : void 0;
+        return identity.isCollection(this.contents) ? this.contents.getIn(path15, keepScalar) : void 0;
       }
       /**
        * Checks if the document includes a value with the key `key`.
@@ -11632,10 +11632,10 @@ var require_Document = __commonJS({
       /**
        * Checks if the document includes a value at `path`.
        */
-      hasIn(path14) {
-        if (Collection.isEmptyPath(path14))
+      hasIn(path15) {
+        if (Collection.isEmptyPath(path15))
           return this.contents !== void 0;
-        return identity.isCollection(this.contents) ? this.contents.hasIn(path14) : false;
+        return identity.isCollection(this.contents) ? this.contents.hasIn(path15) : false;
       }
       /**
        * Sets a value in this document. For `!!set`, `value` needs to be a
@@ -11652,13 +11652,13 @@ var require_Document = __commonJS({
        * Sets a value in this document. For `!!set`, `value` needs to be a
        * boolean to add/remove the item from the set.
        */
-      setIn(path14, value) {
-        if (Collection.isEmptyPath(path14)) {
+      setIn(path15, value) {
+        if (Collection.isEmptyPath(path15)) {
           this.contents = value;
         } else if (this.contents == null) {
-          this.contents = Collection.collectionFromPath(this.schema, Array.from(path14), value);
+          this.contents = Collection.collectionFromPath(this.schema, Array.from(path15), value);
         } else if (assertCollection(this.contents)) {
-          this.contents.setIn(path14, value);
+          this.contents.setIn(path15, value);
         }
       }
       /**
@@ -13619,9 +13619,9 @@ var require_cst_visit = __commonJS({
     visit.BREAK = BREAK;
     visit.SKIP = SKIP;
     visit.REMOVE = REMOVE;
-    visit.itemAtPath = (cst, path14) => {
+    visit.itemAtPath = (cst, path15) => {
       let item = cst;
-      for (const [field, index] of path14) {
+      for (const [field, index] of path15) {
         const tok = item?.[field];
         if (tok && "items" in tok) {
           item = tok.items[index];
@@ -13630,23 +13630,23 @@ var require_cst_visit = __commonJS({
       }
       return item;
     };
-    visit.parentCollection = (cst, path14) => {
-      const parent = visit.itemAtPath(cst, path14.slice(0, -1));
-      const field = path14[path14.length - 1][0];
+    visit.parentCollection = (cst, path15) => {
+      const parent = visit.itemAtPath(cst, path15.slice(0, -1));
+      const field = path15[path15.length - 1][0];
       const coll = parent?.[field];
       if (coll && "items" in coll)
         return coll;
       throw new Error("Parent collection not found");
     };
-    function _visit(path14, item, visitor) {
-      let ctrl = visitor(item, path14);
+    function _visit(path15, item, visitor) {
+      let ctrl = visitor(item, path15);
       if (typeof ctrl === "symbol")
         return ctrl;
       for (const field of ["key", "value"]) {
         const token = item[field];
         if (token && "items" in token) {
           for (let i = 0; i < token.items.length; ++i) {
-            const ci = _visit(Object.freeze(path14.concat([[field, i]])), token.items[i], visitor);
+            const ci = _visit(Object.freeze(path15.concat([[field, i]])), token.items[i], visitor);
             if (typeof ci === "number")
               i = ci - 1;
             else if (ci === BREAK)
@@ -13657,10 +13657,10 @@ var require_cst_visit = __commonJS({
             }
           }
           if (typeof ctrl === "function" && field === "key")
-            ctrl = ctrl(item, path14);
+            ctrl = ctrl(item, path15);
         }
       }
-      return typeof ctrl === "function" ? ctrl(item, path14) : ctrl;
+      return typeof ctrl === "function" ? ctrl(item, path15) : ctrl;
     }
     exports.visit = visit;
   }
@@ -16713,19 +16713,19 @@ var require_errors3 = __commonJS({
       }
     };
     exports.BrowserTokenNotAllowedError = BrowserTokenNotAllowedError;
-    function validateRequestPath(path14) {
-      if (path14.includes("..")) {
-        throw new InvalidPathParameterError(`Request path "${path14}" contains path traversal sequence ".."`);
+    function validateRequestPath(path15) {
+      if (path15.includes("..")) {
+        throw new InvalidPathParameterError(`Request path "${path15}" contains path traversal sequence ".."`);
       }
-      if (/%2e/i.test(path14)) {
+      if (/%2e/i.test(path15)) {
         let decoded;
         try {
-          decoded = decodeURIComponent(path14);
+          decoded = decodeURIComponent(path15);
         } catch {
           return;
         }
         if (decoded.includes("..")) {
-          throw new InvalidPathParameterError(`Request path "${path14}" contains encoded path traversal sequence`);
+          throw new InvalidPathParameterError(`Request path "${path15}" contains encoded path traversal sequence`);
         }
       }
     }
@@ -17409,17 +17409,17 @@ var require_Client = __commonJS({
        * Sends a request.
        */
       async request(args) {
-        const { path: path14, method, query, body, formDataParams, auth } = args;
-        (0, errors_1.validateRequestPath)(path14);
-        this.log(logging_1.LogLevel.INFO, "request start", { method, path: path14 });
-        const url = this.buildRequestUrl(path14, query);
+        const { path: path15, method, query, body, formDataParams, auth } = args;
+        (0, errors_1.validateRequestPath)(path15);
+        this.log(logging_1.LogLevel.INFO, "request start", { method, path: path15 });
+        const url = this.buildRequestUrl(path15, query);
         const bodyAsJsonString = this.serializeBody(body);
         const headers = this.buildRequestHeaders(args.headers, auth, bodyAsJsonString);
         const formData = this.buildFormData(formDataParams, headers);
         return this.executeWithRetry({
           url,
           method,
-          path: path14,
+          path: path15,
           headers,
           body: bodyAsJsonString !== null && bodyAsJsonString !== void 0 ? bodyAsJsonString : formData
         }, (request) => this.executeSingleRequest(request));
@@ -17429,20 +17429,20 @@ var require_Client = __commonJS({
        */
       async *streamRequest(args, parseEvent) {
         var _a;
-        const { path: path14, method, query, body, auth } = args;
-        (0, errors_1.validateRequestPath)(path14);
-        this.log(logging_1.LogLevel.INFO, "stream request start", { method, path: path14 });
-        const url = this.buildRequestUrl(path14, query);
+        const { path: path15, method, query, body, auth } = args;
+        (0, errors_1.validateRequestPath)(path15);
+        this.log(logging_1.LogLevel.INFO, "stream request start", { method, path: path15 });
+        const url = this.buildRequestUrl(path15, query);
         const bodyAsJsonString = this.serializeBody(body);
         const headers = this.buildRequestHeaders(args.headers, auth, bodyAsJsonString);
         const response = await this.executeWithRetry({
           url,
           method,
-          path: path14,
+          path: path15,
           headers,
           body: bodyAsJsonString
         }, (request) => this.executeSingleStreamRequest(request));
-        this.log(logging_1.LogLevel.INFO, "stream request opened", { method, path: path14 });
+        this.log(logging_1.LogLevel.INFO, "stream request opened", { method, path: path15 });
         if (response.body === void 0 || response.body === null) {
           for (const frame of takeSseFrames({
             content: await response.text(),
@@ -17494,8 +17494,8 @@ var require_Client = __commonJS({
       /**
        * Builds the full URL with query parameters.
        */
-      buildRequestUrl(path14, query) {
-        const url = new URL(`${__classPrivateFieldGet(this, _Client_prefixUrl, "f")}${path14}`);
+      buildRequestUrl(path15, query) {
+        const url = new URL(`${__classPrivateFieldGet(this, _Client_prefixUrl, "f")}${path15}`);
         if (query) {
           for (const [key, value] of Object.entries(query)) {
             if (value !== void 0 && value !== null) {
@@ -17582,14 +17582,14 @@ var require_Client = __commonJS({
        * Executes the request with retry logic.
        */
       async executeWithRetry(args, execute) {
-        const { url, method, path: path14, headers, body } = args;
+        const { url, method, path: path15, headers, body } = args;
         let attempt = 0;
         while (true) {
           try {
             return await execute({
               url,
               method,
-              path: path14,
+              path: path15,
               headers,
               body
             });
@@ -17602,7 +17602,7 @@ var require_Client = __commonJS({
               const delayMs = this.calculateRetryDelay(error, attempt);
               this.log(logging_1.LogLevel.INFO, "retrying request", {
                 method,
-                path: path14,
+                path: path15,
                 attempt: attempt + 1,
                 delayMs
               });
@@ -17618,7 +17618,7 @@ var require_Client = __commonJS({
        * Executes a single HTTP request (no retry).
        */
       async executeSingleRequest(args) {
-        const { url, method, path: path14, headers, body } = args;
+        const { url, method, path: path15, headers, body } = args;
         const response = await errors_1.RequestTimeoutError.rejectAfterTimeout(__classPrivateFieldGet(this, _Client_fetch, "f").call(this, url.toString(), {
           method: method.toUpperCase(),
           headers,
@@ -17632,7 +17632,7 @@ var require_Client = __commonJS({
         const responseJson = JSON.parse(responseText);
         this.log(logging_1.LogLevel.INFO, "request success", {
           method,
-          path: path14,
+          path: path15,
           ...this.extractRequestId(responseJson)
         });
         return responseJson;
@@ -18298,7 +18298,7 @@ var require_src = __commonJS({
 });
 
 // plugins/arima/scripts/src/cli/run-agent-cli.ts
-import path13 from "node:path";
+import path14 from "node:path";
 import { parseArgs } from "node:util";
 
 // plugins/arima/scripts/src/config.ts
@@ -18634,6 +18634,44 @@ function validateProject(projectDir, root = pluginRoot()) {
 }
 var REQUIRED_HARD_STOPS = HARD_STOPS;
 
+// plugins/arima/scripts/src/kinds.ts
+var UNIT_KINDS = [
+  "develop",
+  "skeleton",
+  "review",
+  "adr-review",
+  "conventions",
+  "rc-freeze",
+  "deprecation-check",
+  "debt-review",
+  "qa",
+  "test-write",
+  "e2e-skeleton",
+  "regression",
+  "perf-test",
+  "a11y-test",
+  "design-qa",
+  "author",
+  "release-docs",
+  "env-plan",
+  "preview-diagnose",
+  "security-scan",
+  "scan-triage",
+  "verify-finding",
+  "screen",
+  "deploy-staging",
+  "hotfix",
+  "fix",
+  "triage",
+  "runbook",
+  "uat-script",
+  "digest",
+  "meeting",
+  "gate-pack",
+  "retro"
+];
+var isUnitKind = (value) => UNIT_KINDS.includes(value);
+
 // plugins/arima/scripts/src/roles.ts
 var ROLES = [
   "orchestrator",
@@ -18680,8 +18718,10 @@ function allowedTools(role, scriptsDir) {
     case "orchestrator":
       return [
         ...read,
-        "Write(./.arima/**)",
-        "Edit(./.arima/**)",
+        // G-06: events, ledger, mirror, runs, items and findings are written by scripts only.
+        OUTBOX,
+        "Write(./.arima/overrides/**)",
+        "Edit(./.arima/overrides/**)",
         "Write(./docs/spec/**)",
         "Edit(./docs/spec/**)",
         ...GIT_READ,
@@ -19092,8 +19132,8 @@ function createNotionPortFromToken(token) {
 
 // plugins/arima/scripts/src/run-agent.ts
 import { execFileSync as execFileSync2, spawn } from "node:child_process";
-import { existsSync as existsSync7, mkdirSync as mkdirSync6, readFileSync as readFileSync8, writeFileSync as writeFileSync4 } from "node:fs";
-import path12 from "node:path";
+import { existsSync as existsSync7, mkdirSync as mkdirSync7, readFileSync as readFileSync8, writeFileSync as writeFileSync4 } from "node:fs";
+import path13 from "node:path";
 
 // plugins/arima/scripts/src/events.ts
 import path6 from "node:path";
@@ -19505,8 +19545,8 @@ function remotePauseFlag(o) {
   return gitOk(r.repo, ["cat-file", "-e", `${ref}:PAUSE`]);
 }
 
-// plugins/arima/scripts/src/runid.ts
-import { existsSync as existsSync6, mkdirSync as mkdirSync5, readFileSync as readFileSync7 } from "node:fs";
+// plugins/arima/scripts/src/report-collector.ts
+import { mkdirSync as mkdirSync5 } from "node:fs";
 import path11 from "node:path";
 
 // plugins/arima/scripts/src/lib/atomic-file.ts
@@ -19535,13 +19575,194 @@ function writeFileAtomic(file, content) {
   }
 }
 
+// plugins/arima/scripts/src/report.ts
+var CRITERIA_REQUIRED = [
+  ["developer", "develop"],
+  ["qa", "qa"]
+];
+var CRITERIA_OPTIONAL = ["skeleton", "fix", "hotfix", "regression"];
+var VERDICT_REQUIRED = {
+  review: ["approve", "changes_requested"],
+  "adr-review": ["approve", "changes_requested"],
+  qa: ["pass", "fail"],
+  regression: ["pass", "fail"],
+  "perf-test": ["pass", "fail"],
+  "a11y-test": ["pass", "fail"],
+  "design-qa": ["pass", "fail"],
+  "security-scan": ["pass", "fail"]
+};
+var VERDICT_OPTIONAL = {
+  meeting: ["go", "no_go", "approve", "changes_requested"],
+  "gate-pack": ["go", "no_go"],
+  "verify-finding": ["pass", "fail"],
+  "scan-triage": ["pass", "fail"],
+  screen: ["pass", "fail"],
+  "preview-diagnose": ["pass", "fail"],
+  "uat-script": ["pass", "fail"]
+};
+function checkReport(report, ctx) {
+  const errors = [];
+  let evidenceMissing = false;
+  const validate = getValidator("agent-report");
+  if (!validate(report)) {
+    for (const e of validate.errors ?? []) {
+      errors.push(describeError(e));
+      if (e.instancePath.includes("criteria_map") && e.keyword === "minItems")
+        evidenceMissing = true;
+    }
+    return { ok: false, errors, evidenceMissing };
+  }
+  const r = report;
+  if (r.role !== ctx.role)
+    errors.push(`role: report says "${r.role}" but the unit's role is "${ctx.role}"`);
+  const needsCriteria = CRITERIA_REQUIRED.some(
+    ([role, kind]) => role === ctx.role && kind === ctx.kind
+  );
+  const mayHaveCriteria = needsCriteria || CRITERIA_OPTIONAL.includes(ctx.kind);
+  if (needsCriteria && (r.criteria_map === void 0 || r.criteria_map.length === 0)) {
+    errors.push(`criteria_map: required for ${ctx.role} ${ctx.kind} units`);
+  }
+  if (!mayHaveCriteria && r.criteria_map !== void 0) {
+    errors.push(`criteria_map: not allowed for ${ctx.kind} units`);
+  }
+  const required = VERDICT_REQUIRED[ctx.kind];
+  const optional = VERDICT_OPTIONAL[ctx.kind];
+  if (required !== void 0 && r.verdict === void 0 && r.status === "done") {
+    errors.push(`verdict: required for ${ctx.kind} units`);
+  }
+  if (required === void 0 && optional === void 0 && r.verdict !== void 0) {
+    errors.push(`verdict: not allowed for ${ctx.kind} units`);
+  }
+  const allowed = required ?? optional;
+  if (allowed !== void 0 && r.verdict !== void 0 && !allowed.includes(r.verdict.result)) {
+    errors.push(
+      `verdict.result: "${r.verdict.result}" is not valid for ${ctx.kind} (use ${allowed.join(", ")})`
+    );
+  }
+  for (const [i, f] of (r.findings ?? []).entries()) {
+    if (typeof f["severity"] === "string" && !severityFits(ctx, f["severity"])) {
+      errors.push(
+        `findings.${i}.severity: "${f["severity"]}" does not fit ${ctx.role} ${ctx.kind} units`
+      );
+    }
+  }
+  const questions = r.questions ?? [];
+  const blockingOpen = questions.some((q) => q.blocking);
+  if (r.status === "done" && blockingOpen) {
+    errors.push("status: done is not allowed while a blocking question is unanswered");
+  }
+  if (r.status === "blocked" && !questions.some((q) => q.blocking)) {
+    errors.push("status: blocked needs at least one blocking question");
+  }
+  for (const a of r.assumptions ?? []) {
+    if (a.basis.trim() === "") errors.push("assumptions: every assumption needs a basis");
+  }
+  return { ok: errors.length === 0, errors, evidenceMissing };
+}
+var REVIEW_SEVERITY = ["blocker", "major", "minor", "nit"];
+var SECURITY_SEVERITY = ["critical", "high", "medium", "low"];
+var BUG_SEVERITY = ["S1", "S2", "S3", "S4"];
+function severityFits(ctx, severity) {
+  if (ctx.role === "security" && ["security-scan", "scan-triage", "verify-finding"].includes(ctx.kind))
+    return SECURITY_SEVERITY.includes(severity);
+  if (ctx.kind === "review" || ctx.kind === "adr-review") return REVIEW_SEVERITY.includes(severity);
+  if (ctx.kind === "qa" || ctx.kind === "regression" || ctx.kind === "design-qa")
+    return BUG_SEVERITY.includes(severity);
+  return true;
+}
+
+// plugins/arima/scripts/src/report-collector.ts
+function extractReport(message) {
+  const blocks = [];
+  let open;
+  for (const line of message.replaceAll("\r\n", "\n").split("\n")) {
+    if (open) {
+      const close = /^(`{3,})\s*$/.exec(line);
+      if (close && close[1].length >= open.len) {
+        blocks.push({ info: open.info, body: open.lines.join("\n"), closed: true });
+        open = void 0;
+      } else open.lines.push(line);
+      continue;
+    }
+    const start = /^(`{3,})(.*)$/.exec(line);
+    if (start)
+      open = { len: start[1].length, info: start[2].trim(), lines: [] };
+  }
+  if (open) blocks.push({ info: open.info, body: open.lines.join("\n"), closed: false });
+  const reports = blocks.filter((b) => b.info === "arima-report");
+  if (reports.length === 0) return { error: "the final message has no arima-report block" };
+  if (reports.length > 1)
+    return {
+      error: `the final message has ${reports.length} arima-report blocks; exactly one is required`
+    };
+  const only = reports[0];
+  if (!only.closed) return { error: "the arima-report block is never closed" };
+  return { json: only.body };
+}
+var reportFile = (projectDir, runId) => path11.join(projectDir, ".arima", "runs", `${runId}.report.json`);
+async function collectReport(i) {
+  const reject = async (reason, errors2) => {
+    await appendEvent(i.projectDir, {
+      type: "report.rejected",
+      actor: "system",
+      run_id: i.runId,
+      ...i.item !== "none" ? { item: i.item } : {},
+      data: { role: i.role, kind: i.kind, reason, errors: errors2.slice(0, 10) }
+    });
+    return { ok: false, reason, errors: errors2 };
+  };
+  if (i.message === void 0 || i.message.trim() === "")
+    return reject("report_invalid", ["the run produced no final message"]);
+  if (findSecrets(i.message).length > 0)
+    return reject("secret_in_output", [
+      "the final message looks like it contains a secret; it was discarded"
+    ]);
+  const ex = extractReport(i.message);
+  if (ex.json === void 0) return reject("report_invalid", [ex.error ?? "no report"]);
+  let parsed;
+  try {
+    parsed = JSON.parse(ex.json);
+  } catch {
+    return reject("report_invalid", ["the arima-report block is not valid JSON"]);
+  }
+  const check = checkReport(parsed, { role: i.role, kind: i.kind });
+  if (!check.ok)
+    return reject(check.evidenceMissing ? "evidence_missing" : "report_invalid", check.errors);
+  const report = parsed;
+  const errors = [];
+  if (report.run_id !== i.runId)
+    errors.push(`run_id: report says "${report.run_id}" but this is run ${i.runId}`);
+  if (report.item !== i.item)
+    errors.push(`item: report says "${report.item}" but the unit's item is "${i.item}"`);
+  if (errors.length > 0) return reject("report_invalid", errors);
+  const file = reportFile(i.projectDir, i.runId);
+  mkdirSync5(path11.dirname(file), { recursive: true });
+  writeFileAtomic(file, `${JSON.stringify(report, null, 2)}
+`);
+  await appendEvent(i.projectDir, {
+    type: "report.accepted",
+    actor: "system",
+    run_id: i.runId,
+    ...i.item !== "none" ? { item: i.item } : {},
+    data: {
+      role: i.role,
+      kind: i.kind,
+      status: report.status,
+      ...report.verdict ? { verdict: report.verdict.result } : {}
+    }
+  });
+  return { ok: true, report, errors: [] };
+}
+
 // plugins/arima/scripts/src/runid.ts
+import { existsSync as existsSync6, mkdirSync as mkdirSync6, readFileSync as readFileSync7 } from "node:fs";
+import path12 from "node:path";
 var pad = (n, w = 2) => String(n).padStart(w, "0");
 async function issueRunId(projectDir, now = /* @__PURE__ */ new Date()) {
   const day = `${now.getFullYear()}${pad(now.getMonth() + 1)}${pad(now.getDate())}`;
   const hhmm = `${pad(now.getHours())}${pad(now.getMinutes())}`;
-  const file = path11.join(projectDir, ".arima", "state", "run-seq.json");
-  mkdirSync5(path11.dirname(file), { recursive: true });
+  const file = path12.join(projectDir, ".arima", "state", "run-seq.json");
+  mkdirSync6(path12.dirname(file), { recursive: true });
   return withFileLock(`${file}.lock`, () => {
     let state = { day, last: 0 };
     if (existsSync6(file)) {
@@ -19747,8 +19968,8 @@ function exitFor(result) {
   }
 }
 function writeRunReport(projectDir, runId, body) {
-  const dir = path12.join(projectDir, ".arima", "runs");
-  mkdirSync6(dir, { recursive: true });
+  const dir = path13.join(projectDir, ".arima", "runs");
+  mkdirSync7(dir, { recursive: true });
   let text = JSON.stringify(body, null, 2);
   if (findSecrets(text).length > 0) {
     text = JSON.stringify(
@@ -19757,7 +19978,7 @@ function writeRunReport(projectDir, runId, body) {
       2
     );
   }
-  writeFileSync4(path12.join(dir, `${runId}.json`), `${text}
+  writeFileSync4(path13.join(dir, `${runId}.json`), `${text}
 `, "utf8");
 }
 var localDay = (d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
@@ -19812,10 +20033,10 @@ async function runAgent(o) {
   }
   if (!existsSync7(o.promptFile)) throw new Error(`prompt file not found: ${o.promptFile}`);
   const prompt = readFileSync8(o.promptFile, "utf8");
-  const cwd = path12.resolve(o.cwd ?? o.projectDir);
+  const cwd = path13.resolve(o.cwd ?? o.projectDir);
   const root = pluginRoot();
-  const scriptsGlob = path12.join(root, "scripts", "dist").replace(/\\/g, "/");
-  const agentName = o.agent ?? (existsSync7(path12.join(root, "agents", `${o.role}.md`)) ? `arima:${o.role}` : void 0);
+  const scriptsGlob = path13.join(root, "scripts", "dist").replace(/\\/g, "/");
+  const agentName = o.agent ?? (existsSync7(path13.join(root, "agents", `${o.role}.md`)) ? `arima:${o.role}` : void 0);
   const now = o.now ?? /* @__PURE__ */ new Date();
   await assertMayDispatch(o, now);
   const runId = await issueRunId(o.projectDir, now);
@@ -19834,7 +20055,7 @@ async function runAgent(o) {
     phase: o.phase,
     runId,
     projectKey: o.config.projectKey,
-    projectDir: path12.resolve(o.projectDir),
+    projectDir: path13.resolve(o.projectDir),
     config: o.config
   });
   Object.assign(env, o.extraEnv ?? {});
@@ -19884,6 +20105,33 @@ async function runAgent(o) {
       { ...ctx, result: paused ? "paused" : "error" }
     );
   }
+  let collected;
+  if (row.result === "paused") row.reason = "usage_limit";
+  else if (row.subtype === "error_max_turns") row.reason = "cap_turns";
+  else if (row.subtype === "error_max_budget_usd") row.reason = "cap_budget";
+  else if (o.kind !== void 0 && row.result === "pass") {
+    try {
+      collected = await collectReport({
+        projectDir: o.projectDir,
+        runId,
+        role: o.role,
+        kind: o.kind,
+        item: o.item,
+        message: parsed?.result
+      });
+    } catch (e) {
+      collected = {
+        ok: false,
+        reason: "report_invalid",
+        errors: [e instanceof Error ? e.message : String(e)]
+      };
+    }
+    if (!collected.ok) {
+      row.result = "fail";
+      if (collected.reason) row.reason = collected.reason;
+    } else if (collected.report?.status === "failed") row.result = "fail";
+    else if (collected.report?.status !== "done") row.result = "blocked";
+  }
   await appendLedgerRow(o.projectDir, row);
   writeRunReport(o.projectDir, runId, {
     run_id: runId,
@@ -19894,6 +20142,8 @@ async function runAgent(o) {
     result_text: parsed?.result,
     errors: parsed?.errors,
     terminal_reason: parsed?.terminal_reason,
+    reason: row.reason,
+    report_errors: collected?.ok === false ? collected.errors : void 0,
     stderr_tail: spawned.stderr.slice(-2e3)
   });
   if (row.result === "paused") {
@@ -19926,6 +20176,8 @@ async function runAgent(o) {
     exitCode: exitFor(row.result)
   };
   if (row.session_id !== void 0) outcome.sessionId = row.session_id;
+  if (row.reason !== void 0) outcome.reason = row.reason;
+  if (collected?.report !== void 0) outcome.report = collected.report;
   return outcome;
 }
 function agentConfigFrom(arima, role) {
@@ -19957,6 +20209,7 @@ function agentConfigFrom(arima, role) {
 var USAGE = `Usage: arima-run-agent --role <role> --item <ID|none> --budget <usd> --max-turns <n> --prompt-file <file>
          [--cwd <worktree>] [--project <dir>] [--phase <0-8>] [--attempt <n>] [--milestone MS-NN]
          [--rework-reason failed_review|failed_qa|vetoed|bug|other] [--session <id>] [--agent <name>]
+         [--kind <unit kind>]   (the final message must then end in a valid arima-report block)
 Roles: ${ROLES.join(" ")}
 Exit codes: 0 pass, 1 failed/error, 2 usage or config, 3 blocked (turn or budget cap), 12 kill switch is on, 13 budget used up, 75 paused (usage limit)`;
 var REWORK = ["failed_review", "failed_qa", "vetoed", "bug", "other"];
@@ -19988,7 +20241,8 @@ async function runAgentCli(argv, io, deps = {}) {
         milestone: { type: "string" },
         "rework-reason": { type: "string" },
         session: { type: "string" },
-        agent: { type: "string" }
+        agent: { type: "string" },
+        kind: { type: "string" }
       }
     }).values;
   } catch (e) {
@@ -20005,6 +20259,7 @@ ${USAGE}
   const phase = values["phase"] === void 0 ? 4 : Number(values["phase"]);
   const attempt = values["attempt"] === void 0 ? 1 : Number(values["attempt"]);
   const rework = values["rework-reason"];
+  const kind = values["kind"];
   const problems = [];
   if (role === void 0 || !isRole(role))
     problems.push(`--role must be one of: ${ROLES.join(", ")}`);
@@ -20017,6 +20272,8 @@ ${USAGE}
   if (!Number.isInteger(phase) || phase < 0 || phase > 8) problems.push("--phase must be 0-8");
   if (!Number.isInteger(attempt) || attempt < 1)
     problems.push("--attempt must be a positive integer");
+  if (kind !== void 0 && !isUnitKind(kind))
+    problems.push(`--kind must be one of: ${UNIT_KINDS.join(", ")}`);
   if (rework !== void 0 && !REWORK.includes(rework)) {
     problems.push(`--rework-reason must be one of: ${REWORK.join(", ")}`);
   }
@@ -20026,7 +20283,7 @@ ${USAGE}
 `);
     return EXIT.usage;
   }
-  const projectDir = path13.resolve(io.cwd, values["project"] ?? ".");
+  const projectDir = path14.resolve(io.cwd, values["project"] ?? ".");
   const config = validateProject(projectDir);
   if (!config.ok || config.arima === void 0) {
     for (const e of config.errors) io.err(`${e.file}:${e.line}: ${e.message}
@@ -20057,23 +20314,25 @@ ${USAGE}
       item,
       budgetUsd: budget,
       maxTurns,
-      promptFile: path13.resolve(io.cwd, promptFile),
+      promptFile: path14.resolve(io.cwd, promptFile),
       phase,
       attempt,
       config: agentConfigFrom(config.arima, role),
       killSwitch,
       extraEnv: passthroughEnv(),
-      ...values["cwd"] !== void 0 ? { cwd: path13.resolve(io.cwd, values["cwd"]) } : {},
+      ...values["cwd"] !== void 0 ? { cwd: path14.resolve(io.cwd, values["cwd"]) } : {},
       ...values["milestone"] !== void 0 ? { milestone: values["milestone"] } : {},
       ...rework !== void 0 ? { reworkReason: rework } : {},
       ...values["session"] !== void 0 ? { sessionId: values["session"] } : {},
-      ...values["agent"] !== void 0 ? { agent: values["agent"] } : {}
+      ...values["agent"] !== void 0 ? { agent: values["agent"] } : {},
+      ...kind !== void 0 && isUnitKind(kind) ? { kind } : {}
     });
     io.out(
       `${JSON.stringify({
         run_id: outcome.runId,
         result: outcome.result,
         subtype: outcome.subtype,
+        ...outcome.reason !== void 0 ? { reason: outcome.reason } : {},
         cost_usd: outcome.costUsd,
         ...outcome.sessionId !== void 0 ? { session_id: outcome.sessionId } : {}
       })}

@@ -82,6 +82,31 @@ switch (mode) {
   case 'secret':
     console.log(JSON.stringify({ ...base, result: `leaked ntn_${'a'.repeat(30)}` }));
     break;
+  case 'message': {
+    // Final message from a file; __RUN_ID__ becomes this run's id (the wrapper sets ARIMA_RUN_ID).
+    base.result = readFileSync(process.env.STUB_MESSAGE_FILE, 'utf8').replaceAll(
+      '__RUN_ID__',
+      process.env.ARIMA_RUN_ID ?? '',
+    );
+    console.log(JSON.stringify(base));
+    break;
+  }
+  case 'sequence': {
+    // Call n answers with step n of a JSON array [{message, cost?}]; the counter is a file.
+    const steps = JSON.parse(readFileSync(process.env.STUB_SEQ_FILE, 'utf8'));
+    let n;
+    try {
+      n = Number(readFileSync(process.env.STUB_SEQ_COUNTER, 'utf8'));
+    } catch {
+      n = 0;
+    }
+    writeFileSync(process.env.STUB_SEQ_COUNTER, String(n + 1));
+    const step = steps[Math.min(n, steps.length - 1)];
+    base.result = step.message.replaceAll('__RUN_ID__', process.env.ARIMA_RUN_ID ?? '');
+    base.total_cost_usd = step.cost ?? 0.25;
+    console.log(JSON.stringify(base));
+    break;
+  }
   case 'hang':
     setInterval(() => undefined, 1000);
     break;

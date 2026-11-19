@@ -68,8 +68,10 @@ export function allowedTools(role: Role, scriptsDir: string): string[] {
     case 'orchestrator':
       return [
         ...read,
-        'Write(./.arima/**)',
-        'Edit(./.arima/**)',
+        // G-06: events, ledger, mirror, runs, items and findings are written by scripts only.
+        OUTBOX,
+        'Write(./.arima/overrides/**)',
+        'Edit(./.arima/overrides/**)',
         'Write(./docs/spec/**)',
         'Edit(./docs/spec/**)',
         ...GIT_READ,
