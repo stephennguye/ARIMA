@@ -158,6 +158,10 @@
       "additionalProperties": false,
       "required": ["staging", "production"],
       "properties": {
+        "max_previews": { "type": "integer", "minimum": 1, "maximum": 10, "default": 3, "description": "Preview projects running at once; the oldest is removed first (arima-env, WP-213)." },
+        "compose_file": { "type": "string", "pattern": "^(?!/)(?!.*(^|/)\\.\\.(/|$))[A-Za-z0-9_./-]+$", "default": "infra/compose.yaml", "description": "Compose file of the app, relative to the repo; used by arima-env for staging and preview." },
+        "preview_ports": { "type": "array", "items": { "type": "integer", "minimum": 1024, "maximum": 65535 }, "minItems": 2, "maxItems": 2, "description": "First and last local port a preview may use. Default [4100, 4199]." },
+        "backup_image": { "type": "string", "minLength": 1, "description": "Image with tar and gzip used by arima-env backup and restore-test. Default alpine:3.20." },
         "staging": { "$ref": "#/$defs/environment" },
         "production": {
           "allOf": [
@@ -199,7 +203,9 @@
       "required": ["url", "deploy"],
       "properties": {
         "url": { "type": "string" },
-        "deploy": { "enum": ["auto", "gated"] }
+        "deploy": { "enum": ["auto", "gated"] },
+        "compose_project": { "type": "string", "pattern": "^[a-z0-9][a-z0-9_-]*$", "description": "Must equal <key>-<environment> (arima-env derives it and refuses a different name)." },
+        "smoke_path": { "type": "string", "pattern": "^/[A-Za-z0-9_./-]*$", "default": "/healthz", "description": "Path the smoke test requests after a deploy." }
       }
     }
   }

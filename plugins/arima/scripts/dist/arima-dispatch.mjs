@@ -1765,7 +1765,7 @@ var require_code2 = __commonJS({
       return allSchemaProperties(schemaMap).filter((p) => !(0, util_1.alwaysValidSchema)(it, schemaMap[p]));
     }
     exports.schemaProperties = schemaProperties;
-    function callValidateCode({ schemaCode, data, it: { gen, topSchemaRef, schemaPath, errorPath }, it }, func, context, passSchema) {
+    function callValidateCode({ schemaCode, data, it: { gen, topSchemaRef, schemaPath, errorPath }, it }, func, context2, passSchema) {
       const dataAndSchema = passSchema ? (0, codegen_1._)`${schemaCode}, ${data}, ${topSchemaRef}${schemaPath}` : data;
       const valCxt = [
         [names_1.default.instancePath, (0, codegen_1.strConcat)(names_1.default.instancePath, errorPath)],
@@ -1776,7 +1776,7 @@ var require_code2 = __commonJS({
       if (it.opts.dynamicRef)
         valCxt.push([names_1.default.dynamicAnchors, names_1.default.dynamicAnchors]);
       const args = (0, codegen_1._)`${dataAndSchema}, ${gen.object(...valCxt)}`;
-      return context !== codegen_1.nil ? (0, codegen_1._)`${func}.call(${context}, ${args})` : (0, codegen_1._)`${func}(${args})`;
+      return context2 !== codegen_1.nil ? (0, codegen_1._)`${func}.call(${context2}, ${args})` : (0, codegen_1._)`${func}(${args})`;
     }
     exports.callValidateCode = callValidateCode;
     var newRegExp = (0, codegen_1._)`new RegExp`;
@@ -3193,8 +3193,8 @@ var require_utils = __commonJS({
       }
       if (bestLength < 2) return hextets.join(":");
       const head = hextets.slice(0, bestStart).join(":");
-      const tail = hextets.slice(bestStart + bestLength).join(":");
-      return head + "::" + tail;
+      const tail2 = hextets.slice(bestStart + bestLength).join(":");
+      return head + "::" + tail2;
     }
     function normalizeIPv6Address(input) {
       const compression = input.indexOf("::");
@@ -3264,8 +3264,8 @@ var require_utils = __commonJS({
       }
       return ind;
     }
-    function removeDotSegments(path32) {
-      let input = path32;
+    function removeDotSegments(path34) {
+      let input = path34;
       const output = [];
       let nextSlash = -1;
       let len = 0;
@@ -3339,11 +3339,11 @@ var require_utils = __commonJS({
       }
       return output.join("");
     }
-    function removeDotSegmentsRelative(path32) {
-      if (path32 === "" || path32[0] === "/") {
-        return removeDotSegments(path32);
+    function removeDotSegmentsRelative(path34) {
+      if (path34 === "" || path34[0] === "/") {
+        return removeDotSegments(path34);
       }
-      const segments = path32.split("/");
+      const segments = path34.split("/");
       const last = segments.length - 1;
       const output = [];
       let trailingDirectory = false;
@@ -3706,8 +3706,8 @@ var require_schemes = __commonJS({
       }
       if (wsComponent.resourceName) {
         const queryIndex = wsComponent.resourceName.indexOf("?");
-        const path32 = queryIndex === -1 ? wsComponent.resourceName : wsComponent.resourceName.slice(0, queryIndex);
-        wsComponent.path = path32 && path32 !== "/" ? path32 : void 0;
+        const path34 = queryIndex === -1 ? wsComponent.resourceName : wsComponent.resourceName.slice(0, queryIndex);
+        wsComponent.path = path34 && path34 !== "/" ? path34 : void 0;
         wsComponent.query = queryIndex === -1 ? void 0 : wsComponent.resourceName.slice(queryIndex + 1);
         wsComponent.resourceName = void 0;
       }
@@ -3873,7 +3873,7 @@ var require_fast_uri = __commonJS({
         normalizeString(uri, options);
       } else if (typeof uri === "object") {
         uri = /** @type {T} */
-        parse2(serialize(uri, options), options);
+        parse3(serialize(uri, options), options);
       }
       return uri;
     }
@@ -3916,8 +3916,8 @@ var require_fast_uri = __commonJS({
     function resolveComponent(base, relative, options, skipNormalization) {
       const target = {};
       if (!skipNormalization) {
-        base = parse2(serialize(base, options), options);
-        relative = parse2(serialize(relative, options), options);
+        base = parse3(serialize(base, options), options);
+        relative = parse3(serialize(relative, options), options);
       }
       options = options || {};
       if (!options.tolerant && relative.scheme) {
@@ -4235,7 +4235,7 @@ var require_fast_uri = __commonJS({
       }
       return { parsed, malformedAuthorityOrPort, malformedPercentEncoding, malformedSchemeSpecific, malformedHost, malformedScheme };
     }
-    function parse2(uri, opts) {
+    function parse3(uri, opts) {
       return parseWithStatus(uri, opts).parsed;
     }
     function normalizeString(uri, opts) {
@@ -4272,7 +4272,7 @@ var require_fast_uri = __commonJS({
       resolveComponent,
       equal,
       serialize,
-      parse: parse2
+      parse: parse3
     };
     module.exports = fastUri;
     module.exports.default = fastUri;
@@ -8158,17 +8158,17 @@ var require_visit = __commonJS({
     visit.BREAK = BREAK;
     visit.SKIP = SKIP;
     visit.REMOVE = REMOVE;
-    function visit_(key, node, visitor, path32) {
-      const ctrl = callVisitor(key, node, visitor, path32);
+    function visit_(key, node, visitor, path34) {
+      const ctrl = callVisitor(key, node, visitor, path34);
       if (identity.isNode(ctrl) || identity.isPair(ctrl)) {
-        replaceNode(key, path32, ctrl);
-        return visit_(key, ctrl, visitor, path32);
+        replaceNode(key, path34, ctrl);
+        return visit_(key, ctrl, visitor, path34);
       }
       if (typeof ctrl !== "symbol") {
         if (identity.isCollection(node)) {
-          path32 = Object.freeze(path32.concat(node));
+          path34 = Object.freeze(path34.concat(node));
           for (let i = 0; i < node.items.length; ++i) {
-            const ci = visit_(i, node.items[i], visitor, path32);
+            const ci = visit_(i, node.items[i], visitor, path34);
             if (typeof ci === "number")
               i = ci - 1;
             else if (ci === BREAK)
@@ -8179,13 +8179,13 @@ var require_visit = __commonJS({
             }
           }
         } else if (identity.isPair(node)) {
-          path32 = Object.freeze(path32.concat(node));
-          const ck = visit_("key", node.key, visitor, path32);
+          path34 = Object.freeze(path34.concat(node));
+          const ck = visit_("key", node.key, visitor, path34);
           if (ck === BREAK)
             return BREAK;
           else if (ck === REMOVE)
             node.key = null;
-          const cv = visit_("value", node.value, visitor, path32);
+          const cv = visit_("value", node.value, visitor, path34);
           if (cv === BREAK)
             return BREAK;
           else if (cv === REMOVE)
@@ -8206,17 +8206,17 @@ var require_visit = __commonJS({
     visitAsync.BREAK = BREAK;
     visitAsync.SKIP = SKIP;
     visitAsync.REMOVE = REMOVE;
-    async function visitAsync_(key, node, visitor, path32) {
-      const ctrl = await callVisitor(key, node, visitor, path32);
+    async function visitAsync_(key, node, visitor, path34) {
+      const ctrl = await callVisitor(key, node, visitor, path34);
       if (identity.isNode(ctrl) || identity.isPair(ctrl)) {
-        replaceNode(key, path32, ctrl);
-        return visitAsync_(key, ctrl, visitor, path32);
+        replaceNode(key, path34, ctrl);
+        return visitAsync_(key, ctrl, visitor, path34);
       }
       if (typeof ctrl !== "symbol") {
         if (identity.isCollection(node)) {
-          path32 = Object.freeze(path32.concat(node));
+          path34 = Object.freeze(path34.concat(node));
           for (let i = 0; i < node.items.length; ++i) {
-            const ci = await visitAsync_(i, node.items[i], visitor, path32);
+            const ci = await visitAsync_(i, node.items[i], visitor, path34);
             if (typeof ci === "number")
               i = ci - 1;
             else if (ci === BREAK)
@@ -8227,13 +8227,13 @@ var require_visit = __commonJS({
             }
           }
         } else if (identity.isPair(node)) {
-          path32 = Object.freeze(path32.concat(node));
-          const ck = await visitAsync_("key", node.key, visitor, path32);
+          path34 = Object.freeze(path34.concat(node));
+          const ck = await visitAsync_("key", node.key, visitor, path34);
           if (ck === BREAK)
             return BREAK;
           else if (ck === REMOVE)
             node.key = null;
-          const cv = await visitAsync_("value", node.value, visitor, path32);
+          const cv = await visitAsync_("value", node.value, visitor, path34);
           if (cv === BREAK)
             return BREAK;
           else if (cv === REMOVE)
@@ -8260,23 +8260,23 @@ var require_visit = __commonJS({
       }
       return visitor;
     }
-    function callVisitor(key, node, visitor, path32) {
+    function callVisitor(key, node, visitor, path34) {
       if (typeof visitor === "function")
-        return visitor(key, node, path32);
+        return visitor(key, node, path34);
       if (identity.isMap(node))
-        return visitor.Map?.(key, node, path32);
+        return visitor.Map?.(key, node, path34);
       if (identity.isSeq(node))
-        return visitor.Seq?.(key, node, path32);
+        return visitor.Seq?.(key, node, path34);
       if (identity.isPair(node))
-        return visitor.Pair?.(key, node, path32);
+        return visitor.Pair?.(key, node, path34);
       if (identity.isScalar(node))
-        return visitor.Scalar?.(key, node, path32);
+        return visitor.Scalar?.(key, node, path34);
       if (identity.isAlias(node))
-        return visitor.Alias?.(key, node, path32);
+        return visitor.Alias?.(key, node, path34);
       return void 0;
     }
-    function replaceNode(key, path32, node) {
-      const parent = path32[path32.length - 1];
+    function replaceNode(key, path34, node) {
+      const parent = path34[path34.length - 1];
       if (identity.isCollection(parent)) {
         parent.items[key] = node;
       } else if (identity.isPair(parent)) {
@@ -8888,10 +8888,10 @@ var require_Collection = __commonJS({
     var createNode = require_createNode();
     var identity = require_identity();
     var Node = require_Node();
-    function collectionFromPath(schema, path32, value) {
+    function collectionFromPath(schema, path34, value) {
       let v = value;
-      for (let i = path32.length - 1; i >= 0; --i) {
-        const k = path32[i];
+      for (let i = path34.length - 1; i >= 0; --i) {
+        const k = path34[i];
         if (typeof k === "number" && Number.isInteger(k) && k >= 0) {
           const a = [];
           a[k] = v;
@@ -8910,7 +8910,7 @@ var require_Collection = __commonJS({
         sourceObjects: /* @__PURE__ */ new Map()
       });
     }
-    var isEmptyPath = (path32) => path32 == null || typeof path32 === "object" && !!path32[Symbol.iterator]().next().done;
+    var isEmptyPath = (path34) => path34 == null || typeof path34 === "object" && !!path34[Symbol.iterator]().next().done;
     var Collection = class extends Node.NodeBase {
       constructor(type, schema) {
         super(type);
@@ -8940,11 +8940,11 @@ var require_Collection = __commonJS({
        * be a Pair instance or a `{ key, value }` object, which may not have a key
        * that already exists in the map.
        */
-      addIn(path32, value) {
-        if (isEmptyPath(path32))
+      addIn(path34, value) {
+        if (isEmptyPath(path34))
           this.add(value);
         else {
-          const [key, ...rest] = path32;
+          const [key, ...rest] = path34;
           const node = this.get(key, true);
           if (identity.isCollection(node))
             node.addIn(rest, value);
@@ -8958,8 +8958,8 @@ var require_Collection = __commonJS({
        * Removes a value from the collection.
        * @returns `true` if the item was found and removed.
        */
-      deleteIn(path32) {
-        const [key, ...rest] = path32;
+      deleteIn(path34) {
+        const [key, ...rest] = path34;
         if (rest.length === 0)
           return this.delete(key);
         const node = this.get(key, true);
@@ -8973,8 +8973,8 @@ var require_Collection = __commonJS({
        * scalar values from their surrounding node; to disable set `keepScalar` to
        * `true` (collections are always returned intact).
        */
-      getIn(path32, keepScalar) {
-        const [key, ...rest] = path32;
+      getIn(path34, keepScalar) {
+        const [key, ...rest] = path34;
         const node = this.get(key, true);
         if (rest.length === 0)
           return !keepScalar && identity.isScalar(node) ? node.value : node;
@@ -8992,8 +8992,8 @@ var require_Collection = __commonJS({
       /**
        * Checks if the collection includes a value with the key `key`.
        */
-      hasIn(path32) {
-        const [key, ...rest] = path32;
+      hasIn(path34) {
+        const [key, ...rest] = path34;
         if (rest.length === 0)
           return this.has(key);
         const node = this.get(key, true);
@@ -9003,8 +9003,8 @@ var require_Collection = __commonJS({
        * Sets a value in this collection. For `!!set`, `value` needs to be a
        * boolean to add/remove the item from the set.
        */
-      setIn(path32, value) {
-        const [key, ...rest] = path32;
+      setIn(path34, value) {
+        const [key, ...rest] = path34;
         if (rest.length === 0) {
           this.set(key, value);
         } else {
@@ -11519,9 +11519,9 @@ var require_Document = __commonJS({
           this.contents.add(value);
       }
       /** Adds a value to the document. */
-      addIn(path32, value) {
+      addIn(path34, value) {
         if (assertCollection(this.contents))
-          this.contents.addIn(path32, value);
+          this.contents.addIn(path34, value);
       }
       /**
        * Create a new `Alias` node, ensuring that the target `node` has the required anchor.
@@ -11596,14 +11596,14 @@ var require_Document = __commonJS({
        * Removes a value from the document.
        * @returns `true` if the item was found and removed.
        */
-      deleteIn(path32) {
-        if (Collection.isEmptyPath(path32)) {
+      deleteIn(path34) {
+        if (Collection.isEmptyPath(path34)) {
           if (this.contents == null)
             return false;
           this.contents = null;
           return true;
         }
-        return assertCollection(this.contents) ? this.contents.deleteIn(path32) : false;
+        return assertCollection(this.contents) ? this.contents.deleteIn(path34) : false;
       }
       /**
        * Returns item at `key`, or `undefined` if not found. By default unwraps
@@ -11618,10 +11618,10 @@ var require_Document = __commonJS({
        * scalar values from their surrounding node; to disable set `keepScalar` to
        * `true` (collections are always returned intact).
        */
-      getIn(path32, keepScalar) {
-        if (Collection.isEmptyPath(path32))
+      getIn(path34, keepScalar) {
+        if (Collection.isEmptyPath(path34))
           return !keepScalar && identity.isScalar(this.contents) ? this.contents.value : this.contents;
-        return identity.isCollection(this.contents) ? this.contents.getIn(path32, keepScalar) : void 0;
+        return identity.isCollection(this.contents) ? this.contents.getIn(path34, keepScalar) : void 0;
       }
       /**
        * Checks if the document includes a value with the key `key`.
@@ -11632,10 +11632,10 @@ var require_Document = __commonJS({
       /**
        * Checks if the document includes a value at `path`.
        */
-      hasIn(path32) {
-        if (Collection.isEmptyPath(path32))
+      hasIn(path34) {
+        if (Collection.isEmptyPath(path34))
           return this.contents !== void 0;
-        return identity.isCollection(this.contents) ? this.contents.hasIn(path32) : false;
+        return identity.isCollection(this.contents) ? this.contents.hasIn(path34) : false;
       }
       /**
        * Sets a value in this document. For `!!set`, `value` needs to be a
@@ -11652,13 +11652,13 @@ var require_Document = __commonJS({
        * Sets a value in this document. For `!!set`, `value` needs to be a
        * boolean to add/remove the item from the set.
        */
-      setIn(path32, value) {
-        if (Collection.isEmptyPath(path32)) {
+      setIn(path34, value) {
+        if (Collection.isEmptyPath(path34)) {
           this.contents = value;
         } else if (this.contents == null) {
-          this.contents = Collection.collectionFromPath(this.schema, Array.from(path32), value);
+          this.contents = Collection.collectionFromPath(this.schema, Array.from(path34), value);
         } else if (assertCollection(this.contents)) {
-          this.contents.setIn(path32, value);
+          this.contents.setIn(path34, value);
         }
       }
       /**
@@ -13386,15 +13386,15 @@ var require_cst_scalar = __commonJS({
       }
       return null;
     }
-    function createScalarToken(value, context) {
-      const { implicitKey = false, indent, inFlow = false, offset = -1, type = "PLAIN" } = context;
+    function createScalarToken(value, context2) {
+      const { implicitKey = false, indent, inFlow = false, offset = -1, type = "PLAIN" } = context2;
       const source = stringifyString.stringifyString({ type, value }, {
         implicitKey,
         indent: indent > 0 ? " ".repeat(indent) : "",
         inFlow,
         options: { blockQuote: true, lineWidth: -1 }
       });
-      const end = context.end ?? [
+      const end = context2.end ?? [
         { type: "newline", offset: -1, indent, source: "\n" }
       ];
       switch (source[0]) {
@@ -13418,8 +13418,8 @@ var require_cst_scalar = __commonJS({
           return { type: "scalar", offset, indent, source, end };
       }
     }
-    function setScalarValue(token, value, context = {}) {
-      let { afterKey = false, implicitKey = false, inFlow = false, type } = context;
+    function setScalarValue(token, value, context2 = {}) {
+      let { afterKey = false, implicitKey = false, inFlow = false, type } = context2;
       let indent = "indent" in token ? token.indent : null;
       if (afterKey && typeof indent === "number")
         indent += 2;
@@ -13619,9 +13619,9 @@ var require_cst_visit = __commonJS({
     visit.BREAK = BREAK;
     visit.SKIP = SKIP;
     visit.REMOVE = REMOVE;
-    visit.itemAtPath = (cst, path32) => {
+    visit.itemAtPath = (cst, path34) => {
       let item = cst;
-      for (const [field, index] of path32) {
+      for (const [field, index] of path34) {
         const tok = item?.[field];
         if (tok && "items" in tok) {
           item = tok.items[index];
@@ -13630,23 +13630,23 @@ var require_cst_visit = __commonJS({
       }
       return item;
     };
-    visit.parentCollection = (cst, path32) => {
-      const parent = visit.itemAtPath(cst, path32.slice(0, -1));
-      const field = path32[path32.length - 1][0];
+    visit.parentCollection = (cst, path34) => {
+      const parent = visit.itemAtPath(cst, path34.slice(0, -1));
+      const field = path34[path34.length - 1][0];
       const coll = parent?.[field];
       if (coll && "items" in coll)
         return coll;
       throw new Error("Parent collection not found");
     };
-    function _visit(path32, item, visitor) {
-      let ctrl = visitor(item, path32);
+    function _visit(path34, item, visitor) {
+      let ctrl = visitor(item, path34);
       if (typeof ctrl === "symbol")
         return ctrl;
       for (const field of ["key", "value"]) {
         const token = item[field];
         if (token && "items" in token) {
           for (let i = 0; i < token.items.length; ++i) {
-            const ci = _visit(Object.freeze(path32.concat([[field, i]])), token.items[i], visitor);
+            const ci = _visit(Object.freeze(path34.concat([[field, i]])), token.items[i], visitor);
             if (typeof ci === "number")
               i = ci - 1;
             else if (ci === BREAK)
@@ -13657,10 +13657,10 @@ var require_cst_visit = __commonJS({
             }
           }
           if (typeof ctrl === "function" && field === "key")
-            ctrl = ctrl(item, path32);
+            ctrl = ctrl(item, path34);
         }
       }
-      return typeof ctrl === "function" ? ctrl(item, path32) : ctrl;
+      return typeof ctrl === "function" ? ctrl(item, path34) : ctrl;
     }
     exports.visit = visit;
   }
@@ -15311,7 +15311,7 @@ var require_public_api = __commonJS({
       }
       return doc;
     }
-    function parse2(src, reviver, options) {
+    function parse3(src, reviver, options) {
       let _reviver = void 0;
       if (typeof reviver === "function") {
         _reviver = reviver;
@@ -15352,7 +15352,7 @@ var require_public_api = __commonJS({
         return value.toString(options);
       return new Document.Document(value, _replacer, options).toString(options);
     }
-    exports.parse = parse2;
+    exports.parse = parse3;
     exports.parseAllDocuments = parseAllDocuments;
     exports.parseDocument = parseDocument2;
     exports.stringify = stringify;
@@ -16713,19 +16713,19 @@ var require_errors3 = __commonJS({
       }
     };
     exports.BrowserTokenNotAllowedError = BrowserTokenNotAllowedError;
-    function validateRequestPath(path32) {
-      if (path32.includes("..")) {
-        throw new InvalidPathParameterError(`Request path "${path32}" contains path traversal sequence ".."`);
+    function validateRequestPath(path34) {
+      if (path34.includes("..")) {
+        throw new InvalidPathParameterError(`Request path "${path34}" contains path traversal sequence ".."`);
       }
-      if (/%2e/i.test(path32)) {
+      if (/%2e/i.test(path34)) {
         let decoded;
         try {
-          decoded = decodeURIComponent(path32);
+          decoded = decodeURIComponent(path34);
         } catch {
           return;
         }
         if (decoded.includes("..")) {
-          throw new InvalidPathParameterError(`Request path "${path32}" contains encoded path traversal sequence`);
+          throw new InvalidPathParameterError(`Request path "${path34}" contains encoded path traversal sequence`);
         }
       }
     }
@@ -17409,17 +17409,17 @@ var require_Client = __commonJS({
        * Sends a request.
        */
       async request(args) {
-        const { path: path32, method, query, body, formDataParams, auth } = args;
-        (0, errors_1.validateRequestPath)(path32);
-        this.log(logging_1.LogLevel.INFO, "request start", { method, path: path32 });
-        const url2 = this.buildRequestUrl(path32, query);
+        const { path: path34, method, query, body, formDataParams, auth } = args;
+        (0, errors_1.validateRequestPath)(path34);
+        this.log(logging_1.LogLevel.INFO, "request start", { method, path: path34 });
+        const url2 = this.buildRequestUrl(path34, query);
         const bodyAsJsonString = this.serializeBody(body);
         const headers = this.buildRequestHeaders(args.headers, auth, bodyAsJsonString);
         const formData = this.buildFormData(formDataParams, headers);
         return this.executeWithRetry({
           url: url2,
           method,
-          path: path32,
+          path: path34,
           headers,
           body: bodyAsJsonString !== null && bodyAsJsonString !== void 0 ? bodyAsJsonString : formData
         }, (request) => this.executeSingleRequest(request));
@@ -17429,20 +17429,20 @@ var require_Client = __commonJS({
        */
       async *streamRequest(args, parseEvent) {
         var _a;
-        const { path: path32, method, query, body, auth } = args;
-        (0, errors_1.validateRequestPath)(path32);
-        this.log(logging_1.LogLevel.INFO, "stream request start", { method, path: path32 });
-        const url2 = this.buildRequestUrl(path32, query);
+        const { path: path34, method, query, body, auth } = args;
+        (0, errors_1.validateRequestPath)(path34);
+        this.log(logging_1.LogLevel.INFO, "stream request start", { method, path: path34 });
+        const url2 = this.buildRequestUrl(path34, query);
         const bodyAsJsonString = this.serializeBody(body);
         const headers = this.buildRequestHeaders(args.headers, auth, bodyAsJsonString);
         const response = await this.executeWithRetry({
           url: url2,
           method,
-          path: path32,
+          path: path34,
           headers,
           body: bodyAsJsonString
         }, (request) => this.executeSingleStreamRequest(request));
-        this.log(logging_1.LogLevel.INFO, "stream request opened", { method, path: path32 });
+        this.log(logging_1.LogLevel.INFO, "stream request opened", { method, path: path34 });
         if (response.body === void 0 || response.body === null) {
           for (const frame of takeSseFrames({
             content: await response.text(),
@@ -17494,8 +17494,8 @@ var require_Client = __commonJS({
       /**
        * Builds the full URL with query parameters.
        */
-      buildRequestUrl(path32, query) {
-        const url2 = new URL(`${__classPrivateFieldGet(this, _Client_prefixUrl, "f")}${path32}`);
+      buildRequestUrl(path34, query) {
+        const url2 = new URL(`${__classPrivateFieldGet(this, _Client_prefixUrl, "f")}${path34}`);
         if (query) {
           for (const [key, value] of Object.entries(query)) {
             if (value !== void 0 && value !== null) {
@@ -17582,14 +17582,14 @@ var require_Client = __commonJS({
        * Executes the request with retry logic.
        */
       async executeWithRetry(args, execute) {
-        const { url: url2, method, path: path32, headers, body } = args;
+        const { url: url2, method, path: path34, headers, body } = args;
         let attempt = 0;
         while (true) {
           try {
             return await execute({
               url: url2,
               method,
-              path: path32,
+              path: path34,
               headers,
               body
             });
@@ -17602,7 +17602,7 @@ var require_Client = __commonJS({
               const delayMs = this.calculateRetryDelay(error, attempt);
               this.log(logging_1.LogLevel.INFO, "retrying request", {
                 method,
-                path: path32,
+                path: path34,
                 attempt: attempt + 1,
                 delayMs
               });
@@ -17618,7 +17618,7 @@ var require_Client = __commonJS({
        * Executes a single HTTP request (no retry).
        */
       async executeSingleRequest(args) {
-        const { url: url2, method, path: path32, headers, body } = args;
+        const { url: url2, method, path: path34, headers, body } = args;
         const response = await errors_1.RequestTimeoutError.rejectAfterTimeout(__classPrivateFieldGet(this, _Client_fetch, "f").call(this, url2.toString(), {
           method: method.toUpperCase(),
           headers,
@@ -17632,7 +17632,7 @@ var require_Client = __commonJS({
         const responseJson = JSON.parse(responseText);
         this.log(logging_1.LogLevel.INFO, "request success", {
           method,
-          path: path32,
+          path: path34,
           ...this.extractRequestId(responseJson)
         });
         return responseJson;
@@ -18298,7 +18298,7 @@ var require_src = __commonJS({
 });
 
 // plugins/arima/scripts/src/cli/dispatch-cli.ts
-import path31 from "node:path";
+import path33 from "node:path";
 import { parseArgs } from "node:util";
 
 // plugins/arima/scripts/src/config.ts
@@ -18634,98 +18634,21 @@ function validateProject(projectDir, root = pluginRoot()) {
 }
 var REQUIRED_HARD_STOPS = HARD_STOPS;
 
-// plugins/arima/scripts/src/dispatch.ts
-import { execFileSync as execFileSync5 } from "node:child_process";
-import { createHash as createHash3 } from "node:crypto";
-import { existsSync as existsSync23, readFileSync as readFileSync22 } from "node:fs";
-import path30 from "node:path";
-
-// plugins/arima/scripts/src/dispatch-units.ts
-var flat = (n) => ({ S: n, M: n, L: n });
-var TURN_CAPS = {
-  develop: { S: 30, M: 50, L: 80 },
-  skeleton: flat(80),
-  hotfix: flat(50),
-  fix: flat(50),
-  "test-write": { S: 20, M: 30, L: 40 },
-  qa: flat(40),
-  regression: flat(40),
-  "perf-test": flat(40),
-  "a11y-test": flat(40),
-  "e2e-skeleton": flat(40),
-  review: { S: 20, M: 30, L: 40 },
-  "adr-review": flat(25),
-  conventions: flat(25),
-  "rc-freeze": flat(25),
-  "deprecation-check": flat(25),
-  "debt-review": flat(25),
-  "design-qa": flat(25),
-  author: flat(40),
-  "release-docs": flat(40),
-  "env-plan": flat(40),
-  runbook: flat(40),
-  "uat-script": flat(40),
-  "security-scan": flat(30),
-  "scan-triage": flat(25),
-  "verify-finding": flat(25),
-  screen: flat(25),
-  "deploy-staging": flat(25),
-  "preview-diagnose": flat(25),
-  triage: flat(30),
-  meeting: flat(20),
-  "gate-pack": flat(25),
-  retro: flat(30),
-  digest: null
-};
-function turnCap(kind, size) {
-  const c = TURN_CAPS[kind];
-  return c === null ? void 0 : c[size ?? "M"];
-}
-var WORKTREE_KINDS = /* @__PURE__ */ new Set([
-  "develop",
-  "skeleton",
-  "hotfix",
-  "fix",
-  "test-write",
-  "qa"
-]);
-var needsWorktree = (kind, role) => WORKTREE_KINDS.has(kind) && !(kind === "fix" && role === "devops");
-var QA_SPARSE = ["tests/", "api/", "design/", "package.json"];
-var REVIEW_KINDS = /* @__PURE__ */ new Set([
-  "review",
-  "qa",
-  "design-qa",
-  "security-scan"
-]);
-var TASKS = {
-  develop: "Implement exactly this one item on the branch in your worktree, to the Definition of Done. Write the code and its unit tests, commit with Conventional Commits using the item id as scope, and map every acceptance criterion to code and a test in `criteria_map` with evidence. Do not push and do not open a pull request: the host does that after you finish.",
-  hotfix: "Fix this incident with the smallest safe change on the branch in your worktree, with a test that reproduces it. Commit with the item id as scope. The host pushes and opens the pull request.",
-  fix: "Repair the broken build on the branch in your worktree with the smallest safe change. Commit with a conventional message that carries a task or run id.",
-  "test-write": "Write the test cases and end-to-end tests for this story from its acceptance criteria, in `tests/` of your worktree, before any development. Propose each test case as a record in `records` (database `test_cases`); the engine issues the ids.",
-  qa: "Test this story on its preview against every test case and acceptance criterion. Record each test case result, raise a finding with evidence for every failure, and propose each defect as a record in `records` (database `bugs`). Give a verdict: pass only if every test case passed.",
-  review: "Review the pull request in the packet against the acceptance criteria, the conventions and the architecture. Report only findings you can support with a file and line. Give a verdict: approve, or changes_requested with the blocking findings.",
-  "design-qa": "Compare the preview with the story's screens, state by state (empty, loading, error, success). Record each deviation as a finding. Give a verdict: pass only if every state matches or each deviation is accepted.",
-  author: "Write the one artifact named in the packet from its template, citing sources, and mark guesses as guesses. Propose Notion records through `records` and ask only critical questions.",
-  triage: "Triage this incident: establish impact and cause from the evidence in the packet, and propose a mitigation. Do not take any action yourself.",
-  "security-scan": "Run the scan named in the packet and report findings with severity, location and evidence. Give a verdict: fail on any critical or high finding."
-};
-function taskFor(u, extra = "") {
-  const base = TASKS[u.kind] ?? `Do the ${u.kind} work for ${u.item}, as ${u.role}, following your role instructions.`;
-  return `${base}
-
-Why this unit exists today: ${u.why}.${extra ? `
-
-${extra}` : ""}`;
-}
-function outputContractFor(kind) {
-  const verdict = REVIEW_KINDS.has(kind) ? " Include `verdict` (`result` and `reasons`)." : "";
-  const criteria = kind === "develop" || kind === "qa" ? " Include `criteria_map` (every criterion with `met`, `unmet` or `unclear` and evidence as `file:line` or a test case id; `met` needs evidence)." : "";
-  return [
-    "End your final message with exactly one fenced block whose info string is `arima-report`, containing JSON:",
-    "`schema_version` 1, `run_id` (the id in the title of this packet), `role`, `item`, `status` (`done`, `blocked`, `failed` or `needs_input`), `summary` (at most 600 characters), and as needed `artifacts`, `findings`, `questions`, `decisions`, `assumptions`, `records`." + criteria + verdict,
-    "Propose records without ids (use `NEW-1`, `NEW-2` ... to refer between them); the engine issues every id. Ask a question only for a hard-stop matter or a critical blocker; decide everything else and log it as a decision."
-  ].join("\n");
-}
+// plugins/arima/scripts/src/env.ts
+import {
+  existsSync as existsSync11,
+  lstatSync,
+  mkdirSync as mkdirSync9,
+  realpathSync,
+  mkdtempSync as mkdtempSync2,
+  readFileSync as readFileSync12,
+  readdirSync as readdirSync5,
+  rmSync as rmSync3,
+  writeFileSync as writeFileSync5
+} from "node:fs";
+import net from "node:net";
+import { homedir, tmpdir as tmpdir2 } from "node:os";
+import path16 from "node:path";
 
 // plugins/arima/scripts/src/events.ts
 import path7 from "node:path";
@@ -18964,38 +18887,572 @@ function readEvents(projectDir) {
   return readJsonl(eventsFile(projectDir), "event");
 }
 
-// plugins/arima/scripts/src/inbox.ts
-import { createHash as createHash2 } from "node:crypto";
-import { existsSync as existsSync12, mkdirSync as mkdirSync9, readFileSync as readFileSync13 } from "node:fs";
-import path17 from "node:path";
+// plugins/arima/scripts/src/killswitch.ts
+import { existsSync as existsSync5, mkdirSync as mkdirSync2, readFileSync as readFileSync6, rmSync, writeFileSync } from "node:fs";
+import path8 from "node:path";
 
-// plugins/arima/scripts/src/approver.ts
-function checkApprover(o) {
-  const roles = o.profile.gates[o.gate]?.approvers ?? [];
-  const people2 = roles.map((r) => o.team.roles[r]?.person).filter((p) => p !== void 0).map((p) => o.team.people[p]).filter((p) => p !== void 0);
-  const ok = o.decidedBy.length > 0 && o.decidedBy.some(
-    (d) => people2.some(
-      (p) => d.id !== void 0 && d.id === p.notion_user || d.name !== void 0 && d.name === p.name
-    )
-  );
-  return { method: "placeholder", approvers: [...new Set(people2.map((p) => p.name))], ok };
+// plugins/arima/scripts/src/notion/port.ts
+var import_client = __toESM(require_src(), 1);
+
+// plugins/arima/scripts/src/lib/throttle.ts
+import { setTimeout as sleep2 } from "node:timers/promises";
+var Throttle = class {
+  constructor(minIntervalMs = 334, now = Date.now, wait = (ms) => sleep2(ms)) {
+    this.minIntervalMs = minIntervalMs;
+    this.now = now;
+    this.wait = wait;
+  }
+  minIntervalMs;
+  now;
+  wait;
+  next = 0;
+  async run(fn) {
+    const start = Math.max(this.now(), this.next);
+    this.next = start + this.minIntervalMs;
+    const delay = start - this.now();
+    if (delay > 0) await this.wait(delay);
+    return fn();
+  }
+};
+function isRateLimited(e) {
+  const err = e;
+  return err?.status === 429 || err?.code === "rate_limited";
+}
+function retryAfterMs(e) {
+  const headers = e?.headers;
+  if (headers === void 0 || headers === null) return void 0;
+  const raw = typeof headers.get === "function" ? headers.get("retry-after") : headers["retry-after"];
+  const seconds = Number(raw);
+  return Number.isFinite(seconds) && seconds >= 0 && raw !== null && raw !== void 0 ? seconds * 1e3 : void 0;
+}
+function isTransient(e) {
+  const err = e;
+  const code2 = String(err?.code ?? err?.cause?.code ?? "");
+  if (/^(ECONNRESET|ETIMEDOUT|ENOTFOUND|EAI_AGAIN|ECONNREFUSED|UND_ERR_.*)$/.test(code2))
+    return true;
+  if (typeof err?.status === "number" && [500, 502, 503, 504].includes(err.status)) return true;
+  if (code2 === "notionhq_client_request_timeout") return true;
+  return /fetch failed|socket hang up|network|timed out/i.test(String(err?.message ?? ""));
+}
+async function withReadRetry(fn, o = {}) {
+  const { retries = 2, baseMs = 300, sleep: wait = (ms) => sleep2(ms) } = o;
+  for (let attempt = 0; ; attempt++) {
+    try {
+      return await fn();
+    } catch (e) {
+      if (!isTransient(e) || attempt >= retries) throw e;
+      await wait(baseMs * 2 ** attempt);
+    }
+  }
+}
+async function withBackoff(fn, o = {}) {
+  const { retries = 5, baseMs = 500, maxMs = 3e4, sleep: wait = (ms) => sleep2(ms) } = o;
+  for (let attempt = 0; ; attempt++) {
+    try {
+      return await fn();
+    } catch (e) {
+      if (!isRateLimited(e) || attempt >= retries) throw e;
+      await wait(retryAfterMs(e) ?? Math.min(maxMs, baseMs * 2 ** attempt));
+    }
+  }
 }
 
-// plugins/arima/scripts/src/item-status.ts
-import { existsSync as existsSync10, readdirSync as readdirSync4, readFileSync as readFileSync11 } from "node:fs";
-import path15 from "node:path";
+// plugins/arima/scripts/src/notion/port.ts
+var PAUSE_TODO_TEXT = "Pause ARIMA";
+var plain = (rt) => (rt ?? []).map((t2) => t2.plain_text ?? "").join("");
+function toDatabaseInfo(raw) {
+  const dataSourceId = raw.data_sources?.[0]?.id;
+  if (dataSourceId === void 0) throw new Error(`database ${raw.id} has no data source`);
+  return { id: raw.id, title: plain(raw.title), dataSourceId };
+}
+function createNotionPort(client, throttle = new Throttle(), backoff = {}) {
+  const call = (fn) => throttle.run(() => withBackoff(fn, backoff));
+  const callRead = (fn) => throttle.run(
+    () => withReadRetry(
+      () => withBackoff(fn, backoff),
+      backoff.sleep ? { sleep: async (ms) => void await backoff.sleep?.(ms) } : {}
+    )
+  );
+  const listChildren = async (pageId) => {
+    const out = [];
+    let cursor;
+    for (; ; ) {
+      const page = await callRead(
+        () => client.blocks.children.list({
+          block_id: pageId,
+          page_size: 100,
+          ...cursor !== void 0 ? { start_cursor: cursor } : {}
+        })
+      );
+      for (const raw of page.results) {
+        if (raw.id === void 0 || raw.type === void 0) continue;
+        if (raw.type === "to_do" && raw.to_do) {
+          out.push({
+            id: raw.id,
+            type: "to_do",
+            text: plain(raw.to_do.rich_text),
+            checked: raw.to_do.checked === true
+          });
+        } else if (raw.type === "paragraph") {
+          out.push({ id: raw.id, type: "paragraph", text: plain(raw.paragraph?.rich_text) });
+        } else if (raw.type === "child_database") {
+          out.push({ id: raw.id, type: "child_database", text: raw.child_database?.title ?? "" });
+        } else {
+          out.push({ id: raw.id, type: raw.type, text: "" });
+        }
+      }
+      if (!page.has_more || page.next_cursor === null) return out;
+      cursor = page.next_cursor;
+    }
+  };
+  const getDataSourceProperties = async (dataSourceId) => {
+    const raw = await callRead(
+      () => client.dataSources.retrieve({ data_source_id: dataSourceId })
+    );
+    const out = {};
+    for (const [name, p] of Object.entries(raw.properties ?? {})) {
+      const info = { id: p.id, name: p.name ?? name, type: p.type };
+      const opts = p.select?.options ?? p.multi_select?.options;
+      if (opts) info.options = opts.map((o) => o.name);
+      if (p.relation?.data_source_id) info.relationTarget = p.relation.data_source_id;
+      out[name] = info;
+    }
+    return out;
+  };
+  return {
+    listChildren,
+    async listTodoBlocks(pageId) {
+      return (await listChildren(pageId)).filter((b) => b.type === "to_do").map((b) => ({ id: b.id, text: b.text, checked: b.checked === true }));
+    },
+    async setTodoChecked(blockId, checked) {
+      await call(() => client.blocks.update({ block_id: blockId, to_do: { checked } }));
+    },
+    async appendTodo(pageId, text3, checked) {
+      const res = await call(
+        () => client.blocks.children.append({
+          block_id: pageId,
+          children: [
+            {
+              object: "block",
+              type: "to_do",
+              to_do: { rich_text: [{ type: "text", text: { content: text3 } }], checked }
+            }
+          ]
+        })
+      );
+      const id = res.results[0]?.id;
+      if (id === void 0) throw new Error("Notion did not return the created block");
+      return id;
+    },
+    async appendParagraph(pageId, text3) {
+      const res = await call(
+        () => client.blocks.children.append({
+          block_id: pageId,
+          children: [
+            {
+              object: "block",
+              type: "paragraph",
+              paragraph: { rich_text: [{ type: "text", text: { content: text3 } }] }
+            }
+          ]
+        })
+      );
+      const id = res.results[0]?.id;
+      if (id === void 0) throw new Error("Notion did not return the created block");
+      return id;
+    },
+    async createDatabase(parentPageId, title, properties2) {
+      const raw = await call(
+        () => client.databases.create({
+          parent: { type: "page_id", page_id: parentPageId },
+          title: [{ type: "text", text: { content: title } }],
+          is_inline: true,
+          initial_data_source: { properties: properties2 }
+        })
+      );
+      return toDatabaseInfo({ ...raw, title: raw.title ?? [{ plain_text: title }] });
+    },
+    async getDatabase(databaseId) {
+      const raw = await callRead(
+        () => client.databases.retrieve({ database_id: databaseId })
+      );
+      return toDatabaseInfo(raw);
+    },
+    getDataSourceProperties,
+    async addProperties(dataSourceId, properties2) {
+      const existing = await getDataSourceProperties(dataSourceId);
+      const clash = Object.keys(properties2).filter((n) => n in existing);
+      if (clash.length > 0) {
+        throw new Error(`refusing to alter existing Notion properties: ${clash.join(", ")}`);
+      }
+      await call(() => client.dataSources.update({ data_source_id: dataSourceId, properties: properties2 }));
+    },
+    async queryRows(dataSourceId) {
+      const rows = [];
+      let cursor;
+      for (; ; ) {
+        const page = await callRead(
+          () => client.dataSources.query({
+            data_source_id: dataSourceId,
+            page_size: 100,
+            ...cursor !== void 0 ? { start_cursor: cursor } : {}
+          })
+        );
+        for (const raw of page.results) {
+          if (raw.object !== void 0 && raw.object !== "page") continue;
+          rows.push({
+            pageId: raw.id,
+            lastEdited: raw.last_edited_time,
+            properties: raw.properties ?? {}
+          });
+        }
+        if (!page.has_more || page.next_cursor === null) return rows;
+        cursor = page.next_cursor;
+      }
+    },
+    async getPageLastEdited(pageId) {
+      const raw = await callRead(() => client.pages.retrieve({ page_id: pageId }));
+      return raw.last_edited_time;
+    },
+    async getPage(pageId) {
+      const raw = await callRead(() => client.pages.retrieve({ page_id: pageId }));
+      return { pageId: raw.id, lastEdited: raw.last_edited_time, properties: raw.properties ?? {} };
+    },
+    async createPage(dataSourceId, properties2, children) {
+      const first = children?.slice(0, 100);
+      const raw = await call(
+        () => client.pages.create({
+          parent: { type: "data_source_id", data_source_id: dataSourceId },
+          properties: properties2,
+          ...first && first.length > 0 ? { children: first } : {}
+        })
+      );
+      let lastEdited = raw.last_edited_time;
+      for (let i = 100; children && i < children.length; i += 100) {
+        const rest = children.slice(i, i + 100);
+        await call(() => client.blocks.children.append({ block_id: raw.id, children: rest }));
+      }
+      if (children && children.length > 100) lastEdited = await this.getPageLastEdited(raw.id);
+      return {
+        pageId: raw.id,
+        lastEdited,
+        ...raw.properties ? { properties: raw.properties } : {}
+      };
+    },
+    async updatePage(pageId, properties2) {
+      const raw = await call(() => client.pages.update({ page_id: pageId, properties: properties2 }));
+      return {
+        lastEdited: raw.last_edited_time,
+        ...raw.properties ? { properties: raw.properties } : {}
+      };
+    },
+    async appendChildren(pageId, blocks) {
+      for (let i = 0; i < blocks.length; i += 100) {
+        const chunk = blocks.slice(i, i + 100);
+        await call(() => client.blocks.children.append({ block_id: pageId, children: chunk }));
+      }
+    }
+  };
+}
+function createNotionPortFromToken(token) {
+  const client = new import_client.Client({ auth: token, retry: false });
+  return createNotionPort(client);
+}
 
-// plugins/arima/scripts/src/item.ts
-import { existsSync as existsSync6, mkdirSync as mkdirSync4, readFileSync as readFileSync7 } from "node:fs";
-import path11 from "node:path";
+// plugins/arima/scripts/src/killswitch.ts
+function pauseFile(projectDir) {
+  return path8.join(projectDir, ".arima", "PAUSE");
+}
+async function checkKillSwitch(projectDir, notion, remotePause) {
+  const file = existsSync5(pauseFile(projectDir));
+  let remote = "unchecked";
+  let detail = "";
+  if (notion !== null) {
+    try {
+      const todos = await notion.port.listTodoBlocks(notion.rootPageId);
+      const sw = todos.find((t2) => t2.text.trim() === PAUSE_TODO_TEXT);
+      if (sw === void 0) {
+        remote = "missing";
+        detail = `the "${PAUSE_TODO_TEXT}" to-do is missing from the Notion root page, so ARIMA cannot tell whether it is paused; run /arima:pause --resume to recreate it`;
+      } else {
+        remote = sw.checked;
+      }
+    } catch (e) {
+      remote = "unreachable";
+      detail = `Notion unreachable (${e instanceof Error ? e.message : String(e)})`;
+    }
+  }
+  let stateBranch = "unchecked";
+  if (!file && remote !== true && remotePause !== void 0 && remote !== false) {
+    const r = await remotePause();
+    stateBranch = r === void 0 ? "unchecked" : r;
+  }
+  const blind = notion !== null && remote === "unreachable" && stateBranch === "unchecked";
+  const on = file || remote === true || remote === "missing" || stateBranch === true || blind;
+  if (on) {
+    const reasons = [
+      file ? "PAUSE file present" : "",
+      remote === true ? "Notion switch is on" : "",
+      remote === "missing" ? detail : "",
+      stateBranch === true ? "PAUSE file on the remote state branch" : "",
+      blind ? `${detail}; the remote state branch could not be checked either, so ARIMA cannot confirm it is not paused` : ""
+    ];
+    detail = reasons.filter(Boolean).join(" and ");
+    if (file) {
+      const first = readFileSync6(pauseFile(projectDir), "utf8").split("\n")[0] ?? "";
+      if (first.trim() !== "") detail += ` (${first.trim()})`;
+    }
+  } else if (remote === "unreachable") {
+    detail += stateBranch === false ? "; the remote state branch has no PAUSE file" : "; the remote state branch could not be checked either, so only the local PAUSE file was consulted";
+  }
+  return { on, file, notion: remote, stateBranch, detail };
+}
+
+// plugins/arima/scripts/src/compose-lint.ts
+var import_yaml3 = __toESM(require_dist2(), 1);
+import path9 from "node:path";
+var SAFE_CAPS = /* @__PURE__ */ new Set(["NET_BIND_SERVICE", "CHOWN", "SETUID", "SETGID", "KILL"]);
+var isObj = (v) => typeof v === "object" && v !== null && !Array.isArray(v);
+var asList = (v) => Array.isArray(v) ? v : v === void 0 ? [] : [v];
+function mentionsProduction(text3) {
+  return text3.toLowerCase().split(/[^a-z0-9]+/).some((t2) => t2 === "production" || t2 === "prod" || t2 === "prd");
+}
+var HOST_PATH = /^(?:[/\\.~]|[A-Za-z]:[/\\]|\\\\)/;
+var isHostPath = (s) => HOST_PATH.test(s);
+var SOCKET = /docker\.sock|docker_engine|[\\/]var[\\/]run[\\/]docker/i;
+var ARIMA_HOME = /\.config[/\\]+arima/i;
+function badInterpolations(text3) {
+  const t2 = text3.replace(/\$\$/g, "");
+  return [...t2.matchAll(/\$(\{[^}]*\}|[A-Za-z_][A-Za-z0-9_]*)/g)].map((m) => m[0]).filter((x) => !/^\$\{ARIMA_[A-Z_]+\}$/.test(x));
+}
+function insideRepo(p, baseDir, repoRoot) {
+  if (/^[a-z][a-z0-9+.-]*:\/\//i.test(p) || /^git@/i.test(p) || p.startsWith("~")) return false;
+  const abs = path9.resolve(baseDir, p);
+  const rel2 = path9.relative(path9.resolve(repoRoot), abs);
+  return rel2 === "" || !rel2.startsWith("..") && !path9.isAbsolute(rel2);
+}
+function lineOf(e) {
+  const l = e.linePos?.[0]?.line;
+  return typeof l === "number" ? ` at line ${l}` : "";
+}
+function lintCompose(text3, o) {
+  const out = [];
+  const add2 = (rule, where, detail) => {
+    out.push({ rule, where, detail });
+  };
+  let doc;
+  try {
+    doc = (0, import_yaml3.parse)(text3, { merge: true });
+  } catch (e) {
+    return [
+      {
+        rule: "yaml-syntax",
+        where: "file",
+        detail: `not valid YAML${lineOf(e)} (the parser excerpt is withheld: it may quote file content)`
+      }
+    ];
+  }
+  if (!isObj(doc)) return [{ rule: "yaml-syntax", where: "file", detail: "not a mapping" }];
+  const ident = (where, value) => {
+    if (typeof value !== "string") return;
+    const bad = badInterpolations(value);
+    if (bad.length > 0)
+      add2(
+        "interpolation",
+        where,
+        `reads the host environment: ${bad.join(" ")}; only \${ARIMA_*} is allowed`
+      );
+    if (mentionsProduction(value)) add2("production-reference", where, `names production: ${value}`);
+    if (ARIMA_HOME.test(value))
+      add2("host-file-reference", where, `reaches ~/.config/arima: ${value}`);
+  };
+  const hostFile = (where, p) => {
+    if (typeof p !== "string") return;
+    ident(where, p);
+    if (!insideRepo(p, o.composeDir, o.repoRoot))
+      add2("host-file-reference", where, `points outside the repository: ${p}`);
+  };
+  const QUIET = /* @__PURE__ */ new Set(["environment", "command", "entrypoint", "labels", "healthcheck", "args"]);
+  const walk = (node, where) => {
+    if (typeof node === "string") {
+      const bad = badInterpolations(node);
+      if (bad.length > 0)
+        add2("interpolation", where, `reads the host environment: ${bad.join(" ")}`);
+    } else if (Array.isArray(node)) node.forEach((v, i) => walk(v, `${where}[${i}]`));
+    else if (isObj(node)) {
+      for (const [k, v] of Object.entries(node)) if (!QUIET.has(k)) walk(v, `${where}.${k}`);
+    }
+  };
+  walk(doc, "");
+  if ("include" in doc)
+    add2("unlinted-file", "include", "include pulls in files that are not linted");
+  ident("name", doc["name"]);
+  for (const kind of ["volumes", "networks", "secrets", "configs"]) {
+    const top = doc[kind];
+    if (!isObj(top)) continue;
+    for (const [k, v] of Object.entries(top)) {
+      const where = `${kind}.${k}`;
+      ident(where, k);
+      if (!isObj(v)) continue;
+      ident(`${where}.name`, v["name"]);
+      if (typeof v["name"] === "string" && !v["name"].startsWith("${ARIMA_PROJECT}"))
+        add2(
+          "external-resource",
+          `${where}.name`,
+          "an explicit name must start with ${ARIMA_PROJECT}"
+        );
+      if (v["driver_opts"] !== void 0 || v["driver"] !== void 0)
+        add2(
+          "unsafe-option",
+          `${where}.driver`,
+          "volume drivers and driver_opts can bind host paths"
+        );
+      if (v["external"] !== void 0 && v["external"] !== false)
+        add2("external-resource", where, "external resources are not owned by this project");
+      if (kind === "secrets" || kind === "configs") {
+        hostFile(`${where}.file`, v["file"]);
+        if (v["environment"] !== void 0)
+          add2(
+            "interpolation",
+            `${where}.environment`,
+            "reads a host environment variable into the container"
+          );
+      }
+    }
+  }
+  const services = isObj(doc["services"]) ? doc["services"] : {};
+  for (const [name, raw] of Object.entries(services)) {
+    if (!isObj(raw)) continue;
+    const s = raw;
+    const at = (f) => `services.${name}.${f}`;
+    ident(at("container_name"), s["container_name"]);
+    if (typeof s["container_name"] === "string" && !s["container_name"].startsWith("${ARIMA_PROJECT}"))
+      add2(
+        "container-link",
+        at("container_name"),
+        "container_name must start with ${ARIMA_PROJECT}"
+      );
+    ident(at("image"), s["image"]);
+    if (s["privileged"] !== void 0 && s["privileged"] !== false)
+      add2("privileged", at("privileged"), "privileged containers are not allowed");
+    if (String(s["network_mode"]).trim().toLowerCase() === "host")
+      add2("host-network", at("network_mode"), "host network");
+    for (const k of ["network_mode", "pid", "ipc"])
+      if (typeof s[k] === "string" && /^container:/i.test(s[k].trim()))
+        add2("container-link", at(k), `${k} joins another container: ${s[k]}`);
+    for (const k of ["pid", "ipc", "uts", "userns_mode"])
+      if (String(s[k]).trim().toLowerCase() === "host") add2("host-namespace", at(k), `${k}: host`);
+    for (const k of ["volumes_from", "external_links"])
+      if (asList(s[k]).length > 0)
+        add2("container-link", at(k), `${k} reaches containers of other projects`);
+    for (const k of [
+      "cgroup",
+      "cgroup_parent",
+      "sysctls",
+      "device_cgroup_rules",
+      "provider",
+      "runtime"
+    ])
+      if (s[k] !== void 0) add2("unsafe-option", at(k), `${k} is not allowed`);
+    for (const c of asList(s["cap_add"]))
+      if (!SAFE_CAPS.has(String(c).toUpperCase().replace(/^CAP_/, "")))
+        add2("dangerous-capability", at("cap_add"), String(c));
+    if (asList(s["devices"]).length > 0)
+      add2("device", at("devices"), "host devices are not allowed");
+    for (const o2 of asList(s["security_opt"]))
+      if (/unconfined|seccomp=|apparmor=|label[:=]disable/i.test(String(o2)))
+        add2("unconfined", at("security_opt"), String(o2));
+    if ("extends" in s)
+      add2("unlinted-file", at("extends"), "extends pulls in files that are not linted");
+    for (const v of asList(s["volumes"])) {
+      let source;
+      let bind = false;
+      if (typeof v === "string") {
+        const first = v.split(":")[0] ?? "";
+        source = /^[A-Za-z]$/.test(first) ? v.slice(0, 3) : first;
+        bind = isHostPath(source);
+        if (SOCKET.test(v)) add2("docker-socket", at("volumes"), v);
+      } else if (isObj(v)) {
+        source = typeof v["source"] === "string" ? v["source"] : void 0;
+        bind = v["type"] === "bind" || source !== void 0 && isHostPath(source);
+        if (source !== void 0 && SOCKET.test(source))
+          add2("docker-socket", at("volumes"), source);
+      }
+      if (bind) add2("host-path-mount", at("volumes"), `host path ${String(source)}`);
+      else if (source !== void 0) ident(at("volumes"), source);
+    }
+    const b = s["build"];
+    const ctx = typeof b === "string" ? b : isObj(b) ? b["context"] : void 0;
+    if (typeof ctx === "string" && !insideRepo(ctx, o.composeDir, o.repoRoot))
+      add2("build-outside-repo", at("build.context"), `context ${ctx}`);
+    if (typeof ctx === "string") ident(at("build.context"), ctx);
+    if (isObj(b) && typeof b["dockerfile"] === "string") {
+      ident(at("build.dockerfile"), b["dockerfile"]);
+      const base = typeof ctx === "string" ? path9.resolve(o.composeDir, ctx) : o.composeDir;
+      if (path9.isAbsolute(b["dockerfile"]) || !insideRepo(b["dockerfile"], base, o.repoRoot))
+        add2("build-outside-repo", at("build.dockerfile"), `dockerfile ${b["dockerfile"]}`);
+    }
+    if (isObj(b)) {
+      if (b["ssh"] !== void 0)
+        add2("build-outside-repo", at("build.ssh"), "ssh agent forwarding");
+      if (isObj(b["additional_contexts"])) {
+        for (const [k, v] of Object.entries(b["additional_contexts"]))
+          if (typeof v === "string") {
+            ident(at(`build.additional_contexts.${k}`), v);
+            if (!insideRepo(v, o.composeDir, o.repoRoot))
+              add2("build-outside-repo", at(`build.additional_contexts.${k}`), v);
+          }
+      }
+    }
+    for (const f of asList(s["env_file"])) hostFile(at("env_file"), isObj(f) ? f["path"] : f);
+    if (typeof s["image"] === "string") {
+      const img = s["image"];
+      const last = img.split("/").pop() ?? img;
+      const tag = last.includes("@") ? "digest" : last.includes(":") ? last.split(":").pop() : "";
+      if (tag === "" || tag === "latest")
+        add2("image-unpinned", at("image"), `${img} has no pinned tag`);
+    }
+    const hc = s["healthcheck"];
+    if (!isObj(hc) || hc["disable"] === true)
+      add2("no-healthcheck", at("healthcheck"), "every service needs a health check");
+    const deploy = isObj(s["deploy"]) ? s["deploy"] : {};
+    const res = isObj(deploy["resources"]) ? deploy["resources"] : {};
+    const limits = isObj(res["limits"]) ? res["limits"] : {};
+    if (s["mem_limit"] === void 0 && limits["memory"] === void 0)
+      add2("no-resource-limits", at("deploy.resources.limits"), "set a memory limit");
+    for (const p of asList(s["ports"])) {
+      let host;
+      let ip;
+      if (typeof p === "string") {
+        const parts = p.split(":");
+        if (parts.length === 2) host = parts[0];
+        else if (parts.length >= 3) {
+          ip = parts.slice(0, -2).join(":");
+          host = parts[parts.length - 2];
+        }
+      } else if (isObj(p)) {
+        host = p["published"] === void 0 ? void 0 : String(p["published"]);
+        ip = typeof p["host_ip"] === "string" ? p["host_ip"] : void 0;
+      } else if (typeof p === "number") {
+        continue;
+      }
+      if (host !== void 0 && host !== "" && !host.includes("${"))
+        add2("port-binding", at("ports"), `fixed host port ${host}; use \${ARIMA_PORT}`);
+      const loop = ip !== void 0 && /^(127\.0\.0\.1|\[?::1\]?|localhost)$/.test(ip);
+      const publishes = host !== void 0 && host !== "" || ip !== void 0;
+      if (publishes && !loop) add2("port-binding", at("ports"), "publish on 127.0.0.1 only");
+    }
+  }
+  return out;
+}
 
 // plugins/arima/scripts/src/lib/atomic-file.ts
-import { mkdirSync as mkdirSync2, renameSync, unlinkSync as unlinkSync2, writeFileSync } from "node:fs";
-import path8 from "node:path";
+import { mkdirSync as mkdirSync3, renameSync, unlinkSync as unlinkSync2, writeFileSync as writeFileSync2 } from "node:fs";
+import path10 from "node:path";
 function writeFileAtomic(file, content) {
-  mkdirSync2(path8.dirname(file), { recursive: true });
+  mkdirSync3(path10.dirname(file), { recursive: true });
   const tmp = `${file}.${process.pid}.tmp`;
-  writeFileSync(tmp, content, "utf8");
+  writeFileSync2(tmp, content, "utf8");
   for (let attempt = 0; ; attempt++) {
     try {
       renameSync(tmp, file);
@@ -19015,384 +19472,262 @@ function writeFileAtomic(file, content) {
   }
 }
 
-// plugins/arima/scripts/src/ledger.ts
-import path9 from "node:path";
-function ledgerFile(projectDir) {
-  return path9.join(projectDir, ".arima", "ledger.jsonl");
-}
-function parseClaudeResult(stdout) {
-  let parsed;
-  try {
-    parsed = JSON.parse(stdout);
-  } catch (e) {
-    throw new Error("claude output is not valid JSON", { cause: e });
-  }
-  const candidates = Array.isArray(parsed) ? parsed : [parsed];
-  for (let i = candidates.length - 1; i >= 0; i--) {
-    const c = candidates[i];
-    if (c !== null && typeof c === "object" && c.type === "result" && typeof c.subtype === "string") {
-      return c;
-    }
-  }
-  throw new Error("claude output contains no result message");
-}
-var round6 = (n) => Math.round(n * 1e6) / 1e6;
-var int = (n) => Math.max(0, Math.round(n ?? 0));
-function outcomeOf(r) {
-  if (r.subtype === "success" && r.is_error !== true) return "pass";
-  if (r.subtype === "error_max_turns" || r.subtype === "error_max_budget_usd") return "blocked";
-  return "error";
-}
-function buildLedgerRow(result, ctx, previousRows = []) {
-  const total = result.total_cost_usd ?? result.cost_usd ?? 0;
-  const sessionId = result.session_id;
-  const already = sessionId === void 0 ? 0 : previousRows.filter((r) => r.session_id === sessionId).reduce((sum, r) => sum + r.cost_usd, 0);
-  const row = {
-    run_id: ctx.run_id,
-    date: ctx.date,
-    project: ctx.project,
-    phase: ctx.phase,
-    item: ctx.item,
-    role: ctx.role,
-    attempt: ctx.attempt,
-    is_rework: ctx.is_rework,
-    subtype: result.subtype,
-    num_turns: int(result.num_turns),
-    duration_ms: int(result.duration_ms),
-    tokens: {
-      input: int(result.usage?.input_tokens),
-      output: int(result.usage?.output_tokens),
-      cache_read: int(result.usage?.cache_read_input_tokens),
-      cache_creation: int(result.usage?.cache_creation_input_tokens)
-    },
-    cost_usd: round6(Math.max(0, total - already)),
-    budget_usd: ctx.budget_usd,
-    result: ctx.result ?? outcomeOf(result)
-  };
-  if (sessionId !== void 0) row.session_id = sessionId;
-  if (ctx.started_at !== void 0) row.started_at = ctx.started_at;
-  if (ctx.milestone !== void 0) row.milestone = ctx.milestone;
-  if (ctx.model_tier !== void 0) row.model_tier = ctx.model_tier;
-  if (ctx.rework_reason !== void 0) row.rework_reason = ctx.rework_reason;
-  if (result.duration_api_ms !== void 0) row.duration_api_ms = int(result.duration_api_ms);
-  if (ctx.ci_minutes !== void 0) row.ci_minutes = ctx.ci_minutes;
-  return row;
-}
-async function appendLedgerRow(projectDir, row) {
-  await appendJsonl(ledgerFile(projectDir), "ledger", row);
-}
-function readLedger(projectDir) {
-  return readJsonl(ledgerFile(projectDir), "ledger");
-}
+// plugins/arima/scripts/src/sandbox.ts
+import { execFile } from "node:child_process";
+import {
+  chmodSync,
+  existsSync as existsSync10,
+  mkdirSync as mkdirSync8,
+  mkdtempSync,
+  readFileSync as readFileSync11,
+  readdirSync as readdirSync4,
+  rmSync as rmSync2,
+  writeFileSync as writeFileSync4
+} from "node:fs";
+import { tmpdir } from "node:os";
+import path15 from "node:path";
 
-// plugins/arima/scripts/src/notion/mirror.ts
-import { existsSync as existsSync5, mkdirSync as mkdirSync3, readFileSync as readFileSync6 } from "node:fs";
-import path10 from "node:path";
+// plugins/arima/scripts/src/notion/outbox.ts
+import {
+  existsSync as existsSync9,
+  mkdirSync as mkdirSync7,
+  readFileSync as readFileSync10,
+  readdirSync as readdirSync3,
+  renameSync as renameSync2,
+  writeFileSync as writeFileSync3
+} from "node:fs";
+import path14 from "node:path";
 
-// plugins/arima/scripts/src/notion/values.ts
-var CHUNK = 2e3;
-var rich = (s) => {
-  const out = [];
-  for (let i = 0; i < s.length; i += CHUNK)
-    out.push({ type: "text", text: { content: s.slice(i, i + CHUNK) } });
-  return out;
-};
-var ValueError = class extends Error {
-};
-function toNotionValue(type, name, value, resolveRelation) {
-  const bad = (expected) => {
-    throw new ValueError(`"${name}" (${type}) expects ${expected}`);
-  };
-  switch (type) {
-    case "title":
-      return typeof value === "string" ? { title: rich(value) } : bad("a string");
-    case "rich_text":
-      return typeof value === "string" ? { rich_text: rich(value) } : bad("a string");
-    case "number":
-      return typeof value === "number" || value === null ? { number: value } : bad("a number or null");
-    case "select":
-      return value === null ? { select: null } : typeof value === "string" ? { select: { name: value } } : bad("an option name or null");
-    case "multi_select":
-      return Array.isArray(value) && value.every((v) => typeof v === "string") ? { multi_select: value.map((n) => ({ name: n })) } : bad("an array of option names");
-    case "date":
-      if (value === null) return { date: null };
-      if (typeof value === "string") return { date: { start: value } };
-      if (typeof value === "object" && !Array.isArray(value) && typeof value.start === "string") {
-        const v = value;
-        return { date: { start: v.start, ...v.end ? { end: v.end } : {} } };
-      }
-      return bad("an ISO date string, {start, end} or null");
-    case "checkbox":
-      return typeof value === "boolean" ? { checkbox: value } : bad("true or false");
-    case "url":
-      return value === null || typeof value === "string" ? { url: value } : bad("a string or null");
-    case "people":
-      return Array.isArray(value) && value.every((v) => typeof v === "string") ? { people: value.map((id) => ({ id })) } : bad("an array of Notion user ids");
-    case "relation":
-      return Array.isArray(value) && value.every((v) => typeof v === "string") ? { relation: value.map((id) => ({ id: resolveRelation(id) })) } : bad("an array of ARIMA IDs");
-    default:
-      throw new ValueError(`"${name}" is a ${type} property, which agents cannot write`);
-  }
-}
-var plain = (rt) => Array.isArray(rt) ? rt.map((t2) => t2.plain_text ?? "").join("") : "";
-function fromNotionValue(raw) {
-  switch (raw.type) {
-    case "title":
-      return plain(raw["title"]);
-    case "rich_text":
-      return plain(raw["rich_text"]);
-    case "number":
-      return raw["number"] ?? null;
-    case "select":
-      return raw["select"]?.name ?? null;
-    case "multi_select":
-      return (raw["multi_select"] ?? []).map((o) => o.name);
-    case "date": {
-      const d = raw["date"];
-      return d === null || d === void 0 ? null : d.end ? { start: d.start, end: d.end } : d.start;
-    }
-    case "checkbox":
-      return raw["checkbox"] === true;
-    case "url":
-      return raw["url"] ?? null;
-    case "people":
-      return (raw["people"] ?? []).map((p) => ({
-        id: p.id,
-        ...p.name ? { name: p.name } : {}
-      }));
-    case "relation":
-      return (raw["relation"] ?? []).map((r) => r.id);
-    case "files":
-      return (raw["files"] ?? []).map((f) => f.name ?? "");
-    case "formula": {
-      const f = raw["formula"];
-      const v = f && f.type ? f[f.type] : null;
-      return typeof v === "string" || typeof v === "number" || typeof v === "boolean" ? v : null;
-    }
-    case "rollup": {
-      const r = raw["rollup"];
-      if (r?.type === "number") return r.number ?? null;
-      if (r?.type === "array") {
-        return (r.array ?? []).map((x) => {
-          const v = fromNotionValue(x);
-          return typeof v === "string" ? v : JSON.stringify(v);
-        });
-      }
-      return null;
-    }
-    case "created_time":
-    case "last_edited_time":
-      return raw[raw.type] ?? null;
-    default:
-      return null;
-  }
-}
-function markdownToBlocks(markdown) {
-  const blocks = [];
-  const para = [];
-  const flush = () => {
-    if (para.length > 0) {
-      blocks.push({
-        object: "block",
-        type: "paragraph",
-        paragraph: { rich_text: rich(para.join(" ")) }
-      });
-      para.length = 0;
-    }
-  };
-  const block = (type, body) => {
-    flush();
-    blocks.push({ object: "block", type, [type]: body });
-  };
-  for (const line of markdown.split(/\r?\n/)) {
-    const h = /^(#{1,3})\s+(.*)$/.exec(line);
-    const todo = /^\s*[-*]\s+\[( |x|X)\]\s+(.*)$/.exec(line);
-    const bullet = /^\s*[-*]\s+(.*)$/.exec(line);
-    const num2 = /^\s*\d+[.)]\s+(.*)$/.exec(line);
-    if (line.trim() === "") flush();
-    else if (h) block(`heading_${h[1].length}`, { rich_text: rich(h[2]) });
-    else if (todo) block("to_do", { rich_text: rich(todo[2]), checked: todo[1] !== " " });
-    else if (bullet) block("bulleted_list_item", { rich_text: rich(bullet[1]) });
-    else if (num2) block("numbered_list_item", { rich_text: rich(num2[1]) });
-    else para.push(line.trim());
-  }
-  flush();
-  return blocks;
-}
-
-// plugins/arima/scripts/src/notion/mirror.ts
-var mirrorDir = (projectDir) => path10.join(projectDir, ".arima", "mirror");
-var mirrorFile = (projectDir, db) => path10.join(mirrorDir(projectDir), `${db}.json`);
-var notionMapFile = (projectDir) => path10.join(projectDir, ".arima", "notion-map.json");
-function readNotionMap(projectDir) {
-  const file = notionMapFile(projectDir);
-  if (!existsSync5(file)) throw new Error(`${file} not found; run arima-notion map first`);
-  const data = JSON.parse(readFileSync6(file, "utf8"));
-  const validate = getValidator("notion-map");
-  if (!validate(data)) {
-    throw new Error(`Invalid ${file}: ${(validate.errors ?? []).map(describeError).join("; ")}`);
-  }
-  return data;
-}
-function toMirrorRow(raw) {
-  const properties2 = {};
-  let id = "";
-  for (const [name, value] of Object.entries(raw.properties)) {
-    properties2[name] = fromNotionValue(value);
-    if (value.type === "title") id = String(properties2[name] ?? "");
-  }
-  return { page_id: raw.pageId, last_edited_time: raw.lastEdited, id, properties: properties2 };
-}
-function readMirror(projectDir, db) {
-  const file = mirrorFile(projectDir, db);
-  if (!existsSync5(file)) return void 0;
-  return JSON.parse(readFileSync6(file, "utf8"));
-}
-function writeMirror(projectDir, m) {
-  mkdirSync3(mirrorDir(projectDir), { recursive: true });
-  writeFileAtomic(mirrorFile(projectDir, m.database), `${JSON.stringify(m, null, 2)}
-`);
-}
-async function pullMirror(projectDir, port, map, opts = {}) {
-  const out = /* @__PURE__ */ new Map();
-  const fetchedAt = (opts.now ?? /* @__PURE__ */ new Date()).toISOString();
-  for (const [db, info] of Object.entries(map.databases)) {
-    const rows = (await port.queryRows(info.data_source_id)).map(toMirrorRow);
-    const file = { schema_version: 1, database: db, fetched_at: fetchedAt, rows };
-    writeMirror(projectDir, file);
-    out.set(db, file);
-    await appendEvent(projectDir, {
-      type: "notion.pull",
-      actor: "system",
-      ...opts.runId !== void 0 ? { run_id: opts.runId } : {},
-      data: { database: db, rows: rows.length }
-    });
-  }
-  return out;
-}
-function findRow(m, id) {
-  if (m === void 0) return void 0;
-  const byId = m.rows.filter((r) => r.id === id);
-  if (byId.length > 1) throw new Error(`${byId.length} rows in ${m.database} have the ID "${id}"`);
-  if (byId[0] !== void 0) return byId[0];
-  return m.rows.find((r) => r.page_id === id);
-}
-
-// plugins/arima/scripts/src/story-budget.ts
-var RUN_COST_FLOOR_USD = 0.25;
-var round = (n) => Math.round(n * 1e6) / 1e6;
-function storyBudget(cfg, row = {}) {
-  if (typeof row.budget === "number" && row.budget > 0) return row.budget;
-  const bySize = row.size === "S" || row.size === "M" || row.size === "L" ? cfg.bySize?.[row.size] : void 0;
-  return bySize ?? cfg.perStoryDefault;
-}
-function storyBudgetFromMirror(projectDir, item, cfg) {
-  const row = findRow(readMirror(projectDir, "stories"), item);
-  const b = row?.properties["Budget USD"];
-  const size = row?.properties["Complexity"];
-  return storyBudget(cfg, {
-    budget: typeof b === "number" ? b : void 0,
-    size: typeof size === "string" ? size : void 0
-  });
-}
-function itemSpent(projectDir, item) {
-  return round(
-    readLedger(projectDir).filter((r) => r.item === item).reduce((s, r) => s + r.cost_usd, 0)
-  );
-}
-function unitBudget(projectDir, item, budget, perRunCap, floor = RUN_COST_FLOOR_USD) {
-  const spent = itemSpent(projectDir, item);
-  const remaining = round(budget - spent);
-  if (!(remaining > 0) || remaining < floor)
-    return {
-      ok: false,
-      reason: "story_budget",
-      spent,
-      remaining: Math.max(0, remaining),
-      storyBudget: budget
-    };
-  return {
-    ok: true,
-    budgetUsd: round(Math.min(perRunCap, remaining)),
-    spent,
-    remaining,
-    storyBudget: budget
-  };
-}
-async function recordStoryBudgetHit(projectDir, item, b, role) {
-  const message = `story budget used up for ${item}: spent ${b.spent} of ${b.storyBudget} est. USD, ${b.remaining} left (a run needs at least ${RUN_COST_FLOOR_USD})`;
-  await appendEvent(projectDir, {
-    type: "hardstop.hit",
-    actor: "system",
-    item,
-    data: {
-      stop: "story_budget",
-      ...role !== void 0 ? { role } : {},
-      message,
-      spent: b.spent,
-      budget: b.storyBudget,
-      remaining: b.remaining
-    }
-  });
-  return message;
-}
-
-// plugins/arima/scripts/src/item.ts
-var ITEM_STATUSES = [
-  "Backlog",
-  "Ready",
-  "In Progress",
-  "In Review",
-  "In QA",
-  "PO Acceptance",
-  "Done",
-  "Released",
-  "Blocked",
-  "Cancelled"
+// plugins/arima/scripts/src/roles.ts
+var ROLES = [
+  "orchestrator",
+  "ba",
+  "ux",
+  "architect",
+  "tech-lead",
+  "developer",
+  "qa",
+  "security",
+  "devops"
 ];
-var itemFile = (projectDir, id) => path11.join(projectDir, ".arima", "items", `${id}.json`);
-var newItem = (id) => ({
-  schema_version: 1,
-  id,
-  attempt: 1,
-  run_failures: 0,
-  cost_usd_total: 0
-});
-function readItem(projectDir, id) {
-  const file = itemFile(projectDir, id);
-  if (!existsSync6(file)) return newItem(id);
-  const data = JSON.parse(readFileSync7(file, "utf8"));
-  const validate = getValidator("item");
-  if (!validate(data))
-    throw new Error(`Corrupt ${file}: ${(validate.errors ?? []).map(describeError).join("; ")}`);
-  const item = data;
-  if (item.id !== id) throw new Error(`Corrupt ${file}: it holds item ${item.id}`);
-  return item;
+function configKey(role) {
+  return role.replace("-", "_");
 }
-async function updateItem(projectDir, id, change) {
-  const file = itemFile(projectDir, id);
-  mkdirSync4(path11.dirname(file), { recursive: true });
-  return withFileLock(`${file}.lock`, () => {
-    const next = change(readItem(projectDir, id));
-    next.cost_usd_total = itemSpent(projectDir, id);
-    const validate = getValidator("item");
-    if (!validate(next))
-      throw new Error(
-        `Invalid item ${id}: ${(validate.errors ?? []).map(describeError).join("; ")}`
-      );
-    writeFileAtomic(file, `${JSON.stringify(next, null, 2)}
-`);
-    return next;
-  });
+var OUTBOX = "Write(./.arima/outbox/*.json)";
+var bash = (cmd) => [`Bash(${cmd})`, `Bash(${cmd} *)`];
+var GIT_READ = [
+  ...bash("git status"),
+  ...bash("git diff"),
+  ...bash("git log"),
+  ...bash("git show"),
+  ...bash("git rev-parse"),
+  ...bash("git ls-files"),
+  ...bash("git branch --list"),
+  ...bash("git fetch")
+];
+var NPM_TEST = [...bash("npm test"), ...bash("npm run"), ...bash("npm ci")];
+function allowedTools(role, scriptsDir) {
+  const read = ["Read", "Glob", "Grep"];
+  const script = (name) => bash(`node ${scriptsDir}/${name}.mjs`);
+  switch (role) {
+    case "orchestrator":
+      return [
+        ...read,
+        // G-06: events, ledger, mirror, runs, items and findings are written by scripts only.
+        OUTBOX,
+        "Write(./.arima/overrides/**)",
+        "Edit(./.arima/overrides/**)",
+        "Write(./docs/spec/**)",
+        "Edit(./docs/spec/**)",
+        ...GIT_READ,
+        ...[
+          "arima-config",
+          "arima-preflight",
+          "arima-ids",
+          "arima-notion",
+          "arima-state",
+          "arima-status"
+        ].flatMap(script),
+        "WebFetch"
+      ];
+    case "ba":
+      return [
+        ...read,
+        "Write(./docs/spec/drafts/**)",
+        "Edit(./docs/spec/drafts/**)",
+        OUTBOX,
+        "WebFetch"
+      ];
+    case "ux":
+      return [
+        ...read,
+        "Write(./design/**)",
+        "Edit(./design/**)",
+        OUTBOX,
+        "mcp__playwright__*",
+        "WebFetch"
+      ];
+    case "architect":
+      return [
+        ...read,
+        "Write(./docs/architecture/**)",
+        "Edit(./docs/architecture/**)",
+        "Write(./api/**)",
+        "Edit(./api/**)",
+        OUTBOX,
+        "WebFetch"
+      ];
+    case "tech-lead":
+      return [...read, OUTBOX, ...GIT_READ, ...NPM_TEST, "WebFetch"];
+    case "developer":
+      return [
+        ...read,
+        "Edit",
+        "Write",
+        ...GIT_READ,
+        ...bash("git add"),
+        ...bash("git commit"),
+        ...bash("git switch"),
+        ...bash("git checkout"),
+        ...NPM_TEST,
+        "WebFetch"
+      ];
+    case "qa":
+      return [
+        ...read,
+        "Write(./tests/**)",
+        "Edit(./tests/**)",
+        OUTBOX,
+        ...NPM_TEST,
+        ...bash("npx playwright"),
+        "mcp__playwright__*"
+      ];
+    case "security":
+      return [...read, OUTBOX, ...GIT_READ, ...bash("npm audit"), "WebFetch"];
+    case "devops":
+      return [
+        ...read,
+        "Write(./infra/**)",
+        "Edit(./infra/**)",
+        "Write(./.github/**)",
+        "Edit(./.github/**)",
+        "Write(./docs/ops/**)",
+        "Edit(./docs/ops/**)",
+        OUTBOX,
+        ...GIT_READ,
+        ...bash("git add"),
+        ...bash("git commit"),
+        // `npm run` and `npm ci` are not granted: they run scripts, and a devops run writes files
+        // (infra/**) that package scripts could point at.
+        ...bash("npm test"),
+        ...bash("npm outdated"),
+        ...bash("npm audit"),
+        ...bash("npm sbom"),
+        // No `docker` at all (WP-213): a container is started, stopped or inspected only through
+        // arima-env, which knows staging and preview and nothing else. `docker inspect` on a
+        // production container would read its environment, so the read-only Docker commands the
+        // card listed are not granted. backup and restore-test are host jobs.
+        ...bash(`node ${scriptsDir}/arima-env.mjs check`),
+        ...["status", "logs", "smoke", "up", "down"].flatMap((sub) => [
+          ...bash(`node ${scriptsDir}/arima-env.mjs ${sub} staging`),
+          ...bash(`node ${scriptsDir}/arima-env.mjs ${sub} preview-*`)
+        ]),
+        "WebFetch"
+      ];
+  }
 }
+function deniedTools(role) {
+  const out = [
+    "mcp__*notion*",
+    "Read(./.env)",
+    "Read(./.env.*)",
+    "Read(**/*.pem)",
+    "Read(**/*.key)",
+    "Edit(./.env*)",
+    "Write(./.env*)",
+    "Edit(./arima.yaml)",
+    "Write(./arima.yaml)",
+    "Edit(./team.yaml)",
+    "Write(./team.yaml)",
+    "Edit(./.claude/**)",
+    "Write(./.claude/**)",
+    "Edit(./.githooks/**)",
+    "Write(./.githooks/**)",
+    "Edit(./.arima/PAUSE)",
+    "Write(./.arima/PAUSE)",
+    "Edit(./.arima/run.lock)",
+    "Write(./.arima/run.lock)",
+    // D-49: no role pushes or runs gh. The host publish script pushes, opens PRs and posts comments.
+    ...bash("git push"),
+    ...bash("gh"),
+    ...bash("gh pr merge"),
+    ...bash("gh api"),
+    ...bash("gh workflow run"),
+    ...bash("gh release"),
+    ...bash("gh secret"),
+    ...bash("gh repo"),
+    ...bash("gh auth"),
+    // WP-213: host scripts, and Docker itself, are never an agent's (the guard repeats this).
+    ...["arima-release", "arima-merge", "arima-publish", "arima-worktree", "arima-dispatch"].map(
+      (n) => `Bash(node */${n}.mjs *)`
+    ),
+    ...["docker", "docker compose", "docker-compose", "podman", "kubectl"].flatMap((c) => bash(c)),
+    "Read(~/.config/arima/**)"
+  ];
+  if (role !== "devops") out.push("Edit(./.github/**)", "Write(./.github/**)");
+  return out;
+}
+var githubTokenScope = () => "none";
+function mayHoldGithubToken(role) {
+  void role;
+  return githubTokenScope() !== "none";
+}
+function mayHoldNotionToken(role) {
+  return role === "orchestrator";
+}
+var OUTBOX_DATABASES = {
+  orchestrator: [
+    "gates",
+    "requirements",
+    "epics",
+    "stories",
+    "test_cases",
+    "bugs",
+    "milestones",
+    "documents",
+    "decisions",
+    "questions",
+    "meetings",
+    "digests",
+    "releases",
+    "incidents",
+    "change_requests",
+    "risks",
+    "lessons",
+    "cost_log",
+    "human_tasks"
+  ],
+  ba: ["requirements", "epics", "stories", "documents", "risks", "questions", "decisions"],
+  ux: ["documents", "stories", "questions", "decisions"],
+  architect: ["documents", "requirements", "risks", "questions", "decisions"],
+  "tech-lead": ["documents", "risks", "questions", "decisions"],
+  developer: ["stories", "bugs", "questions", "decisions"],
+  qa: ["test_cases", "bugs", "documents", "questions", "decisions"],
+  security: ["risks", "documents", "questions", "decisions"],
+  devops: ["documents", "releases", "incidents", "risks", "human_tasks", "questions", "decisions"]
+};
+var OUTBOX_FORBIDDEN_PROPERTIES = {
+  ba: ["Priority"],
+  ux: ["Priority"]
+};
 
 // plugins/arima/scripts/src/notion/allocations.ts
-import { existsSync as existsSync8, mkdirSync as mkdirSync6, readFileSync as readFileSync9 } from "node:fs";
-import path13 from "node:path";
-
-// plugins/arima/scripts/src/ids.ts
 import { existsSync as existsSync7, mkdirSync as mkdirSync5, readFileSync as readFileSync8 } from "node:fs";
 import path12 from "node:path";
+
+// plugins/arima/scripts/src/ids.ts
+import { existsSync as existsSync6, mkdirSync as mkdirSync4, readFileSync as readFileSync7 } from "node:fs";
+import path11 from "node:path";
 var ID_WIDTHS = {
   REQ: 3,
   NFR: 3,
@@ -19417,11 +19752,11 @@ function formatId(prefix, n) {
   return `${prefix}-${String(n).padStart(ID_WIDTHS[prefix], "0")}`;
 }
 function idsFile(projectDir) {
-  return path12.join(projectDir, ".arima", "state", "ids.json");
+  return path11.join(projectDir, ".arima", "state", "ids.json");
 }
 function readState(file) {
-  if (!existsSync7(file)) return { schema_version: 1, counters: {} };
-  const data = JSON.parse(readFileSync8(file, "utf8"));
+  if (!existsSync6(file)) return { schema_version: 1, counters: {} };
+  const data = JSON.parse(readFileSync7(file, "utf8"));
   const validate = getValidator("ids");
   if (!validate(data)) {
     throw new Error(`Corrupt ${file}: ${(validate.errors ?? []).map(describeError).join("; ")}`);
@@ -19433,7 +19768,7 @@ async function nextId(projectDir, prefix) {
     throw new Error(`Unknown ID prefix "${prefix}". Expected one of: ${ID_PREFIXES.join(", ")}`);
   }
   const file = idsFile(projectDir);
-  mkdirSync5(path12.dirname(file), { recursive: true });
+  mkdirSync4(path11.dirname(file), { recursive: true });
   return withFileLock(`${file}.lock`, () => {
     const state = readState(file);
     const n = (state.counters[prefix] ?? 0) + 1;
@@ -19924,11 +20259,11 @@ var ID_PREFIX_BY_DB = {
   risks: "RISK",
   lessons: "LES"
 };
-var allocationsFile = (projectDir) => path13.join(projectDir, ".arima", "state", "allocations.json");
+var allocationsFile = (projectDir) => path12.join(projectDir, ".arima", "state", "allocations.json");
 function readAllocations(projectDir) {
   const file = allocationsFile(projectDir);
-  if (!existsSync8(file)) return {};
-  return JSON.parse(readFileSync9(file, "utf8"));
+  if (!existsSync7(file)) return {};
+  return JSON.parse(readFileSync8(file, "utf8"));
 }
 function allocatedTo(projectDir, id) {
   return readAllocations(projectDir)[id];
@@ -19943,7 +20278,7 @@ async function allocateId(projectDir, prefix, runId) {
     data: { id }
   });
   const file = allocationsFile(projectDir);
-  mkdirSync6(path13.dirname(file), { recursive: true });
+  mkdirSync5(path12.dirname(file), { recursive: true });
   await withFileLock(`${file}.lock`, () => {
     const all = readAllocations(projectDir);
     all[id] = runId;
@@ -19953,15 +20288,15 @@ async function allocateId(projectDir, prefix, runId) {
   return id;
 }
 var titleProperty = (db) => dbByKey(db).props.find((p) => p.type === "title")?.name;
-var engineEntriesFile = (projectDir) => path13.join(projectDir, ".arima", "state", "engine-entries.json");
+var engineEntriesFile = (projectDir) => path12.join(projectDir, ".arima", "state", "engine-entries.json");
 function readEngineEntries(projectDir) {
   const file = engineEntriesFile(projectDir);
-  if (!existsSync8(file)) return [];
-  return JSON.parse(readFileSync9(file, "utf8"));
+  if (!existsSync7(file)) return [];
+  return JSON.parse(readFileSync8(file, "utf8"));
 }
 async function registerEngineEntry(projectDir, id) {
   const file = engineEntriesFile(projectDir);
-  mkdirSync6(path13.dirname(file), { recursive: true });
+  mkdirSync5(path12.dirname(file), { recursive: true });
   await withFileLock(`${file}.lock`, () => {
     const all = readEngineEntries(projectDir);
     if (!all.includes(id)) all.push(id);
@@ -19971,217 +20306,198 @@ async function registerEngineEntry(projectDir, id) {
 }
 var isEngineEntry = (projectDir, id) => readEngineEntries(projectDir).includes(id);
 
-// plugins/arima/scripts/src/notion/outbox.ts
-import {
-  existsSync as existsSync9,
-  mkdirSync as mkdirSync7,
-  readFileSync as readFileSync10,
-  readdirSync as readdirSync3,
-  renameSync as renameSync2,
-  writeFileSync as writeFileSync2
-} from "node:fs";
-import path14 from "node:path";
+// plugins/arima/scripts/src/notion/mirror.ts
+import { existsSync as existsSync8, mkdirSync as mkdirSync6, readFileSync as readFileSync9 } from "node:fs";
+import path13 from "node:path";
 
-// plugins/arima/scripts/src/roles.ts
-var ROLES = [
-  "orchestrator",
-  "ba",
-  "ux",
-  "architect",
-  "tech-lead",
-  "developer",
-  "qa",
-  "security",
-  "devops"
-];
-function configKey(role) {
-  return role.replace("-", "_");
-}
-var OUTBOX = "Write(./.arima/outbox/*.json)";
-var bash = (cmd) => [`Bash(${cmd})`, `Bash(${cmd} *)`];
-var GIT_READ = [
-  ...bash("git status"),
-  ...bash("git diff"),
-  ...bash("git log"),
-  ...bash("git show"),
-  ...bash("git rev-parse"),
-  ...bash("git ls-files"),
-  ...bash("git branch --list"),
-  ...bash("git fetch")
-];
-var NPM_TEST = [...bash("npm test"), ...bash("npm run"), ...bash("npm ci")];
-function allowedTools(role, scriptsDir) {
-  const read = ["Read", "Glob", "Grep"];
-  const script = (name) => bash(`node ${scriptsDir}/${name}.mjs`);
-  switch (role) {
-    case "orchestrator":
-      return [
-        ...read,
-        // G-06: events, ledger, mirror, runs, items and findings are written by scripts only.
-        OUTBOX,
-        "Write(./.arima/overrides/**)",
-        "Edit(./.arima/overrides/**)",
-        "Write(./docs/spec/**)",
-        "Edit(./docs/spec/**)",
-        ...GIT_READ,
-        ...[
-          "arima-config",
-          "arima-preflight",
-          "arima-ids",
-          "arima-notion",
-          "arima-state",
-          "arima-status"
-        ].flatMap(script),
-        "WebFetch"
-      ];
-    case "ba":
-      return [
-        ...read,
-        "Write(./docs/spec/drafts/**)",
-        "Edit(./docs/spec/drafts/**)",
-        OUTBOX,
-        "WebFetch"
-      ];
-    case "ux":
-      return [
-        ...read,
-        "Write(./design/**)",
-        "Edit(./design/**)",
-        OUTBOX,
-        "mcp__playwright__*",
-        "WebFetch"
-      ];
-    case "architect":
-      return [
-        ...read,
-        "Write(./docs/architecture/**)",
-        "Edit(./docs/architecture/**)",
-        "Write(./api/**)",
-        "Edit(./api/**)",
-        OUTBOX,
-        "WebFetch"
-      ];
-    case "tech-lead":
-      return [...read, OUTBOX, ...GIT_READ, ...NPM_TEST, "WebFetch"];
-    case "developer":
-      return [
-        ...read,
-        "Edit",
-        "Write",
-        ...GIT_READ,
-        ...bash("git add"),
-        ...bash("git commit"),
-        ...bash("git switch"),
-        ...bash("git checkout"),
-        ...NPM_TEST,
-        "WebFetch"
-      ];
-    case "qa":
-      return [
-        ...read,
-        "Write(./tests/**)",
-        "Edit(./tests/**)",
-        OUTBOX,
-        ...NPM_TEST,
-        ...bash("npx playwright"),
-        "mcp__playwright__*"
-      ];
-    case "security":
-      return [...read, OUTBOX, ...GIT_READ, ...bash("npm audit"), "WebFetch"];
-    case "devops":
-      return [
-        ...read,
-        "Write(./infra/**)",
-        "Edit(./infra/**)",
-        "Write(./.github/**)",
-        "Edit(./.github/**)",
-        "Write(./docs/ops/**)",
-        "Edit(./docs/ops/**)",
-        ...GIT_READ,
-        ...bash("git add"),
-        ...bash("git commit"),
-        "WebFetch"
-      ];
+// plugins/arima/scripts/src/notion/values.ts
+var CHUNK = 2e3;
+var rich = (s) => {
+  const out = [];
+  for (let i = 0; i < s.length; i += CHUNK)
+    out.push({ type: "text", text: { content: s.slice(i, i + CHUNK) } });
+  return out;
+};
+var ValueError = class extends Error {
+};
+function toNotionValue(type, name, value, resolveRelation) {
+  const bad = (expected) => {
+    throw new ValueError(`"${name}" (${type}) expects ${expected}`);
+  };
+  switch (type) {
+    case "title":
+      return typeof value === "string" ? { title: rich(value) } : bad("a string");
+    case "rich_text":
+      return typeof value === "string" ? { rich_text: rich(value) } : bad("a string");
+    case "number":
+      return typeof value === "number" || value === null ? { number: value } : bad("a number or null");
+    case "select":
+      return value === null ? { select: null } : typeof value === "string" ? { select: { name: value } } : bad("an option name or null");
+    case "multi_select":
+      return Array.isArray(value) && value.every((v) => typeof v === "string") ? { multi_select: value.map((n) => ({ name: n })) } : bad("an array of option names");
+    case "date":
+      if (value === null) return { date: null };
+      if (typeof value === "string") return { date: { start: value } };
+      if (typeof value === "object" && !Array.isArray(value) && typeof value.start === "string") {
+        const v = value;
+        return { date: { start: v.start, ...v.end ? { end: v.end } : {} } };
+      }
+      return bad("an ISO date string, {start, end} or null");
+    case "checkbox":
+      return typeof value === "boolean" ? { checkbox: value } : bad("true or false");
+    case "url":
+      return value === null || typeof value === "string" ? { url: value } : bad("a string or null");
+    case "people":
+      return Array.isArray(value) && value.every((v) => typeof v === "string") ? { people: value.map((id) => ({ id })) } : bad("an array of Notion user ids");
+    case "relation":
+      return Array.isArray(value) && value.every((v) => typeof v === "string") ? { relation: value.map((id) => ({ id: resolveRelation(id) })) } : bad("an array of ARIMA IDs");
+    default:
+      throw new ValueError(`"${name}" is a ${type} property, which agents cannot write`);
   }
 }
-function deniedTools(role) {
-  const out = [
-    "mcp__*notion*",
-    "Read(./.env)",
-    "Read(./.env.*)",
-    "Read(**/*.pem)",
-    "Read(**/*.key)",
-    "Edit(./.env*)",
-    "Write(./.env*)",
-    "Edit(./arima.yaml)",
-    "Write(./arima.yaml)",
-    "Edit(./team.yaml)",
-    "Write(./team.yaml)",
-    "Edit(./.claude/**)",
-    "Write(./.claude/**)",
-    "Edit(./.githooks/**)",
-    "Write(./.githooks/**)",
-    "Edit(./.arima/PAUSE)",
-    "Write(./.arima/PAUSE)",
-    "Edit(./.arima/run.lock)",
-    "Write(./.arima/run.lock)",
-    // D-49: no role pushes or runs gh. The host publish script pushes, opens PRs and posts comments.
-    ...bash("git push"),
-    ...bash("gh"),
-    ...bash("gh pr merge"),
-    ...bash("gh api"),
-    ...bash("gh workflow run"),
-    ...bash("gh release"),
-    ...bash("gh secret"),
-    ...bash("gh repo"),
-    ...bash("gh auth")
-  ];
-  if (role !== "devops") out.push("Edit(./.github/**)", "Write(./.github/**)");
+var plain2 = (rt) => Array.isArray(rt) ? rt.map((t2) => t2.plain_text ?? "").join("") : "";
+function fromNotionValue(raw) {
+  switch (raw.type) {
+    case "title":
+      return plain2(raw["title"]);
+    case "rich_text":
+      return plain2(raw["rich_text"]);
+    case "number":
+      return raw["number"] ?? null;
+    case "select":
+      return raw["select"]?.name ?? null;
+    case "multi_select":
+      return (raw["multi_select"] ?? []).map((o) => o.name);
+    case "date": {
+      const d = raw["date"];
+      return d === null || d === void 0 ? null : d.end ? { start: d.start, end: d.end } : d.start;
+    }
+    case "checkbox":
+      return raw["checkbox"] === true;
+    case "url":
+      return raw["url"] ?? null;
+    case "people":
+      return (raw["people"] ?? []).map((p) => ({
+        id: p.id,
+        ...p.name ? { name: p.name } : {}
+      }));
+    case "relation":
+      return (raw["relation"] ?? []).map((r) => r.id);
+    case "files":
+      return (raw["files"] ?? []).map((f) => f.name ?? "");
+    case "formula": {
+      const f = raw["formula"];
+      const v = f && f.type ? f[f.type] : null;
+      return typeof v === "string" || typeof v === "number" || typeof v === "boolean" ? v : null;
+    }
+    case "rollup": {
+      const r = raw["rollup"];
+      if (r?.type === "number") return r.number ?? null;
+      if (r?.type === "array") {
+        return (r.array ?? []).map((x) => {
+          const v = fromNotionValue(x);
+          return typeof v === "string" ? v : JSON.stringify(v);
+        });
+      }
+      return null;
+    }
+    case "created_time":
+    case "last_edited_time":
+      return raw[raw.type] ?? null;
+    default:
+      return null;
+  }
+}
+function markdownToBlocks(markdown) {
+  const blocks = [];
+  const para = [];
+  const flush = () => {
+    if (para.length > 0) {
+      blocks.push({
+        object: "block",
+        type: "paragraph",
+        paragraph: { rich_text: rich(para.join(" ")) }
+      });
+      para.length = 0;
+    }
+  };
+  const block = (type, body) => {
+    flush();
+    blocks.push({ object: "block", type, [type]: body });
+  };
+  for (const line of markdown.split(/\r?\n/)) {
+    const h = /^(#{1,3})\s+(.*)$/.exec(line);
+    const todo = /^\s*[-*]\s+\[( |x|X)\]\s+(.*)$/.exec(line);
+    const bullet = /^\s*[-*]\s+(.*)$/.exec(line);
+    const num2 = /^\s*\d+[.)]\s+(.*)$/.exec(line);
+    if (line.trim() === "") flush();
+    else if (h) block(`heading_${h[1].length}`, { rich_text: rich(h[2]) });
+    else if (todo) block("to_do", { rich_text: rich(todo[2]), checked: todo[1] !== " " });
+    else if (bullet) block("bulleted_list_item", { rich_text: rich(bullet[1]) });
+    else if (num2) block("numbered_list_item", { rich_text: rich(num2[1]) });
+    else para.push(line.trim());
+  }
+  flush();
+  return blocks;
+}
+
+// plugins/arima/scripts/src/notion/mirror.ts
+var mirrorDir = (projectDir) => path13.join(projectDir, ".arima", "mirror");
+var mirrorFile = (projectDir, db) => path13.join(mirrorDir(projectDir), `${db}.json`);
+var notionMapFile = (projectDir) => path13.join(projectDir, ".arima", "notion-map.json");
+function readNotionMap(projectDir) {
+  const file = notionMapFile(projectDir);
+  if (!existsSync8(file)) throw new Error(`${file} not found; run arima-notion map first`);
+  const data = JSON.parse(readFileSync9(file, "utf8"));
+  const validate = getValidator("notion-map");
+  if (!validate(data)) {
+    throw new Error(`Invalid ${file}: ${(validate.errors ?? []).map(describeError).join("; ")}`);
+  }
+  return data;
+}
+function toMirrorRow(raw) {
+  const properties2 = {};
+  let id = "";
+  for (const [name, value] of Object.entries(raw.properties)) {
+    properties2[name] = fromNotionValue(value);
+    if (value.type === "title") id = String(properties2[name] ?? "");
+  }
+  return { page_id: raw.pageId, last_edited_time: raw.lastEdited, id, properties: properties2 };
+}
+function readMirror(projectDir, db) {
+  const file = mirrorFile(projectDir, db);
+  if (!existsSync8(file)) return void 0;
+  return JSON.parse(readFileSync9(file, "utf8"));
+}
+function writeMirror(projectDir, m) {
+  mkdirSync6(mirrorDir(projectDir), { recursive: true });
+  writeFileAtomic(mirrorFile(projectDir, m.database), `${JSON.stringify(m, null, 2)}
+`);
+}
+async function pullMirror(projectDir, port, map, opts = {}) {
+  const out = /* @__PURE__ */ new Map();
+  const fetchedAt = (opts.now ?? /* @__PURE__ */ new Date()).toISOString();
+  for (const [db, info] of Object.entries(map.databases)) {
+    const rows = (await port.queryRows(info.data_source_id)).map(toMirrorRow);
+    const file = { schema_version: 1, database: db, fetched_at: fetchedAt, rows };
+    writeMirror(projectDir, file);
+    out.set(db, file);
+    await appendEvent(projectDir, {
+      type: "notion.pull",
+      actor: "system",
+      ...opts.runId !== void 0 ? { run_id: opts.runId } : {},
+      data: { database: db, rows: rows.length }
+    });
+  }
   return out;
 }
-var githubTokenScope = () => "none";
-function mayHoldGithubToken(role) {
-  void role;
-  return githubTokenScope() !== "none";
+function findRow(m, id) {
+  if (m === void 0) return void 0;
+  const byId = m.rows.filter((r) => r.id === id);
+  if (byId.length > 1) throw new Error(`${byId.length} rows in ${m.database} have the ID "${id}"`);
+  if (byId[0] !== void 0) return byId[0];
+  return m.rows.find((r) => r.page_id === id);
 }
-function mayHoldNotionToken(role) {
-  return role === "orchestrator";
-}
-var OUTBOX_DATABASES = {
-  orchestrator: [
-    "gates",
-    "requirements",
-    "epics",
-    "stories",
-    "test_cases",
-    "bugs",
-    "milestones",
-    "documents",
-    "decisions",
-    "questions",
-    "meetings",
-    "digests",
-    "releases",
-    "incidents",
-    "change_requests",
-    "risks",
-    "lessons",
-    "cost_log",
-    "human_tasks"
-  ],
-  ba: ["requirements", "epics", "stories", "documents", "risks", "questions", "decisions"],
-  ux: ["documents", "stories", "questions", "decisions"],
-  architect: ["documents", "requirements", "risks", "questions", "decisions"],
-  "tech-lead": ["documents", "risks", "questions", "decisions"],
-  developer: ["stories", "bugs", "questions", "decisions"],
-  qa: ["test_cases", "bugs", "documents", "questions", "decisions"],
-  security: ["risks", "documents", "questions", "decisions"],
-  devops: ["documents", "releases", "incidents", "risks", "human_tasks", "questions", "decisions"]
-};
-var OUTBOX_FORBIDDEN_PROPERTIES = {
-  ba: ["Priority"],
-  ux: ["Priority"]
-};
 
 // plugins/arima/scripts/src/notion/outbox.ts
 var outboxDir = (projectDir) => path14.join(projectDir, ".arima", "outbox");
@@ -20290,7 +20606,7 @@ function settle(projectDir, file, id, result, report) {
   const dir = path14.join(outboxDir(projectDir), bucket);
   mkdirSync7(dir, { recursive: true });
   renameSync2(file, path14.join(dir, `${id}.json`));
-  writeFileSync2(
+  writeFileSync3(
     path14.join(dir, `${id}.result.json`),
     `${JSON.stringify({ ...result, at: (/* @__PURE__ */ new Date()).toISOString() }, null, 2)}
 `
@@ -20594,6 +20910,1189 @@ async function pushOutbox(projectDir, port, map, opts = {}) {
 }
 var errText = (e) => e instanceof Error ? e.message : String(e);
 
+// plugins/arima/scripts/src/sandbox.ts
+var SANDBOX_IMAGE_DEFAULT = "arima-sandbox:1";
+var CONTAINER_WORK = "/work";
+var CONTAINER_PLUGIN = "/plugin";
+var EGRESS_ALLOW_DEFAULT = [
+  "api.anthropic.com",
+  "registry.npmjs.org",
+  "statsig.anthropic.com"
+];
+var realExec = (file, args, opts = {}) => new Promise((resolve2) => {
+  const child = execFile(
+    file,
+    args,
+    {
+      cwd: opts.cwd,
+      timeout: opts.timeoutMs ?? 12e4,
+      maxBuffer: 32 * 1024 * 1024,
+      windowsHide: true,
+      env: { ...opts.env ?? process.env, GIT_TERMINAL_PROMPT: "0" }
+    },
+    (err, stdout, stderr) => {
+      const code2 = err === null ? 0 : typeof err.code === "number" ? err.code : 1;
+      resolve2({ code: code2, stdout: String(stdout), stderr: String(stderr) });
+    }
+  );
+  if (opts.input !== void 0) child.stdin?.end(opts.input);
+});
+async function dockerReady(exec = realExec) {
+  const r = await exec("docker", ["info", "--format", "{{.ServerVersion}}"], { timeoutMs: 2e4 });
+  if (r.code === 0 && r.stdout.trim() !== "")
+    return { ok: true, detail: `Docker is running (server ${r.stdout.trim()})` };
+  return {
+    ok: false,
+    detail: "runtime.sandbox is docker but the Docker daemon is not answering; start Docker Desktop"
+  };
+}
+var FORBIDDEN_MOUNT = /(docker\.sock|[\\/]\.claude\b|[\\/]\.config[\\/]arima|[\\/]\.ssh\b|[\\/]\.git(?:[\\/]|$|:))/i;
+function unsafeDockerArgs(args) {
+  const bad = [];
+  const has = (a) => args.includes(a);
+  if (has("--privileged")) bad.push("--privileged");
+  if (args.some((a) => a.startsWith("--cap-add"))) bad.push("--cap-add");
+  if (args.some((a, i) => (a === "--network" || a === "--net") && args[i + 1] === "host"))
+    bad.push("host network");
+  if (args.some((a) => /^--(pid|ipc|userns|uts)=?host$/.test(a))) bad.push("host namespace");
+  args.forEach((a, i) => {
+    if ((a === "-v" || a === "--volume" || a === "--mount") && args[i + 1] !== void 0) {
+      if (FORBIDDEN_MOUNT.test(args[i + 1])) bad.push(`mount ${args[i + 1]}`);
+    }
+  });
+  if (!has("--cap-drop")) bad.push("capabilities not dropped");
+  if (!args.includes("no-new-privileges")) bad.push("no-new-privileges missing");
+  return bad;
+}
+function assertSafeDockerArgs(args) {
+  const bad = unsafeDockerArgs(args);
+  if (bad.length > 0) throw new Error(`refusing an unsafe sandbox: ${bad.join(", ")}`);
+}
+function buildDockerRunArgs(i) {
+  const args = [
+    "run",
+    "--rm",
+    "-i",
+    "--init",
+    "--name",
+    i.name,
+    "--network",
+    i.network,
+    "--cap-drop",
+    "ALL",
+    "--security-opt",
+    "no-new-privileges",
+    "--pids-limit",
+    String(i.pids ?? 512),
+    "--memory",
+    i.memory ?? "4g",
+    "--env-file",
+    i.envFile,
+    "-v",
+    `${i.cloneDir}:${CONTAINER_WORK}:rw`,
+    "-v",
+    `${i.pluginDir}:${CONTAINER_PLUGIN}:ro`,
+    "-w",
+    CONTAINER_WORK
+  ];
+  if (i.user !== void 0) args.push("--user", i.user);
+  args.push(i.image, ...i.command);
+  assertSafeDockerArgs(args);
+  return args;
+}
+var CONTAINER_ENV_KEEP = /^(ARIMA_(RUN_ID|ROLE|ITEM|KIND)|OTEL_|ANTHROPIC_|CLAUDE_CODE_OAUTH_TOKEN|GH_TOKEN|ARIMA_NOTION_TOKEN|NOTION_)/;
+function containerEnv(hostEnv, extra = {}) {
+  const env = {
+    HOME: "/home/node",
+    PATH: "/usr/local/bin:/usr/bin:/bin",
+    ARIMA_PROJECT_DIR: CONTAINER_WORK,
+    CLAUDE_PLUGIN_ROOT: CONTAINER_PLUGIN
+  };
+  for (const [k, v] of Object.entries(hostEnv)) {
+    if (v === void 0) continue;
+    if (CONTAINER_ENV_KEEP.test(k) || (extra.keep ?? []).includes(k)) env[k] = v;
+  }
+  if (extra.oauthToken !== void 0) env["CLAUDE_CODE_OAUTH_TOKEN"] = extra.oauthToken;
+  if (extra.proxy !== void 0) {
+    for (const k of ["HTTPS_PROXY", "HTTP_PROXY", "https_proxy", "http_proxy"])
+      env[k] = extra.proxy;
+    env["NO_PROXY"] = "localhost,127.0.0.1";
+  }
+  env["ARIMA_PROJECT_DIR"] = CONTAINER_WORK;
+  return env;
+}
+function writeEnvFile(dir, env) {
+  const file = path15.join(dir, "env");
+  for (const [k, v] of Object.entries(env))
+    if (/[\r\n]/.test(v) || !/^[A-Za-z_][A-Za-z0-9_]*$/.test(k))
+      throw new Error(`environment variable ${k} cannot be passed to a container`);
+  writeFileSync4(
+    file,
+    `${Object.entries(env).map(([k, v]) => `${k}=${v}`).join("\n")}
+`,
+    {
+      mode: 384
+    }
+  );
+  try {
+    chmodSync(file, 384);
+  } catch {
+  }
+  return file;
+}
+async function makeClone(exec, source, branch, base = tmpdir()) {
+  const root = mkdtempSync(path15.join(base, "arima-sbx-"));
+  const dir = path15.join(root, "work");
+  const r = await exec("git", [
+    "clone",
+    "--quiet",
+    "--no-hardlinks",
+    "--branch",
+    branch,
+    source,
+    dir
+  ]);
+  if (r.code !== 0) {
+    rmSync2(root, { recursive: true, force: true });
+    throw new Error(`could not clone ${branch} for the sandbox: ${r.stderr.trim()}`);
+  }
+  await exec("git", ["remote", "remove", "origin"], { cwd: dir });
+  mkdirSync8(path15.join(dir, ".arima", "outbox"), { recursive: true });
+  const info = path15.join(dir, ".git", "info");
+  mkdirSync8(info, { recursive: true });
+  writeFileSync4(path15.join(info, "exclude"), ".arima/\n", { flag: "a" });
+  return { dir, root };
+}
+function disposeClone(c) {
+  rmSync2(c.root, { recursive: true, force: true, maxRetries: 3 });
+}
+async function importCommits(exec, worktree, clone, branch) {
+  const before = await exec("git", ["rev-parse", "HEAD"], { cwd: worktree });
+  const r = await exec("git", ["pull", "--ff-only", "--quiet", clone.dir, branch], {
+    cwd: worktree
+  });
+  if (r.code !== 0)
+    return {
+      ok: false,
+      commits: 0,
+      detail: `the sandbox commits could not be fast-forwarded: ${r.stderr.trim()}`
+    };
+  const n = await exec("git", ["rev-list", "--count", `${before.stdout.trim()}..HEAD`], {
+    cwd: worktree
+  });
+  return { ok: true, commits: Number(n.stdout.trim()) || 0, detail: "ok" };
+}
+var AUDIT_TYPES = /* @__PURE__ */ new Set(["tool.used", "tool.blocked"]);
+async function importArima(projectDir, clone, who) {
+  const rejected = [];
+  let outbox = 0;
+  let events = 0;
+  const env = { ARIMA_RUN_ID: who.runId, ARIMA_ROLE: who.role };
+  const ob = path15.join(clone.dir, ".arima", "outbox");
+  if (existsSync10(ob)) {
+    const validate = getValidator("outbox");
+    for (const name of readdirSync4(ob).filter((f) => f.endsWith(".json")).sort()) {
+      try {
+        const entry = migrateRecord(
+          "outbox",
+          JSON.parse(readFileSync11(path15.join(ob, name), "utf8"))
+        );
+        if (!validate(entry)) throw new Error("invalid outbox entry");
+        enqueue(projectDir, entry, { env });
+        outbox += 1;
+      } catch (e) {
+        rejected.push(`${name}: ${e.message}`);
+      }
+    }
+  }
+  const evFile = path15.join(clone.dir, ".arima", "events.jsonl");
+  if (existsSync10(evFile)) {
+    for (const [i, line] of readFileSync11(evFile, "utf8").split("\n").entries()) {
+      if (line.trim() === "") continue;
+      try {
+        const ev = JSON.parse(line);
+        if (!AUDIT_TYPES.has(ev.type))
+          throw new Error(`event type ${String(ev.type)} is not importable`);
+        await appendEvent(projectDir, {
+          type: ev.type,
+          actor: who.role,
+          run_id: who.runId,
+          ...ev.item !== void 0 ? { item: ev.item } : {},
+          ...ev.data !== void 0 ? { data: ev.data } : {}
+        });
+        events += 1;
+      } catch (e) {
+        rejected.push(`events.jsonl:${i + 1}: ${e.message}`);
+      }
+    }
+  }
+  return { outbox, events, rejected };
+}
+var safeName = (s) => s.replace(/[^A-Za-z0-9_.-]/g, "-");
+async function openSandbox(o) {
+  const exec = o.exec ?? realExec;
+  const image = o.image ?? SANDBOX_IMAGE_DEFAULT;
+  const id = safeName(o.runId);
+  const net2 = `arima-net-${id}`;
+  const proxyName = `arima-egress-${id}`;
+  const container = `arima-run-${id}`;
+  const branchOut = await exec("git", ["rev-parse", "--abbrev-ref", "HEAD"], { cwd: o.worktree });
+  const branch = branchOut.stdout.trim();
+  if (branchOut.code !== 0 || branch === "" || branch === "HEAD")
+    throw new Error(
+      `the worktree ${o.worktree} is not on a branch, so it cannot be cloned for the sandbox`
+    );
+  const cleanup = [];
+  const undo = async () => {
+    for (const f of cleanup.reverse()) await f().catch(() => void 0);
+  };
+  try {
+    const clone = await makeClone(exec, o.worktree, branch, o.tmp);
+    cleanup.push(() => Promise.resolve(disposeClone(clone)));
+    const created = await exec("docker", ["network", "create", "--internal", net2]);
+    if (created.code !== 0)
+      throw new Error(`could not create the sandbox network: ${created.stderr.trim()}`);
+    cleanup.push(() => exec("docker", ["network", "rm", net2]));
+    const allow = [...EGRESS_ALLOW_DEFAULT, ...o.allow ?? []];
+    const sidecar = [
+      "run",
+      "-d",
+      "--rm",
+      "--name",
+      proxyName,
+      "--network",
+      net2,
+      "--cap-drop",
+      "ALL",
+      "--security-opt",
+      "no-new-privileges",
+      "--read-only",
+      "-v",
+      `${o.pluginDir}:${CONTAINER_PLUGIN}:ro`,
+      image,
+      "node",
+      `${CONTAINER_PLUGIN}/scripts/dist/arima-egress-proxy.mjs`,
+      "--allow",
+      allow.join(","),
+      "--host",
+      "0.0.0.0",
+      "--port",
+      "3128"
+    ];
+    assertSafeDockerArgs(sidecar);
+    const s = await exec("docker", sidecar);
+    if (s.code !== 0) throw new Error(`could not start the egress proxy: ${s.stderr.trim()}`);
+    cleanup.push(() => exec("docker", ["rm", "-f", proxyName]));
+    const c = await exec("docker", ["network", "connect", "bridge", proxyName]);
+    if (c.code !== 0)
+      throw new Error(`could not connect the egress proxy outward: ${c.stderr.trim()}`);
+    const env = containerEnv(o.hostEnv, {
+      proxy: `http://${proxyName}:3128`,
+      oauthToken: o.oauthToken,
+      ...o.keep ? { keep: o.keep } : {}
+    });
+    const envFile = writeEnvFile(clone.root, env);
+    const user = typeof process.getuid === "function" ? `${process.getuid()}:${process.getgid?.() ?? 0}` : void 0;
+    return {
+      clone,
+      container,
+      dockerArgs: (command) => buildDockerRunArgs({
+        name: container,
+        image,
+        cloneDir: clone.dir,
+        pluginDir: o.pluginDir,
+        envFile,
+        network: net2,
+        command,
+        ...user !== void 0 ? { user } : {}
+      }),
+      kill: async () => {
+        await exec("docker", ["kill", container]);
+      },
+      finish: async () => {
+        try {
+          const commits = await importCommits(exec, o.worktree, clone, branch);
+          const imported = await importArima(o.projectDir, clone, {
+            runId: o.runId,
+            role: o.role
+          });
+          return { commits, imported };
+        } finally {
+          await exec("docker", ["rm", "-f", container]).catch(() => void 0);
+          await undo();
+        }
+      }
+    };
+  } catch (e) {
+    await undo();
+    throw e;
+  }
+}
+
+// plugins/arima/scripts/src/env.ts
+var ENV_EXIT = {
+  ok: 0,
+  failed: 1,
+  usage: 2,
+  config: 10,
+  killSwitch: 12,
+  docker: 14,
+  refused: 70,
+  smokeFailed: 71,
+  capacity: 72
+};
+var EnvError = class extends Error {
+  constructor(message, exit) {
+    super(message);
+    this.exit = exit;
+    this.name = "EnvError";
+  }
+  exit;
+};
+function parseTarget(name) {
+  if (name === "staging") return { kind: "staging" };
+  const m = /^preview-([1-9][0-9]{0,5})$/.exec(name);
+  if (m) return { kind: "preview", pr: Number(m[1]) };
+  throw new EnvError(
+    `refused: "${name.slice(0, 40)}" is not an environment arima-env manages (only staging and preview-<pr>); production deploys only through arima-release`,
+    ENV_EXIT.refused
+  );
+}
+var targetName = (t2) => t2.kind === "staging" ? "staging" : `preview-${t2.pr}`;
+function projectName(key, t2) {
+  const k = key.toLowerCase().replace(/[^a-z0-9_-]/g, "-");
+  if (k === "" || mentionsProduction(k))
+    throw new EnvError(`refused: the project key "${key}" names production`, ENV_EXIT.refused);
+  return `${k}-${targetName(t2)}`;
+}
+function settingsFrom(projectDir, arima) {
+  const c = arima;
+  const e = c.environments ?? {};
+  let port;
+  try {
+    const u = new URL(e.staging?.url ?? "");
+    if (u.port !== "" && ["localhost", "127.0.0.1"].includes(u.hostname)) port = Number(u.port);
+  } catch {
+  }
+  const range = e.preview_ports ?? [4100, 4199];
+  return {
+    key: c.project.key,
+    projectDir,
+    composeFile: e.compose_file ?? "infra/compose.yaml",
+    stagingPort: port,
+    smokePath: () => e.staging?.smoke_path ?? "/healthz",
+    maxPreviews: e.max_previews ?? 3,
+    previewPorts: [range[0] ?? 4100, range[1] ?? 4199],
+    backupImage: e.backup_image ?? "alpine:3.20",
+    defaultBranch: c.github?.default_branch ?? "main",
+    configuredProject: (t2) => t2.kind === "staging" ? e.staging?.compose_project : void 0
+  };
+}
+var stateFile = (projectDir) => path16.join(projectDir, ".arima", "state", "environments.json");
+function readEnvState(projectDir) {
+  const f = stateFile(projectDir);
+  if (!existsSync11(f)) return { schema_version: 1, previews: {} };
+  const data = JSON.parse(readFileSync12(f, "utf8"));
+  const v = getValidator("environments-state");
+  if (!v(data)) throw new EnvError(`${f} is not a valid environments file`, ENV_EXIT.failed);
+  return data;
+}
+function writeEnvState(projectDir, s) {
+  const v = getValidator("environments-state");
+  if (!v(s)) throw new Error("refusing to write an invalid environments file");
+  writeFileAtomic(stateFile(projectDir), `${JSON.stringify(s, null, 2)}
+`);
+}
+var DOCKER_ENV = [
+  "PATH",
+  "HOME",
+  "USERPROFILE",
+  "APPDATA",
+  "LOCALAPPDATA",
+  "SYSTEMROOT",
+  "WINDIR",
+  "COMSPEC",
+  "PATHEXT",
+  "TEMP",
+  "TMP",
+  "TMPDIR",
+  "PROGRAMDATA",
+  "PROGRAMFILES",
+  "PROGRAMFILES(X86)",
+  "PROGRAMW6432",
+  "ALLUSERSPROFILE",
+  "USERNAME",
+  "USER",
+  "LANG",
+  "DOCKER_HOST",
+  "DOCKER_CONTEXT",
+  "DOCKER_CONFIG",
+  "DOCKER_CERT_PATH",
+  "DOCKER_TLS_VERIFY",
+  "XDG_RUNTIME_DIR"
+];
+function dockerEnv(base, extra = {}) {
+  const want = new Set(DOCKER_ENV);
+  const out = {};
+  for (const [k, v] of Object.entries(base))
+    if (v !== void 0 && want.has(k.toUpperCase())) out[k] = v;
+  return { ...out, ...extra };
+}
+var realPortFree = (port) => new Promise((resolve2) => {
+  const s = net.createServer();
+  s.once("error", () => resolve2(false));
+  s.listen(port, "127.0.0.1", () => s.close(() => resolve2(true)));
+});
+var realSleep = (ms) => new Promise((r) => setTimeout(r, ms));
+function context(s, name, deps) {
+  const t2 = parseTarget(name);
+  const project = projectName(s.key, t2);
+  const cfgName = s.configuredProject(t2);
+  if (cfgName !== void 0 && cfgName !== project)
+    throw new EnvError(
+      `refused: environments.${targetName(t2)}.compose_project "${cfgName}" must equal ${project}`,
+      ENV_EXIT.refused
+    );
+  return {
+    s,
+    t: t2,
+    project,
+    env: deps.env ?? process.env,
+    deps: {
+      ...deps,
+      exec: deps.exec ?? realExec,
+      fetch: deps.fetch ?? fetch,
+      sleep: deps.sleep ?? realSleep,
+      now: deps.now ?? (() => /* @__PURE__ */ new Date()),
+      portFree: deps.portFree ?? realPortFree
+    }
+  };
+}
+async function guardRunning(c, needDocker = true) {
+  if (needDocker) {
+    const d = await dockerReady(c.deps.exec);
+    if (!d.ok) throw new EnvError(d.detail, ENV_EXIT.docker);
+  }
+}
+async function guardNotPaused(c) {
+  const on = c.deps.isPaused ? await c.deps.isPaused() : (await checkKillSwitch(c.s.projectDir, null)).on;
+  if (on) throw new EnvError("refusing: the kill switch is on", ENV_EXIT.killSwitch);
+}
+var hostEnvFile = (c) => {
+  const home = c.deps.home ?? homedir();
+  const f = path16.join(
+    home,
+    ".config",
+    "arima",
+    c.s.key,
+    targetName(c.t).replace(/-\d+$/, ""),
+    "env"
+  );
+  return existsSync11(f) ? f : void 0;
+};
+function composeArgs(c, k, args) {
+  const envFile = hostEnvFile(c);
+  return [
+    "compose",
+    "-p",
+    c.project,
+    // Relative paths in the file (`build: ..`) resolve from the file's own folder, as for `docker compose -f`.
+    "--project-directory",
+    path16.dirname(k.file),
+    "-f",
+    k.file,
+    ...(k.extraFiles ?? []).flatMap((f) => ["-f", f]),
+    ...envFile ? ["--env-file", envFile] : [],
+    ...args
+  ];
+}
+var compose = (c, k, args, timeoutMs = 6e5) => c.deps.exec("docker", composeArgs(c, k, args), {
+  cwd: k.dir,
+  timeoutMs,
+  env: dockerEnv(c.env, k.vars)
+});
+var tail = (s, n = 800) => {
+  const t2 = (s.length > n ? s.slice(-n) : s).trim();
+  return findSecrets(t2).length > 0 ? "[output withheld: it looks like it contains a secret]" : t2;
+};
+var emptyCwd;
+function neutralDir() {
+  emptyCwd ??= mkdtempSync2(path16.join(tmpdir2(), "arima-env-empty-"));
+  return emptyCwd;
+}
+function lintFile(file, repoRoot) {
+  const text3 = readFileSync12(file, "utf8");
+  return lintCompose(text3, { composeDir: path16.dirname(file), repoRoot });
+}
+function findSymlink(dir) {
+  for (const e of readdirSync5(dir)) {
+    if (e === ".git") continue;
+    const f = path16.join(dir, e);
+    const st = lstatSync(f);
+    if (st.isSymbolicLink()) return f;
+    if (st.isDirectory()) {
+      const hit = findSymlink(f);
+      if (hit !== void 0) return hit;
+    }
+  }
+  return void 0;
+}
+async function snapshot(c, ref) {
+  const { exec } = c.deps;
+  const git4 = (args, env) => exec("git", args, {
+    cwd: c.s.projectDir,
+    timeoutMs: 12e4,
+    ...env ? { env: { ...dockerEnv(c.env), ...env } } : {}
+  });
+  const r = await git4(["rev-parse", "--verify", "--quiet", `${ref}^{commit}`]);
+  if (r.code !== 0)
+    throw new EnvError(`cannot resolve ref "${ref}" in ${c.s.projectDir}`, ENV_EXIT.failed);
+  const sha = r.stdout.trim();
+  const dir = mkdtempSync2(path16.join(tmpdir2(), `arima-env-${c.project}-`));
+  const index = path16.join(dir, ".index");
+  const out = path16.join(dir, "src");
+  mkdirSync9(out);
+  const withIndex = { GIT_INDEX_FILE: index };
+  const dispose = () => rmSync3(dir, { recursive: true, force: true });
+  const a = await git4(["read-tree", sha], withIndex);
+  const b = a.code === 0 ? await git4(["checkout-index", "-a", `--prefix=${out}${path16.sep}`], withIndex) : a;
+  if (b.code !== 0) {
+    dispose();
+    throw new EnvError(`cannot export ${ref}: ${tail(b.stderr, 300)}`, ENV_EXIT.failed);
+  }
+  const link = findSymlink(out);
+  if (link !== void 0) {
+    dispose();
+    throw new EnvError(
+      `refused: ${path16.relative(out, link)} is a symbolic link; a deployed ref holds none`,
+      ENV_EXIT.refused
+    );
+  }
+  return { dir: out, sha, dispose };
+}
+async function smokeUrl(url2, deps) {
+  const f = deps.fetch ?? fetch;
+  const sleep4 = deps.sleep ?? realSleep;
+  const interval = deps.intervalMs ?? 2e3;
+  const max = Math.max(1, Math.ceil((deps.timeoutS ?? 60) * 1e3 / interval));
+  let status;
+  let error;
+  for (let i = 1; i <= max; i++) {
+    try {
+      const res = await f(url2, { signal: AbortSignal.timeout(5e3), redirect: "manual" });
+      status = res.status;
+      error = void 0;
+      if (res.status >= 200 && res.status < 300) return { ok: true, url: url2, status, attempts: i };
+    } catch (e) {
+      error = e instanceof Error ? e.message.slice(0, 120) : String(e);
+    }
+    if (i < max) await sleep4(interval);
+  }
+  return {
+    ok: false,
+    url: url2,
+    attempts: max,
+    ...status !== void 0 ? { status } : {},
+    ...error ? { error } : {}
+  };
+}
+function portOf(c) {
+  if (c.t.kind === "staging") {
+    if (c.s.stagingPort === void 0)
+      throw new EnvError(
+        "environments.staging.url must be a local address with a port, for example http://localhost:3000",
+        ENV_EXIT.config
+      );
+    return c.s.stagingPort;
+  }
+  const rec = readEnvState(c.s.projectDir).previews[String(c.t.pr)];
+  if (rec === void 0) throw new EnvError(`${targetName(c.t)} is not deployed`, ENV_EXIT.failed);
+  return rec.port;
+}
+async function runningImages(c, k) {
+  const ps = await compose(c, k, ["ps", "-a", "--format", "json"]);
+  if (ps.code !== 0) return [];
+  const rows = parseJsonRows(ps.stdout);
+  const out = [];
+  for (const r of rows) {
+    const id = typeof r["ID"] === "string" ? r["ID"] : void 0;
+    const service = typeof r["Service"] === "string" ? r["Service"] : void 0;
+    if (id === void 0 || service === void 0) continue;
+    const i = await c.deps.exec("docker", ["inspect", "--format", "{{.Image}}", id], {
+      timeoutMs: 3e4,
+      env: dockerEnv(c.env)
+    });
+    if (i.code === 0 && i.stdout.trim() !== "") out.push({ service, image: i.stdout.trim() });
+  }
+  return out;
+}
+function parseJsonRows(text3) {
+  const t2 = text3.trim();
+  if (t2 === "") return [];
+  try {
+    const v = JSON.parse(t2);
+    return (Array.isArray(v) ? v : [v]).filter(
+      (x) => typeof x === "object" && x !== null
+    );
+  } catch {
+    return t2.split(/\r?\n/).filter((l) => l.trim() !== "").flatMap((l) => {
+      try {
+        const v = JSON.parse(l);
+        return typeof v === "object" && v !== null ? [v] : [];
+      } catch {
+        return [];
+      }
+    });
+  }
+}
+async function upEnv(s, name, o = {}) {
+  const c = context(s, name, o);
+  await guardNotPaused(c);
+  await guardRunning(c);
+  const target = c.t;
+  const ref = o.ref ?? (target.kind === "staging" ? s.defaultBranch : void 0);
+  if (ref === void 0)
+    throw new EnvError("up preview-<pr> needs --ref <branch or sha>", ENV_EXIT.usage);
+  const snap = await snapshot(c, ref);
+  const record = async (ok, port, extra = {}) => {
+    await appendEvent(s.projectDir, {
+      type: target.kind === "staging" ? "deploy.staging" : "deploy.preview",
+      actor: "system",
+      ...o.runId ? { run_id: o.runId } : {},
+      data: {
+        environment: targetName(target),
+        project: c.project,
+        version: snap.sha,
+        ok,
+        port,
+        ...extra
+      }
+    });
+  };
+  try {
+    const file = path16.join(snap.dir, s.composeFile);
+    if (!existsSync11(file))
+      throw new EnvError(`${s.composeFile} does not exist at ${ref}`, ENV_EXIT.failed);
+    const violations = lintFile(file, snap.dir);
+    if (violations.some((v) => v.rule === "production-reference" || v.rule === "host-file-reference"))
+      throw new EnvError(
+        `refused: the compose file reaches production or host files: ${violations.filter((v) => v.rule === "production-reference" || v.rule === "host-file-reference").map((v) => `${v.where} (${v.detail})`).join("; ")}`,
+        ENV_EXIT.refused
+      );
+    if (violations.length > 0)
+      throw new EnvError(
+        `compose file fails the design check: ${violations.map((v) => `${v.rule} at ${v.where}`).join("; ")}`,
+        ENV_EXIT.failed
+      );
+    const state = readEnvState(s.projectDir);
+    let evicted;
+    let port;
+    if (target.kind === "staging") {
+      port = portOf(c);
+      const mine = state.staging !== void 0;
+      if (!mine && !await c.deps.portFree(port))
+        throw new EnvError(`capacity: port ${port} is in use by something else`, ENV_EXIT.capacity);
+    } else {
+      const key = String(target.pr);
+      const existing = state.previews[key];
+      const others = Object.entries(state.previews).filter(([k2]) => k2 !== key);
+      if (existing === void 0 && others.length >= s.maxPreviews) {
+        const oldest = others.sort((a, b) => a[1].deployed_at.localeCompare(b[1].deployed_at))[0];
+        if (oldest !== void 0) {
+          evicted = `preview-${oldest[0]}`;
+          await downEnv(s, evicted, c.deps);
+        }
+      }
+      if (existing !== void 0) port = existing.port;
+      else {
+        const used = new Set(Object.values(readEnvState(s.projectDir).previews).map((p) => p.port));
+        let found;
+        for (let p = s.previewPorts[0]; p <= s.previewPorts[1]; p++) {
+          if (!used.has(p) && await c.deps.portFree(p)) {
+            found = p;
+            break;
+          }
+        }
+        if (found === void 0)
+          throw new EnvError("capacity: no free port in the preview range", ENV_EXIT.capacity);
+        port = found;
+      }
+    }
+    const tag = snap.sha.slice(0, 12);
+    const k = {
+      dir: snap.dir,
+      file,
+      vars: {
+        ARIMA_PROJECT: c.project,
+        ARIMA_ENV: target.kind,
+        ARIMA_PORT: String(port),
+        ARIMA_TAG: tag,
+        ...target.kind === "preview" ? { ARIMA_PREVIEW: String(target.pr) } : {}
+      }
+    };
+    const previous = target.kind === "staging" ? await runningImages(c, k) : [];
+    const keepTag = (svc) => `arima-local/${c.project}/${svc}:previous`;
+    for (const p of previous)
+      await c.deps.exec("docker", ["tag", p.image, keepTag(p.service)], {
+        timeoutMs: 3e4,
+        env: dockerEnv(c.env)
+      });
+    const build = await compose(c, k, ["build"]);
+    let failure = build.code === 0 ? void 0 : `build failed: ${tail(build.stderr)}`;
+    if (failure === void 0) {
+      const up = await compose(c, k, [
+        "up",
+        "-d",
+        "--remove-orphans",
+        "--wait",
+        "--wait-timeout",
+        "120"
+      ]);
+      if (up.code !== 0) failure = `services did not become healthy: ${tail(up.stderr)}`;
+    }
+    const url2 = `http://127.0.0.1:${port}${s.smokePath(target)}`;
+    let smoke;
+    if (failure === void 0) {
+      smoke = await smokeUrl(url2, {
+        ...c.deps,
+        ...o.timeoutS !== void 0 ? { timeoutS: o.timeoutS } : {},
+        ...o.intervalMs !== void 0 ? { intervalMs: o.intervalMs } : {}
+      });
+      if (!smoke.ok) failure = `smoke test failed: ${smoke.status ?? smoke.error ?? "no answer"}`;
+    }
+    const rec = {
+      project: c.project,
+      port,
+      ref: snap.sha,
+      deployed_at: c.deps.now().toISOString(),
+      ok: failure === void 0
+    };
+    if (failure === void 0 && smoke !== void 0) {
+      const st2 = readEnvState(s.projectDir);
+      if (target.kind === "staging") {
+        st2.staging = rec;
+        delete st2.staging_failed;
+      } else st2.previews[String(target.pr)] = rec;
+      writeEnvState(s.projectDir, st2);
+      await record(true, port, { url: url2, smoke: { status: smoke.status, attempts: smoke.attempts } });
+      return {
+        environment: targetName(target),
+        project: c.project,
+        ref: snap.sha,
+        port,
+        url: url2,
+        smoke,
+        ...evicted ? { evicted } : {}
+      };
+    }
+    let restored = false;
+    if (target.kind === "staging" && previous.length > 0) {
+      const override = path16.join(snap.dir, "..", "rollback.yaml");
+      const body = [
+        "services:",
+        ...previous.flatMap((p) => [`  ${p.service}:`, `    image: ${keepTag(p.service)}`])
+      ].join("\n");
+      writeFileSync5(override, `${body}
+`);
+      const r = await compose(c, { ...k, extraFiles: [override] }, [
+        "up",
+        "-d",
+        "--no-build",
+        "--remove-orphans",
+        "--wait",
+        "--wait-timeout",
+        "120"
+      ]);
+      if (r.code === 0) {
+        const again = await smokeUrl(url2, {
+          ...c.deps,
+          timeoutS: 30,
+          intervalMs: o.intervalMs ?? 2e3
+        });
+        restored = again.ok;
+      }
+    } else if (target.kind === "staging") {
+      await compose(c, k, ["down", "--remove-orphans"]);
+    }
+    const st = readEnvState(s.projectDir);
+    if (target.kind === "preview") st.previews[String(target.pr)] = rec;
+    else
+      st.staging_failed = {
+        ref: snap.sha,
+        at: rec.deployed_at,
+        error: (failure ?? "").slice(0, 600),
+        restored
+      };
+    writeEnvState(s.projectDir, st);
+    await record(false, port, { error: failure, restored });
+    throw new EnvError(
+      `${failure}; ${target.kind === "staging" ? restored ? "the previous version is running again" : previous.length > 0 ? "the previous version could NOT be restored" : "there was no previous version, staging is down" : "the preview is left running for diagnosis"}`,
+      ENV_EXIT.smokeFailed
+    );
+  } finally {
+    snap.dispose();
+  }
+}
+async function downEnv(s, name, deps = {}) {
+  const c = context(s, name, deps);
+  await guardRunning(c);
+  const args = ["down", "--remove-orphans", ...c.t.kind === "preview" ? ["--volumes"] : []];
+  const r = await c.deps.exec("docker", ["compose", "-p", c.project, ...args], {
+    cwd: neutralDir(),
+    timeoutMs: 3e5,
+    env: dockerEnv(c.env)
+  });
+  if (r.code !== 0) throw new EnvError(`down failed: ${tail(r.stderr)}`, ENV_EXIT.failed);
+  const st = readEnvState(s.projectDir);
+  if (c.t.kind === "staging") {
+    delete st.staging;
+    delete st.staging_failed;
+  } else delete st.previews[String(c.t.pr)];
+  writeEnvState(s.projectDir, st);
+}
+async function rebuildStagingAfterMerge(s, deps = {}) {
+  const exec = deps.exec ?? realExec;
+  const on = deps.isPaused ? await deps.isPaused() : (await checkKillSwitch(s.projectDir, null)).on;
+  if (on) return "skipped";
+  const fetchOk = await exec("git", ["fetch", "origin", s.defaultBranch], {
+    cwd: s.projectDir,
+    timeoutMs: 12e4
+  });
+  const ref = fetchOk.code === 0 ? `origin/${s.defaultBranch}` : s.defaultBranch;
+  const have = await exec("git", ["cat-file", "-e", `${ref}:${s.composeFile}`], {
+    cwd: s.projectDir
+  });
+  if (have.code !== 0) return "skipped";
+  try {
+    await upEnv(s, "staging", { ...deps, ref });
+    return "deployed";
+  } catch (e) {
+    if (!(e instanceof EnvError)) throw e;
+    const st = readEnvState(s.projectDir);
+    if (st.staging_failed === void 0 || e.exit !== ENV_EXIT.smokeFailed) {
+      st.staging_failed = {
+        ref,
+        at: (deps.now?.() ?? /* @__PURE__ */ new Date()).toISOString(),
+        error: e.message.slice(0, 600),
+        restored: false
+      };
+      writeEnvState(s.projectDir, st);
+      await appendEvent(s.projectDir, {
+        type: "deploy.staging",
+        actor: "system",
+        data: { environment: "staging", ok: false, error: e.message.slice(0, 600) }
+      });
+    }
+    return "failed";
+  }
+}
+function stagingFailing(projectDir) {
+  try {
+    return readEnvState(projectDir).staging_failed;
+  } catch {
+    return void 0;
+  }
+}
+
+// plugins/arima/scripts/src/dispatch.ts
+import { execFileSync as execFileSync5 } from "node:child_process";
+import { createHash as createHash3 } from "node:crypto";
+import { existsSync as existsSync24, readFileSync as readFileSync23 } from "node:fs";
+import path32 from "node:path";
+
+// plugins/arima/scripts/src/dispatch-units.ts
+var flat = (n) => ({ S: n, M: n, L: n });
+var TURN_CAPS = {
+  develop: { S: 30, M: 50, L: 80 },
+  skeleton: flat(80),
+  hotfix: flat(50),
+  fix: flat(50),
+  "test-write": { S: 20, M: 30, L: 40 },
+  qa: flat(40),
+  regression: flat(40),
+  "perf-test": flat(40),
+  "a11y-test": flat(40),
+  "e2e-skeleton": flat(40),
+  review: { S: 20, M: 30, L: 40 },
+  "adr-review": flat(25),
+  conventions: flat(25),
+  "rc-freeze": flat(25),
+  "deprecation-check": flat(25),
+  "debt-review": flat(25),
+  "design-qa": flat(25),
+  author: flat(40),
+  "release-docs": flat(40),
+  "env-plan": flat(40),
+  runbook: flat(40),
+  "uat-script": flat(40),
+  "security-scan": flat(30),
+  "scan-triage": flat(25),
+  "verify-finding": flat(25),
+  screen: flat(25),
+  "deploy-staging": flat(25),
+  "preview-diagnose": flat(25),
+  triage: flat(30),
+  meeting: flat(20),
+  "gate-pack": flat(25),
+  retro: flat(30),
+  digest: null
+};
+function turnCap(kind, size) {
+  const c = TURN_CAPS[kind];
+  return c === null ? void 0 : c[size ?? "M"];
+}
+var WORKTREE_KINDS = /* @__PURE__ */ new Set([
+  "develop",
+  "skeleton",
+  "hotfix",
+  "fix",
+  "test-write",
+  "qa"
+]);
+var needsWorktree = (kind, role) => WORKTREE_KINDS.has(kind) && !(kind === "fix" && role === "devops");
+var QA_SPARSE = ["tests/", "api/", "design/", "package.json"];
+var REVIEW_KINDS = /* @__PURE__ */ new Set([
+  "review",
+  "qa",
+  "design-qa",
+  "security-scan"
+]);
+var TASKS = {
+  develop: "Implement exactly this one item on the branch in your worktree, to the Definition of Done. Write the code and its unit tests, commit with Conventional Commits using the item id as scope, and map every acceptance criterion to code and a test in `criteria_map` with evidence. Do not push and do not open a pull request: the host does that after you finish.",
+  hotfix: "Fix this incident with the smallest safe change on the branch in your worktree, with a test that reproduces it. Commit with the item id as scope. The host pushes and opens the pull request.",
+  fix: "Repair the broken build on the branch in your worktree with the smallest safe change. Commit with a conventional message that carries a task or run id.",
+  "test-write": "Write the test cases and end-to-end tests for this story from its acceptance criteria, in `tests/` of your worktree, before any development. Propose each test case as a record in `records` (database `test_cases`); the engine issues the ids.",
+  qa: "Test this story on its preview against every test case and acceptance criterion. Record each test case result, raise a finding with evidence for every failure, and propose each defect as a record in `records` (database `bugs`). Give a verdict: pass only if every test case passed.",
+  review: "Review the pull request in the packet against the acceptance criteria, the conventions and the architecture. Report only findings you can support with a file and line. Give a verdict: approve, or changes_requested with the blocking findings.",
+  "design-qa": "Compare the preview with the story's screens, state by state (empty, loading, error, success). Record each deviation as a finding. Give a verdict: pass only if every state matches or each deviation is accepted.",
+  "env-plan": "Write docs/ops/env-matrix.md from its template: the local Compose projects (preview-<pr>, staging, production), ports, volumes, capacity limits, the backup and restore plan and the pipeline design (GitHub Actions: ci.yml and security-weekly.yml only). Hosting is the owner machine with Docker Compose; no cloud account or paid service. Cite the SAD and ADRs, and mark guesses as guesses.",
+  "deploy-staging": "The host rebuilt staging after a merge and the smoke test failed (the script result is in the packet; the previous version was restored when there was one). Find the cause with arima-env status and logs, and report it with evidence. Do not edit files and do not start or stop anything: propose the fix as a finding or a question.",
+  author: "Write the one artifact named in the packet from its template, citing sources, and mark guesses as guesses. Propose Notion records through `records` and ask only critical questions.",
+  triage: "Triage this incident: establish impact and cause from the evidence in the packet, and propose a mitigation. Do not take any action yourself.",
+  "security-scan": "Run the scan named in the packet and report findings with severity, location and evidence. Give a verdict: fail on any critical or high finding."
+};
+function taskFor(u, extra = "") {
+  const base = TASKS[u.kind] ?? `Do the ${u.kind} work for ${u.item}, as ${u.role}, following your role instructions.`;
+  return `${base}
+
+Why this unit exists today: ${u.why}.${extra ? `
+
+${extra}` : ""}`;
+}
+function outputContractFor(kind) {
+  const verdict = REVIEW_KINDS.has(kind) ? " Include `verdict` (`result` and `reasons`)." : "";
+  const criteria = kind === "develop" || kind === "qa" ? " Include `criteria_map` (every criterion with `met`, `unmet` or `unclear` and evidence as `file:line` or a test case id; `met` needs evidence)." : "";
+  return [
+    "End your final message with exactly one fenced block whose info string is `arima-report`, containing JSON:",
+    "`schema_version` 1, `run_id` (the id in the title of this packet), `role`, `item`, `status` (`done`, `blocked`, `failed` or `needs_input`), `summary` (at most 600 characters), and as needed `artifacts`, `findings`, `questions`, `decisions`, `assumptions`, `records`." + criteria + verdict,
+    "Each of these is a list of objects, never plain strings: `artifacts` {path, kind (code|test|doc|design|api|infra), artifact_id?}; `findings` {severity (blocker|major|minor|nit), location (file:line), claim, evidence, recommendation}; `questions` {question, options [{label, recommendation (true|false)}] (1 to 6), blocking (true|false)}; `decisions` {summary, options_considered [strings], chosen, reversible (true|false), rationale}; `assumptions` {text, basis}.",
+    "Propose records without ids (use `NEW-1`, `NEW-2` ... to refer between them); the engine issues every id. Ask a question only for a hard-stop matter or a critical blocker; decide everything else and log it as a decision."
+  ].join("\n");
+}
+
+// plugins/arima/scripts/src/inbox.ts
+import { createHash as createHash2 } from "node:crypto";
+import { existsSync as existsSync15, mkdirSync as mkdirSync12, readFileSync as readFileSync16 } from "node:fs";
+import path21 from "node:path";
+
+// plugins/arima/scripts/src/approver.ts
+function checkApprover(o) {
+  const roles = o.profile.gates[o.gate]?.approvers ?? [];
+  const people2 = roles.map((r) => o.team.roles[r]?.person).filter((p) => p !== void 0).map((p) => o.team.people[p]).filter((p) => p !== void 0);
+  const ok = o.decidedBy.length > 0 && o.decidedBy.some(
+    (d) => people2.some(
+      (p) => d.id !== void 0 && d.id === p.notion_user || d.name !== void 0 && d.name === p.name
+    )
+  );
+  return { method: "placeholder", approvers: [...new Set(people2.map((p) => p.name))], ok };
+}
+
+// plugins/arima/scripts/src/item-status.ts
+import { existsSync as existsSync13, readdirSync as readdirSync6, readFileSync as readFileSync14 } from "node:fs";
+import path19 from "node:path";
+
+// plugins/arima/scripts/src/item.ts
+import { existsSync as existsSync12, mkdirSync as mkdirSync10, readFileSync as readFileSync13 } from "node:fs";
+import path18 from "node:path";
+
+// plugins/arima/scripts/src/ledger.ts
+import path17 from "node:path";
+function ledgerFile(projectDir) {
+  return path17.join(projectDir, ".arima", "ledger.jsonl");
+}
+function parseClaudeResult(stdout) {
+  let parsed;
+  try {
+    parsed = JSON.parse(stdout);
+  } catch (e) {
+    throw new Error("claude output is not valid JSON", { cause: e });
+  }
+  const candidates = Array.isArray(parsed) ? parsed : [parsed];
+  for (let i = candidates.length - 1; i >= 0; i--) {
+    const c = candidates[i];
+    if (c !== null && typeof c === "object" && c.type === "result" && typeof c.subtype === "string") {
+      return c;
+    }
+  }
+  throw new Error("claude output contains no result message");
+}
+var round6 = (n) => Math.round(n * 1e6) / 1e6;
+var int = (n) => Math.max(0, Math.round(n ?? 0));
+function outcomeOf(r) {
+  if (r.subtype === "success" && r.is_error !== true) return "pass";
+  if (r.subtype === "error_max_turns" || r.subtype === "error_max_budget_usd") return "blocked";
+  return "error";
+}
+function buildLedgerRow(result, ctx, previousRows = []) {
+  const total = result.total_cost_usd ?? result.cost_usd ?? 0;
+  const sessionId = result.session_id;
+  const already = sessionId === void 0 ? 0 : previousRows.filter((r) => r.session_id === sessionId).reduce((sum, r) => sum + r.cost_usd, 0);
+  const row = {
+    run_id: ctx.run_id,
+    date: ctx.date,
+    project: ctx.project,
+    phase: ctx.phase,
+    item: ctx.item,
+    role: ctx.role,
+    attempt: ctx.attempt,
+    is_rework: ctx.is_rework,
+    subtype: result.subtype,
+    num_turns: int(result.num_turns),
+    duration_ms: int(result.duration_ms),
+    tokens: {
+      input: int(result.usage?.input_tokens),
+      output: int(result.usage?.output_tokens),
+      cache_read: int(result.usage?.cache_read_input_tokens),
+      cache_creation: int(result.usage?.cache_creation_input_tokens)
+    },
+    cost_usd: round6(Math.max(0, total - already)),
+    budget_usd: ctx.budget_usd,
+    result: ctx.result ?? outcomeOf(result)
+  };
+  if (sessionId !== void 0) row.session_id = sessionId;
+  if (ctx.started_at !== void 0) row.started_at = ctx.started_at;
+  if (ctx.milestone !== void 0) row.milestone = ctx.milestone;
+  if (ctx.model_tier !== void 0) row.model_tier = ctx.model_tier;
+  if (ctx.rework_reason !== void 0) row.rework_reason = ctx.rework_reason;
+  if (result.duration_api_ms !== void 0) row.duration_api_ms = int(result.duration_api_ms);
+  if (ctx.ci_minutes !== void 0) row.ci_minutes = ctx.ci_minutes;
+  return row;
+}
+async function appendLedgerRow(projectDir, row) {
+  await appendJsonl(ledgerFile(projectDir), "ledger", row);
+}
+function readLedger(projectDir) {
+  return readJsonl(ledgerFile(projectDir), "ledger");
+}
+
+// plugins/arima/scripts/src/story-budget.ts
+var RUN_COST_FLOOR_USD = 0.25;
+var round = (n) => Math.round(n * 1e6) / 1e6;
+function storyBudget(cfg, row = {}) {
+  if (typeof row.budget === "number" && row.budget > 0) return row.budget;
+  const bySize = row.size === "S" || row.size === "M" || row.size === "L" ? cfg.bySize?.[row.size] : void 0;
+  return bySize ?? cfg.perStoryDefault;
+}
+function storyBudgetFromMirror(projectDir, item, cfg) {
+  const row = findRow(readMirror(projectDir, "stories"), item);
+  const b = row?.properties["Budget USD"];
+  const size = row?.properties["Complexity"];
+  return storyBudget(cfg, {
+    budget: typeof b === "number" ? b : void 0,
+    size: typeof size === "string" ? size : void 0
+  });
+}
+function itemSpent(projectDir, item) {
+  return round(
+    readLedger(projectDir).filter((r) => r.item === item).reduce((s, r) => s + r.cost_usd, 0)
+  );
+}
+function unitBudget(projectDir, item, budget, perRunCap, floor = RUN_COST_FLOOR_USD) {
+  const spent = itemSpent(projectDir, item);
+  const remaining = round(budget - spent);
+  if (!(remaining > 0) || remaining < floor)
+    return {
+      ok: false,
+      reason: "story_budget",
+      spent,
+      remaining: Math.max(0, remaining),
+      storyBudget: budget
+    };
+  return {
+    ok: true,
+    budgetUsd: round(Math.min(perRunCap, remaining)),
+    spent,
+    remaining,
+    storyBudget: budget
+  };
+}
+async function recordStoryBudgetHit(projectDir, item, b, role) {
+  const message = `story budget used up for ${item}: spent ${b.spent} of ${b.storyBudget} est. USD, ${b.remaining} left (a run needs at least ${RUN_COST_FLOOR_USD})`;
+  await appendEvent(projectDir, {
+    type: "hardstop.hit",
+    actor: "system",
+    item,
+    data: {
+      stop: "story_budget",
+      ...role !== void 0 ? { role } : {},
+      message,
+      spent: b.spent,
+      budget: b.storyBudget,
+      remaining: b.remaining
+    }
+  });
+  return message;
+}
+
+// plugins/arima/scripts/src/item.ts
+var ITEM_STATUSES = [
+  "Backlog",
+  "Ready",
+  "In Progress",
+  "In Review",
+  "In QA",
+  "PO Acceptance",
+  "Done",
+  "Released",
+  "Blocked",
+  "Cancelled"
+];
+var itemFile = (projectDir, id) => path18.join(projectDir, ".arima", "items", `${id}.json`);
+var newItem = (id) => ({
+  schema_version: 1,
+  id,
+  attempt: 1,
+  run_failures: 0,
+  cost_usd_total: 0
+});
+function readItem(projectDir, id) {
+  const file = itemFile(projectDir, id);
+  if (!existsSync12(file)) return newItem(id);
+  const data = JSON.parse(readFileSync13(file, "utf8"));
+  const validate = getValidator("item");
+  if (!validate(data))
+    throw new Error(`Corrupt ${file}: ${(validate.errors ?? []).map(describeError).join("; ")}`);
+  const item = data;
+  if (item.id !== id) throw new Error(`Corrupt ${file}: it holds item ${item.id}`);
+  return item;
+}
+async function updateItem(projectDir, id, change) {
+  const file = itemFile(projectDir, id);
+  mkdirSync10(path18.dirname(file), { recursive: true });
+  return withFileLock(`${file}.lock`, () => {
+    const next = change(readItem(projectDir, id));
+    next.cost_usd_total = itemSpent(projectDir, id);
+    const validate = getValidator("item");
+    if (!validate(next))
+      throw new Error(
+        `Invalid item ${id}: ${(validate.errors ?? []).map(describeError).join("; ")}`
+      );
+    writeFileAtomic(file, `${JSON.stringify(next, null, 2)}
+`);
+    return next;
+  });
+}
+
 // plugins/arima/scripts/src/state-machine.ts
 var ACTORS = [...ROLES, "po", "sponsor", "engine", "merge-script"];
 var OPEN = [
@@ -20778,11 +22277,11 @@ var stateOf = (status, c) => ({
 function nextEntryId(projectDir, runId, item) {
   const dirs = [
     outboxDir(projectDir),
-    path15.join(outboxDir(projectDir), "applied"),
-    path15.join(outboxDir(projectDir), "rejected"),
-    path15.join(outboxDir(projectDir), "conflicts")
+    path19.join(outboxDir(projectDir), "applied"),
+    path19.join(outboxDir(projectDir), "rejected"),
+    path19.join(outboxDir(projectDir), "conflicts")
   ];
-  const taken = new Set(dirs.filter(existsSync10).flatMap((d) => readdirSync4(d)));
+  const taken = new Set(dirs.filter(existsSync13).flatMap((d) => readdirSync6(d)));
   for (let n = 1; ; n += 1) {
     const id = `${ENGINE_STATUS_PREFIX}${runId}-${item}-${n}`;
     if (!taken.has(`${id}.json`)) return id;
@@ -20839,10 +22338,10 @@ function lastKnown(projectDir, item) {
 function pendingStatusItems(projectDir) {
   const dir = outboxDir(projectDir);
   const out = /* @__PURE__ */ new Set();
-  if (!existsSync10(dir)) return out;
-  for (const f of readdirSync4(dir).filter((n) => n.endsWith(".json"))) {
+  if (!existsSync13(dir)) return out;
+  for (const f of readdirSync6(dir).filter((n) => n.endsWith(".json"))) {
     try {
-      const e = JSON.parse(readFileSync11(path15.join(dir, f), "utf8"));
+      const e = JSON.parse(readFileSync14(path19.join(dir, f), "utf8"));
       if (e.database === "stories" && e.item_id !== void 0 && e.properties?.["Status"] !== void 0)
         out.add(e.item_id);
     } catch {
@@ -20880,20 +22379,20 @@ async function reconcileStatuses(projectDir) {
 }
 
 // plugins/arima/scripts/src/questions.ts
-import { mkdirSync as mkdirSync8, existsSync as existsSync11, readFileSync as readFileSync12 } from "node:fs";
-import path16 from "node:path";
-var questionsFile = (projectDir) => path16.join(projectDir, ".arima", "state", "questions.json");
+import { mkdirSync as mkdirSync11, existsSync as existsSync14, readFileSync as readFileSync15 } from "node:fs";
+import path20 from "node:path";
+var questionsFile = (projectDir) => path20.join(projectDir, ".arima", "state", "questions.json");
 function readQuestions(projectDir) {
   const f = questionsFile(projectDir);
-  if (!existsSync11(f)) return {};
-  const data = JSON.parse(readFileSync12(f, "utf8"));
+  if (!existsSync14(f)) return {};
+  const data = JSON.parse(readFileSync15(f, "utf8"));
   const v = getValidator("questions-state");
   if (!v(data)) throw new Error(`Corrupt ${f}: ${(v.errors ?? []).map(describeError).join("; ")}`);
   return data.questions;
 }
 async function updateQuestions(projectDir, change) {
   const f = questionsFile(projectDir);
-  mkdirSync8(path16.dirname(f), { recursive: true });
+  mkdirSync11(path20.dirname(f), { recursive: true });
   await withFileLock(`${f}.lock`, () => {
     const questions = readQuestions(projectDir);
     change(questions);
@@ -21207,18 +22706,18 @@ async function expireQuestions(o) {
 
 // plugins/arima/scripts/src/inbox.ts
 var GATE_DECISIONS = ["Approved", "Approved with conditions", "Rejected"];
-var cursorFile = (projectDir) => path17.join(projectDir, ".arima", "state", "inbox-cursor.json");
+var cursorFile = (projectDir) => path21.join(projectDir, ".arima", "state", "inbox-cursor.json");
 function readCursor(projectDir) {
   const f = cursorFile(projectDir);
-  if (!existsSync12(f)) return { schema_version: 1, processed: {} };
-  const data = JSON.parse(readFileSync13(f, "utf8"));
+  if (!existsSync15(f)) return { schema_version: 1, processed: {} };
+  const data = JSON.parse(readFileSync16(f, "utf8"));
   const v = getValidator("inbox-cursor");
   if (!v(data)) throw new Error(`Corrupt ${f}: ${(v.errors ?? []).map(describeError).join("; ")}`);
   return data;
 }
 async function markProcessed(projectDir, db, key, hash2) {
   const f = cursorFile(projectDir);
-  mkdirSync9(path17.dirname(f), { recursive: true });
+  mkdirSync12(path21.dirname(f), { recursive: true });
   await withFileLock(`${f}.lock`, () => {
     const c = readCursor(projectDir);
     c.processed[db] = { ...c.processed[db] ?? {}, [key]: hash2 };
@@ -21368,335 +22867,14 @@ async function applyHumanInputs(i) {
   return res;
 }
 
-// plugins/arima/scripts/src/killswitch.ts
-import { existsSync as existsSync13, mkdirSync as mkdirSync10, readFileSync as readFileSync14, rmSync, writeFileSync as writeFileSync3 } from "node:fs";
-import path18 from "node:path";
-
-// plugins/arima/scripts/src/notion/port.ts
-var import_client = __toESM(require_src(), 1);
-
-// plugins/arima/scripts/src/lib/throttle.ts
-import { setTimeout as sleep2 } from "node:timers/promises";
-var Throttle = class {
-  constructor(minIntervalMs = 334, now = Date.now, wait = (ms) => sleep2(ms)) {
-    this.minIntervalMs = minIntervalMs;
-    this.now = now;
-    this.wait = wait;
-  }
-  minIntervalMs;
-  now;
-  wait;
-  next = 0;
-  async run(fn) {
-    const start = Math.max(this.now(), this.next);
-    this.next = start + this.minIntervalMs;
-    const delay = start - this.now();
-    if (delay > 0) await this.wait(delay);
-    return fn();
-  }
-};
-function isRateLimited(e) {
-  const err = e;
-  return err?.status === 429 || err?.code === "rate_limited";
-}
-function retryAfterMs(e) {
-  const headers = e?.headers;
-  if (headers === void 0 || headers === null) return void 0;
-  const raw = typeof headers.get === "function" ? headers.get("retry-after") : headers["retry-after"];
-  const seconds = Number(raw);
-  return Number.isFinite(seconds) && seconds >= 0 && raw !== null && raw !== void 0 ? seconds * 1e3 : void 0;
-}
-function isTransient(e) {
-  const err = e;
-  const code2 = String(err?.code ?? err?.cause?.code ?? "");
-  if (/^(ECONNRESET|ETIMEDOUT|ENOTFOUND|EAI_AGAIN|ECONNREFUSED|UND_ERR_.*)$/.test(code2))
-    return true;
-  if (typeof err?.status === "number" && [500, 502, 503, 504].includes(err.status)) return true;
-  if (code2 === "notionhq_client_request_timeout") return true;
-  return /fetch failed|socket hang up|network|timed out/i.test(String(err?.message ?? ""));
-}
-async function withReadRetry(fn, o = {}) {
-  const { retries = 2, baseMs = 300, sleep: wait = (ms) => sleep2(ms) } = o;
-  for (let attempt = 0; ; attempt++) {
-    try {
-      return await fn();
-    } catch (e) {
-      if (!isTransient(e) || attempt >= retries) throw e;
-      await wait(baseMs * 2 ** attempt);
-    }
-  }
-}
-async function withBackoff(fn, o = {}) {
-  const { retries = 5, baseMs = 500, maxMs = 3e4, sleep: wait = (ms) => sleep2(ms) } = o;
-  for (let attempt = 0; ; attempt++) {
-    try {
-      return await fn();
-    } catch (e) {
-      if (!isRateLimited(e) || attempt >= retries) throw e;
-      await wait(retryAfterMs(e) ?? Math.min(maxMs, baseMs * 2 ** attempt));
-    }
-  }
-}
-
-// plugins/arima/scripts/src/notion/port.ts
-var PAUSE_TODO_TEXT = "Pause ARIMA";
-var plain2 = (rt) => (rt ?? []).map((t2) => t2.plain_text ?? "").join("");
-function toDatabaseInfo(raw) {
-  const dataSourceId = raw.data_sources?.[0]?.id;
-  if (dataSourceId === void 0) throw new Error(`database ${raw.id} has no data source`);
-  return { id: raw.id, title: plain2(raw.title), dataSourceId };
-}
-function createNotionPort(client, throttle = new Throttle(), backoff = {}) {
-  const call = (fn) => throttle.run(() => withBackoff(fn, backoff));
-  const callRead = (fn) => throttle.run(
-    () => withReadRetry(
-      () => withBackoff(fn, backoff),
-      backoff.sleep ? { sleep: async (ms) => void await backoff.sleep?.(ms) } : {}
-    )
-  );
-  const listChildren = async (pageId) => {
-    const out = [];
-    let cursor;
-    for (; ; ) {
-      const page = await callRead(
-        () => client.blocks.children.list({
-          block_id: pageId,
-          page_size: 100,
-          ...cursor !== void 0 ? { start_cursor: cursor } : {}
-        })
-      );
-      for (const raw of page.results) {
-        if (raw.id === void 0 || raw.type === void 0) continue;
-        if (raw.type === "to_do" && raw.to_do) {
-          out.push({
-            id: raw.id,
-            type: "to_do",
-            text: plain2(raw.to_do.rich_text),
-            checked: raw.to_do.checked === true
-          });
-        } else if (raw.type === "paragraph") {
-          out.push({ id: raw.id, type: "paragraph", text: plain2(raw.paragraph?.rich_text) });
-        } else if (raw.type === "child_database") {
-          out.push({ id: raw.id, type: "child_database", text: raw.child_database?.title ?? "" });
-        } else {
-          out.push({ id: raw.id, type: raw.type, text: "" });
-        }
-      }
-      if (!page.has_more || page.next_cursor === null) return out;
-      cursor = page.next_cursor;
-    }
-  };
-  const getDataSourceProperties = async (dataSourceId) => {
-    const raw = await callRead(
-      () => client.dataSources.retrieve({ data_source_id: dataSourceId })
-    );
-    const out = {};
-    for (const [name, p] of Object.entries(raw.properties ?? {})) {
-      const info = { id: p.id, name: p.name ?? name, type: p.type };
-      const opts = p.select?.options ?? p.multi_select?.options;
-      if (opts) info.options = opts.map((o) => o.name);
-      if (p.relation?.data_source_id) info.relationTarget = p.relation.data_source_id;
-      out[name] = info;
-    }
-    return out;
-  };
-  return {
-    listChildren,
-    async listTodoBlocks(pageId) {
-      return (await listChildren(pageId)).filter((b) => b.type === "to_do").map((b) => ({ id: b.id, text: b.text, checked: b.checked === true }));
-    },
-    async setTodoChecked(blockId, checked) {
-      await call(() => client.blocks.update({ block_id: blockId, to_do: { checked } }));
-    },
-    async appendTodo(pageId, text3, checked) {
-      const res = await call(
-        () => client.blocks.children.append({
-          block_id: pageId,
-          children: [
-            {
-              object: "block",
-              type: "to_do",
-              to_do: { rich_text: [{ type: "text", text: { content: text3 } }], checked }
-            }
-          ]
-        })
-      );
-      const id = res.results[0]?.id;
-      if (id === void 0) throw new Error("Notion did not return the created block");
-      return id;
-    },
-    async appendParagraph(pageId, text3) {
-      const res = await call(
-        () => client.blocks.children.append({
-          block_id: pageId,
-          children: [
-            {
-              object: "block",
-              type: "paragraph",
-              paragraph: { rich_text: [{ type: "text", text: { content: text3 } }] }
-            }
-          ]
-        })
-      );
-      const id = res.results[0]?.id;
-      if (id === void 0) throw new Error("Notion did not return the created block");
-      return id;
-    },
-    async createDatabase(parentPageId, title, properties2) {
-      const raw = await call(
-        () => client.databases.create({
-          parent: { type: "page_id", page_id: parentPageId },
-          title: [{ type: "text", text: { content: title } }],
-          is_inline: true,
-          initial_data_source: { properties: properties2 }
-        })
-      );
-      return toDatabaseInfo({ ...raw, title: raw.title ?? [{ plain_text: title }] });
-    },
-    async getDatabase(databaseId) {
-      const raw = await callRead(
-        () => client.databases.retrieve({ database_id: databaseId })
-      );
-      return toDatabaseInfo(raw);
-    },
-    getDataSourceProperties,
-    async addProperties(dataSourceId, properties2) {
-      const existing = await getDataSourceProperties(dataSourceId);
-      const clash = Object.keys(properties2).filter((n) => n in existing);
-      if (clash.length > 0) {
-        throw new Error(`refusing to alter existing Notion properties: ${clash.join(", ")}`);
-      }
-      await call(() => client.dataSources.update({ data_source_id: dataSourceId, properties: properties2 }));
-    },
-    async queryRows(dataSourceId) {
-      const rows = [];
-      let cursor;
-      for (; ; ) {
-        const page = await callRead(
-          () => client.dataSources.query({
-            data_source_id: dataSourceId,
-            page_size: 100,
-            ...cursor !== void 0 ? { start_cursor: cursor } : {}
-          })
-        );
-        for (const raw of page.results) {
-          if (raw.object !== void 0 && raw.object !== "page") continue;
-          rows.push({
-            pageId: raw.id,
-            lastEdited: raw.last_edited_time,
-            properties: raw.properties ?? {}
-          });
-        }
-        if (!page.has_more || page.next_cursor === null) return rows;
-        cursor = page.next_cursor;
-      }
-    },
-    async getPageLastEdited(pageId) {
-      const raw = await callRead(() => client.pages.retrieve({ page_id: pageId }));
-      return raw.last_edited_time;
-    },
-    async getPage(pageId) {
-      const raw = await callRead(() => client.pages.retrieve({ page_id: pageId }));
-      return { pageId: raw.id, lastEdited: raw.last_edited_time, properties: raw.properties ?? {} };
-    },
-    async createPage(dataSourceId, properties2, children) {
-      const first = children?.slice(0, 100);
-      const raw = await call(
-        () => client.pages.create({
-          parent: { type: "data_source_id", data_source_id: dataSourceId },
-          properties: properties2,
-          ...first && first.length > 0 ? { children: first } : {}
-        })
-      );
-      let lastEdited = raw.last_edited_time;
-      for (let i = 100; children && i < children.length; i += 100) {
-        const rest = children.slice(i, i + 100);
-        await call(() => client.blocks.children.append({ block_id: raw.id, children: rest }));
-      }
-      if (children && children.length > 100) lastEdited = await this.getPageLastEdited(raw.id);
-      return {
-        pageId: raw.id,
-        lastEdited,
-        ...raw.properties ? { properties: raw.properties } : {}
-      };
-    },
-    async updatePage(pageId, properties2) {
-      const raw = await call(() => client.pages.update({ page_id: pageId, properties: properties2 }));
-      return {
-        lastEdited: raw.last_edited_time,
-        ...raw.properties ? { properties: raw.properties } : {}
-      };
-    },
-    async appendChildren(pageId, blocks) {
-      for (let i = 0; i < blocks.length; i += 100) {
-        const chunk = blocks.slice(i, i + 100);
-        await call(() => client.blocks.children.append({ block_id: pageId, children: chunk }));
-      }
-    }
-  };
-}
-function createNotionPortFromToken(token) {
-  const client = new import_client.Client({ auth: token, retry: false });
-  return createNotionPort(client);
-}
-
-// plugins/arima/scripts/src/killswitch.ts
-function pauseFile(projectDir) {
-  return path18.join(projectDir, ".arima", "PAUSE");
-}
-async function checkKillSwitch(projectDir, notion, remotePause) {
-  const file = existsSync13(pauseFile(projectDir));
-  let remote = "unchecked";
-  let detail = "";
-  if (notion !== null) {
-    try {
-      const todos = await notion.port.listTodoBlocks(notion.rootPageId);
-      const sw = todos.find((t2) => t2.text.trim() === PAUSE_TODO_TEXT);
-      if (sw === void 0) {
-        remote = "missing";
-        detail = `the "${PAUSE_TODO_TEXT}" to-do is missing from the Notion root page, so ARIMA cannot tell whether it is paused; run /arima:pause --resume to recreate it`;
-      } else {
-        remote = sw.checked;
-      }
-    } catch (e) {
-      remote = "unreachable";
-      detail = `Notion unreachable (${e instanceof Error ? e.message : String(e)})`;
-    }
-  }
-  let stateBranch = "unchecked";
-  if (!file && remote !== true && remotePause !== void 0 && remote !== false) {
-    const r = await remotePause();
-    stateBranch = r === void 0 ? "unchecked" : r;
-  }
-  const blind = notion !== null && remote === "unreachable" && stateBranch === "unchecked";
-  const on = file || remote === true || remote === "missing" || stateBranch === true || blind;
-  if (on) {
-    const reasons = [
-      file ? "PAUSE file present" : "",
-      remote === true ? "Notion switch is on" : "",
-      remote === "missing" ? detail : "",
-      stateBranch === true ? "PAUSE file on the remote state branch" : "",
-      blind ? `${detail}; the remote state branch could not be checked either, so ARIMA cannot confirm it is not paused` : ""
-    ];
-    detail = reasons.filter(Boolean).join(" and ");
-    if (file) {
-      const first = readFileSync14(pauseFile(projectDir), "utf8").split("\n")[0] ?? "";
-      if (first.trim() !== "") detail += ` (${first.trim()})`;
-    }
-  } else if (remote === "unreachable") {
-    detail += stateBranch === false ? "; the remote state branch has no PAUSE file" : "; the remote state branch could not be checked either, so only the local PAUSE file was consulted";
-  }
-  return { on, file, notion: remote, stateBranch, detail };
-}
-
 // plugins/arima/scripts/src/merge.ts
-import { existsSync as existsSync20 } from "node:fs";
-import path27 from "node:path";
+import { existsSync as existsSync21 } from "node:fs";
+import path29 from "node:path";
 
 // plugins/arima/scripts/src/publish.ts
 import { execFileSync as execFileSync4, spawnSync } from "node:child_process";
-import { existsSync as existsSync19, readdirSync as readdirSync7 } from "node:fs";
-import path26 from "node:path";
+import { existsSync as existsSync20, readdirSync as readdirSync8 } from "node:fs";
+import path28 from "node:path";
 
 // plugins/arima/scripts/src/attribution.ts
 var PATTERNS2 = [
@@ -21719,11 +22897,11 @@ function findAttribution(text3) {
 }
 
 // plugins/arima/scripts/src/hooks.ts
-import path19 from "node:path";
+import path22 from "node:path";
 function canon(p) {
   let s = p.replace(/\0/g, "").replace(/\\/g, "/");
   s = s.replace(/::\$[A-Za-z_]+$/, "").replace(/[. ]+$/, "");
-  s = path19.posix.normalize(s);
+  s = path22.posix.normalize(s);
   return s.toLowerCase();
 }
 function isProtectedStatePath(p) {
@@ -21844,18 +23022,18 @@ import { execFileSync } from "node:child_process";
 import {
   appendFileSync as appendFileSync2,
   cpSync,
-  existsSync as existsSync14,
-  mkdirSync as mkdirSync11,
-  mkdtempSync,
-  readFileSync as readFileSync15,
-  realpathSync,
-  readdirSync as readdirSync5,
-  rmSync as rmSync2,
+  existsSync as existsSync16,
+  mkdirSync as mkdirSync13,
+  mkdtempSync as mkdtempSync3,
+  readFileSync as readFileSync17,
+  realpathSync as realpathSync2,
+  readdirSync as readdirSync7,
+  rmSync as rmSync4,
   statSync as statSync2,
-  writeFileSync as writeFileSync4
+  writeFileSync as writeFileSync6
 } from "node:fs";
-import { tmpdir } from "node:os";
-import path20 from "node:path";
+import { tmpdir as tmpdir3 } from "node:os";
+import path23 from "node:path";
 var StateError = class extends Error {
 };
 var DEFAULT_BRANCH = "arima-state";
@@ -21895,12 +23073,12 @@ function identityArgs(cwd) {
   return has("user.name") && has("user.email") ? [] : ["-c", "user.name=ARIMA", "-c", "user.email=arima@users.noreply.github.com"];
 }
 function resolve(o) {
-  const repo = path20.resolve(o.projectDir);
-  if (!existsSync14(repo) || !gitOk(repo, ["rev-parse", "--git-dir"])) {
+  const repo = path23.resolve(o.projectDir);
+  if (!existsSync16(repo) || !gitOk(repo, ["rev-parse", "--git-dir"])) {
     throw new StateError(`${repo} is not a git repository`);
   }
   const norm = (p) => {
-    const real = realpathSync.native(p);
+    const real = realpathSync2.native(p);
     return process.platform === "win32" ? real.toLowerCase() : real;
   };
   if (norm(git(repo, ["rev-parse", "--show-toplevel"])) !== norm(repo)) {
@@ -21914,20 +23092,20 @@ function resolve(o) {
   }
   const remote = o.remote ?? "origin";
   const hasRemote = git(repo, ["remote"]).split("\n").includes(remote);
-  return { repo, stateDir: path20.join(repo, ".arima"), branch, remote, hasRemote };
+  return { repo, stateDir: path23.join(repo, ".arima"), branch, remote, hasRemote };
 }
 function excludeArima(repo) {
   const rel2 = git(repo, ["rev-parse", "--git-path", "info/exclude"]);
-  const file = path20.resolve(repo, rel2);
-  mkdirSync11(path20.dirname(file), { recursive: true });
-  const current = existsSync14(file) ? readFileSync15(file, "utf8") : "";
+  const file = path23.resolve(repo, rel2);
+  mkdirSync13(path23.dirname(file), { recursive: true });
+  const current = existsSync16(file) ? readFileSync17(file, "utf8") : "";
   if (!current.split(/\r?\n/).includes("/.arima/")) {
     appendFileSync2(file, `${current.endsWith("\n") || current === "" ? "" : "\n"}/.arima/
 `);
   }
 }
-var isWorktree = (stateDir) => existsSync14(path20.join(stateDir, ".git"));
-var isEmptyDir = (dir) => !existsSync14(dir) || readdirSync5(dir).length === 0;
+var isWorktree = (stateDir) => existsSync16(path23.join(stateDir, ".git"));
+var isEmptyDir = (dir) => !existsSync16(dir) || readdirSync7(dir).length === 0;
 function localBranchExists(r) {
   return gitOk(r.repo, ["show-ref", "--verify", "--quiet", `refs/heads/${r.branch}`]);
 }
@@ -21969,9 +23147,9 @@ function ensureWorktree(r) {
   if (!exists) createOrphanBranch(r);
   let aside;
   if (hasFiles) {
-    aside = mkdtempSync(path20.join(tmpdir(), "arima-state-"));
+    aside = mkdtempSync3(path23.join(tmpdir3(), "arima-state-"));
     cpSync(r.stateDir, aside, { recursive: true });
-    rmSync2(r.stateDir, { recursive: true, force: true });
+    rmSync4(r.stateDir, { recursive: true, force: true });
   }
   try {
     if (!localBranchExists(r)) {
@@ -21980,32 +23158,32 @@ function ensureWorktree(r) {
     git(r.repo, ["worktree", "add", r.stateDir, r.branch]);
   } finally {
     if (aside !== void 0) {
-      mkdirSync11(r.stateDir, { recursive: true });
+      mkdirSync13(r.stateDir, { recursive: true });
       cpSync(aside, r.stateDir, { recursive: true, force: false, errorOnExist: false });
-      rmSync2(aside, { recursive: true, force: true });
+      rmSync4(aside, { recursive: true, force: true });
     }
   }
 }
 function ensureStateFiles(r) {
   const write = (name, body) => {
-    const file = path20.join(r.stateDir, name);
-    if (!existsSync14(file)) writeFileSync4(file, body, "utf8");
+    const file = path23.join(r.stateDir, name);
+    if (!existsSync16(file)) writeFileSync6(file, body, "utf8");
   };
   write(".gitignore", STATE_GITIGNORE);
   write(".gitattributes", STATE_GITATTRIBUTES);
 }
 function scanStaged(r) {
   const names = git(r.stateDir, ["diff", "--cached", "--name-only", "--diff-filter=AM"]).split("\n").filter(Boolean);
-  const allowed = readAllowlistFile(path20.join(r.stateDir, "secret-allowlist.txt"));
+  const allowed = readAllowlistFile(path23.join(r.stateDir, "secret-allowlist.txt"));
   const bad = [];
   for (const name of names) {
-    const file = path20.join(r.stateDir, name);
+    const file = path23.join(r.stateDir, name);
     try {
       if (statSync2(file).size > MAX_SCAN_BYTES) {
         bad.push({ file: name, rule: "file too large to scan for secrets" });
         continue;
       }
-      for (const f of scanSecrets(readFileSync15(file, "utf8"), allowed)) {
+      for (const f of scanSecrets(readFileSync17(file, "utf8"), allowed)) {
         bad.push({ file: name, rule: f.rule, fingerprint: f.fingerprint });
       }
     } catch {
@@ -22139,14 +23317,14 @@ function checkRemotePrivacy(r, o) {
 
 // plugins/arima/scripts/src/worktree.ts
 import { execFileSync as execFileSync3 } from "node:child_process";
-import { existsSync as existsSync18, mkdirSync as mkdirSync16, readFileSync as readFileSync19, rmSync as rmSync4 } from "node:fs";
-import path25 from "node:path";
+import { existsSync as existsSync19, mkdirSync as mkdirSync17, readFileSync as readFileSync20, rmSync as rmSync5 } from "node:fs";
+import path27 from "node:path";
 import { setTimeout as sleep3 } from "node:timers/promises";
 
 // plugins/arima/scripts/src/run-agent.ts
 import { execFileSync as execFileSync2, spawn } from "node:child_process";
-import { existsSync as existsSync17, mkdirSync as mkdirSync15, readFileSync as readFileSync18, writeFileSync as writeFileSync6 } from "node:fs";
-import path24 from "node:path";
+import { existsSync as existsSync18, mkdirSync as mkdirSync16, readFileSync as readFileSync19, writeFileSync as writeFileSync7 } from "node:fs";
+import path26 from "node:path";
 
 // plugins/arima/scripts/src/budget.ts
 var round2 = (n) => Math.round(n * 1e6) / 1e6;
@@ -22190,8 +23368,8 @@ function readAlertHistory(projectDir) {
 }
 
 // plugins/arima/scripts/src/report-collector.ts
-import { mkdirSync as mkdirSync12 } from "node:fs";
-import path21 from "node:path";
+import { mkdirSync as mkdirSync14 } from "node:fs";
+import path24 from "node:path";
 
 // plugins/arima/scripts/src/report.ts
 var CRITERIA_REQUIRED = [
@@ -22317,7 +23495,7 @@ function extractReport(message) {
   if (!only.closed) return { error: "the arima-report block is never closed" };
   return { json: only.body };
 }
-var reportFile = (projectDir, runId) => path21.join(projectDir, ".arima", "runs", `${runId}.report.json`);
+var reportFile = (projectDir, runId) => path24.join(projectDir, ".arima", "runs", `${runId}.report.json`);
 async function collectReport(i) {
   const reject = async (reason, errors2) => {
     await appendEvent(i.projectDir, {
@@ -22354,7 +23532,7 @@ async function collectReport(i) {
     errors.push(`item: report says "${report.item}" but the unit's item is "${i.item}"`);
   if (errors.length > 0) return reject("report_invalid", errors);
   const file = reportFile(i.projectDir, i.runId);
-  mkdirSync12(path21.dirname(file), { recursive: true });
+  mkdirSync14(path24.dirname(file), { recursive: true });
   writeFileAtomic(file, `${JSON.stringify(report, null, 2)}
 `);
   await appendEvent(i.projectDir, {
@@ -22373,18 +23551,18 @@ async function collectReport(i) {
 }
 
 // plugins/arima/scripts/src/runid.ts
-import { existsSync as existsSync15, mkdirSync as mkdirSync13, readFileSync as readFileSync16 } from "node:fs";
-import path22 from "node:path";
+import { existsSync as existsSync17, mkdirSync as mkdirSync15, readFileSync as readFileSync18 } from "node:fs";
+import path25 from "node:path";
 var pad = (n, w = 2) => String(n).padStart(w, "0");
 async function issueRunId(projectDir, now = /* @__PURE__ */ new Date()) {
   const day = `${now.getFullYear()}${pad(now.getMonth() + 1)}${pad(now.getDate())}`;
   const hhmm = `${pad(now.getHours())}${pad(now.getMinutes())}`;
-  const file = path22.join(projectDir, ".arima", "state", "run-seq.json");
-  mkdirSync13(path22.dirname(file), { recursive: true });
+  const file = path25.join(projectDir, ".arima", "state", "run-seq.json");
+  mkdirSync15(path25.dirname(file), { recursive: true });
   return withFileLock(`${file}.lock`, () => {
     let state = { day, last: 0 };
-    if (existsSync15(file)) {
-      const parsed = JSON.parse(readFileSync16(file, "utf8"));
+    if (existsSync17(file)) {
+      const parsed = JSON.parse(readFileSync18(file, "utf8"));
       if (parsed.day === day && Number.isInteger(parsed.last))
         state = { day, last: parsed.last };
     }
@@ -22393,338 +23571,6 @@ async function issueRunId(projectDir, now = /* @__PURE__ */ new Date()) {
 `);
     return `r-${day}-${hhmm}-${pad(state.last)}`;
   });
-}
-
-// plugins/arima/scripts/src/sandbox.ts
-import { execFile } from "node:child_process";
-import {
-  chmodSync,
-  existsSync as existsSync16,
-  mkdirSync as mkdirSync14,
-  mkdtempSync as mkdtempSync2,
-  readFileSync as readFileSync17,
-  readdirSync as readdirSync6,
-  rmSync as rmSync3,
-  writeFileSync as writeFileSync5
-} from "node:fs";
-import { tmpdir as tmpdir2 } from "node:os";
-import path23 from "node:path";
-var SANDBOX_IMAGE_DEFAULT = "arima-sandbox:1";
-var CONTAINER_WORK = "/work";
-var CONTAINER_PLUGIN = "/plugin";
-var EGRESS_ALLOW_DEFAULT = [
-  "api.anthropic.com",
-  "registry.npmjs.org",
-  "statsig.anthropic.com"
-];
-var realExec = (file, args, opts = {}) => new Promise((resolve2) => {
-  const child = execFile(
-    file,
-    args,
-    {
-      cwd: opts.cwd,
-      timeout: opts.timeoutMs ?? 12e4,
-      maxBuffer: 32 * 1024 * 1024,
-      windowsHide: true,
-      env: { ...process.env, GIT_TERMINAL_PROMPT: "0" }
-    },
-    (err, stdout, stderr) => {
-      const code2 = err === null ? 0 : typeof err.code === "number" ? err.code : 1;
-      resolve2({ code: code2, stdout: String(stdout), stderr: String(stderr) });
-    }
-  );
-  if (opts.input !== void 0) child.stdin?.end(opts.input);
-});
-async function dockerReady(exec = realExec) {
-  const r = await exec("docker", ["info", "--format", "{{.ServerVersion}}"], { timeoutMs: 2e4 });
-  if (r.code === 0 && r.stdout.trim() !== "")
-    return { ok: true, detail: `Docker is running (server ${r.stdout.trim()})` };
-  return {
-    ok: false,
-    detail: "runtime.sandbox is docker but the Docker daemon is not answering; start Docker Desktop"
-  };
-}
-var FORBIDDEN_MOUNT = /(docker\.sock|[\\/]\.claude\b|[\\/]\.config[\\/]arima|[\\/]\.ssh\b|[\\/]\.git(?:[\\/]|$|:))/i;
-function unsafeDockerArgs(args) {
-  const bad = [];
-  const has = (a) => args.includes(a);
-  if (has("--privileged")) bad.push("--privileged");
-  if (args.some((a) => a.startsWith("--cap-add"))) bad.push("--cap-add");
-  if (args.some((a, i) => (a === "--network" || a === "--net") && args[i + 1] === "host"))
-    bad.push("host network");
-  if (args.some((a) => /^--(pid|ipc|userns|uts)=?host$/.test(a))) bad.push("host namespace");
-  args.forEach((a, i) => {
-    if ((a === "-v" || a === "--volume" || a === "--mount") && args[i + 1] !== void 0) {
-      if (FORBIDDEN_MOUNT.test(args[i + 1])) bad.push(`mount ${args[i + 1]}`);
-    }
-  });
-  if (!has("--cap-drop")) bad.push("capabilities not dropped");
-  if (!args.includes("no-new-privileges")) bad.push("no-new-privileges missing");
-  return bad;
-}
-function assertSafeDockerArgs(args) {
-  const bad = unsafeDockerArgs(args);
-  if (bad.length > 0) throw new Error(`refusing an unsafe sandbox: ${bad.join(", ")}`);
-}
-function buildDockerRunArgs(i) {
-  const args = [
-    "run",
-    "--rm",
-    "-i",
-    "--init",
-    "--name",
-    i.name,
-    "--network",
-    i.network,
-    "--cap-drop",
-    "ALL",
-    "--security-opt",
-    "no-new-privileges",
-    "--pids-limit",
-    String(i.pids ?? 512),
-    "--memory",
-    i.memory ?? "4g",
-    "--env-file",
-    i.envFile,
-    "-v",
-    `${i.cloneDir}:${CONTAINER_WORK}:rw`,
-    "-v",
-    `${i.pluginDir}:${CONTAINER_PLUGIN}:ro`,
-    "-w",
-    CONTAINER_WORK
-  ];
-  if (i.user !== void 0) args.push("--user", i.user);
-  args.push(i.image, ...i.command);
-  assertSafeDockerArgs(args);
-  return args;
-}
-var CONTAINER_ENV_KEEP = /^(ARIMA_(RUN_ID|ROLE|ITEM|KIND)|OTEL_|ANTHROPIC_|CLAUDE_CODE_OAUTH_TOKEN|GH_TOKEN|ARIMA_NOTION_TOKEN|NOTION_)/;
-function containerEnv(hostEnv, extra = {}) {
-  const env = {
-    HOME: "/home/node",
-    PATH: "/usr/local/bin:/usr/bin:/bin",
-    ARIMA_PROJECT_DIR: CONTAINER_WORK,
-    CLAUDE_PLUGIN_ROOT: CONTAINER_PLUGIN
-  };
-  for (const [k, v] of Object.entries(hostEnv)) {
-    if (v === void 0) continue;
-    if (CONTAINER_ENV_KEEP.test(k) || (extra.keep ?? []).includes(k)) env[k] = v;
-  }
-  if (extra.oauthToken !== void 0) env["CLAUDE_CODE_OAUTH_TOKEN"] = extra.oauthToken;
-  if (extra.proxy !== void 0) {
-    for (const k of ["HTTPS_PROXY", "HTTP_PROXY", "https_proxy", "http_proxy"])
-      env[k] = extra.proxy;
-    env["NO_PROXY"] = "localhost,127.0.0.1";
-  }
-  env["ARIMA_PROJECT_DIR"] = CONTAINER_WORK;
-  return env;
-}
-function writeEnvFile(dir, env) {
-  const file = path23.join(dir, "env");
-  for (const [k, v] of Object.entries(env))
-    if (/[\r\n]/.test(v) || !/^[A-Za-z_][A-Za-z0-9_]*$/.test(k))
-      throw new Error(`environment variable ${k} cannot be passed to a container`);
-  writeFileSync5(
-    file,
-    `${Object.entries(env).map(([k, v]) => `${k}=${v}`).join("\n")}
-`,
-    {
-      mode: 384
-    }
-  );
-  try {
-    chmodSync(file, 384);
-  } catch {
-  }
-  return file;
-}
-async function makeClone(exec, source, branch, base = tmpdir2()) {
-  const root = mkdtempSync2(path23.join(base, "arima-sbx-"));
-  const dir = path23.join(root, "work");
-  const r = await exec("git", [
-    "clone",
-    "--quiet",
-    "--no-hardlinks",
-    "--branch",
-    branch,
-    source,
-    dir
-  ]);
-  if (r.code !== 0) {
-    rmSync3(root, { recursive: true, force: true });
-    throw new Error(`could not clone ${branch} for the sandbox: ${r.stderr.trim()}`);
-  }
-  await exec("git", ["remote", "remove", "origin"], { cwd: dir });
-  mkdirSync14(path23.join(dir, ".arima", "outbox"), { recursive: true });
-  const info = path23.join(dir, ".git", "info");
-  mkdirSync14(info, { recursive: true });
-  writeFileSync5(path23.join(info, "exclude"), ".arima/\n", { flag: "a" });
-  return { dir, root };
-}
-function disposeClone(c) {
-  rmSync3(c.root, { recursive: true, force: true, maxRetries: 3 });
-}
-async function importCommits(exec, worktree, clone, branch) {
-  const before = await exec("git", ["rev-parse", "HEAD"], { cwd: worktree });
-  const r = await exec("git", ["pull", "--ff-only", "--quiet", clone.dir, branch], {
-    cwd: worktree
-  });
-  if (r.code !== 0)
-    return {
-      ok: false,
-      commits: 0,
-      detail: `the sandbox commits could not be fast-forwarded: ${r.stderr.trim()}`
-    };
-  const n = await exec("git", ["rev-list", "--count", `${before.stdout.trim()}..HEAD`], {
-    cwd: worktree
-  });
-  return { ok: true, commits: Number(n.stdout.trim()) || 0, detail: "ok" };
-}
-var AUDIT_TYPES = /* @__PURE__ */ new Set(["tool.used", "tool.blocked"]);
-async function importArima(projectDir, clone, who) {
-  const rejected = [];
-  let outbox = 0;
-  let events = 0;
-  const env = { ARIMA_RUN_ID: who.runId, ARIMA_ROLE: who.role };
-  const ob = path23.join(clone.dir, ".arima", "outbox");
-  if (existsSync16(ob)) {
-    const validate = getValidator("outbox");
-    for (const name of readdirSync6(ob).filter((f) => f.endsWith(".json")).sort()) {
-      try {
-        const entry = migrateRecord(
-          "outbox",
-          JSON.parse(readFileSync17(path23.join(ob, name), "utf8"))
-        );
-        if (!validate(entry)) throw new Error("invalid outbox entry");
-        enqueue(projectDir, entry, { env });
-        outbox += 1;
-      } catch (e) {
-        rejected.push(`${name}: ${e.message}`);
-      }
-    }
-  }
-  const evFile = path23.join(clone.dir, ".arima", "events.jsonl");
-  if (existsSync16(evFile)) {
-    for (const [i, line] of readFileSync17(evFile, "utf8").split("\n").entries()) {
-      if (line.trim() === "") continue;
-      try {
-        const ev = JSON.parse(line);
-        if (!AUDIT_TYPES.has(ev.type))
-          throw new Error(`event type ${String(ev.type)} is not importable`);
-        await appendEvent(projectDir, {
-          type: ev.type,
-          actor: who.role,
-          run_id: who.runId,
-          ...ev.item !== void 0 ? { item: ev.item } : {},
-          ...ev.data !== void 0 ? { data: ev.data } : {}
-        });
-        events += 1;
-      } catch (e) {
-        rejected.push(`events.jsonl:${i + 1}: ${e.message}`);
-      }
-    }
-  }
-  return { outbox, events, rejected };
-}
-var safeName = (s) => s.replace(/[^A-Za-z0-9_.-]/g, "-");
-async function openSandbox(o) {
-  const exec = o.exec ?? realExec;
-  const image = o.image ?? SANDBOX_IMAGE_DEFAULT;
-  const id = safeName(o.runId);
-  const net = `arima-net-${id}`;
-  const proxyName = `arima-egress-${id}`;
-  const container = `arima-run-${id}`;
-  const branchOut = await exec("git", ["rev-parse", "--abbrev-ref", "HEAD"], { cwd: o.worktree });
-  const branch = branchOut.stdout.trim();
-  if (branchOut.code !== 0 || branch === "" || branch === "HEAD")
-    throw new Error(
-      `the worktree ${o.worktree} is not on a branch, so it cannot be cloned for the sandbox`
-    );
-  const cleanup = [];
-  const undo = async () => {
-    for (const f of cleanup.reverse()) await f().catch(() => void 0);
-  };
-  try {
-    const clone = await makeClone(exec, o.worktree, branch, o.tmp);
-    cleanup.push(() => Promise.resolve(disposeClone(clone)));
-    const created = await exec("docker", ["network", "create", "--internal", net]);
-    if (created.code !== 0)
-      throw new Error(`could not create the sandbox network: ${created.stderr.trim()}`);
-    cleanup.push(() => exec("docker", ["network", "rm", net]));
-    const allow = [...EGRESS_ALLOW_DEFAULT, ...o.allow ?? []];
-    const sidecar = [
-      "run",
-      "-d",
-      "--rm",
-      "--name",
-      proxyName,
-      "--network",
-      net,
-      "--cap-drop",
-      "ALL",
-      "--security-opt",
-      "no-new-privileges",
-      "--read-only",
-      "-v",
-      `${o.pluginDir}:${CONTAINER_PLUGIN}:ro`,
-      image,
-      "node",
-      `${CONTAINER_PLUGIN}/scripts/dist/arima-egress-proxy.mjs`,
-      "--allow",
-      allow.join(","),
-      "--host",
-      "0.0.0.0",
-      "--port",
-      "3128"
-    ];
-    assertSafeDockerArgs(sidecar);
-    const s = await exec("docker", sidecar);
-    if (s.code !== 0) throw new Error(`could not start the egress proxy: ${s.stderr.trim()}`);
-    cleanup.push(() => exec("docker", ["rm", "-f", proxyName]));
-    const c = await exec("docker", ["network", "connect", "bridge", proxyName]);
-    if (c.code !== 0)
-      throw new Error(`could not connect the egress proxy outward: ${c.stderr.trim()}`);
-    const env = containerEnv(o.hostEnv, {
-      proxy: `http://${proxyName}:3128`,
-      oauthToken: o.oauthToken,
-      ...o.keep ? { keep: o.keep } : {}
-    });
-    const envFile = writeEnvFile(clone.root, env);
-    const user = typeof process.getuid === "function" ? `${process.getuid()}:${process.getgid?.() ?? 0}` : void 0;
-    return {
-      clone,
-      container,
-      dockerArgs: (command) => buildDockerRunArgs({
-        name: container,
-        image,
-        cloneDir: clone.dir,
-        pluginDir: o.pluginDir,
-        envFile,
-        network: net,
-        command,
-        ...user !== void 0 ? { user } : {}
-      }),
-      kill: async () => {
-        await exec("docker", ["kill", container]);
-      },
-      finish: async () => {
-        try {
-          const commits = await importCommits(exec, o.worktree, clone, branch);
-          const imported = await importArima(o.projectDir, clone, {
-            runId: o.runId,
-            role: o.role
-          });
-          return { commits, imported };
-        } finally {
-          await exec("docker", ["rm", "-f", container]).catch(() => void 0);
-          await undo();
-        }
-      }
-    };
-  } catch (e) {
-    await undo();
-    throw e;
-  }
 }
 
 // plugins/arima/scripts/src/run-agent.ts
@@ -22944,8 +23790,8 @@ function exitFor(result) {
   }
 }
 function writeRunReport(projectDir, runId, body) {
-  const dir = path24.join(projectDir, ".arima", "runs");
-  mkdirSync15(dir, { recursive: true });
+  const dir = path26.join(projectDir, ".arima", "runs");
+  mkdirSync16(dir, { recursive: true });
   let text3 = JSON.stringify(body, null, 2);
   if (findSecrets(text3).length > 0) {
     text3 = JSON.stringify(
@@ -22954,7 +23800,7 @@ function writeRunReport(projectDir, runId, body) {
       2
     );
   }
-  writeFileSync6(path24.join(dir, `${runId}.json`), `${text3}
+  writeFileSync7(path26.join(dir, `${runId}.json`), `${text3}
 `, "utf8");
 }
 var localDay = (d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
@@ -23027,16 +23873,16 @@ async function runAgent(o) {
       `budget ${o.budgetUsd} exceeds budget.per_run_cap ${o.config.perRunCap} in arima.yaml (spec \xA713.5)`
     );
   }
-  if (o.buildPrompt === void 0 && !existsSync17(o.promptFile))
+  if (o.buildPrompt === void 0 && !existsSync18(o.promptFile))
     throw new Error(`prompt file not found: ${o.promptFile}`);
-  const cwd = path24.resolve(o.cwd ?? o.projectDir);
+  const cwd = path26.resolve(o.cwd ?? o.projectDir);
   const root = pluginRoot();
-  const scriptsGlob = path24.join(root, "scripts", "dist").replace(/\\/g, "/");
-  const agentName = o.agent ?? (existsSync17(path24.join(root, "agents", `${o.role}.md`)) ? `arima:${o.role}` : void 0);
+  const scriptsGlob = path26.join(root, "scripts", "dist").replace(/\\/g, "/");
+  const agentName = o.agent ?? (existsSync18(path26.join(root, "agents", `${o.role}.md`)) ? `arima:${o.role}` : void 0);
   const now = o.now ?? /* @__PURE__ */ new Date();
   await assertMayDispatch(o, now);
   const runId = await issueRunId(o.projectDir, now);
-  const prompt = o.buildPrompt !== void 0 ? await o.buildPrompt(runId) : readFileSync18(o.promptFile, "utf8");
+  const prompt = o.buildPrompt !== void 0 ? await o.buildPrompt(runId) : readFileSync19(o.promptFile, "utf8");
   const startedAt = now.toISOString();
   const attempt = o.attempt ?? 1;
   await appendEvent(o.projectDir, {
@@ -23052,7 +23898,7 @@ async function runAgent(o) {
     phase: o.phase,
     runId,
     projectKey: o.config.projectKey,
-    projectDir: path24.resolve(o.projectDir),
+    projectDir: path26.resolve(o.projectDir),
     config: o.config,
     ...o.kind !== void 0 ? { kind: o.kind } : {}
   });
@@ -23341,18 +24187,18 @@ function branchFor(item, title) {
 var BRANCH = /^(?:feat|fix|hotfix|chore|qa)\/[A-Za-z0-9][A-Za-z0-9._-]*(?:\/[A-Za-z0-9][A-Za-z0-9._-]*)*$/;
 var isProtected = (branch, o) => ["main", "master", o.defaultBranch ?? "main", o.stateBranch ?? "arima-state"].includes(branch);
 var worktreeRoot = (projectDir) => {
-  const repo = path25.resolve(projectDir);
-  return path25.join(path25.dirname(repo), `${path25.basename(repo)}-wt`);
+  const repo = path27.resolve(projectDir);
+  return path27.join(path27.dirname(repo), `${path27.basename(repo)}-wt`);
 };
-var worktreePath = (projectDir, branch) => path25.join(worktreeRoot(projectDir), ...branch.split("/"));
-var registryFile = (projectDir) => path25.join(worktreeRoot(projectDir), "registry.json");
+var worktreePath = (projectDir, branch) => path27.join(worktreeRoot(projectDir), ...branch.split("/"));
+var registryFile = (projectDir) => path27.join(worktreeRoot(projectDir), "registry.json");
 function readRegistry(projectDir) {
   const f = registryFile(projectDir);
-  return existsSync18(f) ? JSON.parse(readFileSync19(f, "utf8")) : [];
+  return existsSync19(f) ? JSON.parse(readFileSync20(f, "utf8")) : [];
 }
 async function updateRegistry(projectDir, change) {
   const f = registryFile(projectDir);
-  mkdirSync16(path25.dirname(f), { recursive: true });
+  mkdirSync17(path27.dirname(f), { recursive: true });
   await withFileLock(
     `${f}.lock`,
     () => writeFileAtomic(f, `${JSON.stringify(change(readRegistry(projectDir)), null, 2)}
@@ -23361,7 +24207,7 @@ async function updateRegistry(projectDir, change) {
 }
 var SPARSE_PATH = /^(?![/.-])(?!.*\.\.)(?!.*[*?[\]\\!#])[A-Za-z0-9_@. /-]+\/?$/;
 async function createWorktree(o) {
-  const repo = path25.resolve(o.projectDir);
+  const repo = path27.resolve(o.projectDir);
   if (!BRANCH.test(o.branch) || o.branch.includes("..") || o.branch.endsWith(".lock"))
     throw new WorktreeError(
       `"${o.branch}" is not a branch name ARIMA creates (feat/, fix/, hotfix/, chore/ or qa/ then letters, digits, . _ -)`
@@ -23375,13 +24221,13 @@ async function createWorktree(o) {
       `branch ${o.branch} already exists; STOP (remove it, or this is a re-dispatch of a unit that was not cleaned up)`
     );
   const dir = worktreePath(repo, o.branch);
-  if (existsSync18(dir)) throw new WorktreeError(`${dir} already exists; STOP`);
+  if (existsSync19(dir)) throw new WorktreeError(`${dir} already exists; STOP`);
   for (const p of o.sparse ?? [])
     if (!SPARSE_PATH.test(p))
       throw new WorktreeError(
         `sparse path "${p}" must be a plain relative path inside the repository`
       );
-  mkdirSync16(path25.dirname(dir), { recursive: true });
+  mkdirSync17(path27.dirname(dir), { recursive: true });
   const cfg = win ? ["-c", "core.longpaths=true"] : [];
   const sparse = o.sparse !== void 0 && o.sparse.length > 0;
   git2(repo, [
@@ -23425,33 +24271,33 @@ async function createWorktree(o) {
   }
 }
 var same = (a, b) => {
-  const n = (p) => path25.resolve(p).replaceAll("\\", "/").replace(/\/+$/, "");
+  const n = (p) => path27.resolve(p).replaceAll("\\", "/").replace(/\/+$/, "");
   return win ? n(a).toLowerCase() === n(b).toLowerCase() : n(a) === n(b);
 };
 async function removeWorktree(o) {
-  const repo = path25.resolve(o.projectDir);
+  const repo = path27.resolve(o.projectDir);
   if (isProtected(o.branch, o))
     throw new WorktreeError(`refusing to remove the protected branch "${o.branch}"`);
   const dir = worktreePath(repo, o.branch);
-  if (same(dir, repo) || same(dir, path25.join(repo, ".arima")))
+  if (same(dir, repo) || same(dir, path27.join(repo, ".arima")))
     throw new WorktreeError("refusing to remove the main or state worktree");
   for (const pid of o.pids ?? []) killTree(pid);
-  let removed = !existsSync18(dir);
+  let removed = !existsSync19(dir);
   for (let i = 0; i < 5 && !removed; i++) {
     try {
       git2(repo, ["worktree", "remove", "--force", dir]);
       removed = true;
     } catch {
       await sleep3(100 * 2 ** i);
-      removed = !existsSync18(dir);
+      removed = !existsSync19(dir);
     }
   }
   if (!removed) {
     try {
-      rmSync4(dir, { recursive: true, force: true, maxRetries: 5, retryDelay: 100 });
+      rmSync5(dir, { recursive: true, force: true, maxRetries: 5, retryDelay: 100 });
     } catch {
     }
-    removed = !existsSync18(dir);
+    removed = !existsSync19(dir);
   }
   gitOk2(repo, ["worktree", "prune"]);
   if (o.deleteBranch === true && gitOk2(repo, ["show-ref", "--verify", "--quiet", `refs/heads/${o.branch}`]))
@@ -23468,11 +24314,11 @@ var alive = (pid) => {
   }
 };
 async function pruneWorktrees(o) {
-  const repo = path25.resolve(o.projectDir);
+  const repo = path27.resolve(o.projectDir);
   const isAlive = o.isAlive ?? alive;
   const res = { removed: [], kept: [], forgotten: [] };
   for (const w of readRegistry(repo)) {
-    if (!existsSync18(w.path)) {
+    if (!existsSync19(w.path)) {
       res.forgotten.push(w.path);
       await updateRegistry(repo, (r) => r.filter((x) => x.path !== w.path));
       continue;
@@ -23577,7 +24423,7 @@ function checkBranch(i) {
   if ([i.defaultBranch, i.stateBranch ?? "arima-state", "main", "master"].includes(i.branch))
     refuse2(`"${i.branch}" is a protected branch; it is never published from here`, "guard_blocked");
   const dir = worktreePath(i.projectDir, i.branch);
-  if (!existsSync19(dir)) refuse2(`there is no worktree for ${i.branch} at ${dir}`);
+  if (!existsSync20(dir)) refuse2(`there is no worktree for ${i.branch} at ${dir}`);
   const head = git3(dir, ["rev-parse", "--abbrev-ref", "HEAD"]);
   if (head !== i.branch) refuse2(`the worktree is on "${head}", not ${i.branch}`);
   if (git3(dir, ["status", "--porcelain"]) !== "")
@@ -23760,7 +24606,7 @@ ${i.body}`, loadSecretAllowlist(i.projectDir));
   });
   if (/^US-\d+$/.test(i.item)) {
     const taken = new Set(
-      existsSync19(outboxDir(i.projectDir)) ? readdirSync7(outboxDir(i.projectDir)) : []
+      existsSync20(outboxDir(i.projectDir)) ? readdirSync8(outboxDir(i.projectDir)) : []
     );
     let n = 1;
     while (taken.has(`pub-${i.runId}-${i.item}-${n}.json`)) n += 1;
@@ -23827,7 +24673,7 @@ async function postReview(i) {
     );
   const gh = i.gh ?? ghRunner;
   const call = (body) => gh(["api", `repos/${i.repo}/pulls/${i.pr}/reviews`, "--method", "POST", "--input", "-"], {
-    cwd: path26.resolve(i.projectDir),
+    cwd: path28.resolve(i.projectDir),
     env: ghEnv(i.token),
     input: body
   });
@@ -24038,7 +24884,7 @@ function gatherFacts(i, pr) {
   const notPassed = caseIds.filter(
     (id) => findRow(cases, id)?.properties["Last result"] !== "Pass"
   );
-  const ui = existsSync20(path27.join(i.projectDir, "design", "screens", i.item));
+  const ui = existsSync21(path29.join(i.projectDir, "design", "screens", i.item));
   const dq = verdictAfterLastPush(i.projectDir, i.item, "ux", "design-qa");
   return {
     prOpen,
@@ -24074,7 +24920,7 @@ async function mergePr(i) {
     );
   const gh = i.gh ?? ghRunner;
   const env = { ...process.env, GH_PROMPT_DISABLED: "1", GH_TOKEN: i.token };
-  const run = (args) => gh(args, { cwd: path27.resolve(i.projectDir), env });
+  const run = (args) => gh(args, { cwd: path29.resolve(i.projectDir), env });
   const view = run([
     "pr",
     "view",
@@ -24514,11 +25360,11 @@ function validatePacket(text3) {
 }
 
 // plugins/arima/scripts/src/runlock.ts
-import { existsSync as existsSync21, mkdirSync as mkdirSync17, readFileSync as readFileSync20, rmSync as rmSync5, writeFileSync as writeFileSync7 } from "node:fs";
+import { existsSync as existsSync22, mkdirSync as mkdirSync18, readFileSync as readFileSync21, rmSync as rmSync6, writeFileSync as writeFileSync8 } from "node:fs";
 import { hostname } from "node:os";
-import path28 from "node:path";
+import path30 from "node:path";
 function runLockFile(projectDir) {
-  return path28.join(projectDir, ".arima", "run.lock");
+  return path30.join(projectDir, ".arima", "run.lock");
 }
 function alive2(pid) {
   try {
@@ -24530,10 +25376,10 @@ function alive2(pid) {
 }
 function lockStatus(projectDir, staleAfterMs, now = Date.now()) {
   const file = runLockFile(projectDir);
-  if (!existsSync21(file)) return { held: false, stale: false };
+  if (!existsSync22(file)) return { held: false, stale: false };
   let lock;
   try {
-    lock = JSON.parse(readFileSync20(file, "utf8"));
+    lock = JSON.parse(readFileSync21(file, "utf8"));
   } catch {
     return { held: false, stale: true };
   }
@@ -24545,7 +25391,7 @@ function lockStatus(projectDir, staleAfterMs, now = Date.now()) {
 }
 function acquireRunLock(projectDir, runId, staleAfterMs) {
   const file = runLockFile(projectDir);
-  mkdirSync17(path28.dirname(file), { recursive: true });
+  mkdirSync18(path30.dirname(file), { recursive: true });
   const body = {
     pid: process.pid,
     run_id: runId,
@@ -24554,27 +25400,27 @@ function acquireRunLock(projectDir, runId, staleAfterMs) {
   };
   for (let attempt = 0; attempt < 2; attempt++) {
     try {
-      writeFileSync7(file, `${JSON.stringify(body)}
+      writeFileSync8(file, `${JSON.stringify(body)}
 `, { flag: "wx" });
       return true;
     } catch (e) {
       if (e.code !== "EEXIST") throw e;
       const status = lockStatus(projectDir, staleAfterMs);
       if (status.held) return false;
-      rmSync5(file, { force: true });
+      rmSync6(file, { force: true });
     }
   }
   return false;
 }
 function releaseRunLock(projectDir, runId) {
   const file = runLockFile(projectDir);
-  if (!existsSync21(file)) return false;
+  if (!existsSync22(file)) return false;
   try {
-    const lock = JSON.parse(readFileSync20(file, "utf8"));
+    const lock = JSON.parse(readFileSync21(file, "utf8"));
     if (lock.run_id !== runId) return false;
   } catch {
   }
-  rmSync5(file, { force: true });
+  rmSync6(file, { force: true });
   return true;
 }
 
@@ -24788,10 +25634,10 @@ function planDay(input, limits, ranks = RANKS) {
         if (input.stagingSmokeFailing === true)
           out.push({
             rankName,
-            kind: "fix",
+            kind: "deploy-staging",
             role: "devops",
             item: "none",
-            why: "the staging smoke test is failing"
+            why: "the staging deploy failed its smoke test"
           });
         return out;
       case "rework":
@@ -24975,8 +25821,8 @@ function storiesFromMirror(projectDir, cfg, pr = {}) {
 }
 
 // plugins/arima/scripts/src/cost.ts
-import { existsSync as existsSync22, readFileSync as readFileSync21, readdirSync as readdirSync8 } from "node:fs";
-import path29 from "node:path";
+import { existsSync as existsSync23, readFileSync as readFileSync22, readdirSync as readdirSync9 } from "node:fs";
+import path31 from "node:path";
 var MICRO = 1e6;
 var micro = (usd2) => Math.round(usd2 * MICRO);
 var usd = (m) => m / MICRO;
@@ -25140,10 +25986,10 @@ var properties = (r) => ({
 function pendingCostLogKeys(projectDir) {
   const dir = outboxDir(projectDir);
   const keys = /* @__PURE__ */ new Set();
-  if (!existsSync22(dir)) return keys;
-  for (const f of readdirSync8(dir).filter((n) => n.endsWith(".json"))) {
+  if (!existsSync23(dir)) return keys;
+  for (const f of readdirSync9(dir).filter((n) => n.endsWith(".json"))) {
     try {
-      const e = JSON.parse(readFileSync21(path29.join(dir, f), "utf8"));
+      const e = JSON.parse(readFileSync22(path31.join(dir, f), "utf8"));
       if (e.database !== "cost_log") continue;
       const k = e.op === "create" ? e.properties?.["Date"] : e.item_id;
       if (typeof k === "string") keys.add(k);
@@ -25293,7 +26139,7 @@ async function runDispatch(o) {
   if (!cfgResult.ok || cfgResult.arima === void 0 || cfgResult.team === void 0)
     return fail(
       DISPATCH_EXIT.config,
-      cfgResult.errors.map((e) => `${path30.basename(e.file)}:${e.line}: ${e.message}`).join("\n")
+      cfgResult.errors.map((e) => `${path32.basename(e.file)}:${e.line}: ${e.message}`).join("\n")
     );
   const cfg = cfgResult.arima;
   const team = cfgResult.team;
@@ -25350,8 +26196,8 @@ async function runDispatch(o) {
       if (e?.run_id === void 0) return void 0;
       try {
         return JSON.parse(
-          readFileSync22(
-            path30.join(o.projectDir, ".arima", "runs", `${e.run_id}.report.json`),
+          readFileSync23(
+            path32.join(o.projectDir, ".arima", "runs", `${e.run_id}.report.json`),
             "utf8"
           )
         );
@@ -25377,6 +26223,13 @@ async function runDispatch(o) {
         if (ac)
           untrusted.push({ label: "Acceptance criteria (Notion)", source: "notion", text: ac });
       }
+      const failed = unit.kind === "deploy-staging" ? stagingFailing(o.projectDir) : void 0;
+      if (failed)
+        untrusted.push({
+          label: "Staging deploy result (script output)",
+          source: "arima-env",
+          text: `ref ${failed.ref}; previous version restored: ${failed.restored}; ${failed.error}`
+        });
       return {
         run_id: rid,
         max_minutes: cfg.schedule.max_run_minutes,
@@ -25507,7 +26360,14 @@ async function runDispatch(o) {
       prsAwaitingHuman: await gh.prsAwaitingHuman(),
       reviewers: profile.rules.code_review.reviewers >= 2 ? 2 : 1
     };
-    let plan = planDay({ stories, ciRedOnMain: await gh.ciRedOnMain() }, limits);
+    let plan = planDay(
+      {
+        stories,
+        ciRedOnMain: await gh.ciRedOnMain(),
+        stagingSmokeFailing: stagingFailing(o.projectDir) !== void 0
+      },
+      limits
+    );
     if (res.degraded)
       plan = { units: plan.units.filter((u) => u.rank <= 5), skipped: plan.skipped };
     if (o.only !== void 0) {
@@ -25599,7 +26459,7 @@ async function runDispatch(o) {
         });
         if (!moved.ok) return { unit, result: "skipped", note: moved.message };
       }
-      const branch = unit.kind === "qa" || unit.kind === "test-write" ? `qa/${unit.item}-tests` : branchFor(unit.item, titleOf2(unit.item));
+      const branch = unit.item === "none" ? "" : unit.kind === "qa" || unit.kind === "test-write" ? `qa/${unit.item}-tests` : branchFor(unit.item, titleOf2(unit.item));
       let cwd = o.projectDir;
       const makeWorktree = async () => {
         if (!needsWorktree(unit.kind, unit.role) || unit.item === "none") return;
@@ -25789,7 +26649,7 @@ async function runDispatch(o) {
     }
     async function publishDevelop(unit, report, branch) {
       const criteria = report.criteria_map ?? [];
-      const ui = existsSync23(path30.join(o.projectDir, "design", "screens", unit.item));
+      const ui = existsSync24(path32.join(o.projectDir, "design", "screens", unit.item));
       const body = renderPrBody({
         items: [unit.item],
         summary: report.summary,
@@ -25984,7 +26844,7 @@ async function runDispatch(o) {
   }
 }
 function branchExists(projectDir, branch) {
-  return existsSync23(worktreePath(projectDir, branch)) ? true : gitHasBranch(projectDir, branch);
+  return existsSync24(worktreePath(projectDir, branch)) ? true : gitHasBranch(projectDir, branch);
 }
 function gitHasBranch(projectDir, branch) {
   try {
@@ -26086,7 +26946,7 @@ ${DISPATCH_USAGE}
 `);
     return DISPATCH_EXIT.usage;
   }
-  const projectDir = path31.resolve(io.cwd, v.project ?? ".");
+  const projectDir = path33.resolve(io.cwd, v.project ?? ".");
   const env = deps.env ?? process.env;
   let wired = deps;
   if (deps.wired !== true) {
@@ -26100,6 +26960,12 @@ ${DISPATCH_USAGE}
       notion: nt ? { port: createNotionPortFromToken(nt) } : null,
       token: gt,
       gh: deps.gh ?? ghRunner,
+      // D-47, G-28: after a merge the host rebuilds staging from the default branch (WP-213).
+      ...deps.afterMerge === void 0 && cfg.ok && cfg.arima !== void 0 ? {
+        afterMerge: async () => {
+          await rebuildStagingAfterMerge(settingsFrom(projectDir, cfg.arima), { env });
+        }
+      } : {},
       ...gt && a?.github ? {
         github: deps.github ?? githubFactsFromGh({
           projectDir,

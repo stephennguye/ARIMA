@@ -45,7 +45,13 @@ export interface ExecResult {
 export type Exec = (
   file: string,
   args: string[],
-  opts?: { cwd?: string; input?: string; timeoutMs?: number },
+  opts?: {
+    cwd?: string;
+    input?: string;
+    timeoutMs?: number;
+    /** When given, REPLACES the process environment (a scrubbed one); GIT_TERMINAL_PROMPT is still set. */
+    env?: Record<string, string>;
+  },
 ) => Promise<ExecResult>;
 
 export const realExec: Exec = (file, args, opts = {}) =>
@@ -58,7 +64,7 @@ export const realExec: Exec = (file, args, opts = {}) =>
         timeout: opts.timeoutMs ?? 120_000,
         maxBuffer: 32 * 1024 * 1024,
         windowsHide: true,
-        env: { ...process.env, GIT_TERMINAL_PROMPT: '0' },
+        env: { ...(opts.env ?? process.env), GIT_TERMINAL_PROMPT: '0' },
       },
       (err, stdout, stderr) => {
         const code = err === null ? 0 : typeof err.code === 'number' ? err.code : 1;

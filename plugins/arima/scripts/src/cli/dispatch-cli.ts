@@ -1,6 +1,7 @@
 import path from 'node:path';
 import { parseArgs } from 'node:util';
 import { validateProject } from '../config.js';
+import { rebuildStagingAfterMerge, settingsFrom } from '../env.js';
 import { DISPATCH_EXIT, githubFactsFromGh, runDispatch } from '../dispatch.js';
 import type { DispatchDeps, DispatchResult } from '../dispatch.js';
 import { createNotionPortFromToken } from '../notion/port.js';
@@ -86,6 +87,14 @@ export async function runDispatchCli(
       notion: nt ? { port: createNotionPortFromToken(nt) } : null,
       token: gt,
       gh: deps.gh ?? ghRunner,
+      // D-47, G-28: after a merge the host rebuilds staging from the default branch (WP-213).
+      ...(deps.afterMerge === undefined && cfg.ok && cfg.arima !== undefined
+        ? {
+            afterMerge: async (): Promise<void> => {
+              await rebuildStagingAfterMerge(settingsFrom(projectDir, cfg.arima), { env });
+            },
+          }
+        : {}),
       ...(gt && a?.github
         ? {
             github:

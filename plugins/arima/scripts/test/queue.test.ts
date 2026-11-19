@@ -69,7 +69,7 @@ describe('the priority table (spec 7.2 step 4)', () => {
       '1:triage:devops:INC-001',
       '1:hotfix:developer:INC-001',
       '2:fix:developer:none',
-      '2:fix:devops:none',
+      '2:deploy-staging:devops:none',
       '3:develop:developer:US-001',
       '4:review:tech-lead:US-002',
       '4:qa:qa:US-003',

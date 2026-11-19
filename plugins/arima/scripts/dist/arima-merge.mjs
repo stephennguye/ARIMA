@@ -3873,7 +3873,7 @@ var require_fast_uri = __commonJS({
         normalizeString(uri, options);
       } else if (typeof uri === "object") {
         uri = /** @type {T} */
-        parse2(serialize(uri, options), options);
+        parse3(serialize(uri, options), options);
       }
       return uri;
     }
@@ -3916,8 +3916,8 @@ var require_fast_uri = __commonJS({
     function resolveComponent(base, relative, options, skipNormalization) {
       const target = {};
       if (!skipNormalization) {
-        base = parse2(serialize(base, options), options);
-        relative = parse2(serialize(relative, options), options);
+        base = parse3(serialize(base, options), options);
+        relative = parse3(serialize(relative, options), options);
       }
       options = options || {};
       if (!options.tolerant && relative.scheme) {
@@ -4235,7 +4235,7 @@ var require_fast_uri = __commonJS({
       }
       return { parsed, malformedAuthorityOrPort, malformedPercentEncoding, malformedSchemeSpecific, malformedHost, malformedScheme };
     }
-    function parse2(uri, opts) {
+    function parse3(uri, opts) {
       return parseWithStatus(uri, opts).parsed;
     }
     function normalizeString(uri, opts) {
@@ -4272,7 +4272,7 @@ var require_fast_uri = __commonJS({
       resolveComponent,
       equal,
       serialize,
-      parse: parse2
+      parse: parse3
     };
     module.exports = fastUri;
     module.exports.default = fastUri;
@@ -15311,7 +15311,7 @@ var require_public_api = __commonJS({
       }
       return doc;
     }
-    function parse2(src, reviver, options) {
+    function parse3(src, reviver, options) {
       let _reviver = void 0;
       if (typeof reviver === "function") {
         _reviver = reviver;
@@ -15352,7 +15352,7 @@ var require_public_api = __commonJS({
         return value.toString(options);
       return new Document.Document(value, _replacer, options).toString(options);
     }
-    exports.parse = parse2;
+    exports.parse = parse3;
     exports.parseAllDocuments = parseAllDocuments;
     exports.parseDocument = parseDocument2;
     exports.stringify = stringify;
@@ -19837,6 +19837,9 @@ async function checkKillSwitch(projectDir, notion, remotePause) {
 
 // plugins/arima/scripts/src/publish.ts
 import { execFileSync as execFileSync3, spawnSync } from "node:child_process";
+
+// plugins/arima/scripts/src/compose-lint.ts
+var import_yaml3 = __toESM(require_dist2(), 1);
 
 // plugins/arima/scripts/src/state.ts
 var MAX_SCAN_BYTES = 64 * 1024 * 1024;

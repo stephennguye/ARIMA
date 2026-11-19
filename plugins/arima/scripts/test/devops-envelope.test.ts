@@ -1,0 +1,174 @@
+// WP-213 step 3 (envelope): the devops tool list equals the card's, and every forbidden action of the
+// card has a test that tries it. Deny rules and the guard are two layers; both are checked.
+import { describe, expect, it } from 'vitest';
+import { guardBash, guardTool } from '../src/hooks.js';
+import { ROLES, allowedTools, deniedTools } from '../src/roles.js';
+
+const DIR = '/p/scripts/dist';
+const allowed = allowedTools('devops', DIR);
+const ctx = { role: 'devops', defaultBranch: 'main' };
+
+describe('devops allow-list (card section 6, as narrowed by WP-213)', () => {
+  it('writes only infra, .github, docs/ops and the outbox; reads; read-only git; commits; no push', () => {
+    for (const t of [
+      'Read',
+      'Write(./infra/**)',
+      'Write(./.github/**)',
+      'Write(./docs/ops/**)',
+      'Write(./.arima/outbox/*.json)',
+      'Bash(git commit *)',
+      'Bash(git add *)',
+      'Bash(git diff *)',
+      'Bash(npm test)',
+      'Bash(npm audit)',
+      'Bash(npm sbom *)',
+      'Bash(npm outdated)',
+    ])
+      expect(allowed, t).toContain(t);
+    for (const t of [
+      'Write',
+      'Edit',
+      'Bash',
+      'Bash(git push *)',
+      'Bash(npm run *)',
+      'Bash(npm ci)',
+    ])
+      expect(allowed, t).not.toContain(t);
+    expect(allowed.filter((t) => /^Bash\((git push|gh)\b/.test(t))).toEqual([]);
+  });
+
+  it('has no Docker command at all, and no GitHub command or credential (D-47, D-49)', () => {
+    expect(allowed.filter((t) => /docker|podman|kubectl|compose/i.test(t))).toEqual([]);
+    expect(allowed.filter((t) => /\bgh\b/.test(t))).toEqual([]);
+  });
+
+  it('may run arima-env check, and status/logs/smoke/up/down for staging and preview-* only', () => {
+    const env = allowed.filter((t) => t.includes('arima-env.mjs'));
+    expect(env.length).toBeGreaterThan(0);
+    for (const t of env) {
+      expect(t).toMatch(
+        /arima-env\.mjs (check|(status|logs|smoke|up|down) (staging|preview-\*))( \*)?\)$/,
+      );
+      expect(t).not.toMatch(/backup|restore-test|production/);
+    }
+    for (const sub of ['status', 'logs', 'smoke', 'up', 'down'])
+      expect(env.some((t) => t.includes(` ${sub} staging`))).toBe(true);
+  });
+
+  it('no other role may run arima-env', () => {
+    for (const r of ROLES.filter((x) => x !== 'devops'))
+      expect(
+        allowedTools(r, DIR).some((t) => t.includes('arima-env')),
+        r,
+      ).toBe(false);
+  });
+
+  it('denies docker, the host scripts and the production config folder to every role', () => {
+    for (const r of ROLES) {
+      const d = deniedTools(r);
+      for (const t of [
+        'Bash(docker *)',
+        'Bash(docker compose *)',
+        'Bash(kubectl *)',
+        'Bash(node */arima-release.mjs *)',
+        'Bash(node */arima-merge.mjs *)',
+        'Bash(node */arima-publish.mjs *)',
+        'Read(~/.config/arima/**)',
+      ])
+        expect(d, `${r}: ${t}`).toContain(t);
+    }
+  });
+});
+
+describe('the guard in a devops run: forbidden actions are blocked (card sections 6 and 7)', () => {
+  const blocked: [string, string][] = [
+    // docker in any form
+    ['docker ps', 'container'],
+    ['docker compose -p tas-production up -d', 'container'],
+    ['docker compose up', 'container'],
+    ['docker inspect tas-production-web-1', 'container'],
+    ['docker run --privileged -v /:/host alpine', 'container'],
+    ['docker run -v /var/run/docker.sock:/var/run/docker.sock alpine', 'container'],
+    ['bash -c "docker rm -f x"', 'container'],
+    ['FOO=1 docker.exe ps', 'container'],
+    ['docker-compose down -v', 'container'],
+    ['kubectl apply -f x.yaml', 'container'],
+    // production through arima-env, in every spelling
+    ['node /p/scripts/dist/arima-env.mjs up production', 'production-barrier'],
+    ['node /p/scripts/dist/arima-env.mjs up Production', 'production-barrier'],
+    ['node /p/scripts/dist/arima-env.mjs down tas-production', 'production-barrier'],
+    ['node /p/scripts/dist/arima-env.mjs up staging --ref production', 'production-barrier'],
+    ['node /p/scripts/dist/arima-env.mjs up', 'production-barrier'],
+    ['node /p/scripts/dist/arima-env.mjs up "$ENVNAME"', 'production-barrier'],
+    ['node /p/scripts/dist/arima-env.mjs up $(echo production)', 'production-barrier'],
+    ['node /p/scripts/dist/arima-env.mjs up preview-0', 'production-barrier'],
+    ['bash -c "node /p/scripts/dist/arima-env.mjs up production"', 'production-barrier'],
+    // host-run subcommands and scripts
+    ['node /p/scripts/dist/arima-env.mjs backup staging', 'host-script'],
+    ['node /p/scripts/dist/arima-env.mjs restore-test staging', 'host-script'],
+    ['node /p/scripts/dist/arima-release.mjs deploy v1.0.0', 'host-script'],
+    ['node /p/scripts/dist/arima-merge.mjs --pr 1', 'host-script'],
+    ['node /p/scripts/dist/arima-publish.mjs push --branch x', 'host-script'],
+    // found by the independent attack (WP-213 review, section 7)
+    ["git fetch --upload-pack='touch /tmp/m' ./other", 'vcs'],
+    ['git fetch -u evil origin', 'vcs'],
+    ['npm test --prefix infra', 'vcs'],
+    ['npm run --prefix infra x', 'vcs'],
+    ['npm ci --prefix=infra', 'vcs'],
+    ['npm test -C infra', 'vcs'],
+    ['npm test --script-shell /tmp/sh', 'vcs'],
+    [
+      'node /p/scripts/dist/arima-env.mjs check --file ~/.config/ar?ma/ACME/pro?uction/env',
+      'secret-file',
+    ],
+    ['node /p/scripts/dist/arima-env.mjs check --file infra/compose.yaml', 'production-barrier'],
+    [
+      'node /p/scripts/dist/arima-env.mjs up staging --project /home/u/other-app',
+      'production-barrier',
+    ],
+    ['node /p/scripts/dist/arima-env.mjs up staging --project=/x', 'production-barrier'],
+    ['node /p/scripts/dist/arima-env.mjs logs ../x', 'production-barrier'],
+    ['git diff --no-index /dev/null ~/.config//arima/ACME/staging/env', 'secret-file'],
+    ['git diff --no-index /dev/null ~/.config/ar?ma/ACME/production/env', 'secret-file'],
+    ['git commit -F ~/.config/ar*ma/x', 'secret-file'],
+    ['cat ~/.config/*/ACME/production/env', 'secret-file'],
+    // the old controls still hold
+    ['git push origin chore/x', 'vcs'],
+    ['gh workflow run deploy.yml', 'vcs'],
+    ['gh pr merge 3', 'vcs'],
+    ['cat ~/.config/arima/tas/production/env', 'secret-file'],
+    ['cat .env', 'secret-file'],
+  ];
+  it.each(blocked)('%s is blocked (%s)', (cmd, rule) => {
+    expect(guardBash(cmd, ctx)?.rule).toBe(rule);
+  });
+
+  it('what a devops run is meant to do passes the guard', () => {
+    for (const cmd of [
+      'node /p/scripts/dist/arima-env.mjs check',
+      'node /p/scripts/dist/arima-env.mjs up staging',
+      'node /p/scripts/dist/arima-env.mjs up preview-12',
+      'node /p/scripts/dist/arima-env.mjs logs staging --tail 100',
+      'node /p/scripts/dist/arima-env.mjs smoke preview-3',
+      'node /p/scripts/dist/arima-env.mjs status staging --json',
+      'git diff HEAD~1',
+      'git commit -m "chore: compose healthcheck"',
+      'npm audit',
+    ])
+      expect(guardBash(cmd, ctx), cmd).toBeUndefined();
+  });
+
+  it.each([
+    ['Grep', { pattern: 'DB_', path: '~/.config', glob: 'arima/**' }],
+    ['Grep', { pattern: 'DB_', path: '~/.config/ar*ma' }],
+    ['Glob', { pattern: 'ar*ma/**/env', path: '~/.config' }],
+    ['Glob', { pattern: '.config/arima/**', path: '~' }],
+    ['Read', { file_path: '~/.config//arima/ACME/production/env' }],
+  ])('%s of ~/.config is blocked for a role', (tool, input) => {
+    expect(guardTool(tool, input, ctx)?.rule).toBe('secret-file');
+  });
+
+  it('a human (no role) may still run docker', () => {
+    expect(guardBash('docker ps', {})).toBeUndefined();
+  });
+});

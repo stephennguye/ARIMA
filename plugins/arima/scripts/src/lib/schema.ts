@@ -22,7 +22,8 @@ export type SchemaName =
   | 'item'
   | 'manual-costs'
   | 'questions-state'
-  | 'inbox-cursor';
+  | 'inbox-cursor'
+  | 'environments-state';
 
 const cache = new Map<string, ValidateFunction>();
 const instances = new Map<string, Ajv2020>();

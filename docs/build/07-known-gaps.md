@@ -33,7 +33,7 @@ Found while writing the agent cards and feature specs (each writer read the spec
 | G-25 | Two failure counters exist: retry-once (7.12: second run failure) and attempt counting (7.1: third failed review or QA) | **Fixed** in contracts section 9: separate counters, both documented |
 | G-26 | No finding id prefix in spec section 2; no Findings database in the 19; bug severity S1-S4 not mapped to finding severities | Spec / **Owner**: propose `FND-nnn` kept in the run report only (no Notion database) until the owner decides |
 | G-27 | `Risks.Status` "Accepted" is not human-only, so an agent could satisfy the `critical_finding` hard stop; `Releases` has one approval property but two approvals (deploy, data migration) | WP-404 (make Accepted human-only; add property in a template version bump) |
-| G-28 | Unit `kind` `deploy-staging`: spec 7.1 has devops deploy after merge, 10.4 says staging deploys automatically on merge | Spec: pick automatic deploy by CI after merge; devops verifies (recorded in the devops card) |
+| G-28 | Unit `kind` `deploy-staging`: spec 7.1 has devops deploy after merge, 10.4 says staging deploys automatically on merge | **Fixed (WP-213, D-47)**: the host rebuilds staging from the default branch right after `arima-merge` (`rebuildStagingAfterMerge`, wired as the dispatcher's `afterMerge`; no deploy workflow in Actions); a devops `deploy-staging` unit diagnoses a failed rebuild |
 
 ## C. Spec contradictions and silences (for the owner, via spec issues)
 

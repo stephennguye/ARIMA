@@ -19693,7 +19693,7 @@ var realExec = (file, args, opts = {}) => new Promise((resolve2) => {
       timeout: opts.timeoutMs ?? 12e4,
       maxBuffer: 32 * 1024 * 1024,
       windowsHide: true,
-      env: { ...process.env, GIT_TERMINAL_PROMPT: "0" }
+      env: { ...opts.env ?? process.env, GIT_TERMINAL_PROMPT: "0" }
     },
     (err, stdout, stderr) => {
       const code2 = err === null ? 0 : typeof err.code === "number" ? err.code : 1;

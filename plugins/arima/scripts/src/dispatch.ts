@@ -24,6 +24,7 @@ import { enqueueReportRecords } from './notion/proposals.js';
 import { findRow, pullMirror, readMirror, readNotionMap } from './notion/mirror.js';
 import type { NotionPort } from './notion/port.js';
 import { pushOutbox } from './notion/outbox.js';
+import { stagingFailing } from './env.js';
 import { renderPacket } from './packet.js';
 import type { PacketInput } from './packet.js';
 import { PREFLIGHT_EXIT, runPreflight } from './preflight.js';
@@ -422,7 +423,14 @@ export async function runDispatch(o: DispatchOptions): Promise<DispatchResult> {
       prsAwaitingHuman: await gh.prsAwaitingHuman(),
       reviewers: profile.rules.code_review.reviewers >= 2 ? 2 : 1,
     };
-    let plan = planDay({ stories, ciRedOnMain: await gh.ciRedOnMain() }, limits);
+    let plan = planDay(
+      {
+        stories,
+        ciRedOnMain: await gh.ciRedOnMain(),
+        stagingSmokeFailing: stagingFailing(o.projectDir) !== undefined,
+      },
+      limits,
+    );
     // A degraded run finishes in-flight work only: no new story starts (RD-F02-7).
     if (res.degraded)
       plan = { units: plan.units.filter((u) => u.rank <= 5), skipped: plan.skipped };
@@ -523,9 +531,11 @@ export async function runDispatch(o: DispatchOptions): Promise<DispatchResult> {
 
       // The worktree (a rework unit starts from the story branch).
       const branch =
-        unit.kind === 'qa' || unit.kind === 'test-write'
-          ? `qa/${unit.item}-tests`
-          : branchFor(unit.item, titleOf(unit.item));
+        unit.item === 'none'
+          ? ''
+          : unit.kind === 'qa' || unit.kind === 'test-write'
+            ? `qa/${unit.item}-tests`
+            : branchFor(unit.item, titleOf(unit.item));
       let cwd = o.projectDir;
       const makeWorktree = async (): Promise<void> => {
         if (!needsWorktree(unit.kind, unit.role as Role) || unit.item === 'none') return;
@@ -692,6 +702,13 @@ export async function runDispatch(o: DispatchOptions): Promise<DispatchResult> {
         if (ac)
           untrusted.push({ label: 'Acceptance criteria (Notion)', source: 'notion', text: ac });
       }
+      const failed = unit.kind === 'deploy-staging' ? stagingFailing(o.projectDir) : undefined;
+      if (failed)
+        untrusted.push({
+          label: 'Staging deploy result (script output)',
+          source: 'arima-env',
+          text: `ref ${failed.ref}; previous version restored: ${failed.restored}; ${failed.error}`,
+        });
       return {
         run_id: rid,
         max_minutes: cfg.schedule.max_run_minutes,

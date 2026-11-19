@@ -6,6 +6,7 @@ import { describe, expect, it } from 'vitest';
 import { appendEvent, readEvents } from '../src/events.js';
 import type { EventType } from '../src/events.js';
 import { HARD_STOPS } from '../src/hardstops.js';
+import { ENV_EXIT } from '../src/env.js';
 import { INIT_EXIT } from '../src/init.js';
 import { UNIT_KINDS } from '../src/kinds.js';
 import type { UnitKind } from '../src/kinds.js';
@@ -251,6 +252,13 @@ describe('exit-code registry (03-contracts 8) matches the code', () => {
       sorted([...want].map(String)),
     );
     expect(INIT_EXIT.stateNotSaved).toBe(7);
+  });
+
+  it('arima-env lists exactly the codes of ENV_EXIT (70 = production refused)', () => {
+    expect(sorted((rows.get('arima-env') ?? []).map(String))).toEqual(
+      sorted(Object.values(ENV_EXIT).map(String)),
+    );
+    expect(ENV_EXIT.refused).toBe(70);
   });
 
   it('arima-run-agent lists every code of EXIT, and 12 and 13 from preflight', () => {

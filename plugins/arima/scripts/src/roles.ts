@@ -140,9 +140,25 @@ export function allowedTools(role: Role, scriptsDir: string): string[] {
         'Edit(./.github/**)',
         'Write(./docs/ops/**)',
         'Edit(./docs/ops/**)',
+        OUTBOX,
         ...GIT_READ,
         ...bash('git add'),
         ...bash('git commit'),
+        // `npm run` and `npm ci` are not granted: they run scripts, and a devops run writes files
+        // (infra/**) that package scripts could point at.
+        ...bash('npm test'),
+        ...bash('npm outdated'),
+        ...bash('npm audit'),
+        ...bash('npm sbom'),
+        // No `docker` at all (WP-213): a container is started, stopped or inspected only through
+        // arima-env, which knows staging and preview and nothing else. `docker inspect` on a
+        // production container would read its environment, so the read-only Docker commands the
+        // card listed are not granted. backup and restore-test are host jobs.
+        ...bash(`node ${scriptsDir}/arima-env.mjs check`),
+        ...['status', 'logs', 'smoke', 'up', 'down'].flatMap((sub) => [
+          ...bash(`node ${scriptsDir}/arima-env.mjs ${sub} staging`),
+          ...bash(`node ${scriptsDir}/arima-env.mjs ${sub} preview-*`),
+        ]),
         'WebFetch',
       ];
   }
@@ -185,6 +201,12 @@ export function deniedTools(role?: Role): string[] {
     ...bash('gh secret'),
     ...bash('gh repo'),
     ...bash('gh auth'),
+    // WP-213: host scripts, and Docker itself, are never an agent's (the guard repeats this).
+    ...['arima-release', 'arima-merge', 'arima-publish', 'arima-worktree', 'arima-dispatch'].map(
+      (n) => `Bash(node */${n}.mjs *)`,
+    ),
+    ...['docker', 'docker compose', 'docker-compose', 'podman', 'kubectl'].flatMap((c) => bash(c)),
+    'Read(~/.config/arima/**)',
   ];
   if (role !== 'devops') out.push('Edit(./.github/**)', 'Write(./.github/**)');
   return out;

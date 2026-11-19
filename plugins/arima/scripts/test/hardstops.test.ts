@@ -63,7 +63,9 @@ describe('role tool lists: no role can merge, push blindly, publish or change se
   it('only the orchestrator runs ARIMA scripts, and never the kill switch or init', () => {
     for (const role of ROLES) {
       const scripts = allowedOf(role).filter((t) => t.includes('arima-'));
-      if (role !== 'orchestrator') expect(scripts, role).toEqual([]);
+      // devops alone runs one more script: arima-env, for staging and preview (WP-213).
+      if (role === 'devops') expect(scripts.every((s) => s.includes('arima-env.mjs'))).toBe(true);
+      else if (role !== 'orchestrator') expect(scripts, role).toEqual([]);
     }
     const orch = allowedOf('orchestrator').join(' ');
     for (const ok of [

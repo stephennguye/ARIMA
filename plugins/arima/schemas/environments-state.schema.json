@@ -1,0 +1,44 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/stephennguye/ARIMA/schemas/environments-state.schema.json",
+  "title": "Environments state",
+  "description": ".arima/state/environments.json: what arima-env last deployed to staging and to each preview (ref, local port, time, smoke result). Written only by arima-env (WP-213).",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "previews"],
+  "properties": {
+    "schema_version": { "const": 1 },
+    "staging": { "$ref": "#/$defs/record" },
+    "staging_failed": {
+      "type": "object",
+      "description": "The last staging deploy that failed and has not been followed by a good one: the dispatcher plans a diagnosis unit while it is set.",
+      "additionalProperties": false,
+      "required": ["ref", "at", "error", "restored"],
+      "properties": {
+        "ref": { "type": "string", "minLength": 1 },
+        "at": { "type": "string", "format": "date-time" },
+        "error": { "type": "string", "maxLength": 600 },
+        "restored": { "type": "boolean" }
+      }
+    },
+    "previews": {
+      "type": "object",
+      "propertyNames": { "pattern": "^[1-9][0-9]{0,5}$" },
+      "additionalProperties": { "$ref": "#/$defs/record" }
+    }
+  },
+  "$defs": {
+    "record": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["project", "port", "ref", "deployed_at", "ok"],
+      "properties": {
+        "project": { "type": "string", "minLength": 1 },
+        "port": { "type": "integer", "minimum": 1, "maximum": 65535 },
+        "ref": { "type": "string", "minLength": 1 },
+        "deployed_at": { "type": "string", "format": "date-time" },
+        "ok": { "type": "boolean" }
+      }
+    }
+  }
+}

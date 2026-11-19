@@ -2,6 +2,7 @@ import { existsSync, readFileSync } from 'node:fs';
 import path from 'node:path';
 import { appendEvent } from './events.js';
 import { findSecrets } from './lib/secrets.js';
+import { mentionsProduction } from './compose-lint.js';
 
 /** What Claude Code sends a hook on stdin (the fields ARIMA uses). */
 export interface HookInput {
@@ -58,7 +59,9 @@ export function isSecretPath(p: string): boolean {
   if (/^id_(rsa|dsa|ecdsa|ed25519)$/.test(base)) return true;
   if (/(^|\/)\.(ssh|gnupg)\//.test(f)) return true;
   if (/(^|\/)\.aws\/(credentials|config)$/.test(f)) return true;
-  if (/(^|\/)\.config\/arima\/env$/.test(f) || /^arima_[a-z0-9_]*(token|key|secret)/.test(base))
+  // The whole folder: the Notion token file and, per project, the host-side staging, preview and
+  // production env files (D-29, WP-213).
+  if (/(^|\/)\.config\/arima(\/|$)/.test(f) || /^arima_[a-z0-9_]*(token|key|secret)/.test(base))
     return true;
   if (/(^|\/)\.claude\/\.credentials\.json$/.test(f) || base === '.credentials.json') return true;
   if (/(^|\/)\.config\/gh\/hosts\.yml$/.test(f)) return true;
@@ -424,6 +427,107 @@ function withoutMessages(command: string): string {
 }
 
 /** Rules for a Bash command. Returns the first rule that matches. */
+const ENV_TARGET = /^(staging|preview-[1-9][0-9]{0,5})$/;
+const ENV_NEEDS_TARGET = new Set(['status', 'logs', 'smoke', 'up', 'down']);
+const HOST_ONLY_SCRIPT = /arima-(release|merge|publish|worktree|dispatch|run-agent)\.mjs$/i;
+
+/**
+ * Containers and deployments in an agent run (devops card section 6, D-47, S10). No role runs
+ * `docker` itself: a container is started, stopped or inspected only through `arima-env`, which
+ * knows only staging and preview. The guard repeats the production refusal of `arima-env` because
+ * a rule-matching allow-list alone is bypassable; it also keeps the host-only scripts out of reach.
+ */
+function guardContainers(command: string): Guard | undefined {
+  for (const s of expandCommands(command)) {
+    const h = headOf(s.words);
+    if (h === undefined) continue;
+    const words = [h.head, ...h.rest];
+    // B1: `git fetch --upload-pack=<cmd>` runs a host command; a role fetches with no option at all.
+    if (h.head === 'git') {
+      const sub = h.rest.find((a) => !a.startsWith('-'));
+      if (
+        ['fetch', 'pull', 'ls-remote', 'clone'].includes(sub ?? '') &&
+        h.rest.some((a) => a.startsWith('-') && a !== '--')
+      )
+        return {
+          rule: 'vcs',
+          reason: `git ${sub} takes no options in an agent run (--upload-pack and friends run host commands)`,
+        };
+    }
+    // B2: npm options that run another folder's scripts or another config
+    if (
+      h.head === 'npm' &&
+      h.rest.some((a) =>
+        /^(--prefix|-C|--workspaces?|-w|--script-shell|--userconfig|--globalconfig|--cache)(=|$)/.test(
+          a,
+        ),
+      )
+    )
+      return {
+        rule: 'vcs',
+        reason:
+          'npm --prefix, --workspace, --script-shell and config options are not allowed in an agent run',
+      };
+    // M3: a glob into ~/.config is unresolvable here and may reach the host-side env files
+    if (words.some((w) => /\.config[/\\]+[^\s]*[*?[]|\.config[*?[]/.test(w)))
+      return {
+        rule: 'secret-file',
+        reason: 'a glob inside ~/.config could reach credentials; name nothing there',
+      };
+    if (['docker', 'docker-compose', 'podman', 'nerdctl', 'kubectl'].includes(h.head)) {
+      return {
+        rule: 'container',
+        reason:
+          'agents do not run docker or kubectl; containers are managed only through the host script arima-env (staging and preview)',
+      };
+    }
+    if (words.some((w) => HOST_ONLY_SCRIPT.test(w.replace(/["']/g, '')))) {
+      return {
+        rule: 'host-script',
+        reason: 'release, merge, publish and dispatch are host scripts that agents never run',
+      };
+    }
+    const i = words.findIndex((w) => /arima-env\.mjs$/i.test(w.replace(/["']/g, '')));
+    if (i < 0) continue;
+    const args = words.slice(i + 1);
+    const sub = args[0];
+    if (s.dynamic)
+      return {
+        rule: 'production-barrier',
+        reason: 'arima-env arguments must be literal text, not shell substitutions',
+      };
+    if (sub !== undefined && !ENV_NEEDS_TARGET.has(sub) && sub !== 'check')
+      return {
+        rule: 'host-script',
+        reason: `arima-env ${sub} is run by the host, not by an agent`,
+      };
+    if (
+      args.some(
+        (a) =>
+          /^--(project|file)(=|$)/.test(a) || /[*?[]/.test(a) || a.split(/[/\\]/).includes('..'),
+      )
+    )
+      return {
+        rule: 'production-barrier',
+        reason: 'an agent run gives arima-env no --project or --file, no glob and no ..',
+      };
+    if (args.some((a) => mentionsProduction(a)))
+      return {
+        rule: 'production-barrier',
+        reason: 'production is never deployed, changed or read by an agent run (spec §11.1)',
+      };
+    if (sub !== undefined && ENV_NEEDS_TARGET.has(sub)) {
+      const target = args.slice(1).find((a) => !a.startsWith('-'));
+      if (target === undefined || !ENV_TARGET.test(target))
+        return {
+          rule: 'production-barrier',
+          reason: 'arima-env takes only staging or preview-<pr> in an agent run',
+        };
+    }
+  }
+  return undefined;
+}
+
 export function guardBash(command: string, ctx: GuardContext = {}): Guard | undefined {
   const c = withoutMessages(command);
   const lc = c.toLowerCase();
@@ -444,7 +548,7 @@ export function guardBash(command: string, ctx: GuardContext = {}): Guard | unde
     return { rule: 'secret-file', reason: 'the command touches a private key or certificate file' };
   }
   if (
-    /\.config[/\\]arima[/\\]env\b/i.test(c) ||
+    /\.config[/\\]+arima(?:[/\\]|(?![A-Za-z0-9_.-]))/i.test(c) ||
     /[/\\]\.ssh[/\\]/.test(c) ||
     /\.aws[/\\]credentials/i.test(c) ||
     /\.credentials\.json/i.test(c) ||
@@ -522,6 +626,10 @@ export function guardBash(command: string, ctx: GuardContext = {}): Guard | unde
         'only a human may let the outbox write Status fields; agents propose, the state machine decides',
     };
   }
+  if (ctx.role !== undefined) {
+    const hit = guardContainers(command);
+    if (hit !== undefined) return hit;
+  }
   for (const s of expandCommands(command)) {
     const h = headOf(s.words);
     if (h === undefined) continue;
@@ -544,6 +652,16 @@ export function guardTool(
       reason:
         'Notion delete is a hard stop: ARIMA never deletes in Notion, it retires items by status (spec §9.3, §11.1)',
     };
+  }
+  if (ctx.role !== undefined && ['Grep', 'Glob', 'Read'].includes(tool)) {
+    for (const k of ['path', 'file_path', 'glob', 'pattern']) {
+      const v = input[k];
+      if (typeof v === 'string' && /(^|[/\\])\.config([/\\]|$)/.test(v.replace(/\\/g, '/')))
+        return {
+          rule: 'secret-file',
+          reason: '~/.config holds host-side credentials; an agent run reads nothing there',
+        };
+    }
   }
   if (FILE_TOOLS.has(tool)) {
     for (const p of pathsOf(input)) {

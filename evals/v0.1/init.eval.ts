@@ -102,12 +102,15 @@ describe('v0.1: hard stops are respected (spec §11.1)', async () => {
   it('an agent cannot write human-only fields through the outbox', async () => {
     const { enqueue, pushOutbox } = await import('../../plugins/arima/scripts/src/notion/outbox.js');
     const { readNotionMap } = await import('../../plugins/arima/scripts/src/notion/mirror.js');
+    // WP-104: an outbox entry must belong to a run the engine started.
+    const { appendEvent } = await import('../../plugins/arima/scripts/src/events.js');
+    await appendEvent(w.dir, { type: 'run.start', actor: 'orchestrator', run_id: 'r-20261118-0500-01' });
     for (const [i, { database, property }] of expected.hard_stops.human_only_refused.entries()) {
       enqueue(w.dir, {
         id: `eval-${i}`,
         created_at: '2026-11-18T05:00:00.000Z',
         run_id: 'r-20261118-0500-01',
-        role: 'ba',
+        role: 'orchestrator',
         op: 'update',
         database: database as 'gates',
         item_id: 'G1',

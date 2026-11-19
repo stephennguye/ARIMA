@@ -174,6 +174,23 @@ describe('per-role database and property limits', () => {
     expect(OUTBOX_DATABASES.orchestrator).toHaveLength(19);
   });
 
+  it('devops can propose a release but never its human-only approval fields (WP-213)', async () => {
+    const { dir, port, map, fake } = await setup('devops');
+    enqueue(
+      dir,
+      entry({
+        op: 'create',
+        database: 'releases',
+        role: 'devops',
+        properties: { Version: 'v0.1.0', 'Prod deploy approval': 'Approved' },
+      }),
+    );
+    const r = await pushOutbox(dir, port, map);
+    expect(r.applied).toHaveLength(0);
+    expect(r.rejected[0]?.reason).toMatch(/Prod deploy approval/);
+    expect(fake.rowByTitle('Releases', 'v0.1.0')).toBeUndefined();
+  });
+
   it('ba and ux cannot write Priority; the orchestrator can', async () => {
     for (const role of ['ba', 'ux'] as const) {
       const { dir, port, map } = await setup(role);

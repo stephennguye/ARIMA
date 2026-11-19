@@ -184,10 +184,10 @@ export function planDay(
         if (input.stagingSmokeFailing === true)
           out.push({
             rankName,
-            kind: 'fix',
+            kind: 'deploy-staging',
             role: 'devops',
             item: 'none',
-            why: 'the staging smoke test is failing',
+            why: 'the staging deploy failed its smoke test',
           });
         return out;
       case 'rework':
