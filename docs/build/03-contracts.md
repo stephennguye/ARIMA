@@ -24,7 +24,7 @@ Every interface between components. If code crosses a boundary in a way this fil
 | `notion-map.json` | `arima-notion map` | no | database and property ids; `notion-map.schema.json` |
 | `runs/<run_id>.json` | `arima-run-agent` | no | Run report: result, subtype, errors, `terminal_reason`, cost; secret-scanned `[BUILT]` |
 | `runs/<run_id>.report.json` | `arima-run-agent --kind` (extracted from the agent's final message) | no | Validated agent report (section 3); written only when valid `[BUILT]` (WP-103) |
-| `state/inbox-cursor.json` | the inbox library | never | Last mirror state applied (WP-140) |
+| `state/inbox-cursor.json` | the inbox (`inbox.ts`, WP-140) | never | Per gate and decision row, a hash of the human-only values already applied (`inbox-cursor.schema.json`) `[BUILT]` |
 | `findings.json` | the engine `[PROPOSED]` WP-313 | never | Ledger of `FND-nnn` security findings with fingerprint and status |
 | `evidence/<run_id>/` | the report collector `[PROPOSED]` WP-103 | read by the packet builder only | Copied bug evidence and design-QA screenshots |
 | `state/ids.json`, `state/run-seq.json` | `arima-ids` / run id issuer | no | Locked counters |

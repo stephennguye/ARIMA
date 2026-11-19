@@ -511,7 +511,7 @@ packages:
   - id: WP-140
     stage: 1
     track: engine
-    status: ready
+    status: done
     title: "Notion inbox: apply human inputs (approvals, answers, vetoes, priority) from mirror diffs"
     deps:
       - WP-108

@@ -1,0 +1,20 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/stephennguye/ARIMA/schemas/inbox-cursor.schema.json",
+  "title": "Inbox cursor",
+  "description": ".arima/state/inbox-cursor.json: which human inputs of the Notion mirror the engine has already applied (RD-F03-1). Per database row, a hash of the human-only values processed. Written only by the inbox (WP-140).",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "processed"],
+  "properties": {
+    "schema_version": { "const": 1 },
+    "processed": {
+      "type": "object",
+      "propertyNames": { "enum": ["gates", "decisions"] },
+      "additionalProperties": {
+        "type": "object",
+        "additionalProperties": { "type": "string", "pattern": "^[0-9a-f]{16}$" }
+      }
+    }
+  }
+}
