@@ -19921,6 +19921,12 @@ function childEnv(base, o) {
   env["OTEL_RESOURCE_ATTRIBUTES"] = env["OTEL_RESOURCE_ATTRIBUTES"] ? `${env["OTEL_RESOURCE_ATTRIBUTES"]},${attrs}` : attrs;
   return env;
 }
+var ISOLATION_FLAGS = [
+  "--setting-sources",
+  "project",
+  "--strict-mcp-config",
+  "--disable-slash-commands"
+];
 function buildClaudeArgs(o, agentName, scriptsGlob) {
   const args = [
     "-p",
@@ -19938,6 +19944,7 @@ function buildClaudeArgs(o, agentName, scriptsGlob) {
     deniedTools(o.role).join(",")
   ];
   args.push("--plugin-dir", pluginRoot());
+  if (o.config.isolateUserSettings !== false) args.push(...ISOLATION_FLAGS);
   if (o.config.model !== void 0) args.push("--model", o.config.model);
   if (agentName !== void 0) args.push("--agent", agentName);
   if (o.sessionId !== void 0) args.push("--resume", o.sessionId);
@@ -20233,6 +20240,7 @@ function agentConfigFrom(arima, role) {
     model,
     tier: tier === "strong" || tier === "standard" || tier === "fast" ? tier : void 0,
     auth: get("runtime.auth") === "api_key" ? "api_key" : "seat",
+    isolateUserSettings: get("runtime.isolate_user_settings") === false ? false : true,
     projectCap: Number(get("budget.project_cap")),
     dailyCap: Number(get("budget.daily_cap")),
     stateBranch: typeof get("github.state_branch") === "string" ? get("github.state_branch") : void 0,

@@ -37,6 +37,12 @@ export interface AgentConfig {
   tier?: 'strong' | 'standard' | 'fast' | undefined;
   notionTokenEnv: string;
   githubTokenEnv?: string | undefined;
+  /**
+   * runtime.isolate_user_settings (default true, WP-191): the child loads only the project's
+   * settings, no user plugins, MCP servers or slash commands, so the person's own setup can neither
+   * widen a role's tools nor cost tokens. The ARIMA plugin itself is always loaded with --plugin-dir.
+   */
+  isolateUserSettings?: boolean | undefined;
   /** runtime.auth: with 'api_key' the ANTHROPIC_* variables are passed to the child. */
   auth?: 'seat' | 'api_key' | undefined;
   /** Caps re-checked before every dispatch (spec §13.5). Required: a missing cap is not "no limit". */
@@ -267,6 +273,14 @@ export function childEnv(
   return env;
 }
 
+/** What "hermetic" means for a role run (WP-191; recorded in docs/process/reviews/2026-11-19-wp191-hermetic-runs.md). Not --bare: that skips hooks, and the guard is a hook. */
+export const ISOLATION_FLAGS: readonly string[] = [
+  '--setting-sources',
+  'project',
+  '--strict-mcp-config',
+  '--disable-slash-commands',
+];
+
 export function buildClaudeArgs(
   o: RunAgentOptions,
   agentName: string | undefined,
@@ -290,6 +304,7 @@ export function buildClaudeArgs(
   // Load this plugin explicitly, so the guard hooks and the arima:<role> agents are active in the
   // run even if the plugin is not installed for this user (development, CI, another machine).
   args.push('--plugin-dir', pluginRoot());
+  if (o.config.isolateUserSettings !== false) args.push(...ISOLATION_FLAGS);
   if (o.config.model !== undefined) args.push('--model', o.config.model);
   if (agentName !== undefined) args.push('--agent', agentName);
   if (o.sessionId !== undefined) args.push('--resume', o.sessionId);
@@ -695,6 +710,7 @@ export function agentConfigFrom(arima: Record<string, unknown>, role: Role): Age
     model,
     tier: tier === 'strong' || tier === 'standard' || tier === 'fast' ? tier : undefined,
     auth: get('runtime.auth') === 'api_key' ? 'api_key' : 'seat',
+    isolateUserSettings: get('runtime.isolate_user_settings') === false ? false : true,
     projectCap: Number(get('budget.project_cap')),
     dailyCap: Number(get('budget.daily_cap')),
     stateBranch:

@@ -176,7 +176,8 @@
         "shell": { "enum": ["wsl2", "native"] },
         "scheduler": { "enum": ["windows-task-scheduler", "cron", "github-actions"] },
         "auth": { "enum": ["seat", "api_key"] },
-        "allow_usage_credits": { "type": "boolean" }
+        "allow_usage_credits": { "type": "boolean" },
+        "isolate_user_settings": { "type": "boolean", "default": true, "description": "Run roles with only the project settings: the user's own settings, plugins, MCP servers and slash commands are not loaded (WP-191). Leave true unless a smoke run shows a reason." }
       }
     },
     "telemetry": {
