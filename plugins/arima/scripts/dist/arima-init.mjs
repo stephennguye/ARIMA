@@ -18400,18 +18400,28 @@ function pluginRoot() {
 // plugins/arima/scripts/src/lib/schema.ts
 var import__ = __toESM(require__(), 1);
 var import_ajv_formats = __toESM(require_dist2(), 1);
-import { readFileSync } from "node:fs";
+import { readFileSync, readdirSync } from "node:fs";
 import path2 from "node:path";
 var cache = /* @__PURE__ */ new Map();
+var instances = /* @__PURE__ */ new Map();
+function ajvFor(root) {
+  const hit = instances.get(root);
+  if (hit) return hit;
+  const ajv = new import__.Ajv2020({ allErrors: true, strict: true });
+  (0, import_ajv_formats.default)(ajv);
+  const dir = path2.join(root, "schemas");
+  for (const f of readdirSync(dir).filter((n) => n.endsWith(".schema.json"))) {
+    ajv.addSchema(JSON.parse(readFileSync(path2.join(dir, f), "utf8")), f);
+  }
+  instances.set(root, ajv);
+  return ajv;
+}
 function getValidator(name, root = pluginRoot()) {
   const key = `${root}::${name}`;
   const hit = cache.get(key);
   if (hit) return hit;
-  const file = path2.join(root, "schemas", `${name}.schema.json`);
-  const schema = JSON.parse(readFileSync(file, "utf8"));
-  const ajv = new import__.Ajv2020({ allErrors: true, strict: true });
-  (0, import_ajv_formats.default)(ajv);
-  const validate = ajv.compile(schema);
+  const validate = ajvFor(root).getSchema(`${name}.schema.json`);
+  if (!validate) throw new Error(`schema not found: schemas/${name}.schema.json`);
   cache.set(key, validate);
   return validate;
 }
@@ -18477,7 +18487,7 @@ var YamlSource = class {
 
 // plugins/arima/scripts/src/profiles.ts
 var import_yaml2 = __toESM(require_dist(), 1);
-import { readdirSync, readFileSync as readFileSync3 } from "node:fs";
+import { readdirSync as readdirSync2, readFileSync as readFileSync3 } from "node:fs";
 import path3 from "node:path";
 var PROFILE_NAMES = ["solo-lite", "client-project", "regulated"];
 function profilesDir(root = pluginRoot()) {
@@ -20295,7 +20305,7 @@ import {
   existsSync as existsSync6,
   mkdirSync as mkdirSync6,
   readFileSync as readFileSync7,
-  readdirSync as readdirSync2,
+  readdirSync as readdirSync3,
   renameSync as renameSync2,
   writeFileSync as writeFileSync3
 } from "node:fs";
@@ -20343,7 +20353,7 @@ function listPending(projectDir, report) {
   if (!existsSync6(dir)) return [];
   const validate = getValidator("outbox");
   const out = [];
-  for (const name of readdirSync2(dir).filter((f) => f.endsWith(".json")).sort()) {
+  for (const name of readdirSync3(dir).filter((f) => f.endsWith(".json")).sort()) {
     const file = path12.join(dir, name);
     let data;
     try {
@@ -20676,7 +20686,7 @@ import {
   mkdtempSync,
   readFileSync as readFileSync8,
   realpathSync,
-  readdirSync as readdirSync3,
+  readdirSync as readdirSync4,
   rmSync as rmSync2,
   statSync as statSync2,
   writeFileSync as writeFileSync4
@@ -20754,7 +20764,7 @@ function excludeArima(repo) {
   }
 }
 var isWorktree = (stateDir) => existsSync7(path13.join(stateDir, ".git"));
-var isEmptyDir = (dir) => !existsSync7(dir) || readdirSync3(dir).length === 0;
+var isEmptyDir = (dir) => !existsSync7(dir) || readdirSync4(dir).length === 0;
 function localBranchExists(r) {
   return gitOk(r.repo, ["show-ref", "--verify", "--quiet", `refs/heads/${r.branch}`]);
 }
@@ -21116,7 +21126,8 @@ async function runPreflight(opts) {
   }
   if (arima) {
     const required = [arima.notion.token_env];
-    if (arima.github.machine_token_env) required.push(arima.github.machine_token_env);
+    if ((opts.needs?.github ?? true) && arima.github.machine_token_env)
+      required.push(arima.github.machine_token_env);
     if (arima.telemetry?.otel_enabled && arima.telemetry.endpoint_env)
       required.push(arima.telemetry.endpoint_env);
     if (arima.runtime.auth === "api_key") required.push("ANTHROPIC_API_KEY");
@@ -21204,7 +21215,8 @@ var INIT_EXIT = {
   briefGaps: 3,
   mapFailed: 4,
   pushFailed: 5,
-  briefSecret: 6
+  briefSecret: 6,
+  stateNotSaved: 7
 };
 var fmt = (n) => `$${n}`;
 function charter(name, arima, team, brief) {
@@ -21301,7 +21313,8 @@ async function runInit(o) {
     ...o.env ? { env: o.env } : {},
     notion: o.port,
     acquireFor: runId,
-    now
+    now,
+    needs: { github: false }
   });
   if (!pre.ok) {
     result.problems = pre.checks.filter((c) => !c.ok).map((c) => `${c.check}: ${c.detail}`);
@@ -21489,6 +21502,7 @@ async function runInit(o) {
           "state was committed locally; add a git remote and re-run `arima-state push` to publish it"
         );
     } catch (e) {
+      result.exitCode = INIT_EXIT.stateNotSaved;
       result.warnings.push(
         `state not saved: ${e instanceof StateError || e instanceof Error ? e.message : String(e)}`
       );
@@ -21522,7 +21536,7 @@ ${usage}
   return 2;
 };
 var INIT_USAGE = `Usage: arima-init --brief <file> [--project <dir>] [--root <notion-page-id>] [--skip-state] [--json]
-Exit codes: 0 ok, 2 usage, 3 brief has gaps, 4 Notion workspace does not match the template, 5 Notion writes failed, 6 brief contains a secret, 10-14 preflight failed (see arima-preflight)`;
+Exit codes: 0 ok, 2 usage, 3 brief has gaps, 4 Notion workspace does not match the template, 5 Notion writes failed, 6 brief contains a secret, 7 done but state not saved (re-run arima-state push), 10-14 preflight failed (see arima-preflight)`;
 async function runInitCli(argv, io, deps = {}) {
   let v;
   try {
@@ -21587,6 +21601,10 @@ async function runInitCli(argv, io, deps = {}) {
 `);
     for (const c of result.existed) io.out(`  = ${c}
 `);
+    if (result.exitCode === INIT_EXIT.stateNotSaved)
+      io.out(
+        "The work is done but the state was NOT saved to the state branch (exit 7). Fix the cause above, then run: arima-state push\n"
+      );
     io.out("Next steps for you:\n");
     for (const n of result.nextSteps) io.out(`  - ${n}
 `);

@@ -32,6 +32,7 @@ Pass `--root <page id>` only if the ID is not yet in `arima.yaml`. Read the exit
 | --- | --- | --- |
 | 0 | Done | Go to step 3. |
 | 3 | The brief has gaps | The output lists them. Ask the user for the missing content (one batch), update the brief, run again. |
+| 7 | The work is done but the state branch was not saved (or the push was refused) | Say so plainly: do not claim the state is saved. Show the warning, and tell the user to fix the cause and run `node "${CLAUDE_PLUGIN_ROOT}/scripts/dist/arima-state.mjs" push`. |
 | 10 | Config invalid | Show the `file:line` errors, fix them with the user, run again. |
 | 11 | Another run holds `.arima/run.lock` | Tell the user; do not remove the lock yourself. |
 | 12 | Kill switch is on | Tell the user ARIMA is paused; they resume with `/arima:pause --resume`. |

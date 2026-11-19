@@ -1,0 +1,50 @@
+[
+  {
+    "name": "developer unit",
+    "value": {
+      "unit_id": "u-0001",
+      "role": "developer",
+      "item": "US-112",
+      "kind": "develop",
+      "phase": 4,
+      "attempt": 1,
+      "budget_usd": 3,
+      "max_turns": 60,
+      "worktree": "../wt/US-112",
+      "branch": "feat/US-112",
+      "inputs": ["docs/stories/US-112.md"],
+      "profile": "solo-lite"
+    }
+  },
+  {
+    "name": "rework unit",
+    "value": {
+      "unit_id": "u-0002",
+      "role": "developer",
+      "item": "US-112",
+      "kind": "develop",
+      "phase": 4,
+      "attempt": 2,
+      "rework_reason": "failed_review",
+      "budget_usd": 2,
+      "max_turns": 40,
+      "inputs": [],
+      "profile": "client-project"
+    }
+  },
+  {
+    "name": "orchestrator unit without item",
+    "value": {
+      "unit_id": "u-0003",
+      "role": "orchestrator",
+      "item": "none",
+      "kind": "digest",
+      "phase": 4,
+      "attempt": 1,
+      "budget_usd": 1,
+      "max_turns": 20,
+      "inputs": [],
+      "profile": "regulated"
+    }
+  }
+]

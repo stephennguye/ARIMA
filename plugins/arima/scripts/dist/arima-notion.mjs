@@ -18332,7 +18332,7 @@ function writeFileAtomic(file, content) {
 // plugins/arima/scripts/src/lib/schema.ts
 var import__ = __toESM(require__(), 1);
 var import_ajv_formats = __toESM(require_dist2(), 1);
-import { readFileSync } from "node:fs";
+import { readFileSync, readdirSync } from "node:fs";
 import path3 from "node:path";
 
 // plugins/arima/scripts/src/lib/paths.ts
@@ -18353,15 +18353,25 @@ function pluginRoot() {
 
 // plugins/arima/scripts/src/lib/schema.ts
 var cache = /* @__PURE__ */ new Map();
+var instances = /* @__PURE__ */ new Map();
+function ajvFor(root) {
+  const hit = instances.get(root);
+  if (hit) return hit;
+  const ajv = new import__.Ajv2020({ allErrors: true, strict: true });
+  (0, import_ajv_formats.default)(ajv);
+  const dir = path3.join(root, "schemas");
+  for (const f of readdirSync(dir).filter((n) => n.endsWith(".schema.json"))) {
+    ajv.addSchema(JSON.parse(readFileSync(path3.join(dir, f), "utf8")), f);
+  }
+  instances.set(root, ajv);
+  return ajv;
+}
 function getValidator(name, root = pluginRoot()) {
   const key = `${root}::${name}`;
   const hit = cache.get(key);
   if (hit) return hit;
-  const file = path3.join(root, "schemas", `${name}.schema.json`);
-  const schema = JSON.parse(readFileSync(file, "utf8"));
-  const ajv = new import__.Ajv2020({ allErrors: true, strict: true });
-  (0, import_ajv_formats.default)(ajv);
-  const validate = ajv.compile(schema);
+  const validate = ajvFor(root).getSchema(`${name}.schema.json`);
+  if (!validate) throw new Error(`schema not found: schemas/${name}.schema.json`);
   cache.set(key, validate);
   return validate;
 }
@@ -19821,7 +19831,7 @@ import {
   existsSync as existsSync4,
   mkdirSync as mkdirSync4,
   readFileSync as readFileSync4,
-  readdirSync,
+  readdirSync as readdirSync2,
   renameSync as renameSync2,
   writeFileSync as writeFileSync2
 } from "node:fs";
@@ -19838,7 +19848,7 @@ function listPending(projectDir, report) {
   if (!existsSync4(dir)) return [];
   const validate = getValidator("outbox");
   const out = [];
-  for (const name of readdirSync(dir).filter((f) => f.endsWith(".json")).sort()) {
+  for (const name of readdirSync2(dir).filter((f) => f.endsWith(".json")).sort()) {
     const file = path7.join(dir, name);
     let data;
     try {

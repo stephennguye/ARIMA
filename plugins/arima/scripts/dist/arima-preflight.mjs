@@ -18347,18 +18347,28 @@ function pluginRoot() {
 // plugins/arima/scripts/src/lib/schema.ts
 var import__ = __toESM(require__(), 1);
 var import_ajv_formats = __toESM(require_dist(), 1);
-import { readFileSync } from "node:fs";
+import { readFileSync, readdirSync } from "node:fs";
 import path2 from "node:path";
 var cache = /* @__PURE__ */ new Map();
+var instances = /* @__PURE__ */ new Map();
+function ajvFor(root) {
+  const hit = instances.get(root);
+  if (hit) return hit;
+  const ajv = new import__.Ajv2020({ allErrors: true, strict: true });
+  (0, import_ajv_formats.default)(ajv);
+  const dir = path2.join(root, "schemas");
+  for (const f of readdirSync(dir).filter((n) => n.endsWith(".schema.json"))) {
+    ajv.addSchema(JSON.parse(readFileSync(path2.join(dir, f), "utf8")), f);
+  }
+  instances.set(root, ajv);
+  return ajv;
+}
 function getValidator(name, root = pluginRoot()) {
   const key = `${root}::${name}`;
   const hit = cache.get(key);
   if (hit) return hit;
-  const file = path2.join(root, "schemas", `${name}.schema.json`);
-  const schema = JSON.parse(readFileSync(file, "utf8"));
-  const ajv = new import__.Ajv2020({ allErrors: true, strict: true });
-  (0, import_ajv_formats.default)(ajv);
-  const validate = ajv.compile(schema);
+  const validate = ajvFor(root).getSchema(`${name}.schema.json`);
+  if (!validate) throw new Error(`schema not found: schemas/${name}.schema.json`);
   cache.set(key, validate);
   return validate;
 }
@@ -18424,7 +18434,7 @@ var YamlSource = class {
 
 // plugins/arima/scripts/src/profiles.ts
 var import_yaml2 = __toESM(require_dist2(), 1);
-import { readdirSync, readFileSync as readFileSync3 } from "node:fs";
+import { readdirSync as readdirSync2, readFileSync as readFileSync3 } from "node:fs";
 import path3 from "node:path";
 var PROFILE_NAMES = ["solo-lite", "client-project", "regulated"];
 function profilesDir(root = pluginRoot()) {
@@ -19188,7 +19198,7 @@ import {
   mkdtempSync,
   readFileSync as readFileSync6,
   realpathSync,
-  readdirSync as readdirSync2,
+  readdirSync as readdirSync3,
   rmSync as rmSync2,
   statSync as statSync2,
   writeFileSync as writeFileSync2
@@ -19417,7 +19427,8 @@ async function runPreflight(opts) {
   }
   if (arima) {
     const required = [arima.notion.token_env];
-    if (arima.github.machine_token_env) required.push(arima.github.machine_token_env);
+    if ((opts.needs?.github ?? true) && arima.github.machine_token_env)
+      required.push(arima.github.machine_token_env);
     if (arima.telemetry?.otel_enabled && arima.telemetry.endpoint_env)
       required.push(arima.telemetry.endpoint_env);
     if (arima.runtime.auth === "api_key") required.push("ANTHROPIC_API_KEY");
@@ -19459,7 +19470,7 @@ async function runPreflight(opts) {
 }
 
 // plugins/arima/scripts/src/cli/preflight-cli.ts
-var USAGE = `Usage: arima-preflight [check] [--project <dir>] [--acquire <run-id>] [--skip-notion] [--json]
+var USAGE = `Usage: arima-preflight [check] [--project <dir>] [--acquire <run-id>] [--skip-notion] [--no-github] [--json]
        arima-preflight release --run-id <run-id> [--project <dir>]
 Exit codes: 0 ok, 2 usage, 10 config invalid, 11 run lock held, 12 kill switch on, 13 budget exhausted, 14 env var missing`;
 async function runPreflightCli(argv, io, deps = {}) {
@@ -19476,7 +19487,8 @@ async function runPreflightCli(argv, io, deps = {}) {
         acquire: { type: "string" },
         "run-id": { type: "string" },
         "skip-notion": { type: "boolean" },
-        json: { type: "boolean" }
+        json: { type: "boolean" },
+        "no-github": { type: "boolean" }
       }
     }).values;
   } catch (e) {
@@ -19509,6 +19521,7 @@ ${USAGE}
     projectDir,
     env,
     notion,
+    needs: { github: values["no-github"] !== true },
     ...values.acquire !== void 0 ? { acquireFor: values.acquire } : {}
   });
   if (values.json === true) {

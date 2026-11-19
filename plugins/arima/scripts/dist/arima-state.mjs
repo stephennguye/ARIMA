@@ -15427,7 +15427,7 @@ import {
   mkdtempSync,
   readFileSync as readFileSync3,
   realpathSync,
-  readdirSync,
+  readdirSync as readdirSync2,
   rmSync,
   statSync as statSync2,
   writeFileSync
@@ -15579,7 +15579,7 @@ function parseAllowlist(text) {
 // plugins/arima/scripts/src/lib/schema.ts
 var import__ = __toESM(require__(), 1);
 var import_ajv_formats = __toESM(require_dist2(), 1);
-import { readFileSync } from "node:fs";
+import { readFileSync, readdirSync } from "node:fs";
 import path2 from "node:path";
 
 // plugins/arima/scripts/src/lib/paths.ts
@@ -15600,15 +15600,25 @@ function pluginRoot() {
 
 // plugins/arima/scripts/src/lib/schema.ts
 var cache = /* @__PURE__ */ new Map();
+var instances = /* @__PURE__ */ new Map();
+function ajvFor(root) {
+  const hit = instances.get(root);
+  if (hit) return hit;
+  const ajv = new import__.Ajv2020({ allErrors: true, strict: true });
+  (0, import_ajv_formats.default)(ajv);
+  const dir = path2.join(root, "schemas");
+  for (const f of readdirSync(dir).filter((n) => n.endsWith(".schema.json"))) {
+    ajv.addSchema(JSON.parse(readFileSync(path2.join(dir, f), "utf8")), f);
+  }
+  instances.set(root, ajv);
+  return ajv;
+}
 function getValidator(name, root = pluginRoot()) {
   const key = `${root}::${name}`;
   const hit = cache.get(key);
   if (hit) return hit;
-  const file = path2.join(root, "schemas", `${name}.schema.json`);
-  const schema = JSON.parse(readFileSync(file, "utf8"));
-  const ajv = new import__.Ajv2020({ allErrors: true, strict: true });
-  (0, import_ajv_formats.default)(ajv);
-  const validate = ajv.compile(schema);
+  const validate = ajvFor(root).getSchema(`${name}.schema.json`);
+  if (!validate) throw new Error(`schema not found: schemas/${name}.schema.json`);
   cache.set(key, validate);
   return validate;
 }
@@ -15728,7 +15738,7 @@ function excludeArima(repo) {
   }
 }
 var isWorktree = (stateDir) => existsSync3(path5.join(stateDir, ".git"));
-var isEmptyDir = (dir) => !existsSync3(dir) || readdirSync(dir).length === 0;
+var isEmptyDir = (dir) => !existsSync3(dir) || readdirSync2(dir).length === 0;
 function localBranchExists(r) {
   return gitOk(r.repo, ["show-ref", "--verify", "--quiet", `refs/heads/${r.branch}`]);
 }

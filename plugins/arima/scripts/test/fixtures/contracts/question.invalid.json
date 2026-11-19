@@ -1,0 +1,74 @@
+[
+  {
+    "name": "missing question text",
+    "error": "question",
+    "value": { "options": [{ "label": "A", "recommendation": true }], "blocking": true }
+  },
+  {
+    "name": "no options",
+    "error": "options",
+    "value": { "question": "Q?", "options": [], "blocking": true }
+  },
+  {
+    "name": "option without recommendation flag",
+    "error": "recommendation",
+    "value": { "question": "Q?", "options": [{ "label": "A" }], "blocking": true }
+  },
+  {
+    "name": "non-blocking question without a default",
+    "error": "default",
+    "value": { "question": "Q?", "options": [{ "label": "A", "recommendation": true }], "blocking": false }
+  },
+  {
+    "name": "hard-stop question must block",
+    "error": "blocking",
+    "value": {
+      "hard_stop": "prod_deploy",
+      "question": "Q?",
+      "options": [{ "label": "A", "recommendation": true }],
+      "blocking": false,
+      "default": "A"
+    }
+  },
+  {
+    "name": "hard-stop question must not carry a default",
+    "error": "",
+    "value": {
+      "hard_stop": "licence",
+      "question": "Q?",
+      "options": [{ "label": "A", "recommendation": true }],
+      "blocking": true,
+      "default": "A"
+    }
+  },
+  {
+    "name": "unknown hard-stop id",
+    "error": "hard_stop",
+    "value": {
+      "hard_stop": "everything",
+      "question": "Q?",
+      "options": [{ "label": "A", "recommendation": true }],
+      "blocking": true
+    }
+  },
+  {
+    "name": "agent chose an id",
+    "error": "id",
+    "value": {
+      "id": "Q-001",
+      "question": "Q?",
+      "options": [{ "label": "A", "recommendation": true }],
+      "blocking": true
+    }
+  },
+  {
+    "name": "unknown addressee",
+    "error": "addressed_to",
+    "value": {
+      "addressed_to": "sponsor",
+      "question": "Q?",
+      "options": [{ "label": "A", "recommendation": true }],
+      "blocking": true
+    }
+  }
+]

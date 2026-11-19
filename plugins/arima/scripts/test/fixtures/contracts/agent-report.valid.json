@@ -1,0 +1,112 @@
+[
+  {
+    "name": "developer develop, done",
+    "ctx": { "role": "developer", "kind": "develop" },
+    "value": {
+      "schema_version": 1,
+      "run_id": "r-20261117-0603-07",
+      "role": "developer",
+      "item": "US-112",
+      "status": "done",
+      "summary": "Cart summary implemented.",
+      "artifacts": [
+        { "path": "src/cart/summary.ts", "kind": "code" },
+        { "path": "src/cart/summary.test.ts", "kind": "test", "artifact_id": "code-tests" }
+      ],
+      "outbox_entries": ["ob-0042"],
+      "criteria_map": [{ "criterion": "AC-1", "status": "met", "evidence": ["src/cart/summary.ts:41", "TC-0231"] }],
+      "assumptions": [{ "text": "Tax is included in price", "basis": "REQ-014" }]
+    }
+  },
+  {
+    "name": "developer skeleton is exempt from criteria_map",
+    "ctx": { "role": "developer", "kind": "skeleton" },
+    "value": {
+      "schema_version": 1,
+      "run_id": "r-20261117-0603-08",
+      "role": "developer",
+      "item": "none",
+      "status": "done",
+      "summary": "Walking skeleton runs."
+    }
+  },
+  {
+    "name": "qa test-write has neither criteria_map nor verdict",
+    "ctx": { "role": "qa", "kind": "test-write" },
+    "value": {
+      "schema_version": 1,
+      "run_id": "r-20261117-0603-09",
+      "role": "qa",
+      "item": "US-112",
+      "status": "done",
+      "summary": "Six test cases written.",
+      "records": [{ "database": "test-cases", "ref": "NEW-1", "properties": { "Title": "Cart total" } }]
+    }
+  },
+  {
+    "name": "tech-lead review with a finding",
+    "ctx": { "role": "tech-lead", "kind": "review" },
+    "value": {
+      "schema_version": 1,
+      "run_id": "r-20261117-0603-10",
+      "role": "tech-lead",
+      "item": "US-112",
+      "status": "done",
+      "summary": "One blocker.",
+      "verdict": { "result": "changes_requested", "reasons": ["discount ignored"] },
+      "findings": [
+        {
+          "severity": "blocker",
+          "location": "src/cart/summary.ts:41",
+          "claim": "Discount ignored",
+          "evidence": "line 41 sums price",
+          "recommendation": "Apply discount"
+        }
+      ]
+    }
+  },
+  {
+    "name": "needs_input carries a blocking question",
+    "ctx": { "role": "ba", "kind": "author" },
+    "value": {
+      "schema_version": 1,
+      "run_id": "r-20261117-0603-11",
+      "role": "ba",
+      "item": "none",
+      "status": "needs_input",
+      "summary": "Cannot size US-130 without an answer.",
+      "questions": [
+        {
+          "question": "Is guest checkout in scope?",
+          "options": [
+            { "label": "Yes", "recommendation": false },
+            { "label": "No", "recommendation": true }
+          ],
+          "blocking": true
+        }
+      ]
+    }
+  },
+  {
+    "name": "security scan with security severities",
+    "ctx": { "role": "security", "kind": "security-scan" },
+    "value": {
+      "schema_version": 1,
+      "run_id": "r-20261117-0603-12",
+      "role": "security",
+      "item": "none",
+      "status": "done",
+      "summary": "Scan clean apart from one medium.",
+      "verdict": { "result": "pass", "reasons": ["no critical or high findings"] },
+      "findings": [
+        {
+          "severity": "medium",
+          "location": "package.json",
+          "claim": "Outdated dependency",
+          "evidence": "npm audit",
+          "recommendation": "Upgrade"
+        }
+      ]
+    }
+  }
+]

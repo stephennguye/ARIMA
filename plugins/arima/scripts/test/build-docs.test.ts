@@ -76,11 +76,12 @@ describe('work-packages.yaml', () => {
     }
   });
 
-  it('every stage-0 package is done or waits for the owner, and a later-stage package is not done', () => {
+  it('every stage-0 package is done or waits for the owner, and a package is done only when its dependencies are', () => {
     for (const p of pkgs.filter((x) => x.stage === 0))
       expect(['done', 'owner'], p.id).toContain(p.status);
-    for (const p of pkgs.filter((x) => x.stage >= 1 && x.track !== 'owner'))
-      expect(p.status, p.id).not.toBe('done');
+    for (const p of pkgs.filter((x) => x.status === 'done'))
+      for (const d of p.deps)
+        expect(byId.get(d)?.status, `${p.id} is done but ${d} is not`).toBe('done');
   });
 
   it('spec references point at real spec sections', () => {
@@ -130,9 +131,7 @@ describe('contracts agree with the code', () => {
   it('event types in the contracts match events.ts', () => {
     const src = readFileSync(path.join(REPO_ROOT, 'plugins/arima/scripts/src/events.ts'), 'utf8');
     const union = src.slice(src.indexOf('export type EventType'), src.indexOf('export interface'));
-    const code = [...union.matchAll(/'([a-z]+\.[a-z]+|[a-z]+\.[a-z]+)'/g)].map(
-      (m) => m[1] as string,
-    );
+    const code = [...union.matchAll(/'([a-z_]+\.[a-z_]+)'/g)].map((m) => m[1] as string);
     const doc = /Types: `([^`]+)`/.exec(contracts)?.[1] ?? '';
     expect(doc.split(/\s+/).sort()).toEqual([...code].sort());
   });

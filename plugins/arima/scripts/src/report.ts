@@ -1,0 +1,148 @@
+import type { Role } from './ledger.js';
+import { describeError, getValidator } from './lib/schema.js';
+import type { UnitKind } from './kinds.js';
+
+/** The structured part of an agent report (03-contracts 3.3). Shape is checked by the schema. */
+export interface AgentReport {
+  schema_version: 1;
+  run_id: string;
+  role: Role;
+  item: string;
+  status: 'done' | 'blocked' | 'failed' | 'needs_input';
+  summary: string;
+  artifacts?: { path: string; kind: string; artifact_id?: string }[];
+  outbox_entries?: string[];
+  criteria_map?: { criterion: string; status: 'met' | 'unmet' | 'unclear'; evidence: string[] }[];
+  verdict?: { result: string; reasons: string[] };
+  findings?: Record<string, unknown>[];
+  questions?: { blocking: boolean; hard_stop?: string; default?: string }[];
+  decisions?: Record<string, unknown>[];
+  assumptions?: { text: string; basis: string }[];
+  records?: Record<string, unknown>[];
+}
+
+/** Where `criteria_map` is required (a unit that has criteria to pass or fail). */
+const CRITERIA_REQUIRED: readonly [Role, UnitKind][] = [
+  ['developer', 'develop'],
+  ['qa', 'qa'],
+];
+/** Where it is allowed but not required. `skeleton` has no acceptance criteria and is exempt. */
+const CRITERIA_OPTIONAL: readonly UnitKind[] = ['skeleton', 'fix', 'hotfix', 'regression'];
+
+/** Kinds that must end in a verdict, and the results each may use. */
+const VERDICT_REQUIRED: Partial<Record<UnitKind, readonly string[]>> = {
+  review: ['approve', 'changes_requested'],
+  'adr-review': ['approve', 'changes_requested'],
+  qa: ['pass', 'fail'],
+  regression: ['pass', 'fail'],
+  'perf-test': ['pass', 'fail'],
+  'a11y-test': ['pass', 'fail'],
+  'design-qa': ['pass', 'fail'],
+  'security-scan': ['pass', 'fail'],
+};
+/** Kinds where a verdict is optional. Every other kind produces none and must not return one. */
+const VERDICT_OPTIONAL: Partial<Record<UnitKind, readonly string[]>> = {
+  meeting: ['go', 'no_go', 'approve', 'changes_requested'],
+  'gate-pack': ['go', 'no_go'],
+  'verify-finding': ['pass', 'fail'],
+  'scan-triage': ['pass', 'fail'],
+  screen: ['pass', 'fail'],
+  'preview-diagnose': ['pass', 'fail'],
+  'uat-script': ['pass', 'fail'],
+};
+
+export interface ReportCheck {
+  ok: boolean;
+  /** Human-readable problems; each names the rule that failed. */
+  errors: string[];
+  /** Set when the problem is the missing evidence rule, so the run maps to `evidence_missing`. */
+  evidenceMissing: boolean;
+}
+
+/**
+ * Checks a parsed report against the schema and the kind-dependent rules of 03-contracts 3.3.
+ * `kind` is the unit's kind; the report itself does not name it.
+ */
+export function checkReport(report: unknown, ctx: { role: Role; kind: UnitKind }): ReportCheck {
+  const errors: string[] = [];
+  let evidenceMissing = false;
+  const validate = getValidator('agent-report');
+  if (!validate(report)) {
+    for (const e of validate.errors ?? []) {
+      errors.push(describeError(e));
+      if (e.instancePath.includes('criteria_map') && e.keyword === 'minItems')
+        evidenceMissing = true;
+    }
+    return { ok: false, errors, evidenceMissing };
+  }
+  const r = report as AgentReport;
+
+  if (r.role !== ctx.role)
+    errors.push(`role: report says "${r.role}" but the unit's role is "${ctx.role}"`);
+
+  const needsCriteria = CRITERIA_REQUIRED.some(
+    ([role, kind]) => role === ctx.role && kind === ctx.kind,
+  );
+  const mayHaveCriteria = needsCriteria || CRITERIA_OPTIONAL.includes(ctx.kind);
+  if (needsCriteria && (r.criteria_map === undefined || r.criteria_map.length === 0)) {
+    errors.push(`criteria_map: required for ${ctx.role} ${ctx.kind} units`);
+  }
+  if (!mayHaveCriteria && r.criteria_map !== undefined) {
+    errors.push(`criteria_map: not allowed for ${ctx.kind} units`);
+  }
+
+  const required = VERDICT_REQUIRED[ctx.kind];
+  const optional = VERDICT_OPTIONAL[ctx.kind];
+  if (required !== undefined && r.verdict === undefined && r.status === 'done') {
+    errors.push(`verdict: required for ${ctx.kind} units`);
+  }
+  if (required === undefined && optional === undefined && r.verdict !== undefined) {
+    errors.push(`verdict: not allowed for ${ctx.kind} units`);
+  }
+  const allowed = required ?? optional;
+  if (allowed !== undefined && r.verdict !== undefined && !allowed.includes(r.verdict.result)) {
+    errors.push(
+      `verdict.result: "${r.verdict.result}" is not valid for ${ctx.kind} (use ${allowed.join(', ')})`,
+    );
+  }
+
+  for (const [i, f] of (r.findings ?? []).entries()) {
+    if (typeof f['severity'] === 'string' && !severityFits(ctx, f['severity'])) {
+      errors.push(
+        `findings.${i}.severity: "${f['severity']}" does not fit ${ctx.role} ${ctx.kind} units`,
+      );
+    }
+  }
+
+  const questions = r.questions ?? [];
+  const blockingOpen = questions.some((q) => q.blocking);
+  if (r.status === 'done' && blockingOpen) {
+    errors.push('status: done is not allowed while a blocking question is unanswered');
+  }
+  if (r.status === 'blocked' && !questions.some((q) => q.blocking)) {
+    errors.push('status: blocked needs at least one blocking question');
+  }
+
+  for (const a of r.assumptions ?? []) {
+    if (a.basis.trim() === '') errors.push('assumptions: every assumption needs a basis');
+  }
+
+  return { ok: errors.length === 0, errors, evidenceMissing };
+}
+
+const REVIEW_SEVERITY = ['blocker', 'major', 'minor', 'nit'];
+const SECURITY_SEVERITY = ['critical', 'high', 'medium', 'low'];
+const BUG_SEVERITY = ['S1', 'S2', 'S3', 'S4'];
+
+/** Review kinds use blocker..nit, security kinds critical..low, bugs S1..S4; others may raise any. */
+function severityFits(ctx: { role: Role; kind: UnitKind }, severity: string): boolean {
+  if (
+    ctx.role === 'security' &&
+    ['security-scan', 'scan-triage', 'verify-finding'].includes(ctx.kind)
+  )
+    return SECURITY_SEVERITY.includes(severity);
+  if (ctx.kind === 'review' || ctx.kind === 'adr-review') return REVIEW_SEVERITY.includes(severity);
+  if (ctx.kind === 'qa' || ctx.kind === 'regression' || ctx.kind === 'design-qa')
+    return BUG_SEVERITY.includes(severity);
+  return true;
+}

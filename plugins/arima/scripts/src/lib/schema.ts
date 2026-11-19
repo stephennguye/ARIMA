@@ -1,4 +1,4 @@
-import { readFileSync } from 'node:fs';
+import { readFileSync, readdirSync } from 'node:fs';
 import path from 'node:path';
 import { Ajv2020 } from 'ajv/dist/2020.js';
 import type { ErrorObject, ValidateFunction } from 'ajv/dist/2020.js';
@@ -6,20 +6,44 @@ import addFormats from 'ajv-formats';
 import { pluginRoot } from './paths.js';
 
 export type SchemaName =
-  'arima' | 'team' | 'profile' | 'event' | 'ledger' | 'outbox' | 'notion-map' | 'ids';
+  | 'arima'
+  | 'team'
+  | 'profile'
+  | 'event'
+  | 'ledger'
+  | 'outbox'
+  | 'notion-map'
+  | 'ids'
+  | 'agent-report'
+  | 'question'
+  | 'finding'
+  | 'decision'
+  | 'work-unit';
 
 const cache = new Map<string, ValidateFunction>();
+const instances = new Map<string, Ajv2020>();
+
+/** One Ajv per plugin root with every schema loaded, so schemas can `$ref` each other by file name. */
+function ajvFor(root: string): Ajv2020 {
+  const hit = instances.get(root);
+  if (hit) return hit;
+  const ajv = new Ajv2020({ allErrors: true, strict: true });
+  (addFormats as unknown as (a: Ajv2020) => void)(ajv);
+  const dir = path.join(root, 'schemas');
+  for (const f of readdirSync(dir).filter((n) => n.endsWith('.schema.json'))) {
+    ajv.addSchema(JSON.parse(readFileSync(path.join(dir, f), 'utf8')) as object, f);
+  }
+  instances.set(root, ajv);
+  return ajv;
+}
 
 /** Compiles plugins/arima/schemas/<name>.schema.json (JSON Schema 2020-12). */
 export function getValidator(name: SchemaName, root: string = pluginRoot()): ValidateFunction {
   const key = `${root}::${name}`;
   const hit = cache.get(key);
   if (hit) return hit;
-  const file = path.join(root, 'schemas', `${name}.schema.json`);
-  const schema = JSON.parse(readFileSync(file, 'utf8')) as object;
-  const ajv = new Ajv2020({ allErrors: true, strict: true });
-  (addFormats as unknown as (a: Ajv2020) => void)(ajv);
-  const validate = ajv.compile(schema);
+  const validate = ajvFor(root).getSchema(`${name}.schema.json`);
+  if (!validate) throw new Error(`schema not found: schemas/${name}.schema.json`);
   cache.set(key, validate);
   return validate;
 }

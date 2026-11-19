@@ -50,7 +50,7 @@ const bad = (io: Io, usage: string, message: string): number => {
 };
 
 export const INIT_USAGE = `Usage: arima-init --brief <file> [--project <dir>] [--root <notion-page-id>] [--skip-state] [--json]
-Exit codes: 0 ok, 2 usage, 3 brief has gaps, 4 Notion workspace does not match the template, 5 Notion writes failed, 6 brief contains a secret, 10-14 preflight failed (see arima-preflight)`;
+Exit codes: 0 ok, 2 usage, 3 brief has gaps, 4 Notion workspace does not match the template, 5 Notion writes failed, 6 brief contains a secret, 7 done but state not saved (re-run arima-state push), 10-14 preflight failed (see arima-preflight)`;
 
 /** `arima-init`: the deterministic core of /arima:init. */
 export async function runInitCli(
@@ -122,6 +122,10 @@ export async function runInitCli(
     );
     for (const c of result.created) io.out(`  + ${c}\n`);
     for (const c of result.existed) io.out(`  = ${c}\n`);
+    if (result.exitCode === INIT_EXIT.stateNotSaved)
+      io.out(
+        'The work is done but the state was NOT saved to the state branch (exit 7). Fix the cause above, then run: arima-state push\n',
+      );
     io.out('Next steps for you:\n');
     for (const n of result.nextSteps) io.out(`  - ${n}\n`);
   } else {

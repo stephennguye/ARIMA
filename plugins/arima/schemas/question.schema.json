@@ -1,0 +1,56 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/stephennguye/ARIMA/schemas/question.schema.json",
+  "title": "Question record",
+  "description": "A question an agent raises (03-contracts 3.4, spec 7.5). The engine issues the Q id; the agent proposes the record without one. No addressed_to means the owner.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["question", "options", "blocking"],
+  "properties": {
+    "addressed_to": {
+      "enum": ["orchestrator", "ba", "ux", "architect", "tech-lead", "developer", "qa", "security", "devops"],
+      "description": "A role for a consult between agents; absent means the owner"
+    },
+    "hard_stop": {
+      "enum": [
+        "G0", "G1", "G2", "G3", "G4", "prod_deploy", "secrets_change", "budget_exceeded", "story_budget",
+        "notion_delete", "prod_data_migration", "new_paid_service", "licence", "critical_finding",
+        "kill_switch", "missing_credential"
+      ],
+      "description": "Set when the matter is one of the 16 hard-stop ids; forces blocking and forbids a default"
+    },
+    "question": { "type": "string", "minLength": 1, "maxLength": 1000 },
+    "options": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 6,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["label", "recommendation"],
+        "properties": {
+          "label": { "type": "string", "minLength": 1, "maxLength": 300 },
+          "recommendation": { "type": "boolean" }
+        }
+      }
+    },
+    "blocking": { "type": "boolean" },
+    "default": { "type": "string", "minLength": 1, "maxLength": 300, "description": "What happens if unanswered; absent on hard-stop matters" },
+    "expires": { "type": "string", "format": "date" },
+    "item": { "type": "string", "pattern": "^(US|BUG|INC|CR|MS|EP|REQ|NFR)-[0-9]{2,}$|^G[0-4]$|^NEW-[0-9]+$" },
+    "topic": { "type": "string", "maxLength": 80, "description": "Used to batch questions in the digest" }
+  },
+  "allOf": [
+    {
+      "if": { "properties": { "hard_stop": {} }, "required": ["hard_stop"] },
+      "then": {
+        "properties": { "blocking": { "const": true } },
+        "not": { "properties": { "default": {} }, "required": ["default"] }
+      }
+    },
+    {
+      "if": { "properties": { "blocking": { "const": false } }, "required": ["blocking"] },
+      "then": { "required": ["default"] }
+    }
+  ]
+}

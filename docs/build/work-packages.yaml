@@ -179,7 +179,7 @@ packages:
   - id: WP-101
     stage: 1
     track: contracts
-    status: ready
+    status: done
     title: "Contracts v1: schemas for agent report, run packet, question, finding, decision; event additions; exit-code registry test"
     deps:
       - WP-005
@@ -203,7 +203,7 @@ packages:
   - id: WP-102
     stage: 1
     track: engine
-    status: planned
+    status: ready
     title: "Packet builder arima-packet: renders and validates the run packet from a work-unit descriptor; untrusted content quoted"
     deps:
       - WP-101
@@ -221,7 +221,7 @@ packages:
   - id: WP-103
     stage: 1
     track: engine
-    status: planned
+    status: ready
     title: "Report collector in the run wrapper: extract, validate, store, map failures, retry-once"
     deps:
       - WP-101
@@ -239,7 +239,7 @@ packages:
   - id: WP-104
     stage: 1
     track: engine
-    status: planned
+    status: ready
     title: "Outbox for agents: entry role bound to the run, Q/DEC id allocation at enqueue, no direct file edits outside the helper"
     deps:
       - WP-101

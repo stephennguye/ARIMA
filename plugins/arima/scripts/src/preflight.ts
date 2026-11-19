@@ -43,6 +43,8 @@ export interface PreflightOptions {
   /** Create the run lock for this run id when every check passes. */
   acquireFor?: string;
   now?: Date;
+  /** What the calling command uses. The GitHub token is required only when `github` is true (default). init, status and pause pass false (G-03). */
+  needs?: { github?: boolean };
   /** Reads the PAUSE file on the remote state branch; defaults to a real git fetch. */
   statePause?: () => Promise<boolean | undefined>;
 }
@@ -165,7 +167,8 @@ export async function runPreflight(opts: PreflightOptions): Promise<PreflightRes
   // 5. required environment variables (names only; values are never read into output)
   if (arima) {
     const required = [arima.notion.token_env];
-    if (arima.github.machine_token_env) required.push(arima.github.machine_token_env);
+    if ((opts.needs?.github ?? true) && arima.github.machine_token_env)
+      required.push(arima.github.machine_token_env);
     if (arima.telemetry?.otel_enabled && arima.telemetry.endpoint_env)
       required.push(arima.telemetry.endpoint_env);
     if (arima.runtime.auth === 'api_key') required.push('ANTHROPIC_API_KEY');

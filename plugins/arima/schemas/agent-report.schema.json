@@ -1,0 +1,95 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/stephennguye/ARIMA/schemas/agent-report.schema.json",
+  "title": "Agent report",
+  "description": "The `arima-report` block that ends a role's final message (03-contracts 3.3). Shape only; the rules that depend on the unit kind live in src/report.ts.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "run_id", "role", "item", "status", "summary"],
+  "properties": {
+    "schema_version": { "const": 1 },
+    "run_id": { "type": "string", "pattern": "^r-[0-9]{8}-[0-9]{4}-[0-9]{2,}$" },
+    "role": { "enum": ["orchestrator", "ba", "ux", "architect", "tech-lead", "developer", "qa", "security", "devops"] },
+    "item": { "type": "string", "minLength": 1, "description": "Item id or \"none\"" },
+    "status": { "enum": ["done", "blocked", "failed", "needs_input"] },
+    "summary": { "type": "string", "minLength": 1, "maxLength": 600 },
+    "artifacts": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["path", "kind"],
+        "properties": {
+          "path": { "type": "string", "minLength": 1 },
+          "kind": { "enum": ["code", "test", "doc", "design", "api", "infra"] },
+          "artifact_id": { "type": "string", "minLength": 1 }
+        }
+      }
+    },
+    "outbox_entries": { "type": "array", "items": { "type": "string", "minLength": 1 } },
+    "criteria_map": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["criterion", "status", "evidence"],
+        "properties": {
+          "criterion": { "type": "string", "minLength": 1 },
+          "status": { "enum": ["met", "unmet", "unclear"] },
+          "evidence": { "type": "array", "items": { "type": "string", "minLength": 1 } }
+        },
+        "if": { "properties": { "status": { "const": "met" } } },
+        "then": { "properties": { "evidence": { "type": "array", "minItems": 1 } } }
+      }
+    },
+    "verdict": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["result", "reasons"],
+      "properties": {
+        "result": { "enum": ["approve", "changes_requested", "pass", "fail", "no_go", "go"] },
+        "reasons": { "type": "array", "minItems": 1, "items": { "type": "string", "minLength": 1 } }
+      }
+    },
+    "findings": { "type": "array", "items": { "$ref": "finding.schema.json" } },
+    "questions": { "type": "array", "items": { "$ref": "question.schema.json" } },
+    "decisions": { "type": "array", "items": { "$ref": "decision.schema.json" } },
+    "assumptions": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["text", "basis"],
+        "properties": {
+          "text": { "type": "string", "minLength": 1 },
+          "basis": { "type": "string", "minLength": 1 }
+        }
+      }
+    },
+    "records": {
+      "type": "array",
+      "description": "Other records the unit kind produces (a bug, a risk, a lesson, a change request...), proposed without ids; the engine issues the ids and enqueues the outbox entries",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["database", "properties"],
+        "properties": {
+          "database": { "type": "string", "minLength": 1 },
+          "ref": { "type": "string", "pattern": "^NEW-[0-9]+$" },
+          "properties": { "type": "object" },
+          "content_markdown": { "type": "string" }
+        }
+      }
+    }
+  },
+  "allOf": [
+    {
+      "if": { "properties": { "status": { "const": "needs_input" } } },
+      "then": { "required": ["questions"], "properties": { "questions": { "type": "array", "minItems": 1 } } }
+    },
+    {
+      "if": { "properties": { "status": { "const": "blocked" } } },
+      "then": { "required": ["questions"], "properties": { "questions": { "type": "array", "minItems": 1 } } }
+    }
+  ]
+}

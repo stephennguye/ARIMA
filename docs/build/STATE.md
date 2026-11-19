@@ -5,8 +5,8 @@ Last updated: 2026-11-19. Verify these claims against git before relying on them
 ## Where the build is
 
 - **Stage 0 (Foundations): built and verified**, except the owner close-out (WP-012).
-- **Stage 1 (Platform kit): not started.** First package: WP-101.
-- Branch `chore/stage0-foundations`, PR #16 open against `main`. Never push to `main`.
+- **Stage 1 (Platform kit): in progress.** WP-101 (contracts v1) is done on branch `feat/wp-101-contracts-v1`. Ready next: WP-102, WP-103, WP-104 (parallel in the plan; do them one at a time, in that order).
+- Branch `feat/wp-101-contracts-v1` (cut from `chore/stage0-foundations`, PR #16 open against `main`). Never push to `main`.
 - Last commit when this file was written: the one that added `docs/build/` (see `git log -1`). The commit before it: `1b21d93` (canonical hard-stop ids D-42, draft template alignment, MCP wording).
 - Checks at that point: 758 unit/contract tests (including `build-docs.test.ts`, which keeps this folder consistent), 8 evals, lint, typecheck, format, `check:dist`, strict plugin validation (plugin and marketplace) all green. Live tier (5 tests) green against the dev Notion workspace on 2026-11-18.
 
@@ -27,8 +27,9 @@ The owner steers by commands, answers only critical-blocker questions and review
 ## Next action
 
 1. **Approved by the owner on 2026-11-19:** the 28 template section lists and the 21 spec amendments (applied to the spec as version 0.5). The v0.1.1 tag has **not** been confirmed: do not create it unless the owner says so.
-2. Builder: WP-101 (contracts v1). Read `03-contracts.md` sections 3 to 6 and `02-stages.md` section 4 first.
-3. WP-201 is done (ADR-0007: reference stack, local Docker).
+2. Builder: WP-102 (packet builder). Read `03-contracts.md` sections 3.1 and 3.2, and `features/F02-run-dispatcher.md`. Then WP-103 (report collector; `checkReport()` in `src/report.ts` already holds the kind rules) and WP-104.
+3. WP-101 is done (2026-11-19): schemas `agent-report`, `question`, `finding`, `decision`, `work-unit`; 23 new event types; `reason` on the ledger row; `kinds.ts`, `reasons.ts`, `report.ts`; G-03 (preflight `needs.github`, `--no-github`); `arima-init` exit 7; `arima-ids` added to the registry; `contracts.test.ts` keeps the contract lists and the exit-code registry equal to the code. All checks were green on this branch (850 tests).
+4. WP-201 is done (ADR-0007: reference stack, local Docker).
 
 ## Open owner decisions
 

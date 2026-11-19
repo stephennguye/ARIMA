@@ -1,5 +1,6 @@
 import path from 'node:path';
 import { appendJsonl, readJsonl } from './lib/jsonl.js';
+import type { ReasonCode } from './reasons.js';
 
 export type Role =
   | 'orchestrator'
@@ -44,6 +45,8 @@ export interface LedgerRow {
   budget_usd: number;
   ci_minutes?: number;
   result: RunResult;
+  /** Why a run failed, blocked or paused (03-contracts 9b). */
+  reason?: ReasonCode;
 }
 
 /** The `type: "result"` object printed by `claude -p --output-format json`. */

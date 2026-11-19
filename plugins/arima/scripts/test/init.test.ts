@@ -260,6 +260,7 @@ describe('runInit end to end (mocked Notion, real git)', () => {
     const w2 = await world({ gitRepo: false });
     const warned = await init(w2);
     expect(warned.ok).toBe(true);
+    expect(warned.exitCode).toBe(INIT_EXIT.stateNotSaved);
     expect(warned.warnings.join('\n')).toContain('state not saved');
   });
 });

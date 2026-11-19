@@ -1,0 +1,34 @@
+[
+  {
+    "name": "review finding",
+    "value": {
+      "severity": "major",
+      "location": "src/cart/summary.ts:41",
+      "claim": "Total ignores the discount",
+      "evidence": "summary.ts:41 sums price only",
+      "recommendation": "Apply discount before tax",
+      "item": "US-112"
+    }
+  },
+  {
+    "name": "security finding with refutation",
+    "value": {
+      "severity": "high",
+      "location": "src/auth/login.ts:12",
+      "claim": "No rate limit on login",
+      "evidence": "route has no limiter",
+      "recommendation": "Add a limiter",
+      "refutation": "Looked for middleware in app.ts; none"
+    }
+  },
+  {
+    "name": "bug finding on an artifact id",
+    "value": {
+      "severity": "S2",
+      "location": "TC-0231",
+      "claim": "Cart total wrong",
+      "evidence": "Expected 10.00, got 12.00",
+      "recommendation": "Fix rounding"
+    }
+  }
+]

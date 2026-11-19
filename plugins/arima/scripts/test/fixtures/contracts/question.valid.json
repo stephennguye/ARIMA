@@ -1,0 +1,48 @@
+[
+  {
+    "name": "blocking question to the owner with a recommended option",
+    "value": {
+      "question": "Which payment provider should checkout use?",
+      "options": [
+        { "label": "Stripe", "recommendation": true },
+        { "label": "Mollie", "recommendation": false }
+      ],
+      "blocking": true,
+      "item": "US-112",
+      "topic": "payments"
+    }
+  },
+  {
+    "name": "non-blocking question carries a default",
+    "value": {
+      "question": "Use sentence case for button labels?",
+      "options": [{ "label": "Yes", "recommendation": true }],
+      "blocking": false,
+      "default": "Yes",
+      "expires": "2026-12-01"
+    }
+  },
+  {
+    "name": "consult between roles",
+    "value": {
+      "addressed_to": "architect",
+      "question": "Does the API spec cover the cart summary?",
+      "options": [{ "label": "Add GET /cart/summary", "recommendation": true }],
+      "blocking": false,
+      "default": "Add GET /cart/summary",
+      "item": "US-112"
+    }
+  },
+  {
+    "name": "hard-stop matter is blocking and has no default",
+    "value": {
+      "hard_stop": "new_paid_service",
+      "question": "May we buy a hosted search plan?",
+      "options": [
+        { "label": "No, use Postgres full text", "recommendation": true },
+        { "label": "Yes", "recommendation": false }
+      ],
+      "blocking": true
+    }
+  }
+]

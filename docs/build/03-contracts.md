@@ -23,7 +23,7 @@ Every interface between components. If code crosses a boundary in a way this fil
 | `outbox/{applied,rejected,conflicts}/` | `arima-notion push` | no | Entry plus `.result.json` |
 | `notion-map.json` | `arima-notion map` | no | database and property ids; `notion-map.schema.json` |
 | `runs/<run_id>.json` | `arima-run-agent` | no | Run report: result, subtype, errors, `terminal_reason`, cost; secret-scanned `[BUILT]` |
-| `runs/<run_id>.report.json` | `arima-run-agent` (extracted from the agent's final message) | no | Validated agent report (section 3) `[PROPOSED]` WP-101 |
+| `runs/<run_id>.report.json` | `arima-run-agent` (extracted from the agent's final message) | no | Validated agent report (section 3); schema `[BUILT]` (WP-101), collector WP-103 |
 | `state/inbox-cursor.json` | the inbox library | never | Last mirror state applied (WP-140) |
 | `findings.json` | the engine `[PROPOSED]` WP-313 | never | Ledger of `FND-nnn` security findings with fingerprint and status |
 | `evidence/<run_id>/` | the report collector `[PROPOSED]` WP-103 | read by the packet builder only | Copied bug evidence and design-QA screenshots |
@@ -34,7 +34,7 @@ Every interface between components. If code crosses a boundary in a way this fil
 | `secret-allowlist.txt` | human | never | Fingerprints of reviewed false positives |
 | `overrides/` | orchestrator (approved lessons) | read | Project overrides of agent instructions `[SPEC]` |
 
-## 3. Run packet and agent report `[PROPOSED]` (frozen by WP-101, built by WP-102 and WP-103)
+## 3. Run packet and agent report (schemas `[BUILT]` and frozen by WP-101; packet builder WP-102 and report collector WP-103 `[PROPOSED]`)
 
 These two documents are the whole conversation between the orchestrator and a role agent. An agent never receives free-form instructions from anywhere else, and never answers outside this shape.
 
@@ -44,7 +44,7 @@ These two documents are the whole conversation between the orchestrator and a ro
 unit_id, role, item (US-/BUG-/INC-/CR-/MS-/G.. or "none"), kind, phase, attempt (>=1),
 rework_reason?, budget_usd (<= min(per_run_cap, remaining story budget)), max_turns,
 worktree?, branch?, inputs[] (paths and item ids), profile
-kind = develop | skeleton | review | adr-review | conventions | rc-freeze | deprecation-check | debt-review | qa | test-write | e2e-skeleton | regression | perf-test | a11y-test | design-qa | author | release-docs | env-plan | preview-diagnose | security-scan | scan-triage | verify-finding | screen | deploy-staging | hotfix | fix | triage | runbook | uat-script | digest | meeting | gate-pack | retro   (list [PROPOSED]; each kind has its own owner package and its own section in the agent file; add a kind here before using it)
+kind = develop | skeleton | review | adr-review | conventions | rc-freeze | deprecation-check | debt-review | qa | test-write | e2e-skeleton | regression | perf-test | a11y-test | design-qa | author | release-docs | env-plan | preview-diagnose | security-scan | scan-triage | verify-finding | screen | deploy-staging | hotfix | fix | triage | runbook | uat-script | digest | meeting | gate-pack | retro   (list frozen by WP-101 in `kinds.ts` and `work-unit.schema.json`; each kind has its own owner package and its own section in the agent file; add a kind here before using it)
 ```
 
 The dispatcher builds it; the packet builder renders it; the ledger row is derived from it.
@@ -85,7 +85,7 @@ The agent ends its final message with exactly one fenced block whose info string
 }
 ```
 
-Rules (each becomes a validator check):
+Rules (each is a check in `checkReport()`, `src/report.ts`, on top of `agent-report.schema.json`; the schemas are `agent-report`, `question`, `finding`, `decision` and `work-unit`):
 
 - `criteria_map` is required for `developer` `develop` units and for `qa` `qa` units (not for `qa` `test-write`, which has nothing to pass or fail). `verdict` is required for review and test kinds (`tech-lead` `review`, `qa` `qa`, `security` `security-scan`, `design-qa`, go/no-go and gate-recommendation runs) and optional for authoring kinds; the architect and ux may return a `verdict` for their review kinds. Both are forbidden where the kind produces neither.
 - Every `findings`, `questions` and `decisions` element uses the records in section 3.4.
@@ -118,7 +118,7 @@ Applied by `arima-notion push` in `created_at` order. Per entry, in this order: 
 
 ## 5. Events `[BUILT]` frozen
 
-Types: `run.start run.end run.paused preflight.fail killswitch.on killswitch.off id.issued notion.pull notion.push notion.conflict notion.refused item.status gate.opened gate.decided question.raised question.answered decision.made decision.vetoed tool.used tool.blocked state.push state.pull budget.alert hardstop.hit agent.stop`. Shape: `{ ts, type, actor, run_id?, item?, data? }`. Actor is the role, `system`, `human`, or `unknown` (a headless run whose role variable was lost is **never** `human`). `[PROPOSED]` additions, each with schema and test in WP-101: `report.accepted`, `report.rejected`, `unit.dispatched`, `unit.retried`, `merge.done`, `merge.refused`, `pr.published`, `deploy.staging`, `deploy.preview`, `deploy.production`, `deploy.rollback`, `probe.recorded`, `meeting.held`, `digest.published`, `phase.step_done`, `phase.pilot_failed`, `team.changed`, `release.rc_tagged`, `incident.opened`, `incident.closed`, `cr.decided`, `lesson.applied`.
+Types: `run.start run.end run.paused preflight.fail killswitch.on killswitch.off id.issued notion.pull notion.push notion.conflict notion.refused item.status gate.opened gate.decided question.raised question.answered decision.made decision.vetoed tool.used tool.blocked state.push state.pull budget.alert hardstop.hit agent.stop report.accepted report.rejected unit.dispatched unit.retried merge.done merge.refused pr.published deploy.staging deploy.preview deploy.production deploy.rollback probe.recorded meeting.held digest.published phase.step_done phase.pilot_failed team.changed release.rc_tagged incident.opened incident.closed cr.decided lesson.applied` (the last 23 were added by WP-101; `events.ts`, `event.schema.json` and this list are kept equal by `contracts.test.ts`). Shape: `{ ts, type, actor, run_id?, item?, data? }`. Actor is the role, `system`, `human`, or `unknown` (a headless run whose role variable was lost is **never** `human`). A new event type is added here first, then to `events.ts` and the schema in the same change.
 
 ## 6. Ledger row `[BUILT]` frozen
 
@@ -133,6 +133,7 @@ Types: `run.start run.end run.paused preflight.fail killswitch.on killswitch.off
 | Script | Codes |
 | --- | --- |
 | `arima-config` | 0 valid, 1 invalid, 2 usage |
+| `arima-ids` | 0 ok, 1 failure (locked counter or unreadable state), 2 usage or unknown prefix |
 | `arima-preflight` | 0 ok, 2 usage, 10 config, 11 run locked, 12 kill switch, 13 budget, 14 environment |
 | `arima-run-agent` | 0 pass, 1 failed/error, 2 usage or config, 3 blocked (turn or budget cap), 12 kill switch, 13 budget used up, 75 paused (usage limit) |
 | `arima-init` | 0 ok, 2 usage, 3 brief gaps, 4 map failed, 5 push failed, 6 brief contains a secret, 7 state not saved; 10-14 as preflight (init needs no GitHub token) |
@@ -185,7 +186,7 @@ Two counters (see section 3.3): `attempt` for review/QA rework, `run_failures` f
 
 An item (story, bug, incident, change request) is the Notion row plus engine-held counters. Notion holds: id, title, `Status`, size, `Attempt`, budget and cost. The engine holds, in `.arima/items/<id>.json` (schema `item.schema.json`, versioned): `attempt` (review/QA rework, mirrors Notion `Attempt`), `run_failures` (failed runs of the current stage; reset when the stage changes), `blocked_from` (previous state), `blocked_reason`, `cost_usd_total`. Neither counter is writable by an agent. The state machine is the only writer of `Status`, `attempt` and `blocked_*`.
 
-## 9b. Reason codes `[PROPOSED]` (frozen by WP-101; one list for ledger notes, events and reports)
+## 9b. Reason codes `[BUILT]` frozen by WP-101 (`reasons.ts`, the `reason` field of the ledger row; one list for ledger rows, events and reports)
 
 `report_invalid`, `report_missing`, `evidence_missing`, `secret_in_output`, `protected_path`, `template_invalid`, `cap_turns`, `cap_budget`, `usage_limit`, `kill_switch`, `budget_exhausted`, `story_budget`, `credential_missing`, `notion_deferred`, `notion_conflict`, `notion_refused`, `state_not_saved`, `merge_refused_ci`, `merge_refused_qa`, `merge_refused_review`, `guard_blocked`, `unknown_kill_switch`, `database_not_allowed`, `phase_refused`, `remote_unchecked`. A run result is one of `pass fail error paused blocked`; the reason code explains `fail`, `blocked` and `paused`. New codes are added here first.
 

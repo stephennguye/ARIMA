@@ -21,7 +21,7 @@ import { renderTemplate } from './templates.js';
 import { issueRunId } from './runid.js';
 import { StateError, pushState } from './state.js';
 
-/** Exit codes of `arima-init`; preflight failures keep their own codes (10-14). */
+/** Exit codes of `arima-init`; preflight failures keep their own codes (10-14). 7: the work is done but the state branch was not saved (or the push was refused). */
 export const INIT_EXIT = {
   ok: 0,
   usage: 2,
@@ -29,6 +29,7 @@ export const INIT_EXIT = {
   mapFailed: 4,
   pushFailed: 5,
   briefSecret: 6,
+  stateNotSaved: 7,
 } as const;
 
 export interface InitOptions {
@@ -210,6 +211,7 @@ export async function runInit(o: InitOptions): Promise<InitResult> {
     notion: o.port,
     acquireFor: runId,
     now,
+    needs: { github: false },
   });
   if (!pre.ok) {
     result.problems = pre.checks.filter((c) => !c.ok).map((c) => `${c.check}: ${c.detail}`);
@@ -421,6 +423,7 @@ export async function runInit(o: InitOptions): Promise<InitResult> {
           'state was committed locally; add a git remote and re-run `arima-state push` to publish it',
         );
     } catch (e) {
+      result.exitCode = INIT_EXIT.stateNotSaved;
       result.warnings.push(
         `state not saved: ${e instanceof StateError || e instanceof Error ? e.message : String(e)}`,
       );

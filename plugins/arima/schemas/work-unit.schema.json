@@ -1,0 +1,32 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/stephennguye/ARIMA/schemas/work-unit.schema.json",
+  "title": "Work-unit descriptor",
+  "description": "What the dispatcher hands the packet builder for one role run (03-contracts 3.1). Engine-internal; the ledger row is derived from it.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["unit_id", "role", "item", "kind", "phase", "attempt", "budget_usd", "max_turns", "inputs", "profile"],
+  "properties": {
+    "unit_id": { "type": "string", "minLength": 1 },
+    "role": { "enum": ["orchestrator", "ba", "ux", "architect", "tech-lead", "developer", "qa", "security", "devops"] },
+    "item": { "type": "string", "pattern": "^(US|BUG|INC|CR|MS)-[0-9]{2,}$|^G[0-4]$|^none$" },
+    "kind": {
+      "enum": [
+        "develop", "skeleton", "review", "adr-review", "conventions", "rc-freeze", "deprecation-check",
+        "debt-review", "qa", "test-write", "e2e-skeleton", "regression", "perf-test", "a11y-test",
+        "design-qa", "author", "release-docs", "env-plan", "preview-diagnose", "security-scan",
+        "scan-triage", "verify-finding", "screen", "deploy-staging", "hotfix", "fix", "triage",
+        "runbook", "uat-script", "digest", "meeting", "gate-pack", "retro"
+      ]
+    },
+    "phase": { "type": "integer", "minimum": 0, "maximum": 8 },
+    "attempt": { "type": "integer", "minimum": 1 },
+    "rework_reason": { "enum": ["failed_review", "failed_qa", "vetoed", "bug", "other"] },
+    "budget_usd": { "type": "number", "minimum": 0 },
+    "max_turns": { "type": "integer", "minimum": 1 },
+    "worktree": { "type": "string", "minLength": 1 },
+    "branch": { "type": "string", "minLength": 1 },
+    "inputs": { "type": "array", "items": { "type": "string", "minLength": 1 }, "description": "Paths and item ids" },
+    "profile": { "enum": ["solo-lite", "client-project", "regulated"] }
+  }
+}
