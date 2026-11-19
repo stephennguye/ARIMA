@@ -9,6 +9,7 @@ import { remotePauseFlag } from './state.js';
 import { buildLedgerRow, appendLedgerRow, parseClaudeResult, readLedger } from './ledger.js';
 import type { ClaudeResult, LedgerRow, Role, RunContext, RunResult } from './ledger.js';
 import type { UnitKind } from './kinds.js';
+import { recordStoryBudgetHit, unitBudget } from './story-budget.js';
 import { pluginRoot } from './lib/paths.js';
 import type { ReasonCode } from './reasons.js';
 import { collectReport } from './report-collector.js';
@@ -88,6 +89,12 @@ export interface RunAgentOptions {
    * the run a `fail` with reason `report_invalid` (or `evidence_missing`, `secret_in_output`).
    */
   kind?: UnitKind;
+  /**
+   * The budget of the item's story (est. USD). When set, no run starts once the item has spent it
+   * or has less than the run cost floor left, and `budgetUsd` may not exceed what is left (spec
+   * 13.5 item 2; hard stop `story_budget`; exit 13).
+   */
+  storyBudgetUsd?: number;
   config: AgentConfig;
   killSwitch: DispatchKillSwitch;
   /** Executable to run instead of `claude` (tests, or a non-PATH install). */
@@ -403,6 +410,19 @@ async function assertMayDispatch(o: RunAgentOptions, now: Date): Promise<void> {
       12,
     );
   }
+  if (o.storyBudgetUsd !== undefined && o.item !== 'none') {
+    const ub = unitBudget(o.projectDir, o.item, o.storyBudgetUsd, o.config.perRunCap);
+    if (!ub.ok) {
+      throw new DispatchRefused(await recordStoryBudgetHit(o.projectDir, o.item, ub, o.role), 13);
+    }
+    if (o.budgetUsd > ub.remaining) {
+      await refuse(
+        'story_budget',
+        `refusing to start a run: its cap ${o.budgetUsd} is more than the ${ub.remaining} est. USD left of the story budget of ${o.item}`,
+        13,
+      );
+    }
+  }
   const s = budgetStatus(
     o.projectDir,
     { projectCap: c.projectCap as number, dailyCap: c.dailyCap as number, alertThresholds: [] },
@@ -622,7 +642,10 @@ export async function runUnit(
   const failed = first.result === 'fail' || first.result === 'error';
   if (!failed) return { ...first, runs: [first], blocked: false };
 
-  const remaining = (o.storyRemainingUsd ?? o.budgetUsd) - first.costUsd;
+  const remaining =
+    o.storyBudgetUsd !== undefined && o.item !== 'none'
+      ? unitBudgetRemaining(o)
+      : (o.storyRemainingUsd ?? o.budgetUsd) - first.costUsd;
   const retryBudget = Math.min(o.config.perRunCap, remaining);
   if (!(retryBudget > 0)) {
     const out: UnitOutcome = { ...first, runs: [first], blocked: true };
@@ -684,4 +707,10 @@ export function agentConfigFrom(arima: Record<string, unknown>, role: Role): Age
     notionTokenEnv: String(get('notion.token_env')),
     githubTokenEnv: typeof githubEnv === 'string' ? githubEnv : undefined,
   };
+}
+
+/** What is left of the story budget for a retry; 0 when under the run cost floor (no run is started). */
+function unitBudgetRemaining(o: UnitOptions): number {
+  const b = unitBudget(o.projectDir, o.item, o.storyBudgetUsd as number, o.config.perRunCap);
+  return b.ok ? b.remaining : 0;
 }

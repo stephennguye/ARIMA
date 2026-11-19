@@ -136,7 +136,7 @@ Types: `run.start run.end run.paused preflight.fail killswitch.on killswitch.off
 | `arima-config` | 0 valid, 1 invalid, 2 usage |
 | `arima-ids` | 0 ok, 1 failure (locked counter or unreadable state), 2 usage or unknown prefix |
 | `arima-preflight` | 0 ok, 2 usage, 10 config, 11 run locked, 12 kill switch, 13 budget, 14 environment |
-| `arima-run-agent` | 0 pass, 1 failed/error, 2 usage or config, 3 blocked (turn or budget cap), 12 kill switch, 13 budget used up, 75 paused (usage limit) |
+| `arima-run-agent` | 0 pass, 1 failed/error, 2 usage or config, 3 blocked (turn or budget cap), 12 kill switch, 13 budget used up (project, day or story), 75 paused (usage limit) |
 | `arima-init` | 0 ok, 2 usage, 3 brief gaps, 4 map failed, 5 push failed, 6 brief contains a secret, 7 state not saved; 10-14 as preflight (init needs no GitHub token) |
 | `arima-pause` | 0 ok (and state saved), 1 not saved or Notion not cleared, 2 usage |
 | `arima-state` | 0 ok, 1 failure (including refused push), 2 usage |

@@ -17,9 +17,10 @@ export interface RunAgentCliDeps {
 export const USAGE = `Usage: arima-run-agent --role <role> --item <ID|none> --budget <usd> --max-turns <n> --prompt-file <file>
          [--cwd <worktree>] [--project <dir>] [--phase <0-8>] [--attempt <n>] [--milestone MS-NN]
          [--rework-reason failed_review|failed_qa|vetoed|bug|other] [--session <id>] [--agent <name>]
+         [--story-budget <usd>]   (refuse to start when the item's story budget is used up)
          [--kind <unit kind>]   (the final message must then end in a valid arima-report block)
 Roles: ${ROLES.join(' ')}
-Exit codes: 0 pass, 1 failed/error, 2 usage or config, 3 blocked (turn or budget cap), 12 kill switch is on, 13 budget used up, 75 paused (usage limit)`;
+Exit codes: 0 pass, 1 failed/error, 2 usage or config, 3 blocked (turn or budget cap), 12 kill switch is on, 13 budget used up (project, day or story), 75 paused (usage limit)`;
 
 const REWORK = ['failed_review', 'failed_qa', 'vetoed', 'bug', 'other'] as const;
 
@@ -67,6 +68,7 @@ export async function runAgentCli(
         session: { type: 'string' },
         agent: { type: 'string' },
         kind: { type: 'string' },
+        'story-budget': { type: 'string' },
       },
     }).values as Record<string, string | undefined>;
   } catch (e) {
@@ -83,6 +85,8 @@ export async function runAgentCli(
   const attempt = values['attempt'] === undefined ? 1 : Number(values['attempt']);
   const rework = values['rework-reason'];
   const kind = values['kind'];
+  const storyBudget =
+    values['story-budget'] === undefined ? undefined : Number(values['story-budget']);
 
   const problems: string[] = [];
   if (role === undefined || !isRole(role))
@@ -96,6 +100,8 @@ export async function runAgentCli(
   if (!Number.isInteger(phase) || phase < 0 || phase > 8) problems.push('--phase must be 0-8');
   if (!Number.isInteger(attempt) || attempt < 1)
     problems.push('--attempt must be a positive integer');
+  if (storyBudget !== undefined && !(storyBudget > 0))
+    problems.push('--story-budget must be a positive number (USD)');
   if (kind !== undefined && !isUnitKind(kind))
     problems.push(`--kind must be one of: ${UNIT_KINDS.join(', ')}`);
   if (rework !== undefined && !(REWORK as readonly string[]).includes(rework)) {
@@ -158,6 +164,7 @@ export async function runAgentCli(
       ...(values['session'] !== undefined ? { sessionId: values['session'] } : {}),
       ...(values['agent'] !== undefined ? { agent: values['agent'] } : {}),
       ...(kind !== undefined && isUnitKind(kind) ? { kind } : {}),
+      ...(storyBudget !== undefined ? { storyBudgetUsd: storyBudget } : {}),
     });
     io.out(
       `${JSON.stringify({

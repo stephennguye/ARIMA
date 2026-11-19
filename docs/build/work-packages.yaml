@@ -261,7 +261,7 @@ packages:
   - id: WP-105
     stage: 1
     track: engine
-    status: ready
+    status: done
     title: "Story budget and run-cap rule: cap = min(per_run_cap, remaining story budget); S/M/L; hard stop story_budget"
     deps:
       - WP-003

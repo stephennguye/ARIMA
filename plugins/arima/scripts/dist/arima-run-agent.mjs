@@ -19545,10 +19545,6 @@ function remotePauseFlag(o) {
   return gitOk(r.repo, ["cat-file", "-e", `${ref}:PAUSE`]);
 }
 
-// plugins/arima/scripts/src/report-collector.ts
-import { mkdirSync as mkdirSync5 } from "node:fs";
-import path11 from "node:path";
-
 // plugins/arima/scripts/src/lib/atomic-file.ts
 import { mkdirSync as mkdirSync4, renameSync, unlinkSync as unlinkSync2, writeFileSync as writeFileSync3 } from "node:fs";
 import path10 from "node:path";
@@ -19574,6 +19570,55 @@ function writeFileAtomic(file, content) {
     }
   }
 }
+
+// plugins/arima/scripts/src/story-budget.ts
+var RUN_COST_FLOOR_USD = 0.25;
+var round2 = (n) => Math.round(n * 1e6) / 1e6;
+function itemSpent(projectDir, item) {
+  return round2(
+    readLedger(projectDir).filter((r) => r.item === item).reduce((s, r) => s + r.cost_usd, 0)
+  );
+}
+function unitBudget(projectDir, item, budget, perRunCap, floor = RUN_COST_FLOOR_USD) {
+  const spent = itemSpent(projectDir, item);
+  const remaining = round2(budget - spent);
+  if (!(remaining > 0) || remaining < floor)
+    return {
+      ok: false,
+      reason: "story_budget",
+      spent,
+      remaining: Math.max(0, remaining),
+      storyBudget: budget
+    };
+  return {
+    ok: true,
+    budgetUsd: round2(Math.min(perRunCap, remaining)),
+    spent,
+    remaining,
+    storyBudget: budget
+  };
+}
+async function recordStoryBudgetHit(projectDir, item, b, role) {
+  const message = `story budget used up for ${item}: spent ${b.spent} of ${b.storyBudget} est. USD, ${b.remaining} left (a run needs at least ${RUN_COST_FLOOR_USD})`;
+  await appendEvent(projectDir, {
+    type: "hardstop.hit",
+    actor: "system",
+    item,
+    data: {
+      stop: "story_budget",
+      ...role !== void 0 ? { role } : {},
+      message,
+      spent: b.spent,
+      budget: b.storyBudget,
+      remaining: b.remaining
+    }
+  });
+  return message;
+}
+
+// plugins/arima/scripts/src/report-collector.ts
+import { mkdirSync as mkdirSync5 } from "node:fs";
+import path11 from "node:path";
 
 // plugins/arima/scripts/src/report.ts
 var CRITERIA_REQUIRED = [
@@ -20011,6 +20056,19 @@ async function assertMayDispatch(o, now) {
       12
     );
   }
+  if (o.storyBudgetUsd !== void 0 && o.item !== "none") {
+    const ub = unitBudget(o.projectDir, o.item, o.storyBudgetUsd, o.config.perRunCap);
+    if (!ub.ok) {
+      throw new DispatchRefused(await recordStoryBudgetHit(o.projectDir, o.item, ub, o.role), 13);
+    }
+    if (o.budgetUsd > ub.remaining) {
+      await refuse(
+        "story_budget",
+        `refusing to start a run: its cap ${o.budgetUsd} is more than the ${ub.remaining} est. USD left of the story budget of ${o.item}`,
+        13
+      );
+    }
+  }
   const s = budgetStatus(
     o.projectDir,
     { projectCap: c.projectCap, dailyCap: c.dailyCap, alertThresholds: [] },
@@ -20209,9 +20267,10 @@ function agentConfigFrom(arima, role) {
 var USAGE = `Usage: arima-run-agent --role <role> --item <ID|none> --budget <usd> --max-turns <n> --prompt-file <file>
          [--cwd <worktree>] [--project <dir>] [--phase <0-8>] [--attempt <n>] [--milestone MS-NN]
          [--rework-reason failed_review|failed_qa|vetoed|bug|other] [--session <id>] [--agent <name>]
+         [--story-budget <usd>]   (refuse to start when the item's story budget is used up)
          [--kind <unit kind>]   (the final message must then end in a valid arima-report block)
 Roles: ${ROLES.join(" ")}
-Exit codes: 0 pass, 1 failed/error, 2 usage or config, 3 blocked (turn or budget cap), 12 kill switch is on, 13 budget used up, 75 paused (usage limit)`;
+Exit codes: 0 pass, 1 failed/error, 2 usage or config, 3 blocked (turn or budget cap), 12 kill switch is on, 13 budget used up (project, day or story), 75 paused (usage limit)`;
 var REWORK = ["failed_review", "failed_qa", "vetoed", "bug", "other"];
 function passthroughEnv() {
   const out = {};
@@ -20242,7 +20301,8 @@ async function runAgentCli(argv, io, deps = {}) {
         "rework-reason": { type: "string" },
         session: { type: "string" },
         agent: { type: "string" },
-        kind: { type: "string" }
+        kind: { type: "string" },
+        "story-budget": { type: "string" }
       }
     }).values;
   } catch (e) {
@@ -20260,6 +20320,7 @@ ${USAGE}
   const attempt = values["attempt"] === void 0 ? 1 : Number(values["attempt"]);
   const rework = values["rework-reason"];
   const kind = values["kind"];
+  const storyBudget = values["story-budget"] === void 0 ? void 0 : Number(values["story-budget"]);
   const problems = [];
   if (role === void 0 || !isRole(role))
     problems.push(`--role must be one of: ${ROLES.join(", ")}`);
@@ -20272,6 +20333,8 @@ ${USAGE}
   if (!Number.isInteger(phase) || phase < 0 || phase > 8) problems.push("--phase must be 0-8");
   if (!Number.isInteger(attempt) || attempt < 1)
     problems.push("--attempt must be a positive integer");
+  if (storyBudget !== void 0 && !(storyBudget > 0))
+    problems.push("--story-budget must be a positive number (USD)");
   if (kind !== void 0 && !isUnitKind(kind))
     problems.push(`--kind must be one of: ${UNIT_KINDS.join(", ")}`);
   if (rework !== void 0 && !REWORK.includes(rework)) {
@@ -20325,7 +20388,8 @@ ${USAGE}
       ...rework !== void 0 ? { reworkReason: rework } : {},
       ...values["session"] !== void 0 ? { sessionId: values["session"] } : {},
       ...values["agent"] !== void 0 ? { agent: values["agent"] } : {},
-      ...kind !== void 0 && isUnitKind(kind) ? { kind } : {}
+      ...kind !== void 0 && isUnitKind(kind) ? { kind } : {},
+      ...storyBudget !== void 0 ? { storyBudgetUsd: storyBudget } : {}
     });
     io.out(
       `${JSON.stringify({
