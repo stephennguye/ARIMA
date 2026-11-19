@@ -208,3 +208,31 @@ describe('stage plan covers the register', () => {
         );
   });
 });
+
+describe('artifact map and concept', () => {
+  const map = parse(read('artifact-map.yaml')) as {
+    artifacts: { id: string; kind: string; produced_by: string[] | null }[];
+  };
+  const catalog = parse(
+    readFileSync(path.join(REPO_ROOT, 'plugins/arima/catalog/artifacts.yaml'), 'utf8'),
+  ) as { artifacts: { id: string; kind: string }[] };
+
+  it('maps every catalog artifact exactly once', () => {
+    expect(map.artifacts.map((a) => a.id)).toEqual(catalog.artifacts.map((a) => a.id));
+    expect(map.artifacts).toHaveLength(58);
+  });
+  it('every artifact except external ones has a producing package, and every package exists', () => {
+    for (const a of map.artifacts) {
+      if (a.kind === 'external') continue;
+      expect(a.produced_by?.length, `${a.id} has no producing package`).toBeGreaterThan(0);
+      for (const wp of a.produced_by ?? []) expect(byId.has(wp), `${a.id} -> ${wp}`).toBe(true);
+    }
+  });
+  it('CONCEPT.md exists and is the first document START-HERE and the handoff point to', () => {
+    expect(existsSync(path.join(BUILD, 'CONCEPT.md'))).toBe(true);
+    const start = readFileSync(path.join(REPO_ROOT, 'START-HERE.md'), 'utf8');
+    expect(start.indexOf('CONCEPT.md')).toBeGreaterThan(-1);
+    expect(read('00-handoff.md')).toContain('CONCEPT.md');
+    expect(read('README.md')).toContain('CONCEPT.md');
+  });
+});

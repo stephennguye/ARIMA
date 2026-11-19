@@ -1,5 +1,7 @@
 # 08 Target folder structure and workflow diagrams
 
+Read `CONCEPT.md` first: sections 2 and 3 below are the *team view* (the spirit of ARIMA); sections 4 to 6 are the *machine view* that carries it.
+
 Status: `[PROPOSED]`. The "after" structure is the target once the build is done and the documentation is cleaned up; the cleanup itself needs the owner's approval (see `START-HERE.md`, third prompt). Nothing here has been moved yet.
 
 ## 1. Folder structure: before and after
@@ -79,7 +81,94 @@ arima/
 
 What changes: superseded planning files and review reports move to `docs/archive/` (kept, not deleted); guides gather in `docs/guides/`; the four vitest configs collapse into one folder; repo-level `scripts/` becomes `tools/` so it is not confused with the plugin's `scripts/`; the plugin gains eight agents, fifteen skills and a reference stack; `scripts/src/` is grouped by layer once Stage 1 adds the engine modules. `docs/build/` stays, because it is the working plan.
 
-## 2. How ARIMA works: agents, tools, inputs and outputs
+## 2. The team view: a company team, lifecycle, artifacts and gates
+
+```mermaid
+flowchart LR
+  CL["CLIENT SIDE (humans)<br/>sponsor, PO, legal<br/>give the brief, answer questions,<br/>approve gates and PRs, veto,<br/>approve production"]
+
+  P0["PHASE 0 Initiation<br/>orchestrator, ba, architect, security<br/>OUT: charter, budget plan, feasibility note,<br/>compliance screen, risk register"]
+  G0{{"G0<br/>sponsor"}}
+  P1["PHASE 1 Discovery<br/>ba, ux, architect, security, qa<br/>OUT: PRD, URS, SRS, NFRs, glossary, personas,<br/>wireframes, security reqs, DPIA, stories<br/>MEETING: requirements review"]
+  G1{{"G1<br/>sponsor + PO"}}
+  P2["PHASE 2 Design<br/>architect, ux, security, qa, devops<br/>OUT: SAD, ADRs, OpenAPI, data model,<br/>prototype, threat model, master test plan,<br/>environment matrix, milestone plan<br/>MEETING: design review"]
+  G2{{"G2<br/>PO + sponsor"}}
+  P3["PHASE 3 Setup<br/>devops, tech-lead, qa, developer<br/>OUT: CI/CD, staging, conventions,<br/>walking skeleton"]
+  subgraph P4["PHASE 4 Build, repeated per milestone"]
+    direction TB
+    S1["qa writes test cases"] --> S2["developer builds in own worktree"] --> S3["tech-lead reviews"] --> S4["qa tests on preview"] --> S5["human approves PR, merge script merges,<br/>devops deploys staging"]
+    S5 --> S6["MILESTONE REVIEW: human may veto,<br/>RETRO: lessons"]
+  end
+  P5["PHASE 5 Stabilize and UAT<br/>qa, security, devops, humans<br/>OUT: test reports, security report,<br/>pentest report, UAT sign-off<br/>MEETING: go/no-go"]
+  G3{{"G3<br/>sponsor + PO"}}
+  P6["PHASE 6 Release<br/>devops, ba<br/>OUT: release record, notes, user guide,<br/>runbook, support pack, SBOM"]
+  PA{{"PRODUCTION APPROVAL<br/>human, on the release page"}}
+  P7["PHASE 7 Hypercare, 2 weeks<br/>devops, developer<br/>OUT: ops manual, incident records,<br/>hypercare and closure reports"]
+  G4{{"G4<br/>sponsor"}}
+  P8["PHASE 8 Operations<br/>incidents, change requests,<br/>recurring jobs, new milestones"]
+
+  CL --> P0 --> G0 --> P1 --> G1 --> P2 --> G2 --> P3 --> P4 --> P5 --> G3 --> P6 --> PA --> P7 --> G4 --> P8
+  G0 -. "rejected: back with comments" .-> P0
+  G1 -. "rejected" .-> P1
+  G2 -. "rejected" .-> P2
+  G3 -. "rejected: fix and retest" .-> P5
+  P8 -. "change request: impact analysis, new baseline" .-> P1
+
+  subgraph ALWAYS["Running through every phase"]
+    DG["DAILY DIGEST: stand-up and status report<br/>(awaiting you, shipped, decisions with veto,<br/>blockers, cost and time, plan, run health)"]
+    QN["QUESTIONS to the client: batched, with options<br/>and a recommendation; blocking or assume-and-log"]
+    DL["DECISION LOG: every autonomous call, vetoable"]
+    LG["LEDGER: every run costs and times against<br/>project, phase, story and role"]
+  end
+  ALWAYS -.-> CL
+```
+
+## 3. Communications: who talks to whom, and through what
+
+Every team conversation has one channel and leaves a record (`CONCEPT.md` section 4).
+
+```mermaid
+flowchart TB
+  subgraph TEAM["The team (agents)"]
+    OR["orchestrator<br/>project manager and scrum master"]
+    BA["ba"] ~~~ UX["ux"] ~~~ AR["architect"] ~~~ SE["security"]
+    TL["tech-lead"] ~~~ DV["developer"] ~~~ QA["qa"] ~~~ DO["devops"]
+  end
+  subgraph HUMANS["Humans"]
+    SP["sponsor"] ~~~ PO["product owner"] ~~~ LE["legal"]
+  end
+
+  subgraph CH["Channels, each leaving a record"]
+    C1["QUESTION<br/>Q record: options, recommendation, blocking?"]
+    C2["DECISION<br/>DEC record with veto box"]
+    C3["WORK ITEM STATE<br/>hand-off between roles; guards"]
+    C4["PR REVIEW<br/>findings, QA verdict, human approval"]
+    C5["MEETING<br/>same pack, independent round, minutes, actions"]
+    C6["GATE<br/>evidence pack, decision by approver"]
+    C7["DIGEST<br/>daily status to humans"]
+    C8["CHANGE REQUEST<br/>impact analysis, new baseline"]
+    C9["INCIDENT<br/>INC, mitigation, postmortem"]
+    C10["RETRO<br/>lessons, project overrides"]
+  end
+
+  TEAM -->|"need info or a ruling"| C1 --> HUMANS
+  TEAM -->|"made a call"| C2 --> HUMANS
+  HUMANS -->|"answer, veto, priority, edit in Notion"| OR
+  BA & AR & UX & DV & QA & TL -->|"hand over work"| C3
+  DV --> C4
+  TL --> C4
+  QA --> C4
+  HUMANS -->|"approving review"| C4
+  OR -->|"convenes"| C5
+  TEAM --> C5
+  OR -->|"prepares"| C6 --> HUMANS
+  OR --> C7 --> HUMANS
+  HUMANS -->|"asks for a change"| C8 --> BA
+  DO --> C9 --> TEAM
+  OR --> C10 --> TEAM
+```
+
+## 4. The machine view: agents, tools, inputs and outputs (how the team above is carried by code)
 
 ```mermaid
 flowchart TB
@@ -168,7 +257,7 @@ flowchart TB
   RUN -.-> HS
 ```
 
-## 3. One story from Ready to Done (the build loop)
+## 5. One story from Ready to Done (the build loop)
 
 ```mermaid
 sequenceDiagram
@@ -213,7 +302,7 @@ sequenceDiagram
   O->>N: digest row, cost per story from the ledger
 ```
 
-## 4. Ticket states (the rules the engine enforces)
+## 6. Ticket states (the rules the engine enforces)
 
 ```mermaid
 stateDiagram-v2

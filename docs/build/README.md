@@ -8,16 +8,21 @@ It builds on, and does not replace, what already exists. The master spec says *w
 
 When two documents disagree, the higher one wins. A lower document that contradicts a higher one is a bug in the lower document; fix it, or write an ADR if the higher one must change.
 
-1. `docs/spec/ARIMA-Master-Spec.md` (normative: MUST / SHOULD / MAY).
+1. `docs/spec/ARIMA-Master-Spec.md` (normative: MUST / SHOULD / MAY). `CONCEPT.md` is its summary of intent and may not contradict it.
 2. `docs/adr/*` (architecture decisions; may refine the spec, never silently contradict it) and the owner decisions D-34 to D-42 recorded in the spec's decision log.
 3. **This folder** (`docs/build/`).
 4. `CLAUDE.md` (working rules for the build session).
 5. Older planning documents: `docs/BUILD-GUIDE.md` section 5 (stages) and `docs/BUILD-PLAN.md` are **superseded by `02-stages.md` and `work-packages.yaml`** and kept as history. Their ground rules and the Anthropic practice table (BUILD-GUIDE sections 2 to 4) still stand and are restated in `01-architecture.md`.
 
+## The levels, from high to low
+
+`CONCEPT.md` (why and what) → `01-architecture.md` (the machine that carries it) → `02-stages.md` (when each part is built) → `agents/` and `features/` (each role and command in depth: inputs, handling, outputs, conditions) → `03-contracts.md` (the exact interfaces). Start at the top and descend only as far as the task needs.
+
 ## Files, and when to read each
 
 | File | Purpose | Read when |
 | --- | --- | --- |
+| `CONCEPT.md` | **What ARIMA is and why**: the company-team idea, the lifecycle as the organization sees it, communications, measurement, lessons from Anthropic's own plugins, the anti-drift checklist | **First, always** |
 | `00-handoff.md` | How to start, continue and end a session; traps that already cost time | **Always first** |
 | `STATE.md` | The living snapshot: current stage, what is done, what is next, open owner decisions | Always second; update before ending a session |
 | `01-architecture.md` | Layers, components, runtime model, trust boundaries, Anthropic practices as enforceable rules, extension rules | Before changing structure or adding a component |
@@ -30,6 +35,7 @@ When two documents disagree, the higher one wins. A lower document that contradi
 | `06-decisions-risks.md` | Index of decisions, ADRs, spec issues (with status) and the risk register | When a choice seems open |
 | `08-target-structure-and-workflow.md` | Folder structure before and after cleanup; diagrams of the whole workflow, one story, and the ticket states | To see the big picture |
 | `07-known-gaps.md` | Contradictions and defects found while writing the cards, each with its disposition | Before trusting a card on a point it flags |
+| `artifact-map.yaml` | Every one of the 58 artifacts mapped to the work packages that produce it, its owner, approver, master and validator | When asking "who builds this document?" |
 | `work-packages.yaml` | The task register: ids, dependencies, acceptance, tests, status. Checked by a test | When choosing the next task |
 
 ## Conventions used in every file

@@ -4,7 +4,7 @@ Audience: a Claude Code session that has never seen this project. Follow this fi
 
 ## 1. Start of session (10 minutes)
 
-1. Read, in order: this file, `STATE.md`, `README.md` (the authority order), then only the documents `STATE.md` names under "Next action".
+1. Read, in order: **`CONCEPT.md`** (what ARIMA is: a company team replicated, with its artifacts, communications and measurement; section 8 is the anti-drift checklist you apply to every package), this file, `STATE.md`, `README.md` (the authority order), then only the documents `STATE.md` names under "Next action".
 2. Verify the working tree and the claims in `STATE.md` rather than trusting them:
    - `git status` clean? Branch? `git log --oneline -5` matches `STATE.md` "Last commit"?
    - Run the five checks from the repo root: `npm run lint`, `npm run typecheck`, `npm test`, `npm run build` then `npm run check:dist`, and `claude plugin validate ./plugins/arima --strict` and `claude plugin validate .`.

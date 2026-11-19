@@ -16,6 +16,10 @@ Config and profiles; IDs, events, ledger; headless run wrapper; preflight and 3-
 
 Not built: everything in Stages 1 to 5, including the eight other agents, the state machine, dispatcher, merge/publish scripts, digest, cost, gates, meetings, sandbox.
 
+## Orientation
+
+If you are new: `CONCEPT.md` first. ARIMA is a replica of a company software team (roles, gated phases, 58 owned artifacts, scheduled communications, measured cost and time) that builds a greenfield web app; the code in this repo is the machine that carries that team. The plan was re-checked against this concept on 2026-11-19: question and decision protocol moved to Stage 1 (WP-141), and packages were added for delivery metrics (WP-132), milestone review and retro (WP-217), QA authoring (WP-315) and the Phase 0 playbook (WP-321). `artifact-map.yaml` assigns every artifact to a builder.
+
 ## Next action
 
 1. Owner: approve or edit the 28 draft template section lists (`plugins/arima/catalog/artifacts.yaml`); confirm whether to tag v0.1.1 (WP-012). **Do not tag without the owner.**

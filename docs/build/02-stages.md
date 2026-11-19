@@ -50,10 +50,10 @@ Delivered: repo, TypeScript tooling, bundled scripts, CI on Windows and Linux wi
 | 1 | WP-101 | Contracts v1: schemas for agent report, run packet, question, finding, decision; event additions; exit-code registry test |
 | 2 (parallel) | WP-102, WP-103, WP-104 | Packet builder; report collector inside the run wrapper (validate, store, map failures, retry-once); outbox role binding and id allocation |
 | 2 (parallel) | WP-105, WP-106, WP-107 | Story budget and run-cap rule; item model and DoR check; the ticket state machine (pure) |
-| 3 | WP-108, WP-109, WP-140 | Engine-owned `Status` writes; plan-the-day queue; applying human inputs from the mirror |
+| 3 | WP-108, WP-109, WP-141, WP-140 | Engine-owned `Status` writes; plan-the-day queue; **question and decision protocol (the build-loop agents raise questions from day one)**; applying human inputs from the mirror |
 | 3 (parallel) | WP-110, WP-111, WP-112, WP-113 | Worktree manager; host publish script (push + PR); merge script; PR template and ID-in-commit hook |
 | 4 | WP-120, WP-121 | Dispatcher and `/arima:run --dry-run`; stub agents |
-| 5 (parallel) | WP-130, WP-131, WP-150, WP-160, WP-191, WP-195 | Digest; cost roll-up; eval harness; interactive-lock rule; hermetic-run decision; migration test |
+| 5 (parallel) | WP-130, WP-131, WP-132, WP-150, WP-160, WP-191, WP-195 | Digest; cost roll-up; delivery metrics (lead, cycle, DORA...); eval harness; interactive-lock rule; hermetic-run decision; migration test |
 | any time | WP-190 | Docker sandbox runtime (needed for Gate U, not for Stage 2 exit) |
 
 **Conditions that govern the stage**
@@ -84,7 +84,7 @@ Delivered: repo, TypeScript tooling, bundled scripts, CI on Windows and Linux wi
 | 2 | WP-210 developer | Card → fixtures → stub → agent file → smoke → evals (`04-agent-build-protocol.md`). **Bootstrap order:** QA's `test-write` mode (WP-211) comes after the developer, so the developer's fixtures, stub and evals use **hand-written test cases** that satisfy the DoR; real QA-written test cases are used from WP-215 on |
 | 3 | WP-211 qa, WP-212 tech-lead | QA writes test cases first, then tests the PR; tech-lead reviews; merge only through `arima-merge` |
 | 3 | WP-213 devops-lite | Staging deploys only; the stub deploy script **refuses production under every condition** (S10) |
-| 4 | WP-214 `/arima:setup`, WP-216 `/arima:plan`, WP-232 `/arima:assign` | Walking skeleton on staging; milestone of 8-12 points; handing a role between agent and human |
+| 4 | WP-217 milestone review and retro (the human veto point of D-16), WP-214 `/arima:setup`, WP-216 `/arima:plan`, WP-232 `/arima:assign` | Walking skeleton on staging; milestone of 8-12 points; handing a role between agent and human |
 | 5 | WP-215 `/arima:run` (real) | Dispatcher wired to real roles; retry-once, flaky-CI rerun, three-strikes Blocked, review-queue limit |
 | 6 | WP-220 | v0.2 eval |
 
@@ -110,11 +110,11 @@ Unattended or scheduled runs are **not allowed** (D-41) until all of: the Docker
 
 | Order | Work packages | Notes |
 | --- | --- | --- |
-| 1 | WP-301 question protocol and human tasks, WP-302 meeting engine | Needed by every agent below |
+| 1 | WP-301 human tasks and reminders, WP-302 meeting engine | Needed by every agent below (the question protocol itself is WP-141, Stage 1) |
 | 2 | WP-330 gate protocol and `gate-check`, WP-331 baseline freeze | Gate approver check is the placeholder behind `checkApprover()`; the owner may reopen S1 (D-40) |
 | 3 | WP-310 ba, WP-312 architect | Requirements and design; artifacts validated against templates |
 | 3 | WP-311 ux, WP-313 security | Prototype only for ux; security uses a verifier agent that tries to disprove each critical finding |
-| 3 | WP-314 security per-PR scan triage | After WP-313 |
+| 3 | WP-314 security per-PR scan triage, WP-315 qa authoring mode (Master Test Plan, reports), WP-321 Phase 0 playbook (`/arima:init` to G0, risk register) | After WP-313 and the gate code |
 | 4 | WP-320 phase playbooks, WP-340 RTM | `/arima:discover`, `/arima:design`: cost-and-plan prompt before fan-out, one-unit pilot, sequential fallback |
 | 5 | WP-350 | v0.3 eval |
 
