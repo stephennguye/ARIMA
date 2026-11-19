@@ -76,8 +76,11 @@ ${tok}`,
       expect(findSecrets(text), text.slice(0, 40)).toEqual([]);
     }
     const tdir = path.join(REPO_ROOT, 'plugins', 'arima', 'templates');
-    for (const f of readdirSync(tdir))
-      expect(findSecrets(readFileSync(path.join(tdir, f), 'utf8')), f).toEqual([]);
+    for (const e of readdirSync(tdir, { recursive: true, withFileTypes: true }))
+      if (e.isFile())
+        expect(findSecrets(readFileSync(path.join(e.parentPath, e.name), 'utf8')), e.name).toEqual(
+          [],
+        );
   });
 });
 

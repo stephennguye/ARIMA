@@ -19489,6 +19489,64 @@ function enqueue(projectDir, entry, opts = {}) {
   return file;
 }
 
+// plugins/arima/scripts/src/pr-body.ts
+var PR_SECTIONS = [
+  "Linked items",
+  "Acceptance criteria mapping",
+  "Screenshots",
+  "Risk and rollback",
+  "Definition of Done"
+];
+var ITEM_ID = /\b(US|BUG|INC|CR)-\d+\b/;
+function section(body, name) {
+  const m = new RegExp(`^## ${name}[ \\t]*\\n([\\s\\S]*?)(?=^## |(?![\\s\\S]))`, "m").exec(body);
+  return m?.[1];
+}
+function validatePrBody(body, o = {}) {
+  const problems = [];
+  const sections = new Map(PR_SECTIONS.map((s) => [s, section(body, s)]));
+  for (const [name, text2] of sections) {
+    if (text2 === void 0) problems.push(`missing section "## ${name}"`);
+    else if (text2.trim() === "") problems.push(`section "${name}" is empty`);
+  }
+  const linked = sections.get("Linked items");
+  if (linked !== void 0 && !ITEM_ID.test(linked))
+    problems.push('"Linked items" names no item id (US, BUG, INC or CR)');
+  const mapping = sections.get("Acceptance criteria mapping");
+  if (mapping !== void 0) {
+    const lines = mapping.split("\n");
+    for (const c of o.criteria ?? []) {
+      const line = lines.find(
+        (l) => new RegExp(
+          `(^|[^A-Za-z0-9-])${c.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}($|[^A-Za-z0-9-])`
+        ).test(l)
+      );
+      if (line === void 0)
+        problems.push(`criterion ${c} is not in the acceptance criteria mapping`);
+      else if (!/[\w./-]+:\d+|\bTC-\d+/.test(line))
+        problems.push(`criterion ${c} cites no evidence (file:line or a test case id)`);
+    }
+  }
+  const shots = sections.get("Screenshots");
+  if (o.ui === true && shots !== void 0 && !/!\[[^\]]*\]\([^)]+\)|https?:\/\/\S+\.(png|jpe?g|gif|webp)/i.test(shots))
+    problems.push('a UI story needs screenshots (an image link) in "Screenshots"');
+  const dod = sections.get("Definition of Done");
+  if (dod !== void 0) {
+    const boxes = dod.split("\n").filter((l) => /^- \[[ xX]\] /.test(l));
+    if (boxes.length === 0) problems.push('"Definition of Done" has no checklist');
+    if (o.ready === true && boxes.some((l) => /^- \[ \]/.test(l)))
+      problems.push(
+        `not ready: unticked Definition of Done items: ${boxes.filter((l) => /^- \[ \]/.test(l)).map((l) => l.slice(6)).join("; ")}`
+      );
+  }
+  const attr = findAttribution(body);
+  if (attr.length > 0) problems.push(`the body contains ${attr.join(" and ")} (D-48)`);
+  const leaked = findSecrets(body);
+  if (leaked.length > 0)
+    problems.push(`the body looks like it contains a secret (${leaked.join(", ")})`);
+  return { ok: problems.length === 0, problems };
+}
+
 // plugins/arima/scripts/src/state.ts
 var MAX_SCAN_BYTES = 64 * 1024 * 1024;
 var SLUG_PART = /^[A-Za-z0-9_][A-Za-z0-9._-]*$/;
@@ -19722,6 +19780,17 @@ ${i.body}`, loadSecretAllowlist(i.projectDir));
       PUBLISH_EXIT.refused,
       "secret_in_output"
     );
+  if (i.criteria !== void 0) {
+    const check2 = validatePrBody(i.body, {
+      criteria: i.criteria,
+      ...i.ui !== void 0 ? { ui: i.ui } : {}
+    });
+    if (!check2.ok)
+      throw new PublishError(
+        `the pull request body fails the DoD check: ${check2.problems.join("; ")}`,
+        PUBLISH_EXIT.refused
+      );
+  }
   const { dir, sha } = checkBranch(i);
   const url2 = i.remoteUrl ?? `https://github.com/${i.repo}.git`;
   const slug = githubSlug(url2);
@@ -19921,7 +19990,8 @@ async function postReview(i) {
 }
 
 // plugins/arima/scripts/src/cli/publish-cli.ts
-var PUBLISH_USAGE = `Usage: arima-publish push --branch <branch> --item <ID> --role <role> --title <text> --body-file <file> --run-id <id> [--type story|bug|hotfix|chore] [--project <dir>]
+var PUBLISH_USAGE = `Usage: arima-publish push --branch <branch> --item <ID> --role <role> --title <text> --body-file <file> --run-id <id> [--type story|bug|hotfix|chore] [--report <developer report.json> [--ui]] [--project <dir>]
+  (with --report the body must pass the DoD check: every criterion mapped with evidence; --ui also needs a screenshot)
        arima-publish comment --pr <number> --report <runs/<run>.report.json> [--project <dir>]
 Exit codes: 0 ok, 2 usage, 12 kill switch is on, 14 GitHub token missing, 31 branch refused (protected path, secret, attribution, scope), 32 push or GitHub refused`;
 async function runPublishCli(argv, io, deps = {}) {
@@ -19939,6 +20009,7 @@ async function runPublishCli(argv, io, deps = {}) {
         "body-file": { type: "string" },
         "run-id": { type: "string" },
         type: { type: "string" },
+        ui: { type: "boolean" },
         pr: { type: "string" },
         report: { type: "string" },
         project: { type: "string" }
@@ -19979,6 +20050,13 @@ ${PUBLISH_USAGE}
         return usage("--type must be story, bug, hotfix or chore");
       const bodyFile = path15.resolve(io.cwd, v["body-file"]);
       if (!existsSync9(bodyFile)) return usage(`body file not found: ${bodyFile}`);
+      let criteria;
+      if (v["report"] !== void 0) {
+        const rf = path15.resolve(io.cwd, v["report"]);
+        if (!existsSync9(rf)) return usage(`report not found: ${rf}`);
+        const rep = JSON.parse(readFileSync9(rf, "utf8"));
+        criteria = (rep.criteria_map ?? []).map((c) => c.criterion);
+      }
       const p = await publishBranch({
         projectDir,
         runId: v["run-id"],
@@ -19987,6 +20065,8 @@ ${PUBLISH_USAGE}
         role,
         title: v["title"],
         body: readFileSync9(bodyFile, "utf8"),
+        ...criteria !== void 0 ? { criteria } : {},
+        ...v["ui"] !== void 0 ? { ui: true } : {},
         ...type !== void 0 ? { type } : {},
         repo: github.repo,
         defaultBranch: github.default_branch,

@@ -7,7 +7,8 @@ import { PUBLISH_EXIT, PublishError, postReview, publishBranch } from '../publis
 import type { GhRunner, ReviewFinding } from '../publish.js';
 import type { Io } from './config-cli.js';
 
-export const PUBLISH_USAGE = `Usage: arima-publish push --branch <branch> --item <ID> --role <role> --title <text> --body-file <file> --run-id <id> [--type story|bug|hotfix|chore] [--project <dir>]
+export const PUBLISH_USAGE = `Usage: arima-publish push --branch <branch> --item <ID> --role <role> --title <text> --body-file <file> --run-id <id> [--type story|bug|hotfix|chore] [--report <developer report.json> [--ui]] [--project <dir>]
+  (with --report the body must pass the DoD check: every criterion mapped with evidence; --ui also needs a screenshot)
        arima-publish comment --pr <number> --report <runs/<run>.report.json> [--project <dir>]
 Exit codes: 0 ok, 2 usage, 12 kill switch is on, 14 GitHub token missing, 31 branch refused (protected path, secret, attribution, scope), 32 push or GitHub refused`;
 
@@ -46,6 +47,7 @@ export async function runPublishCli(
         'body-file': { type: 'string' },
         'run-id': { type: 'string' },
         type: { type: 'string' },
+        ui: { type: 'boolean' },
         pr: { type: 'string' },
         report: { type: 'string' },
         project: { type: 'string' },
@@ -82,6 +84,15 @@ export async function runPublishCli(
         return usage('--type must be story, bug, hotfix or chore');
       const bodyFile = path.resolve(io.cwd, v['body-file'] as string);
       if (!existsSync(bodyFile)) return usage(`body file not found: ${bodyFile}`);
+      let criteria: string[] | undefined;
+      if (v['report'] !== undefined) {
+        const rf = path.resolve(io.cwd, v['report']);
+        if (!existsSync(rf)) return usage(`report not found: ${rf}`);
+        const rep = JSON.parse(readFileSync(rf, 'utf8')) as {
+          criteria_map?: { criterion: string }[];
+        };
+        criteria = (rep.criteria_map ?? []).map((c) => c.criterion);
+      }
       const p = await publishBranch({
         projectDir,
         runId: v['run-id'] as string,
@@ -90,6 +101,8 @@ export async function runPublishCli(
         role,
         title: v['title'] as string,
         body: readFileSync(bodyFile, 'utf8'),
+        ...(criteria !== undefined ? { criteria } : {}),
+        ...(v['ui'] !== undefined ? { ui: true } : {}),
         ...(type !== undefined ? { type: type as 'story' | 'bug' | 'hotfix' | 'chore' } : {}),
         repo: github.repo,
         defaultBranch: github.default_branch,

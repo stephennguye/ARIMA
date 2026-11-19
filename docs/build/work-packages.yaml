@@ -393,7 +393,7 @@ packages:
   - id: WP-113
     stage: 1
     track: safety
-    status: ready
+    status: done
     title: PR template, ID-in-commit hook on feat/fix/hotfix branches (S9), DoD check before ready
     deps:
       - WP-111

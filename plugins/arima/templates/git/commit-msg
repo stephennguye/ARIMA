@@ -1,0 +1,60 @@
+#!/bin/sh
+# ARIMA commit-msg hook (spec 2, 10.2; S9, D-48). POSIX sh, no dependencies.
+# Install: git config core.hooksPath .githooks   (arima-setup does it; agents cannot change git config)
+# The same rules, in TypeScript, are src/commit-message.ts; commit-hook.test.ts runs one corpus through both.
+
+msg_file="$1"
+branch=$(git symbolic-ref --short -q HEAD 2>/dev/null || echo "")
+text=$(grep -v '^#' "$msg_file")
+subject=$(printf '%s\n' "$text" | sed -n '/./{p;q;}')
+
+problem() {
+  echo "commit-msg: $1" >&2
+  failed=1
+}
+failed=0
+
+# D-48: no AI attribution, on every branch.
+if printf '%s\n' "$text" | grep -Eiq 'co-authored-by:.*(claude|anthropic|(^|[^[:alnum:]])ai([^[:alnum:]]|$)|gpt|copilot|gemini|openai|noreply@anthropic)'; then
+  problem "the message contains a Co-Authored-By trailer naming an AI (D-48: no AI attribution)"
+fi
+if printf '%s\n' "$text" | grep -Eiq 'generated[[:space:]]+(with|by|using)[[:space:]]+\[?(claude|an?[[:space:]]+ai|chatgpt|copilot|gemini)'; then
+  problem "the message contains a \"Generated with\" line (D-48: no AI attribution)"
+fi
+if printf '%s\n' "$text" | grep -Eiq 'claude\.com/claude-code|claude\.ai/code|🤖[[:space:]]*generated'; then
+  problem "the message contains a Claude Code link or badge (D-48: no AI attribution)"
+fi
+if printf '%s\n' "$text" | grep -Eiq '(written|authored|created|co-?authored)[[:space:]]+(with|by)[[:space:]]+(claude|anthropic|chatgpt|copilot|an ai)([^[:alnum:]]|$)'; then
+  problem "the message contains an AI-contributor credit (D-48: no AI attribution)"
+fi
+
+types='feat|fix|docs|chore|refactor|test|perf|build|ci|style|revert'
+case "$subject" in
+  "Merge "*) [ "$failed" = 0 ] && exit 0; exit 1 ;;
+esac
+
+case "$branch" in
+  feat/*|fix/*|hotfix/*|qa/*)
+    if ! printf '%s\n' "$subject" | grep -Eq "^(${types}|hotfix)\((US|BUG|INC|CR)-[0-9]+\)!?: [^[:space:]]"; then
+      problem "on $branch the subject must be \"type(ITEM-ID): summary\" with an item id (US, BUG, INC or CR), for example \"feat(US-112): add cart summary\""
+    fi
+    ;;
+  chore/*|docs/*|release/*|arima-state)
+    if ! printf '%s\n' "$subject" | grep -Eq "^(${types})(\([^)[:space:]]+\))?!?: [^[:space:]]"; then
+      problem "the subject must be a conventional commit (\"type(scope): summary\")"
+    fi
+    if ! printf '%s\n' "$text" | grep -Eq '(r-[0-9]{8}-[0-9]{4}-[0-9]{2,}|(^|[^[:alnum:]])ADR-[0-9]+|(^|[^[:alnum:]])WP-[0-9]+|(^|[^[:alnum:]])T-[0-9]+([^[:alnum:]]|$))'; then
+      problem "the message must carry a run id (r-YYYYMMDD-HHMM-NN) or an ADR, task or work-package id"
+    fi
+    ;;
+  dependabot/*|renovate/*|deps/*)
+    ;;
+  *)
+    if ! printf '%s\n' "$subject" | grep -Eq "^(${types})(\([^)[:space:]]+\))?!?: [^[:space:]]"; then
+      problem "the subject must be a conventional commit (\"type(scope): summary\")"
+    fi
+    ;;
+esac
+
+[ "$failed" = 0 ] && exit 0
+exit 1

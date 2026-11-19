@@ -9,6 +9,7 @@ import type { Role } from './ledger.js';
 import { findSecrets, loadSecretAllowlist } from './lib/secrets.js';
 import { enqueue, outboxDir } from './notion/outbox.js';
 import type { ReasonCode } from './reasons.js';
+import { validatePrBody } from './pr-body.js';
 import { githubSlug } from './state.js';
 import { BRANCH, worktreePath } from './worktree.js';
 
@@ -85,8 +86,15 @@ export interface PublishInput {
   /** The role whose work this is: its protected-path and QA rules apply. */
   role: Role;
   title: string;
-  /** The pull request body (the rendered template; see WP-113). */
+  /** The pull request body (see `renderPrBody`). */
   body: string;
+  /**
+   * The criterion ids of the developer's `criteria_map`. When given, the body must pass the DoD
+   * check (`validatePrBody`): every section, every criterion mapped with evidence, a screenshot
+   * for a UI story (`ui`).
+   */
+  criteria?: string[];
+  ui?: boolean;
   type?: 'story' | 'bug' | 'hotfix' | 'chore';
   /** `github.repo` from arima.yaml: owner/name. */
   repo: string;
@@ -252,6 +260,17 @@ export async function publishBranch(i: PublishInput): Promise<Published> {
       PUBLISH_EXIT.refused,
       'secret_in_output',
     );
+  if (i.criteria !== undefined) {
+    const check = validatePrBody(i.body, {
+      criteria: i.criteria,
+      ...(i.ui !== undefined ? { ui: i.ui } : {}),
+    });
+    if (!check.ok)
+      throw new PublishError(
+        `the pull request body fails the DoD check: ${check.problems.join('; ')}`,
+        PUBLISH_EXIT.refused,
+      );
+  }
   const { dir, sha } = checkBranch(i);
 
   const url = i.remoteUrl ?? `https://github.com/${i.repo}.git`;
