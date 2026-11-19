@@ -29,7 +29,7 @@ Every interface between components. If code crosses a boundary in a way this fil
 | `evidence/<run_id>/` | the report collector `[PROPOSED]` WP-103 | read by the packet builder only | Copied bug evidence and design-QA screenshots |
 | `state/ids.json`, `state/run-seq.json` | `arima-ids` / run id issuer | no | Locked counters |
 | `state/allocations.json` | `allocateId` (`notion/allocations.ts`) | no | Issued id -> run id. Push accepts a created id-titled row only if its id was issued to the entry's run (WP-104) |
-| `items/<id>.json` | the state machine only `[PROPOSED]` WP-106 | never | Item counters and blocked-from (section 9a) |
+| `items/<id>.json` | the state machine only `[BUILT]` WP-106 | never | Item counters and blocked-from (section 9a); `[BUILT]` WP-106 |
 | `PAUSE` | `arima-pause` only | **never** | Kill switch file; first line is the reason |
 | `run.lock` | preflight `--acquire` | never | One live run at a time; stale after `schedule.max_run_minutes + 30` |
 | `secret-allowlist.txt` | human | never | Fingerprints of reviewed false positives |
@@ -183,7 +183,7 @@ States: `Backlog, Ready, In Progress, In Review, In QA, PO Acceptance, Done, Rel
 
 Two counters (see section 3.3): `attempt` for review/QA rework, `run_failures` for failed runs. Conditions the code must check, in this order, for **every** transition: (1) actor allowed, (2) guard true, (3) not a hard-stop matter, (4) budget available if the target spends, (5) write the `item.status` event, (6) enqueue the Notion `Status` write with the human flag only from the engine (never from an agent outbox). The attempt counter increments only on the two rework arrows; the third increment moves the item to Blocked and raises a question.
 
-## 9a. Item data model and counters `[PROPOSED]` (WP-106)
+## 9a. Item data model and counters `[BUILT]` (WP-106, `src/item.ts`, `item.schema.json`)
 
 An item (story, bug, incident, change request) is the Notion row plus engine-held counters. Notion holds: id, title, `Status`, size, `Attempt`, budget and cost. The engine holds, in `.arima/items/<id>.json` (schema `item.schema.json`, versioned): `attempt` (review/QA rework, mirrors Notion `Attempt`), `run_failures` (failed runs of the current stage; reset when the stage changes), `blocked_from` (previous state), `blocked_reason`, `cost_usd_total`. Neither counter is writable by an agent. The state machine is the only writer of `Status`, `attempt` and `blocked_*`.
 

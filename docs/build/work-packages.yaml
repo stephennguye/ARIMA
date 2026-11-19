@@ -277,7 +277,7 @@ packages:
   - id: WP-106
     stage: 1
     track: engine
-    status: ready
+    status: done
     title: "Item model in code: item types, size, attempts, DoR check (profile aware)"
     deps:
       - WP-009
@@ -294,7 +294,7 @@ packages:
   - id: WP-107
     stage: 1
     track: engine
-    status: planned
+    status: ready
     title: Ticket state machine (pure, table-driven from 03-contracts section 9)
     deps:
       - WP-106
