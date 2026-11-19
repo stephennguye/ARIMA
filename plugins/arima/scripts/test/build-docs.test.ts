@@ -236,3 +236,32 @@ describe('artifact map and concept', () => {
     expect(read('README.md')).toContain('CONCEPT.md');
   });
 });
+
+describe('nothing is orphaned', () => {
+  it('every work package leads to the v1.0 package WP-505 (so no leg of the team can be skipped)', () => {
+    const reach = new Set<string>();
+    const walk = (id: string): void => {
+      if (reach.has(id)) return;
+      reach.add(id);
+      for (const d of (byId.get(id) as Pkg).deps) walk(d);
+    };
+    walk('WP-505');
+    for (const p of pkgs) expect(reach.has(p.id), `${p.id} is not required by WP-505`).toBe(true);
+  });
+  it('each stage evaluation depends on every package of its own stage', () => {
+    const closure = (root: string): Set<string> => {
+      const seen = new Set<string>();
+      const walk = (id: string): void => {
+        if (seen.has(id)) return;
+        seen.add(id);
+        for (const d of (byId.get(id) as Pkg).deps) walk(d);
+      };
+      walk(root);
+      return seen;
+    };
+    const exempt = new Set(['WP-230', 'WP-232', 'WP-190', 'WP-191', 'WP-195', 'WP-160']);
+    const c3 = closure('WP-351');
+    for (const p of pkgs.filter((x) => x.stage === 3 && !exempt.has(x.id)))
+      expect(c3.has(p.id), `${p.id} is not needed by the stage 3 evals`).toBe(true);
+  });
+});

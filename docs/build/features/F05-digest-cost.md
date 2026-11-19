@@ -168,7 +168,7 @@ Status: budget status, ledger, alerts at 50/80/100, `status.ts` summary `[BUILT]
 | O-2 | Rework share by cost or by run count | By cost; show run count in the table |
 | O-3 | Minimum sample for estimate accuracy | n >= 3 per size |
 | O-4 | Where story budget lives (Stories `Budget USD`) vs ledger `budget_usd` (run cap) | Stories row; ledger unchanged (frozen) |
-| O-5 | DORA and time measures in v1 | Defer to after WP-108 |
+| O-5 | DORA and time measures: time measures are built in WP-132 (Stage 1); the five DORA metrics report "not yet measurable" until release and incident events exist (WP-402, WP-403). Resolved; see `work-packages.yaml`. |
 | O-6 | Day boundary timezone: `schedule.timezone` vs process local time (`budgetStatus` callers use local time) | `schedule.timezone` |
 | O-7 | Make Digests `Reviewed by` and `Minutes spent` human-only | Yes, schema change needs `template_schema_version` bump |
 | O-8 | Cost log row key | `date|role|phase|item` as title |

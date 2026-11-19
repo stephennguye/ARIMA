@@ -7,89 +7,1280 @@
 # spec:   section numbers of docs/spec/ARIMA-Master-Spec.md that the package implements.
 schema_version: 1
 packages:
-  # ---------------------------------------------------------------- Stage 0 (done)
-  - { id: WP-001, stage: 0, track: engine, status: done, title: "Repo, TypeScript tooling, bundled scripts, CI on Windows and Linux", deps: [], spec: ["15.1"], acceptance: ["npm run build + check:dist clean", "CI green on both OS"] }
-  - { id: WP-002, stage: 0, track: contracts, status: done, title: "Config schemas, validator with line numbers, three profiles", deps: [WP-001], spec: ["4.1", "4.2", "4.3"], acceptance: ["arima-config validates examples; shortened hard_stops warns"] }
-  - { id: WP-003, stage: 0, track: engine, status: done, title: "ID issuer, event log, run ledger, run ids, locked append writer", deps: [WP-001], spec: ["2", "13.2"], acceptance: ["ids never reused", "one ledger row per run"] }
-  - { id: WP-004, stage: 0, track: engine, status: done, title: "Headless run wrapper: caps, per-role tool list, env allow-list, tree kill, usage-limit pause", deps: [WP-003], spec: ["4.4", "7.2", "13"], acceptance: ["real run recorded as fixtures", "tree-kill test fails without /T"] }
-  - { id: WP-005, stage: 0, track: safety, status: done, title: "Safety envelope v1: guard hook (fail closed), role lists, kill switch (3 sources), secret scanner, privacy refusal, Status-write refusal, dispatch re-check", deps: [WP-004], spec: ["11.1", "11.2", "11.3"], acceptance: ["guard battery incl. bypass corpus", "launcher executed in tests"] }
-  - { id: WP-006, stage: 0, track: engine, status: done, title: "State branch: .arima on arima-state, secret-scanned commits, private remotes only", deps: [WP-003], spec: ["3.2", "11.3"], acceptance: ["push refused on public/unknown remote"] }
-  - { id: WP-007, stage: 0, track: engine, status: done, title: "Notion layer: 19-database template, bootstrap, map, mirror, outbox, value-based conflicts, read retry", deps: [WP-006], spec: ["9", "3.3"], acceptance: ["live tier passes on dev workspace"] }
-  - { id: WP-008, stage: 0, track: skill, status: done, title: "init, status, pause skills and orchestrator agent v0", deps: [WP-005, WP-007], spec: ["6.0", "14"], acceptance: ["init creates workspace from a brief", "pause exits non-zero if state not saved"] }
-  - { id: WP-009, stage: 0, track: contracts, status: done, title: "Artifact catalog (58), draft templates, document validator, profile checks, template renderer", deps: [WP-002], spec: ["8"], acceptance: ["catalog matches spec 8.1 and profiles both ways"] }
-  - { id: WP-010, stage: 0, track: eval, status: done, title: "Live test tier with scrubbed real fixtures and shape-drift test; four judge reviews", deps: [WP-007], spec: ["15.4"], acceptance: ["npm run test:live passes", "fixtures hold only placeholders"] }
-  - { id: WP-011, stage: 0, track: docs, status: done, title: "Packaging: plugin LICENSE/NOTICE/CHANGELOG/README, CI plugin validation, pinned actions", deps: [WP-001], spec: ["15.1"], acceptance: ["strict validate passes alone and in a throwaway marketplace"] }
-  - { id: WP-012, stage: 0, track: owner, status: owner, owner_input: "Approve or edit the 28 draft template section lists; confirm the v0.1.1 tag", title: "Stage 0 close-out: owner approvals and tag v0.1.1", deps: [WP-009, WP-010, WP-011], spec: ["8.2"], acceptance: ["owner approval recorded in spec issues file", "tag created only after owner confirms"] }
-
-  # ---------------------------------------------------------------- Stage 1 Platform kit
-  - { id: WP-101, stage: 1, track: contracts, status: ready, title: "Contracts v1: schemas for agent report, run packet, question, finding, decision; event additions; exit-code registry test", deps: [WP-005, WP-007, WP-009], spec: ["7.5", "7.12", "13.2"], acceptance: ["GitHub token required only by commands that use GitHub (G-03)", "every schema has valid and invalid fixtures", "events.ts, event.schema.json and 03-contracts.md list the same types", "exit-code registry test reads 03-contracts.md"], tests: ["contracts.test.ts"] }
-  - { id: WP-102, stage: 1, track: engine, status: planned, title: "Packet builder arima-packet: renders and validates the run packet from a work-unit descriptor; untrusted content quoted", deps: [WP-101], spec: ["7.2", "11.3"], acceptance: ["packet missing a heading is rejected", "an instruction inside an untrusted block never appears outside a fence", "QA packet never lists developer notes"], tests: ["packet.test.ts"] }
-  - { id: WP-103, stage: 1, track: engine, status: planned, title: "Report collector in the run wrapper: extract, validate, store, map failures, retry-once", deps: [WP-101, WP-004], spec: ["7.12", "13"], acceptance: ["missing/invalid report = result fail reason report_invalid", "second failure marks the unit blocked", "ledger row always written", "orchestrator write scope narrowed; events, ledger and mirror not hand-writable (G-06)"], tests: ["report-collector.test.ts"] }
-  - { id: WP-104, stage: 1, track: engine, status: planned, title: "Outbox for agents: entry role bound to the run, Q/DEC id allocation at enqueue, no direct file edits outside the helper", deps: [WP-101, WP-007], spec: ["3.3", "7.5"], acceptance: ["entry whose role differs from the run is rejected", "agent cannot choose any issued id; NEW-n placeholders rewritten by the engine", "init passes the Status opt-in only for entries it created (G-02)", "role write pattern limited to top-level outbox files (G-07)", "secret allow-list honoured by outbox and init (G-09)"], tests: ["outbox-agents.test.ts"] }
-  - { id: WP-105, stage: 1, track: engine, status: planned, title: "Story budget and run-cap rule: cap = min(per_run_cap, remaining story budget); S/M/L; hard stop story_budget", deps: [WP-003, WP-004], spec: ["13.5", "7.1"], acceptance: ["budget exhausted blocks dispatch with hardstop.hit", "cost floor documented"], tests: ["story-budget.test.ts"] }
-  - { id: WP-106, stage: 1, track: engine, status: planned, title: "Item model in code: item types, size, attempts, DoR check (profile aware)", deps: [WP-009, WP-101], spec: ["7.1", "8.2"], acceptance: ["DoR fails for each missing element with the element named"], tests: ["item.test.ts"] }
-  - { id: WP-107, stage: 1, track: engine, status: planned, title: "Ticket state machine (pure, table-driven from 03-contracts section 9)", deps: [WP-106], spec: ["7.1"], acceptance: ["every legal edge passes and every other pair is refused", "third failed attempt moves to Blocked and raises a question", "mutating the table fails a test"], tests: ["state-machine.test.ts"] }
-  - { id: WP-108, stage: 1, track: engine, status: planned, title: "Status ownership: engine writes Status with the human flag; reconcile human status changes from the mirror", deps: [WP-107, WP-007], spec: ["7.1", "9.3"], acceptance: ["agent outbox Status write still refused", "engine write applied and logged as item.status"], tests: ["status-ownership.test.ts"] }
-  - { id: WP-109, stage: 1, track: engine, status: planned, title: "Queue: plan-the-day order (spec 7.2.4), WIP and parallelism, review-queue limit", deps: [WP-107, WP-105], spec: ["7.2"], acceptance: ["order table is a test table", "no new story when review queue is full"], tests: ["queue.test.ts"] }
-  - { id: WP-110, stage: 1, track: engine, status: planned, title: "Worktree manager: create/remove per run, branch and path conventions, Windows long paths", deps: [WP-001], spec: ["10.2"], acceptance: ["tested on real temp repos on both OS", "cleanup after crash"], tests: ["worktree.test.ts"] }
-  - { id: WP-111, stage: 1, track: safety, status: planned, title: "Host publish script arima-publish: pushes the story branch and opens the PR; agents hold no push credential", deps: [WP-110, WP-005], spec: ["10.3", "11.3"], acceptance: ["role env contains no GitHub token and roles.ts drops push and gh pr create (G-05)", "push to default branch refused", "dev project real PR opened"], tests: ["publish.test.ts"] }
-  - { id: WP-112, stage: 1, track: safety, status: planned, title: "Merge script arima-merge: only merger; needs CI green, QA pass, human approving review", deps: [WP-111, WP-107], spec: ["10.3", "11.1"], acceptance: ["refuses each missing condition with code 30", "no agent role can merge"], tests: ["merge.test.ts"] }
-  - { id: WP-113, stage: 1, track: safety, status: planned, title: "PR template, ID-in-commit hook on feat/fix/hotfix branches (S9), DoD check before ready", deps: [WP-111], spec: ["2", "10.2"], acceptance: ["chore/docs/arima-state exempt but carry run or task id"], tests: ["commit-hook.test.ts"] }
-  - { id: WP-120, stage: 1, track: engine, status: planned, title: "Dispatcher and daily run skeleton: arima-dispatch, /arima:run --dry-run --only", deps: [WP-102, WP-103, WP-104, WP-108, WP-109, WP-110, WP-140, WP-141], spec: ["7.2", "14"], acceptance: ["ten-step order honoured", "dry-run changes nothing", "kill switch unreadable = refuse", "status uses the shared three-source kill-switch function (G-04)", "missing credential recorded as hardstop.hit (G-11)", "exit 4 for nothing to do (G-24)"], tests: ["dispatch.test.ts"] }
-  - { id: WP-121, stage: 1, track: eval, status: planned, title: "Stub agents (deterministic fake roles) and the E-S1 scenario", deps: [WP-120], spec: ["15.4"], acceptance: ["five stories Backlog to Done with stubs", "stub emitting invalid output fails the run"], tests: ["evals/stage1/*.eval.ts"] }
-  - { id: WP-130, stage: 1, track: skill, status: planned, title: "Digest builder and /arima:digest", deps: [WP-003, WP-120], spec: ["12.1"], acceptance: ["lists capped at ten", "health rules applied", "uses digest template"], tests: ["digest.test.ts"] }
-  - { id: WP-131, stage: 1, track: skill, status: planned, title: "Cost roll-up per story/role/phase, Notion cost log, /arima:cost", deps: [WP-003, WP-105], spec: ["13"], acceptance: ["per-story cost equals ledger sum", "estimate accuracy by size"], tests: ["cost.test.ts"] }
-  - { id: WP-141, stage: 1, track: engine, status: planned, title: "Question and decision protocol (minimal): records, blocking vs assume-and-log, batching into the digest, hard-stop matters never assumed", deps: [WP-104, WP-107], spec: ["7.5", "12.1"], acceptance: ["a blocking question moves the item to Blocked and an answer unblocks it", "an assume-and-log decision creates a DEC record with a veto box in the digest", "a hard-stop matter is never assumed (test tries)", "at most 10 questions per digest, highest impact first"], tests: ["questions.test.ts"] }
-  - { id: WP-140, stage: 1, track: engine, status: planned, title: "Notion inbox: apply human inputs (approvals, answers, vetoes, priority) from mirror diffs", deps: [WP-108, WP-141], spec: ["7.2", "12.2"], acceptance: ["veto reopens a story with BUG", "answer unblocks an item"], tests: ["inbox.test.ts"] }
-  - { id: WP-150, stage: 1, track: eval, status: planned, title: "Eval harness: scenario runner, deterministic graders, judge automation, fixture project", deps: [WP-121], spec: ["15.4"], acceptance: ["scenarios E-S1 to E-S4 run in npm run eval", "real-agent evals live under evals/agents with their own config and npm run eval:agents, excluded from CI (G-52)", "harness owns the runner; WP-121 owns the E-S1 stub scenario (G-51)"], tests: ["evals/**"] }
-  - { id: WP-132, stage: 1, track: skill, status: planned, title: "Delivery metrics from the ledger and events: lead, cycle, touch, queue, human wait, flow efficiency, rework share, first-pass QA, estimate accuracy; DORA", deps: [WP-003, WP-107], spec: ["13.3", "13.4"], acceptance: ["each measure has a definition test on a fixed ledger fixture", "metrics appear in the digest and /arima:cost"], tests: ["metrics.test.ts"] }
-  - { id: WP-160, stage: 1, track: engine, status: planned, title: "Interactive commands respect the run lock (spec 12.4)", deps: [WP-004], spec: ["12.4"], acceptance: ["pull/push refuse while a run holds the lock"], tests: ["interactive-lock.test.ts"] }
-  - { id: WP-190, stage: 1, track: safety, status: planned, title: "Docker sandbox runtime: runtime.sandbox docker|none (ADR-0006)", deps: [WP-103, WP-111], spec: ["4.4", "11.3"], acceptance: ["role run in container sees only its worktree", "git commit works inside the container despite the linked-worktree .git pointer (G-14)", "no push credential or Notion token inside", "preflight refuses if Docker not running"], tests: ["sandbox.test.ts", "live check"] }
-  - { id: WP-191, stage: 1, track: engine, status: planned, title: "Hermetic runs decision: isolate user settings, load plugin explicitly", deps: [WP-004], spec: ["4.4"], acceptance: ["two real smoke runs (isolated and not) are recorded in docs/process/reviews with token counts", "the chosen setting is the default in run-agent.ts and a test asserts the flag set"], tests: ["real smoke"] }
-  - { id: WP-195, stage: 1, track: contracts, status: planned, title: "Upgrade test: a v0.1 .arima/ and config migrate and load", deps: [WP-003], spec: ["15.3"], acceptance: ["previous-version fixtures load"], tests: ["migration.test.ts"] }
-
-  # ---------------------------------------------------------------- Stage 2 Build loop
-  - { id: WP-201, stage: 2, track: owner, status: owner, owner_input: "Choose one stack and one staging host for the sample project (S11, Q-04); record as ADR", title: "Stack and staging host decision", deps: [], spec: ["15.3"], acceptance: ["docs/adr/ADR-NNNN names exactly one stack and one staging host, status Accepted", "the sample-project fixture builds with that stack in CI"] }
-  - { id: WP-210, stage: 2, track: agent, status: planned, title: "developer agent", deps: [WP-102, WP-103, WP-104, WP-110, WP-111, WP-113, WP-150, WP-201], spec: ["5.7", "6.4"], acceptance: ["card steps 1-8 complete", "eval scenarios pass at the thresholds in the card (the only true failure test)", "an eval run where a criterion is claimed met without evidence is rejected by the grader", "no secret, CI or hook edit possible in the forbidden-action battery"], tests: ["evals/developer"] }
-  - { id: WP-211, stage: 2, track: agent, status: planned, title: "qa agent (test-write and qa modes)", deps: [WP-210, WP-201], spec: ["5.8", "6.4"], acceptance: ["never reads developer notes", "bug filed with evidence"], tests: ["evals/qa"] }
-  - { id: WP-212, stage: 2, track: agent, status: planned, title: "tech-lead agent (review mode)", deps: [WP-210, WP-112, WP-201], spec: ["5.6", "6.4"], acceptance: ["findings tagged and evidenced", "cannot push or merge", "gh pr review limited to comment, no approve (G-31)"], tests: ["evals/tech-lead"] }
-  - { id: WP-213, stage: 2, track: agent, status: planned, title: "devops agent, staging only, with stub deploy script refusing production", deps: [WP-201, WP-112], spec: ["5.10", "6.3"], acceptance: ["production refused under every condition", "smoke test verified"], tests: ["evals/devops"] }
-  - { id: WP-214, stage: 2, track: skill, status: planned, title: "/arima:setup and the walking skeleton", deps: [WP-213, WP-210], spec: ["6.3"], acceptance: ["skeleton green on staging"], tests: ["evals/setup"] }
-  - { id: WP-215, stage: 2, track: skill, status: planned, title: "/arima:run wired to real roles: retry once, flaky CI rerun, three strikes, review-queue limit", deps: [WP-120, WP-210, WP-211, WP-212], spec: ["7.2", "7.12"], acceptance: ["failure-loop scenarios pass with real agents"], tests: ["evals/run"] }
-  - { id: WP-216, stage: 2, track: skill, status: planned, title: "/arima:plan: milestone of 8-12 points by priority", deps: [WP-109], spec: ["7.1", "14"], acceptance: ["no story split across milestones"], tests: ["plan.test.ts"] }
-  - { id: WP-217, stage: 2, track: skill, status: planned, title: "Milestone review and retro: review page (staging link, screenshots, notes), human veto reopens a story with a BUG, retro inputs from ledger and findings", deps: [WP-140, WP-132, WP-130], spec: ["6.4", "7.11", "12.2"], acceptance: ["every accepted story appears on the review page with its veto box", "a veto returns the story to In Progress with a BUG carrying the reason", "retro lists rework reasons and review findings from the ledger"], tests: ["milestone-review.test.ts"] }
-  - { id: WP-220, stage: 2, track: eval, status: planned, title: "v0.2 eval: five hand-written stories to staging, attended", deps: [WP-215, WP-216, WP-214, WP-217], spec: ["15.3"], acceptance: ["five stories reach staging in the E-B1 run on the throwaway repo", "per-story cost in the digest equals the ledger sum for that story", "digest lists each story once"], tests: ["E-B1"] }
-  - { id: WP-230, stage: 2, track: safety, status: owner, owner_input: "Gate U: sandbox verified, seat terms (S15), two attended weeks clean, owner go", title: "Scheduler (Windows Task Scheduler / cron) after Gate U", deps: [WP-190, WP-220], spec: ["4.4"], acceptance: ["missed run catches up", "refuses if sandbox required and absent"] }
-
-  - { id: WP-232, stage: 2, track: skill, status: planned, title: "/arima:assign: switch a role between agent and human, hand over in-flight work (human-run script only; agents cannot edit team.yaml)", deps: [WP-108], spec: ["14", "4.2"], acceptance: ["team.yaml updated and validated", "in-flight items re-queued or handed to a human task", "no agent role can run it"], tests: ["assign.test.ts"] }
-
-  # ---------------------------------------------------------------- Stage 3 Discovery and design
-  - { id: WP-301, stage: 3, track: engine, status: planned, title: "Human tasks and reminders (extends WP-141): tasks for human roles, reminder at 24 weekday hours, escalation at 48", deps: [WP-141, WP-220], spec: ["7.5", "7.6"], acceptance: ["a human role gets a Notion task with template, links and due date", "reminder at 24 weekday hours, escalation to the sponsor at 48", "task marked Done is checked for the expected output before work continues"], tests: ["questions.test.ts"] }
-  - { id: WP-302, stage: 3, track: engine, status: planned, title: "Meeting engine: same pack to all, independent round 1, max two rounds, minutes with owned actions", deps: [WP-103, WP-301], spec: ["7.3"], acceptance: ["unresolved points become questions", "budget cap per meeting"], tests: ["meeting.test.ts"] }
-  - { id: WP-310, stage: 3, track: agent, status: planned, title: "ba agent", deps: [WP-301, WP-220], spec: ["5.3", "6.1"], acceptance: ["every Must requirement has a story", "stories meet DoR"], tests: ["evals/ba"] }
-  - { id: WP-311, stage: 3, track: agent, status: planned, title: "ux agent", deps: [WP-301, WP-220], spec: ["5.4", "6.2"], acceptance: ["screens for all states", "WCAG notes"], tests: ["evals/ux"] }
-  - { id: WP-312, stage: 3, track: agent, status: planned, title: "architect agent", deps: [WP-301, WP-220], spec: ["5.5", "6.0", "6.1", "6.2", "7.9"], acceptance: ["every NFR has response and verification method", "Phase 0 feasibility note and Phase 1 NFR duties covered"], tests: ["evals/architect"] }
-  - { id: WP-313, stage: 3, track: agent, status: planned, title: "security agent with verifier pass", deps: [WP-301, WP-220], spec: ["5.9", "6.0", "6.1", "6.2", "6.5"], acceptance: ["each critical finding disproof-attempted", "DPIA draft only for human sign-off"], tests: ["evals/security"] }
-  - { id: WP-315, stage: 3, track: agent, status: planned, title: "qa authoring mode: testability review, Master Test Plan, test summary and regression/perf/accessibility reports", deps: [WP-211, WP-302], spec: ["5.8", "6.1", "6.2", "6.5"], acceptance: ["Master Test Plan has the template sections and an RTM coverage rule per profile", "requirement review log closes every testability finding"], tests: ["evals/qa-authoring"] }
-  - { id: WP-321, stage: 3, track: skill, status: planned, title: "Phase 0 playbook: /arima:init runs to G0 (ba vision, architect feasibility, security compliance screen, orchestrator charter, budget plan and risk register)", deps: [WP-310, WP-312, WP-313, WP-330], spec: ["6.0", "14", "7.4"], acceptance: ["G0 evidence pack lists brief, charter, feasibility note, compliance screen, budget plan", "solo-lite skips G0 but still writes brief and budget plan (S14)", "risk register rows exist for every major risk named in the feasibility note"], tests: ["evals/phase0"] }
-  - { id: WP-320, stage: 3, track: skill, status: planned, title: "/arima:discover and /arima:design playbooks (cost prompt, pilot, sequential fallback)", deps: [WP-310, WP-311, WP-312, WP-313, WP-302], spec: ["6.1", "6.2", "14"], acceptance: ["asks once before fan-out", "one-unit pilot first"], tests: ["evals/playbooks"] }
-  - { id: WP-330, stage: 3, track: engine, status: planned, title: "Gate protocol, gate-check, evidence pack, checkApprover() (placeholder, S1 reopenable)", deps: [WP-301, WP-009], spec: ["7.4"], acceptance: ["mechanical checks are scripts", "decision only from listed approver", "page not edited after Ready for review"], tests: ["gate.test.ts"] }
-  - { id: WP-331, stage: 3, track: engine, status: planned, title: "Baseline freeze to docs/spec/baseline-Gx and silent-edit refusal", deps: [WP-330], spec: ["3.3", "7.9"], acceptance: ["edit after freeze needs a CR"], tests: ["baseline.test.ts"] }
-  - { id: WP-314, stage: 3, track: agent, status: planned, title: "security: per-PR scan triage mode (scanner output to findings)", deps: [WP-313], spec: ["5.9", "11.1"], acceptance: ["scanner output treated as untrusted data", "false-positive fixture does not become a critical finding"], tests: ["evals/security-triage"] }
-  - { id: WP-340, stage: 3, track: engine, status: planned, title: "RTM view and coverage rule", deps: [WP-310, WP-330], spec: ["8.1", "6.5"], acceptance: ["coverage rule per profile enforced at G3"], tests: ["rtm.test.ts"] }
-  - { id: WP-350, stage: 3, track: eval, status: planned, title: "v0.3 eval: brief to G2", deps: [WP-320, WP-330, WP-340], spec: ["15.3"], acceptance: ["every required artifact present and valid", "no human edits beyond answers"], tests: ["E-D1"] }
-
-  # ---------------------------------------------------------------- Stage 4 Release and operations
-  - { id: WP-401, stage: 4, track: skill, status: planned, title: "Phase 5: RC tag, regression, performance, accessibility, dynamic scan, UAT scripts, go/no-go, G3", deps: [WP-350], spec: ["6.5"], acceptance: ["G3 criteria checked by script"], tests: ["evals/phase5"] }
-  - { id: WP-402, stage: 4, track: safety, status: planned, title: "Release: /arima:release and production deploy script gated on release-page approval; data-migration flag", deps: [WP-401, WP-213], spec: ["6.6", "11.1"], acceptance: ["production refused without approval, no override flag"], tests: ["deploy.test.ts"] }
-  - { id: WP-403, stage: 4, track: skill, status: planned, title: "Hypercare, G4, incidents, change requests, recurring jobs, retro and lessons", deps: [WP-402, WP-302], spec: ["6.7", "7.8", "7.9", "7.10", "7.11"], acceptance: ["P1/P2 outranks all work", "CR increments baseline", "hypercare refuses fewer than 7 days (G-41)"], tests: ["evals/ops"] }
-  - { id: WP-404, stage: 4, track: safety, status: planned, title: "Remaining hard stops enforced: new paid service, licence, critical finding, production data migration", deps: [WP-402], spec: ["11.1"], acceptance: ["each has a test that tries to break it", "Risks.Status Accepted is human-only; Releases has a data-migration approval property (G-27)"], tests: ["hardstops-v04.test.ts"] }
-  - { id: WP-405, stage: 4, track: owner, status: owner, owner_input: "Optional OpenTelemetry; seat or API key (Q-21)", title: "OpenTelemetry option and Q-21", deps: [WP-402], spec: ["13.1"], acceptance: ["decision recorded"] }
-  - { id: WP-410, stage: 4, track: eval, status: planned, title: "v0.4 eval: release, simulated incident, change request", deps: [WP-403, WP-404], spec: ["15.3"], acceptance: ["E-R1 passes"], tests: ["E-R1"] }
-
-  # ---------------------------------------------------------------- Stage 5 Stable
-  - { id: WP-501, stage: 5, track: eval, status: planned, title: "Showcase project built end to end by ARIMA and published", deps: [WP-410], spec: ["15.3"], acceptance: ["a public repository exists whose state branch and ledger show every phase run by ARIMA", "a second clean checkout reproduces the build and tests"] }
-  - { id: WP-502, stage: 5, track: eval, status: planned, title: "Full eval suite in CI", deps: [WP-410], spec: ["15.4"], acceptance: ["ci.yml runs npm run eval on pull requests and fails the build when an eval fails (shown by a deliberately failing branch)"] }
-  - { id: WP-503, stage: 5, track: contracts, status: planned, title: "Migrations for config, Notion template and ledger versions", deps: [WP-195], spec: ["15.3"], acceptance: ["previous versions load and upgrade"] }
-  - { id: WP-504, stage: 5, track: docs, status: planned, title: "Install from the marketplace in under 30 minutes, checked by someone new", deps: [WP-410], spec: ["15.3"], acceptance: ["a person who has not seen the project installs from the marketplace and reaches a working /arima:status in under 30 minutes, timed and recorded"] }
-  - { id: WP-505, stage: 5, track: docs, status: planned, title: "Final names, semver, complete docs, shipped-payload security review, README read-through", deps: [WP-501, WP-502, WP-503, WP-504], spec: ["15.3"], acceptance: ["judge J5 report saved with no open blocker or major", "owner approval for the tag recorded in STATE.md"] }
+  - id: WP-001
+    stage: 0
+    track: engine
+    status: done
+    title: Repo, TypeScript tooling, bundled scripts, CI on Windows and Linux
+    deps: []
+    spec:
+      - "15.1"
+    acceptance:
+      - npm run build + check:dist clean
+      - CI green on both OS
+  - id: WP-002
+    stage: 0
+    track: contracts
+    status: done
+    title: Config schemas, validator with line numbers, three profiles
+    deps:
+      - WP-001
+    spec:
+      - "4.1"
+      - "4.2"
+      - "4.3"
+    acceptance:
+      - arima-config validates examples; shortened hard_stops warns
+  - id: WP-003
+    stage: 0
+    track: engine
+    status: done
+    title: ID issuer, event log, run ledger, run ids, locked append writer
+    deps:
+      - WP-001
+    spec:
+      - "2"
+      - "13.2"
+    acceptance:
+      - ids never reused
+      - one ledger row per run
+  - id: WP-004
+    stage: 0
+    track: engine
+    status: done
+    title: "Headless run wrapper: caps, per-role tool list, env allow-list, tree kill, usage-limit pause"
+    deps:
+      - WP-003
+    spec:
+      - "4.4"
+      - "7.2"
+      - "13"
+    acceptance:
+      - real run recorded as fixtures
+      - tree-kill test fails without /T
+  - id: WP-005
+    stage: 0
+    track: safety
+    status: done
+    title: "Safety envelope v1: guard hook (fail closed), role lists, kill switch (3 sources), secret scanner, privacy refusal, Status-write refusal, dispatch re-check"
+    deps:
+      - WP-004
+    spec:
+      - "11.1"
+      - "11.2"
+      - "11.3"
+    acceptance:
+      - guard battery incl. bypass corpus
+      - launcher executed in tests
+  - id: WP-006
+    stage: 0
+    track: engine
+    status: done
+    title: "State branch: .arima on arima-state, secret-scanned commits, private remotes only"
+    deps:
+      - WP-003
+    spec:
+      - "3.2"
+      - "11.3"
+    acceptance:
+      - push refused on public/unknown remote
+  - id: WP-007
+    stage: 0
+    track: engine
+    status: done
+    title: "Notion layer: 19-database template, bootstrap, map, mirror, outbox, value-based conflicts, read retry"
+    deps:
+      - WP-006
+    spec:
+      - "9"
+      - "3.3"
+    acceptance:
+      - live tier passes on dev workspace
+  - id: WP-008
+    stage: 0
+    track: skill
+    status: done
+    title: init, status, pause skills and orchestrator agent v0
+    deps:
+      - WP-005
+      - WP-007
+    spec:
+      - "6.0"
+      - "14"
+    acceptance:
+      - init creates workspace from a brief
+      - pause exits non-zero if state not saved
+  - id: WP-009
+    stage: 0
+    track: contracts
+    status: done
+    title: Artifact catalog (58), draft templates, document validator, profile checks, template renderer
+    deps:
+      - WP-002
+    spec:
+      - "8"
+    acceptance:
+      - catalog matches spec 8.1 and profiles both ways
+  - id: WP-010
+    stage: 0
+    track: eval
+    status: done
+    title: Live test tier with scrubbed real fixtures and shape-drift test; four judge reviews
+    deps:
+      - WP-007
+    spec:
+      - "15.4"
+    acceptance:
+      - npm run test:live passes
+      - fixtures hold only placeholders
+  - id: WP-011
+    stage: 0
+    track: docs
+    status: done
+    title: "Packaging: plugin LICENSE/NOTICE/CHANGELOG/README, CI plugin validation, pinned actions"
+    deps:
+      - WP-001
+    spec:
+      - "15.1"
+    acceptance:
+      - strict validate passes alone and in a throwaway marketplace
+  - id: WP-012
+    stage: 0
+    track: owner
+    status: owner
+    owner_input: Approve or edit the 28 draft template section lists; confirm the v0.1.1 tag
+    title: "Stage 0 close-out: owner approvals and tag v0.1.1"
+    deps:
+      - WP-009
+      - WP-010
+      - WP-011
+      - WP-008
+      - WP-006
+      - WP-004
+      - WP-003
+      - WP-002
+      - WP-001
+    spec:
+      - "8.2"
+    acceptance:
+      - owner approval recorded in spec issues file
+      - tag created only after owner confirms
+  - id: WP-101
+    stage: 1
+    track: contracts
+    status: ready
+    title: "Contracts v1: schemas for agent report, run packet, question, finding, decision; event additions; exit-code registry test"
+    deps:
+      - WP-005
+      - WP-007
+      - WP-009
+    spec:
+      - "7.5"
+      - "7.12"
+      - "13.2"
+    acceptance:
+      - GitHub token required only by commands that use GitHub (G-03)
+      - every schema has valid and invalid fixtures
+      - events.ts, event.schema.json and 03-contracts.md list the same types
+      - exit-code registry test reads 03-contracts.md
+    tests:
+      - contracts.test.ts
+  - id: WP-102
+    stage: 1
+    track: engine
+    status: planned
+    title: "Packet builder arima-packet: renders and validates the run packet from a work-unit descriptor; untrusted content quoted"
+    deps:
+      - WP-101
+    spec:
+      - "7.2"
+      - "11.3"
+    acceptance:
+      - packet missing a heading is rejected
+      - an instruction inside an untrusted block never appears outside a fence
+      - QA packet never lists developer notes
+    tests:
+      - packet.test.ts
+  - id: WP-103
+    stage: 1
+    track: engine
+    status: planned
+    title: "Report collector in the run wrapper: extract, validate, store, map failures, retry-once"
+    deps:
+      - WP-101
+      - WP-004
+    spec:
+      - "7.12"
+      - "13"
+    acceptance:
+      - missing/invalid report = result fail reason report_invalid
+      - second failure marks the unit blocked
+      - ledger row always written
+      - orchestrator write scope narrowed; events, ledger and mirror not hand-writable (G-06)
+    tests:
+      - report-collector.test.ts
+  - id: WP-104
+    stage: 1
+    track: engine
+    status: planned
+    title: "Outbox for agents: entry role bound to the run, Q/DEC id allocation at enqueue, no direct file edits outside the helper"
+    deps:
+      - WP-101
+      - WP-007
+    spec:
+      - "3.3"
+      - "7.5"
+    acceptance:
+      - entry whose role differs from the run is rejected
+      - agent cannot choose any issued id; NEW-n placeholders rewritten by the engine
+      - init passes the Status opt-in only for entries it created (G-02)
+      - role write pattern limited to top-level outbox files (G-07)
+      - secret allow-list honoured by outbox and init (G-09)
+    tests:
+      - outbox-agents.test.ts
+  - id: WP-105
+    stage: 1
+    track: engine
+    status: planned
+    title: "Story budget and run-cap rule: cap = min(per_run_cap, remaining story budget); S/M/L; hard stop story_budget"
+    deps:
+      - WP-003
+      - WP-004
+    spec:
+      - "13.5"
+      - "7.1"
+    acceptance:
+      - budget exhausted blocks dispatch with hardstop.hit
+      - cost floor documented
+    tests:
+      - story-budget.test.ts
+  - id: WP-106
+    stage: 1
+    track: engine
+    status: planned
+    title: "Item model in code: item types, size, attempts, DoR check (profile aware)"
+    deps:
+      - WP-009
+      - WP-101
+    spec:
+      - "7.1"
+      - "8.2"
+    acceptance:
+      - DoR fails for each missing element with the element named
+      - the DoR and DoD page is rendered from the profile (spec 6.2 step 3)
+    tests:
+      - item.test.ts
+  - id: WP-107
+    stage: 1
+    track: engine
+    status: planned
+    title: Ticket state machine (pure, table-driven from 03-contracts section 9)
+    deps:
+      - WP-106
+    spec:
+      - "7.1"
+    acceptance:
+      - every legal edge passes and every other pair is refused
+      - third failed attempt moves to Blocked and raises a question
+      - mutating the table fails a test
+    tests:
+      - state-machine.test.ts
+  - id: WP-108
+    stage: 1
+    track: engine
+    status: planned
+    title: "Status ownership: engine writes Status with the human flag; reconcile human status changes from the mirror"
+    deps:
+      - WP-107
+      - WP-007
+    spec:
+      - "7.1"
+      - "9.3"
+    acceptance:
+      - agent outbox Status write still refused
+      - engine write applied and logged as item.status
+    tests:
+      - status-ownership.test.ts
+  - id: WP-109
+    stage: 1
+    track: engine
+    status: planned
+    title: "Queue: plan-the-day order (spec 7.2.4), WIP and parallelism, review-queue limit"
+    deps:
+      - WP-107
+      - WP-105
+    spec:
+      - "7.2"
+    acceptance:
+      - order table is a test table
+      - no new story when review queue is full
+    tests:
+      - queue.test.ts
+  - id: WP-110
+    stage: 1
+    track: engine
+    status: planned
+    title: "Worktree manager: create/remove per run, branch and path conventions, Windows long paths"
+    deps:
+      - WP-001
+    spec:
+      - "10.2"
+    acceptance:
+      - tested on real temp repos on both OS
+      - cleanup after crash
+    tests:
+      - worktree.test.ts
+  - id: WP-111
+    stage: 1
+    track: safety
+    status: planned
+    title: "Host publish script arima-publish: pushes the story branch and opens the PR; agents hold no push credential"
+    deps:
+      - WP-110
+      - WP-005
+    spec:
+      - "10.3"
+      - "11.3"
+    acceptance:
+      - role env contains no GitHub token and roles.ts drops push and gh pr create (G-05)
+      - push to default branch refused
+      - dev project real PR opened
+    tests:
+      - publish.test.ts
+  - id: WP-112
+    stage: 1
+    track: safety
+    status: planned
+    title: "Merge script arima-merge: only merger; needs CI green, QA pass, human approving review"
+    deps:
+      - WP-111
+      - WP-107
+    spec:
+      - "10.3"
+      - "11.1"
+    acceptance:
+      - refuses each missing condition with code 30
+      - no agent role can merge
+    tests:
+      - merge.test.ts
+  - id: WP-113
+    stage: 1
+    track: safety
+    status: planned
+    title: PR template, ID-in-commit hook on feat/fix/hotfix branches (S9), DoD check before ready
+    deps:
+      - WP-111
+    spec:
+      - "2"
+      - "10.2"
+    acceptance:
+      - chore/docs/arima-state exempt but carry run or task id
+    tests:
+      - commit-hook.test.ts
+  - id: WP-120
+    stage: 1
+    track: engine
+    status: planned
+    title: "Dispatcher and daily run skeleton: arima-dispatch, /arima:run --dry-run --only"
+    deps:
+      - WP-102
+      - WP-103
+      - WP-104
+      - WP-108
+      - WP-109
+      - WP-110
+      - WP-140
+      - WP-141
+      - WP-131
+      - WP-160
+      - WP-191
+    spec:
+      - "7.2"
+      - "14"
+    acceptance:
+      - ten-step order honoured
+      - dry-run changes nothing
+      - kill switch unreadable = refuse
+      - status uses the shared three-source kill-switch function (G-04)
+      - missing credential recorded as hardstop.hit (G-11)
+      - exit 4 for nothing to do (G-24)
+    tests:
+      - dispatch.test.ts
+  - id: WP-121
+    stage: 1
+    track: eval
+    status: planned
+    title: Stub agents (deterministic fake roles) and the E-S1 scenario
+    deps:
+      - WP-120
+    spec:
+      - "15.4"
+    acceptance:
+      - five stories Backlog to Done with stubs
+      - stub emitting invalid output fails the run
+    tests:
+      - evals/stage1/*.eval.ts
+  - id: WP-130
+    stage: 1
+    track: skill
+    status: planned
+    title: Digest builder and /arima:digest
+    deps:
+      - WP-003
+      - WP-120
+    spec:
+      - "12.1"
+    acceptance:
+      - lists capped at ten
+      - health rules applied
+      - uses digest template
+    tests:
+      - digest.test.ts
+  - id: WP-131
+    stage: 1
+    track: skill
+    status: planned
+    title: Cost roll-up per story/role/phase, Notion cost log, /arima:cost
+    deps:
+      - WP-003
+      - WP-105
+    spec:
+      - "13"
+    acceptance:
+      - per-story cost equals ledger sum
+      - estimate accuracy by size
+      - alerts at 50, 80, 100 percent, a story above 3x the median cost for its size, rework share above 30 percent in a milestone
+      - total cost of ownership = agents + infrastructure + human hours x rate (manual bills file allowed)
+      - ci_minutes populated from GitHub when available
+    tests:
+      - cost.test.ts
+  - id: WP-141
+    stage: 1
+    track: engine
+    status: planned
+    title: "Question and decision protocol (minimal): records, blocking vs assume-and-log, batching into the digest, hard-stop matters never assumed"
+    deps:
+      - WP-104
+      - WP-107
+    spec:
+      - "7.5"
+      - "12.1"
+    acceptance:
+      - a blocking question moves the item to Blocked and an answer unblocks it
+      - an assume-and-log decision creates a DEC record with a veto box in the digest
+      - a hard-stop matter is never assumed (test tries)
+      - at most 10 questions per digest, highest impact first
+    tests:
+      - questions.test.ts
+  - id: WP-140
+    stage: 1
+    track: engine
+    status: planned
+    title: "Notion inbox: apply human inputs (approvals, answers, vetoes, priority) from mirror diffs"
+    deps:
+      - WP-108
+      - WP-141
+    spec:
+      - "7.2"
+      - "12.2"
+    acceptance:
+      - veto reopens a story with BUG
+      - answer unblocks an item
+    tests:
+      - inbox.test.ts
+  - id: WP-142
+    stage: 2
+    track: skill
+    status: planned
+    title: "Notion human interface: create the Board, Approval inbox, RTM, Milestone burn and Open bugs views through the API; per-item @mentions; Urgent page for P1/P2, hotfix approval and red health"
+    deps:
+      - WP-130
+      - WP-140
+    spec:
+      - "9.2"
+      - "12.3"
+    acceptance:
+      - views exist in the dev workspace after a run of the setup command (views.create verified live)
+      - each item awaiting a person has an @mention
+      - a red-health day posts an @mention on the Urgent page
+    tests:
+      - views.test.ts
+      - live check
+  - id: WP-150
+    stage: 1
+    track: eval
+    status: planned
+    title: "Eval harness: scenario runner, deterministic graders, judge automation, fixture project"
+    deps:
+      - WP-121
+    spec:
+      - "15.4"
+    acceptance:
+      - scenarios E-S1 to E-S4 run in npm run eval
+      - real-agent evals live under evals/agents with their own config and npm run eval:agents, excluded from CI (G-52)
+      - harness owns the runner; WP-121 owns the E-S1 stub scenario (G-51)
+    tests:
+      - evals/**
+  - id: WP-132
+    stage: 1
+    track: skill
+    status: planned
+    title: "Delivery metrics from the ledger and events: lead, cycle, touch, queue, human wait, flow efficiency, rework share, first-pass QA, estimate accuracy; DORA"
+    deps:
+      - WP-003
+      - WP-107
+    spec:
+      - "13.3"
+      - "13.4"
+    acceptance:
+      - each measure has a definition test on a fixed ledger fixture
+      - metrics appear in the digest and /arima:cost
+      - time measures and rework metrics are computed in Stage 1; the five DORA metrics return "not yet measurable" until releases and incidents exist and are filled from WP-402/WP-403 events
+    tests:
+      - metrics.test.ts
+  - id: WP-160
+    stage: 1
+    track: engine
+    status: planned
+    title: Interactive commands respect the run lock (spec 12.4)
+    deps:
+      - WP-004
+    spec:
+      - "12.4"
+    acceptance:
+      - pull/push refuse while a run holds the lock
+    tests:
+      - interactive-lock.test.ts
+  - id: WP-190
+    stage: 1
+    track: safety
+    status: planned
+    title: "Docker sandbox runtime: runtime.sandbox docker|none (ADR-0006)"
+    deps:
+      - WP-103
+      - WP-111
+    spec:
+      - "4.4"
+      - "11.3"
+    acceptance:
+      - role run in container sees only its worktree
+      - git commit works inside the container despite the linked-worktree .git pointer (G-14)
+      - no push credential or Notion token inside
+      - preflight refuses if Docker not running
+    tests:
+      - sandbox.test.ts
+      - live check
+  - id: WP-191
+    stage: 1
+    track: engine
+    status: planned
+    title: "Hermetic runs decision: isolate user settings, load plugin explicitly"
+    deps:
+      - WP-004
+    spec:
+      - "4.4"
+    acceptance:
+      - two real smoke runs (isolated and not) are recorded in docs/process/reviews with token counts
+      - the chosen setting is the default in run-agent.ts and a test asserts the flag set
+    tests:
+      - real smoke
+  - id: WP-195
+    stage: 1
+    track: contracts
+    status: planned
+    title: "Upgrade test: a v0.1 .arima/ and config migrate and load"
+    deps:
+      - WP-003
+    spec:
+      - "15.3"
+    acceptance:
+      - previous-version fixtures load
+    tests:
+      - migration.test.ts
+  - id: WP-201
+    stage: 2
+    track: owner
+    status: owner
+    owner_input: Choose one stack and one staging host for the sample project (S11, Q-04); record as ADR
+    title: Stack and staging host decision
+    deps: []
+    spec:
+      - "15.3"
+    acceptance:
+      - docs/adr/ADR-NNNN names exactly one stack and one staging host, status Accepted
+      - the sample-project fixture builds with that stack in CI
+  - id: WP-210
+    stage: 2
+    track: agent
+    status: planned
+    title: developer agent
+    deps:
+      - WP-102
+      - WP-103
+      - WP-104
+      - WP-110
+      - WP-111
+      - WP-113
+      - WP-150
+      - WP-201
+    spec:
+      - "5.7"
+      - "6.4"
+    acceptance:
+      - card steps 1-8 complete
+      - eval scenarios pass at the thresholds in the card (the only true failure test)
+      - an eval run where a criterion is claimed met without evidence is rejected by the grader
+      - no secret, CI or hook edit possible in the forbidden-action battery
+    tests:
+      - evals/developer
+  - id: WP-211
+    stage: 2
+    track: agent
+    status: planned
+    title: qa agent (test-write and qa modes)
+    deps:
+      - WP-210
+      - WP-201
+      - WP-218
+    spec:
+      - "5.8"
+      - "6.4"
+    acceptance:
+      - never reads developer notes
+      - bug filed with evidence
+      - severity is proposed by the engine from the bug record and may be changed by the PO (spec 7.7); story rework vs standalone BUG is decided by the rule in the spec
+    tests:
+      - evals/qa
+  - id: WP-212
+    stage: 2
+    track: agent
+    status: planned
+    title: tech-lead agent (review mode)
+    deps:
+      - WP-210
+      - WP-112
+      - WP-201
+    spec:
+      - "5.6"
+      - "6.4"
+    acceptance:
+      - findings tagged and evidenced
+      - cannot push or merge
+      - gh pr review limited to comment, no approve (G-31)
+    tests:
+      - evals/tech-lead
+  - id: WP-213
+    stage: 2
+    track: agent
+    status: planned
+    title: devops agent, staging only, with stub deploy script refusing production
+    deps:
+      - WP-201
+      - WP-112
+    spec:
+      - "5.10"
+      - "6.3"
+    acceptance:
+      - production refused under every condition
+      - smoke test verified
+    tests:
+      - evals/devops
+  - id: WP-218
+    stage: 2
+    track: agent
+    status: planned
+    title: "Preview environment per PR (or a QA environment): deploy, URL in the work unit, smoke request; owned by devops"
+    deps:
+      - WP-213
+    spec:
+      - "7.1"
+      - "10.3"
+      - "12.1"
+    acceptance:
+      - a PR in In Review gets a preview whose URL answers a smoke request before the item may move to In QA
+      - the URL appears in the QA packet and in the digest next to the PR
+      - a preview that does not answer keeps the item In Review and raises a question
+    tests:
+      - preview.test.ts
+      - real check on the dev project
+  - id: WP-219
+    stage: 2
+    track: agent
+    status: planned
+    title: "Phase 3 legs: tech-lead conventions and PR-template mode, qa e2e skeleton mode, security checks wired into CI by devops (static analysis, dependency audit, secret scan), developer walking-skeleton kind"
+    deps:
+      - WP-212
+      - WP-211
+      - WP-213
+    spec:
+      - "6.3"
+      - "5.6"
+      - "5.8"
+      - "5.7"
+    acceptance:
+      - docs/engineering/conventions.md passes the template validator and the tech-lead has a scoped write grant for it
+      - an e2e skeleton exists under tests/e2e and runs in CI
+      - CI runs static analysis, dependency audit and secret scan and fails on a planted finding
+      - the developer skeleton kind produces a thin slice through UI, API and database deployed to staging
+    tests:
+      - evals/phase3
+  - id: WP-214
+    stage: 2
+    track: skill
+    status: planned
+    title: /arima:setup and the walking skeleton
+    deps:
+      - WP-213
+      - WP-210
+      - WP-219
+    spec:
+      - "6.3"
+    acceptance:
+      - skeleton green on staging
+    tests:
+      - evals/setup
+  - id: WP-215
+    stage: 2
+    track: skill
+    status: planned
+    title: "/arima:run wired to real roles: retry once, flaky CI rerun, three strikes, review-queue limit"
+    deps:
+      - WP-120
+      - WP-210
+      - WP-211
+      - WP-212
+      - WP-218
+    spec:
+      - "7.2"
+      - "7.12"
+    acceptance:
+      - failure-loop scenarios pass with real agents
+    tests:
+      - evals/run
+  - id: WP-216
+    stage: 2
+    track: skill
+    status: planned
+    title: "/arima:plan: milestone of 8-12 points by priority"
+    deps:
+      - WP-109
+    spec:
+      - "7.1"
+      - "14"
+    acceptance:
+      - no story split across milestones
+    tests:
+      - plan.test.ts
+  - id: WP-217
+    stage: 2
+    track: skill
+    status: planned
+    title: "Milestone review and the learning loop: review page, human veto reopens a story with a BUG, retro inputs from ledger and findings, lessons and project overrides"
+    deps:
+      - WP-140
+      - WP-132
+      - WP-130
+    spec:
+      - "6.4"
+      - "7.11"
+      - "12.2"
+    acceptance:
+      - every accepted story appears on the review page with its veto box
+      - a veto returns the story to In Progress with a BUG carrying the reason
+      - retro lists rework reasons and review findings from the ledger
+      - approved lessons are stored in .arima/overrides and the packet builder reads them (the learning loop works from Stage 2)
+    tests:
+      - milestone-review.test.ts
+  - id: WP-220
+    stage: 2
+    track: eval
+    status: planned
+    title: "v0.2 eval: five hand-written stories to staging, attended"
+    deps:
+      - WP-215
+      - WP-216
+      - WP-214
+      - WP-217
+      - WP-142
+      - WP-218
+      - WP-219
+    spec:
+      - "15.3"
+    acceptance:
+      - five stories reach staging in the E-B1 run on the throwaway repo
+      - per-story cost in the digest equals the ledger sum for that story
+      - digest lists each story once
+    tests:
+      - E-B1
+  - id: WP-230
+    stage: 2
+    track: safety
+    status: owner
+    owner_input: "Gate U: sandbox verified, seat terms (S15), two attended weeks clean, owner go"
+    title: Scheduler (Windows Task Scheduler / cron) after Gate U
+    deps:
+      - WP-190
+      - WP-220
+    spec:
+      - "4.4"
+    acceptance:
+      - missed run catches up
+      - refuses if sandbox required and absent
+  - id: WP-232
+    stage: 3
+    track: skill
+    status: planned
+    title: "/arima:assign: switch a role between agent and human, hand over in-flight work (human-run script only; agents cannot edit team.yaml)"
+    deps:
+      - WP-108
+      - WP-301
+    spec:
+      - "14"
+      - "4.2"
+    acceptance:
+      - team.yaml updated and validated
+      - in-flight items re-queued or handed to a human task
+      - no agent role can run it
+    tests:
+      - assign.test.ts
+  - id: WP-301
+    stage: 3
+    track: engine
+    status: planned
+    title: "Human tasks and reminders (extends WP-141): tasks for human roles, reminder at 24 weekday hours, escalation at 48"
+    deps:
+      - WP-141
+      - WP-220
+    spec:
+      - "7.5"
+      - "7.6"
+    acceptance:
+      - a human role gets a Notion task with template, links and due date
+      - reminder at 24 weekday hours, escalation to the sponsor at 48
+      - task marked Done is checked for the expected output before work continues
+    tests:
+      - questions.test.ts
+  - id: WP-302
+    stage: 3
+    track: engine
+    status: planned
+    title: "Meeting engine: same pack to all, independent round 1, max two rounds, minutes with owned actions"
+    deps:
+      - WP-103
+      - WP-301
+    spec:
+      - "7.3"
+    acceptance:
+      - unresolved points become questions
+      - budget cap per meeting
+    tests:
+      - meeting.test.ts
+  - id: WP-310
+    stage: 3
+    track: agent
+    status: planned
+    title: ba agent
+    deps:
+      - WP-301
+      - WP-220
+    spec:
+      - "5.3"
+      - "6.1"
+    acceptance:
+      - every Must requirement has a story
+      - stories meet DoR
+    tests:
+      - evals/ba
+  - id: WP-311
+    stage: 3
+    track: agent
+    status: planned
+    title: ux agent
+    deps:
+      - WP-301
+      - WP-220
+    spec:
+      - "5.4"
+      - "6.2"
+    acceptance:
+      - screens for all states
+      - WCAG notes
+      - design-qa kind returns a verdict with findings on UI PRs (guard of the In QA step for UI stories)
+      - accessibility notes cover WCAG 2.2 AA per screen state
+    tests:
+      - evals/ux
+  - id: WP-312
+    stage: 3
+    track: agent
+    status: planned
+    title: architect agent
+    deps:
+      - WP-301
+      - WP-220
+      - WP-331
+    spec:
+      - "5.5"
+      - "6.0"
+      - "6.1"
+      - "6.2"
+      - "7.9"
+    acceptance:
+      - every NFR has response and verification method
+      - Phase 0 feasibility note and Phase 1 NFR duties covered
+    tests:
+      - evals/architect
+  - id: WP-313
+    stage: 3
+    track: agent
+    status: planned
+    title: security agent with verifier pass
+    deps:
+      - WP-301
+      - WP-220
+    spec:
+      - "5.9"
+      - "6.0"
+      - "6.1"
+      - "6.2"
+      - "6.5"
+    acceptance:
+      - each critical finding disproof-attempted
+      - DPIA draft only for human sign-off
+    tests:
+      - evals/security
+  - id: WP-315
+    stage: 3
+    track: agent
+    status: planned
+    title: "qa authoring mode: testability review, Master Test Plan, test summary and regression/perf/accessibility reports"
+    deps:
+      - WP-211
+      - WP-302
+    spec:
+      - "5.8"
+      - "6.1"
+      - "6.2"
+      - "6.5"
+    acceptance:
+      - Master Test Plan has the template sections and an RTM coverage rule per profile
+      - requirement review log closes every testability finding
+    tests:
+      - evals/qa-authoring
+  - id: WP-321
+    stage: 3
+    track: skill
+    status: planned
+    title: "Phase 0 playbook: /arima:init runs to G0 (ba vision, architect feasibility, security compliance screen, orchestrator charter, budget plan and risk register)"
+    deps:
+      - WP-310
+      - WP-312
+      - WP-313
+      - WP-330
+    spec:
+      - "6.0"
+      - "14"
+      - "7.4"
+    acceptance:
+      - G0 evidence pack lists brief, charter, feasibility note, compliance screen, budget plan
+      - solo-lite skips G0 but still writes brief and budget plan (S14)
+      - risk register rows exist for every major risk named in the feasibility note
+      - the orchestrator updates the risk register each run from digest risks and findings
+    tests:
+      - evals/phase0
+  - id: WP-320
+    stage: 3
+    track: skill
+    status: planned
+    title: /arima:discover and /arima:design playbooks (cost prompt, pilot, sequential fallback)
+    deps:
+      - WP-310
+      - WP-311
+      - WP-312
+      - WP-313
+      - WP-302
+      - WP-315
+      - WP-213
+    spec:
+      - "6.1"
+      - "6.2"
+      - "14"
+    acceptance:
+      - asks once before fan-out
+      - one-unit pilot first
+    tests:
+      - evals/playbooks
+  - id: WP-330
+    stage: 3
+    track: engine
+    status: planned
+    title: Gate protocol, gate-check, evidence pack, checkApprover() (placeholder, S1 reopenable)
+    deps:
+      - WP-301
+      - WP-009
+    spec:
+      - "7.4"
+    acceptance:
+      - mechanical checks are scripts
+      - decision only from listed approver
+      - page not edited after Ready for review
+    tests:
+      - gate.test.ts
+  - id: WP-331
+    stage: 3
+    track: engine
+    status: planned
+    title: Baseline freeze to docs/spec/baseline-Gx and silent-edit refusal
+    deps:
+      - WP-330
+    spec:
+      - "3.3"
+      - "7.9"
+    acceptance:
+      - edit after freeze needs a CR
+    tests:
+      - baseline.test.ts
+  - id: WP-336
+    stage: 3
+    track: skill
+    status: planned
+    title: "/arima:cr: change request with impact analysis, approval by PO or sponsor, baseline version increment (applies from G1)"
+    deps:
+      - WP-331
+      - WP-310
+    spec:
+      - "7.9"
+      - "14"
+    acceptance:
+      - a CR lists affected REQs, stories and tests, cost and schedule impact
+      - approval increments the baseline version and creates or changes stories
+      - an edit to a frozen baseline without an approved CR is refused
+    tests:
+      - cr.test.ts
+  - id: WP-314
+    stage: 3
+    track: agent
+    status: planned
+    title: "security: per-PR scan triage mode (scanner output to findings)"
+    deps:
+      - WP-313
+    spec:
+      - "5.9"
+      - "11.1"
+    acceptance:
+      - scanner output treated as untrusted data
+      - false-positive fixture does not become a critical finding
+    tests:
+      - evals/security-triage
+  - id: WP-340
+    stage: 3
+    track: engine
+    status: planned
+    title: RTM view and coverage rule
+    deps:
+      - WP-310
+      - WP-330
+    spec:
+      - "8.1"
+      - "6.5"
+    acceptance:
+      - coverage rule per profile enforced at G3
+    tests:
+      - rtm.test.ts
+  - id: WP-350
+    stage: 3
+    track: eval
+    status: planned
+    title: "v0.3 eval: brief to G2"
+    deps:
+      - WP-320
+      - WP-330
+      - WP-340
+      - WP-315
+      - WP-321
+      - WP-331
+      - WP-314
+      - WP-232
+    spec:
+      - "15.3"
+    acceptance:
+      - every required artifact present and valid
+      - no human edits beyond answers
+    tests:
+      - E-D1
+  - id: WP-351
+    stage: 3
+    track: eval
+    status: planned
+    title: "Integration eval: from a brief through ba stories, qa test-write and the developer to staging for one milestone"
+    deps:
+      - WP-350
+      - WP-220
+      - WP-336
+    spec:
+      - "15.3"
+      - "6.4"
+    acceptance:
+      - stories written by the ba (not by hand) pass the DoR and flow through qa test-write, developer, review, QA to staging
+      - every artifact in the trail has an owner and reviewer as in artifact-map.yaml
+    tests:
+      - E-I1
+  - id: WP-401
+    stage: 4
+    track: skill
+    status: planned
+    title: "Phase 5: RC tag, regression, performance, accessibility, dynamic scan, UAT scripts, go/no-go, G3"
+    deps:
+      - WP-350
+      - WP-213
+    spec:
+      - "6.5"
+    acceptance:
+      - G3 criteria checked by script
+      - runbook and rollback plan exist (devops runbook mode) before G3 opens
+      - daily defect triage and cross-browser testing are part of the stabilization loop (spec 6.5 steps 2 and 5)
+    tests:
+      - evals/phase5
+  - id: WP-402
+    stage: 4
+    track: safety
+    status: planned
+    title: "Release: /arima:release and production deploy script gated on release-page approval; data-migration flag"
+    deps:
+      - WP-401
+      - WP-213
+      - WP-310
+    spec:
+      - "6.6"
+      - "11.1"
+    acceptance:
+      - production refused without approval, no override flag
+      - the ba author kind produces the user guide and FAQ from approved stories (spec 6.6 step 4)
+    tests:
+      - deploy.test.ts
+  - id: WP-403
+    stage: 4
+    track: skill
+    status: planned
+    title: Hypercare, G4, incidents and hotfix flow, recurring jobs, retro meeting (change requests are WP-336)
+    deps:
+      - WP-402
+      - WP-302
+      - WP-336
+    spec:
+      - "6.7"
+      - "7.8"
+      - "7.9"
+      - "7.10"
+      - "7.11"
+    acceptance:
+      - P1/P2 outranks all work
+      - CR increments baseline
+      - hypercare refuses fewer than 7 days (G-41)
+      - DORA metrics computed from release and incident events
+      - retro meeting held through the meeting engine (the inputs and overrides plumbing are WP-217)
+    tests:
+      - evals/ops
+  - id: WP-404
+    stage: 4
+    track: safety
+    status: planned
+    title: "Remaining hard stops enforced: new paid service, licence, critical finding, production data migration"
+    deps:
+      - WP-402
+    spec:
+      - "11.1"
+    acceptance:
+      - each has a test that tries to break it
+      - Risks.Status Accepted is human-only; Releases has a data-migration approval property (G-27)
+    tests:
+      - hardstops-v04.test.ts
+  - id: WP-405
+    stage: 4
+    track: owner
+    status: owner
+    owner_input: Optional OpenTelemetry; seat or API key (Q-21)
+    title: OpenTelemetry option and Q-21
+    deps:
+      - WP-402
+    spec:
+      - "13.1"
+    acceptance:
+      - decision recorded
+  - id: WP-410
+    stage: 4
+    track: eval
+    status: planned
+    title: "v0.4 eval: release, simulated incident, change request"
+    deps:
+      - WP-403
+      - WP-404
+      - WP-351
+    spec:
+      - "15.3"
+    acceptance:
+      - E-R1 passes
+    tests:
+      - E-R1
+  - id: WP-501
+    stage: 5
+    track: eval
+    status: planned
+    title: Showcase project built end to end by ARIMA and published
+    deps:
+      - WP-410
+    spec:
+      - "15.3"
+    acceptance:
+      - a public repository exists whose state branch and ledger show every phase run by ARIMA
+      - a second clean checkout reproduces the build and tests
+  - id: WP-502
+    stage: 5
+    track: eval
+    status: planned
+    title: Full eval suite in CI
+    deps:
+      - WP-410
+    spec:
+      - "15.4"
+    acceptance:
+      - ci.yml runs npm run eval on pull requests and fails the build when an eval fails (shown by a deliberately failing branch)
+  - id: WP-503
+    stage: 5
+    track: contracts
+    status: planned
+    title: Migrations for config, Notion template and ledger versions
+    deps:
+      - WP-195
+    spec:
+      - "15.3"
+    acceptance:
+      - previous versions load and upgrade
+  - id: WP-504
+    stage: 5
+    track: docs
+    status: planned
+    title: Install from the marketplace in under 30 minutes, checked by someone new
+    deps:
+      - WP-410
+    spec:
+      - "15.3"
+    acceptance:
+      - a person who has not seen the project installs from the marketplace and reaches a working /arima:status in under 30 minutes, timed and recorded
+  - id: WP-505
+    stage: 5
+    track: docs
+    status: planned
+    title: Final names, semver, complete docs, shipped-payload security review, README read-through
+    deps:
+      - WP-501
+      - WP-502
+      - WP-503
+      - WP-504
+      - WP-012
+      - WP-230
+      - WP-405
+    spec:
+      - "15.3"
+    acceptance:
+      - judge J5 report saved with no open blocker or major
+      - owner approval for the tag recorded in STATE.md

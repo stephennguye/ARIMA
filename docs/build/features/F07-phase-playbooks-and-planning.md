@@ -158,7 +158,7 @@ WP-214: WP-213, WP-210. WP-216: WP-109. WP-320: WP-310, WP-311, WP-312, WP-313, 
 
 | ID | Open decision | Blocks |
 | --- | --- | --- |
-| OD-F07-1 | `/arima:assign` is in spec 14 and the roadmap v0.2 to v0.4 but in no work package; assign it (suggest Stage 3, with WP-301 human tasks) | planning |
+| OD-F07-1 | `/arima:assign` has a package: WP-232 (Stage 3, after human tasks WP-301). Resolved. |
 | OD-F07-2 | Plan fill rule when the next story overshoots 12: skip and continue (proposed) or stop | WP-216 |
 | OD-F07-3 | May `pjm` (the orchestrator) become human? The orchestrator is the only Notion writer (spec 2); proposed: refused in v1 | WP-320+ |
 | OD-F07-4 | Should `arima-assign` run while the kill switch is on (proposed yes) | assign |

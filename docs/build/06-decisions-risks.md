@@ -57,6 +57,15 @@ New ADRs this plan will need: ticket-state-machine ownership of `Status` (WP-108
 | S17 | QA role has `npx playwright` | **Open** | WP-211 decides (pinned local binary) |
 | S18 | Dispatch when the kill switch cannot be read | **Accepted**, built (D-39) | none |
 
+## 3b. Open design questions found by the concept review (decide before the stage that needs them)
+
+| Question | Needed by | Proposal |
+| --- | --- | --- |
+| Who approves an ADR and flips its status, when the spec makes the tech-lead the approver but the tech-lead cannot write and the architect may only write `Proposed`? | WP-312 | The engine flips status to `Accepted` when the tech-lead verdict is `approve` and the PO has not vetoed; recorded as a decision |
+| Baseline freeze timing: spec 6.1 step 8 freezes before opening G1, 7.4 and 3.3 freeze on approval | WP-331 | Freeze on approval; a pre-G1 snapshot is kept as the evidence pack input |
+| Does `/arima:run` cover phases 1 to 8, or are discover, design and setup separate playbooks? | WP-320, WP-215 | Separate playbook commands for phases 0 to 3 and Phase 5, `/arima:run` for Phase 4 and operations; `run` refuses to start Phase 4 before the Phase 3 exit |
+| Open decisions listed inside the agent cards (architect Q-A1 to Q-A7, ba section 12) | the agent's package | Each card's open decisions are answered by the owner or by an ADR **before** step 1 of its build protocol |
+
 ## 4. Risk register
 
 | ID | Risk | Likelihood / impact | Trigger to watch | Mitigation | Owner |

@@ -84,7 +84,8 @@ Delivered: repo, TypeScript tooling, bundled scripts, CI on Windows and Linux wi
 | 2 | WP-210 developer | Card → fixtures → stub → agent file → smoke → evals (`04-agent-build-protocol.md`). **Bootstrap order:** QA's `test-write` mode (WP-211) comes after the developer, so the developer's fixtures, stub and evals use **hand-written test cases** that satisfy the DoR; real QA-written test cases are used from WP-215 on |
 | 3 | WP-211 qa, WP-212 tech-lead | QA writes test cases first, then tests the PR; tech-lead reviews; merge only through `arima-merge` |
 | 3 | WP-213 devops-lite | Staging deploys only; the stub deploy script **refuses production under every condition** (S10) |
-| 4 | WP-217 milestone review and retro (the human veto point of D-16), WP-214 `/arima:setup`, WP-216 `/arima:plan`, WP-232 `/arima:assign` | Walking skeleton on staging; milestone of 8-12 points; handing a role between agent and human |
+| 3b | WP-218 preview environment per PR, WP-219 Phase 3 legs | **A preview that answers is the guard of In Review → In QA** (spec 7.1, 10.3); Phase 3 legs = tech-lead conventions and PR template, QA e2e skeleton, security checks wired into CI, developer walking-skeleton kind |
+| 4 | WP-217 milestone review and learning loop (the human veto point of D-16; lessons and overrides), WP-142 Notion views, @mentions and the Urgent page, WP-214 `/arima:setup`, WP-216 `/arima:plan` | Walking skeleton on staging; milestone of 8-12 points; the 15-minutes-a-day interface exists |
 | 5 | WP-215 `/arima:run` (real) | Dispatcher wired to real roles; retry-once, flaky-CI rerun, three-strikes Blocked, review-queue limit |
 | 6 | WP-220 | v0.2 eval |
 
@@ -94,7 +95,7 @@ Delivered: repo, TypeScript tooling, bundled scripts, CI on Windows and Linux wi
 - IF the review queue holds `review.max_prs_awaiting_human` PRs THEN no new story starts.
 - IF a run fails twice THEN the item is Blocked and a question is raised (never a third silent retry).
 - IF a story budget is exhausted THEN it is Blocked with cost-so-far and options (hard stop `story_budget`).
-- Stories in this stage are hand-written to the DoR; there is no BA agent yet (known, intentional gap).
+- Stories in this stage are hand-written to the DoR and are **non-UI stories** (the ux design-QA verdict arrives in Stage 3, so a UI story cannot pass In QA yet); there is no BA agent yet (known, intentional gap, closed by WP-351 in Stage 3).
 
 **Exit:** WP-220 passes with real agents on the throwaway repo (attended, `/arima:run` started by the human); the digest and cost per story are correct; judge checkpoint **J2** saved and answered.
 
@@ -116,7 +117,9 @@ Unattended or scheduled runs are **not allowed** (D-41) until all of: the Docker
 | 3 | WP-311 ux, WP-313 security | Prototype only for ux; security uses a verifier agent that tries to disprove each critical finding |
 | 3 | WP-314 security per-PR scan triage, WP-315 qa authoring mode (Master Test Plan, reports), WP-321 Phase 0 playbook (`/arima:init` to G0, risk register) | After WP-313 and the gate code |
 | 4 | WP-320 phase playbooks, WP-340 RTM | `/arima:discover`, `/arima:design`: cost-and-plan prompt before fan-out, one-unit pilot, sequential fallback |
-| 5 | WP-350 | v0.3 eval |
+| 5 | WP-336 `/arima:cr` (change control applies from G1), WP-232 `/arima:assign` (needs human tasks, WP-301) | Both after WP-331 / WP-301 |
+| 6 | WP-350 | v0.3 eval; it depends on every Stage 3 package so it cannot pass with one missing |
+| 7 | WP-351 | **Integration eval**: from a brief, through ba-written stories, qa test-write and the developer, to staging for one milestone (the first time the whole team works together) |
 
 **Conditions**
 
@@ -125,13 +128,13 @@ Unattended or scheduled runs are **not allowed** (D-41) until all of: the Docker
 - IF an agent cannot decide THEN it raises a question (batched, max 10 per digest); it never invents a requirement.
 - IF a requirement changes after G1 THEN it goes through a change request (WP-403 for the full flow; before then, the baseline-freeze check refuses silent edits).
 
-**Exit:** WP-350 passes; judge checkpoint **J3** saved and answered.
+**Exit:** WP-350 and WP-351 pass; judge checkpoint **J3** saved and answered.
 
 ## 7. Stage 4: Release and operations (v0.4)
 
 **Goal:** a release, a simulated incident and a change request complete on the eval project.
 
-Packages: WP-401 Phase 5 (RC tag, regression, performance, accessibility, dynamic scan, UAT scripts, go/no-go, G3); WP-402 Release (`/arima:release`, production deploy script that proceeds only on the human's approval on the release page; production-data-migration flag; S10 real path); WP-403 Hypercare, G4, incidents, change requests, recurring jobs, retro and lessons; WP-404 the remaining hard stops (new paid service, licence, critical finding); WP-405 optional OpenTelemetry and the Q-21 decision (owner decision; may be deferred past v0.4 without blocking WP-410); WP-410 v0.4 eval.
+Packages: WP-401 Phase 5 (RC tag, regression, performance, accessibility, dynamic scan, UAT scripts, go/no-go, G3); WP-402 Release (`/arima:release`, production deploy script that proceeds only on the human's approval on the release page; production-data-migration flag; S10 real path); WP-403 Hypercare, G4, incidents and hotfix flow, recurring jobs, the retro meeting (change requests moved to WP-336 in Stage 3); WP-404 the remaining hard stops (new paid service, licence, critical finding); WP-405 optional OpenTelemetry and the Q-21 decision (owner decision; may be deferred past v0.4 without blocking WP-410); WP-410 v0.4 eval.
 
 **Conditions:** IF the deploy target is production THEN the deploy script requires the human approval on the release page and refuses otherwise, with no flag to override; IF a critical security finding is open without a human-accepted risk record THEN merge and release are blocked; IF a P1/P2 incident is open THEN it outranks every other work item in the plan of the day.
 

@@ -278,6 +278,7 @@ artifacts:
     kind: document
     produced_by:
       - WP-213
+      - WP-320
     validator: template sections (catalog) via validateDocument
   - id: milestone-plan
     name: Milestone plan
@@ -307,7 +308,7 @@ artifacts:
     master: "`docs/engineering/conventions.md`"
     kind: document
     produced_by:
-      - WP-212
+      - WP-219
     validator: template sections (catalog) via validateDocument
   - id: test-cases
     name: Test cases
@@ -318,6 +319,7 @@ artifacts:
     kind: record
     produced_by:
       - WP-211
+      - WP-219
     validator: outbox schema, Notion property rules, state machine where it has a Status
   - id: code-tests
     name: Code, unit and integration tests
@@ -328,6 +330,7 @@ artifacts:
     kind: code
     produced_by:
       - WP-210
+      - WP-219
     validator: CI checks and review
   - id: pull-requests
     name: Pull requests and reviews
@@ -473,6 +476,7 @@ artifacts:
     master: "`docs/ops/`"
     kind: document
     produced_by:
+      - WP-401
       - WP-402
     validator: template sections (catalog) via validateDocument
   - id: release-record
@@ -543,6 +547,7 @@ artifacts:
     master: Notion CR DB
     kind: record
     produced_by:
+      - WP-336
       - WP-403
     validator: outbox schema, Notion property rules, state machine where it has a Status
   - id: slo-cost-reports

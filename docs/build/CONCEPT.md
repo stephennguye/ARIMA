@@ -83,6 +83,8 @@ Studied from `anthropics/claude-plugins-official`, especially `feature-dev`, `co
 | **Layout is plain and self-contained**: `.claude-plugin/plugin.json`, `agents/`, `commands` or `skills/`, `hooks/`, `scripts/` (deterministic work), `tests/`, `workflows/` (scripted fan-out), `README`, `CHANGELOG`, `LICENSE`; `marketplace.json` with immutable names | Already the shape of `plugins/arima/`; add `workflows/` only if scripted fan-out is needed; keep tests with the code |
 | **README states install, the path, who decides when, what to expect (cost), and what it was tried on** | Plugin README discloses data leaving the machine, state location, cost; "what it was tried on" will be the eval projects |
 
+**A risk to manage:** Anthropic's agents are task-shaped (explorer, architect, reviewer), whereas ARIMA's agents are role-shaped and several (qa, ux, security, tech-lead) carry multiple work-unit kinds. The rule that keeps this safe: **every `kind` an agent can be dispatched with has its own section in the agent file, its own fixtures and evals, and its own owner package** (cards list them in section 2; the register names them). If an agent file approaches the 10,000-character cap, split it into one file per kind rather than shortening the rules.
+
 Deliberate differences: ARIMA's state is machine-written in `.arima/` and Notion (not hand-edited settings), and it uses `skills/<name>/SKILL.md` for commands (the spec's choice), which Claude Code treats as slash commands.
 
 ## 7. How the documents are layered, high to low
