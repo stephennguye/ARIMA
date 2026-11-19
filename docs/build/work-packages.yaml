@@ -457,7 +457,7 @@ packages:
   - id: WP-130
     stage: 1
     track: skill
-    status: planned
+    status: done
     title: Digest builder and /arima:digest
     deps:
       - WP-003

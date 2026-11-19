@@ -55,6 +55,7 @@ No agent may write these. You set them in Notion.
 | Gates | Approvers | Who may approve this gate |
 | Gates | Decided by | |
 | Gates | Status | Only the values Approved, Approved with conditions and Rejected; agents may set Not ready and Ready for review |
+| Digests | Reviewed by, Minutes spent | You fill them in after reading the digest |
 | Decisions | Veto, Veto reason | |
 | Questions | Answer, Answered by | |
 | Releases | Prod deploy approval, Prod deploy approver | |

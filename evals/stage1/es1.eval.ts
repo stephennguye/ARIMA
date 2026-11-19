@@ -2,9 +2,9 @@
 // dispatcher, state machine, report collector, outbox, publish and merge scripts, over a local bare
 // remote, a fake `gh` and a fake Notion. A stub that emits invalid output fails its run.
 //
-// Not covered yet, said plainly: the digest grader (WP-130 builds the digest) and a UI story with
-// design screens (the queue plans no `design-qa` unit until the ux agent, WP-311).
-import { existsSync, writeFileSync } from 'node:fs';
+// Not covered yet, said plainly: a UI story with design screens (the queue plans no `design-qa`
+// unit until the ux agent, WP-311).
+import { existsSync, readFileSync, readdirSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { runDispatch } from '../../plugins/arima/scripts/src/dispatch.js';
@@ -19,6 +19,7 @@ import { TRANSITIONS } from '../../plugins/arima/scripts/src/state-machine.js';
 import { git, readyAll, reportText, stubRoles, world } from './support.js';
 import type { World } from './support.js';
 
+const ROOT = path.resolve(import.meta.dirname, '../..');
 const DAY = 86_400_000;
 const BASE = Date.parse('2026-11-19T09:00:00Z');
 
@@ -117,6 +118,23 @@ describe('E-S1: five stories Backlog to Done with stub agents', () => {
       expect(m.some((a) => a === '--match-head-commit')).toBe(true);
     }
     expect(readEvents(w.dir).filter((e) => e.type === 'pr.published')).toHaveLength(5);
+
+    // ---- digest: written by each run from the template, in order, lists capped, each story shipped once
+    const digestDir = path.join(w.dir, '.arima', 'digests');
+    const digests = readdirSync(digestDir).sort().map((f) => readFileSync(path.join(digestDir, f), 'utf8'));
+    expect(digests.length).toBeGreaterThanOrEqual(5);
+    const headings = [...readFileSync(path.join(ROOT, 'plugins/arima/templates/digest.md'), 'utf8').matchAll(/^## (.+)$/gm)].map((m) => m[1]);
+    expect(headings).toHaveLength(8);
+    for (const d of digests) {
+      expect([...d.matchAll(/^## (.+)$/gm)].map((m) => m[1])).toEqual(headings);
+      for (const section of d.split(/^## /m).slice(1))
+        expect(section.split('\n').filter((l) => l.startsWith('- ')).length).toBeLessThanOrEqual(11);
+    }
+    const shippedLines = digests.flatMap((d) =>
+      (/## Shipped\n([\s\S]*?)\n## /.exec(d)?.[1] ?? '').split('\n'),
+    );
+    for (const id of w.stories) expect(shippedLines.filter((l) => l.includes(id)), id).toHaveLength(1);
+    expect(readEvents(w.dir).filter((e) => e.type === 'digest.published').length).toBeGreaterThanOrEqual(5);
 
     // ---- idempotence: another dispatch changes nothing (no unit, no new row, no new PR)
     const storiesBefore = readMirror(w.dir, 'stories')?.rows.length;

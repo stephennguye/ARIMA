@@ -6,6 +6,7 @@ import { describe, expect, it } from 'vitest';
 import { appendEvent, readEvents } from '../src/events.js';
 import type { EventType } from '../src/events.js';
 import { HARD_STOPS } from '../src/hardstops.js';
+import { DIGEST_EXIT } from '../src/cli/digest-cli.js';
 import { PLAN_EXIT } from '../src/cli/plan-cli.js';
 import { ENV_EXIT } from '../src/env.js';
 import { INIT_EXIT } from '../src/init.js';
@@ -253,6 +254,12 @@ describe('exit-code registry (03-contracts 8) matches the code', () => {
       sorted([...want].map(String)),
     );
     expect(INIT_EXIT.stateNotSaved).toBe(7);
+  });
+
+  it('arima-digest lists exactly the codes of DIGEST_EXIT', () => {
+    expect(sorted((rows.get('arima-digest') ?? []).map(String))).toEqual(
+      sorted(Object.values(DIGEST_EXIT).map(String)),
+    );
   });
 
   it('arima-plan lists exactly the codes of PLAN_EXIT', () => {

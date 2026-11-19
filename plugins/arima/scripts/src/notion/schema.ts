@@ -90,7 +90,11 @@ const text = (name: string, extra: Partial<PropSpec> = {}): PropSpec => ({
   type: 'rich_text',
   ...extra,
 });
-const num = (name: string): PropSpec => ({ name, type: 'number' });
+const num = (name: string, extra: Partial<PropSpec> = {}): PropSpec => ({
+  name,
+  type: 'number',
+  ...extra,
+});
 const date = (name: string): PropSpec => ({ name, type: 'date' });
 const check = (name: string, extra: Partial<PropSpec> = {}): PropSpec => ({
   name,
@@ -376,8 +380,8 @@ export const DATABASES: DbSpec[] = [
       text('Awaiting you'),
       num('Spend today'),
       num('Month to date'),
-      people('Reviewed by'),
-      num('Minutes spent'),
+      people('Reviewed by', { humanOnly: true }),
+      num('Minutes spent', { humanOnly: true }),
     ],
   },
   {

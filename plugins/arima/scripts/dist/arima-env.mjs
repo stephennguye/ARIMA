@@ -19194,7 +19194,11 @@ var text = (name, extra = {}) => ({
   type: "rich_text",
   ...extra
 });
-var num = (name) => ({ name, type: "number" });
+var num = (name, extra = {}) => ({
+  name,
+  type: "number",
+  ...extra
+});
 var date = (name) => ({ name, type: "date" });
 var check = (name, extra = {}) => ({
   name,
@@ -19474,8 +19478,8 @@ var DATABASES = [
       text("Awaiting you"),
       num("Spend today"),
       num("Month to date"),
-      people("Reviewed by"),
-      num("Minutes spent")
+      people("Reviewed by", { humanOnly: true }),
+      num("Minutes spent", { humanOnly: true })
     ]
   },
   {

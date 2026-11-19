@@ -20,6 +20,7 @@ import type { Size } from './item.js';
 import { checkKillSwitch } from './killswitch.js';
 import type { Role } from './ledger.js';
 import { mergePr, summariseChecks, verdictAfterLastPush } from './merge.js';
+import { buildDigest, publishDigest } from './digest.js';
 import { enqueue } from './notion/outbox.js';
 import { enqueueReportRecords } from './notion/proposals.js';
 import { findRow, pullMirror, readMirror, readNotionMap } from './notion/mirror.js';
@@ -1061,6 +1062,19 @@ export async function runDispatch(o: DispatchOptions): Promise<DispatchResult> {
         }),
       ),
     );
+    // The digest of the day (spec 12.1, WP-130): on demand until Gate U, so each attended run writes it.
+    let digestNote = 'not written';
+    if (!dry) {
+      try {
+        const model = buildDigest(o.projectDir, now);
+        const pub = await publishDigest({ projectDir: o.projectDir, runId, model, now });
+        digestNote = `${model.health}; ${path.relative(o.projectDir, pub.file)}`;
+      } catch (e) {
+        res.warnings.push(
+          `the digest was not written: ${e instanceof Error ? e.message.slice(0, 160) : String(e)}`,
+        );
+      }
+    }
     if (d.notion !== undefined && d.notion !== null && !res.degraded) {
       try {
         const push = await pushOutbox(o.projectDir, d.notion.port, readNotionMap(o.projectDir), {
@@ -1086,7 +1100,7 @@ export async function runDispatch(o: DispatchOptions): Promise<DispatchResult> {
       defaultBranch: cfg.github.default_branch,
       stateBranch: cfg.github.state_branch,
     }).catch(() => undefined);
-    await step(10, { digest: 'not built yet (WP-130)' });
+    await step(10, { digest: digestNote });
     await appendEvent(o.projectDir, {
       type: 'run.end',
       actor: 'orchestrator',

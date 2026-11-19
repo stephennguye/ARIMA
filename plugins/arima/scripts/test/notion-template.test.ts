@@ -107,6 +107,8 @@ describe('template schema (spec §9.1, §9.3)', () => {
         'Gates.Approvers',
         'Gates.Decided by',
         'Gates.Status',
+        'Digests.Reviewed by',
+        'Digests.Minutes spent',
         'Decisions.Veto',
         'Decisions.Veto reason',
         'Questions.Answer',
