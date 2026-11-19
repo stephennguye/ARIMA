@@ -51,6 +51,8 @@ export type EventType =
   | 'lesson.applied';
 
 export interface ArimaEvent {
+  /** Absent on events written before the field existed; means 1 (WP-195). */
+  schema_version?: 1;
   ts: string;
   type: EventType;
   actor: string;

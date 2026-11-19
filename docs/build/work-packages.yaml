@@ -627,7 +627,7 @@ packages:
   - id: WP-195
     stage: 1
     track: contracts
-    status: ready
+    status: done
     title: "Upgrade test: a v0.1 .arima/ and config migrate and load"
     deps:
       - WP-003

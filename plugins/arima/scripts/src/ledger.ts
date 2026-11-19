@@ -23,6 +23,8 @@ export interface Tokens {
 }
 
 export interface LedgerRow {
+  /** Absent on rows written before the field existed; means 1 (WP-195). */
+  schema_version?: 1;
   run_id: string;
   session_id?: string;
   date: string;
@@ -197,7 +199,10 @@ export async function recordRun(
   stdout: string,
   ctx: RunContext,
 ): Promise<LedgerRow> {
-  const row = buildLedgerRow(parseClaudeResult(stdout), ctx, readLedger(projectDir));
+  const row: LedgerRow = {
+    schema_version: 1,
+    ...buildLedgerRow(parseClaudeResult(stdout), ctx, readLedger(projectDir)),
+  };
   await appendLedgerRow(projectDir, row);
   return row;
 }

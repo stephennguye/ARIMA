@@ -22,8 +22,11 @@ import type { NotionPort, RawRow } from './port.js';
 import { LAST_WRITTEN_BY_RUN, NON_UNIQUE_TITLES, RETIRE_STATUS } from './schema.js';
 import type { DbKey } from './schema.js';
 import { ValueError, fromNotionValue, markdownToBlocks, toNotionValue } from './values.js';
+import { migrateRecord } from '../lib/migrate.js';
 
 export interface OutboxEntry {
+  /** Absent on entries written before the field existed; means 1 (WP-195). */
+  schema_version?: 1;
   id: string;
   created_at: string;
   run_id: string;
@@ -138,6 +141,18 @@ function listPending(projectDir: string, report: PushReport): Pending[] {
         file,
         name.replace(/\.json$/, ''),
         { kind: 'rejected', reason: 'not valid JSON' },
+        report,
+      );
+      continue;
+    }
+    try {
+      data = migrateRecord('outbox', data);
+    } catch (e) {
+      settle(
+        projectDir,
+        file,
+        name.replace(/.json$/, ''),
+        { kind: 'rejected', reason: (e as Error).message },
         report,
       );
       continue;

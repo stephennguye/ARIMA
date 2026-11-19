@@ -15901,9 +15901,40 @@ function parseAllowlist(text2) {
   return out;
 }
 
+// plugins/arima/scripts/src/lib/migrate.ts
+var CURRENT_SCHEMA_VERSION = 1;
+var VERSIONED = ["ledger", "event", "outbox"];
+var STEPS = {};
+var SchemaVersionError = class extends Error {
+};
+function versionOf(record) {
+  const v = record?.schema_version;
+  return v === void 0 ? 1 : typeof v === "number" ? v : Number.NaN;
+}
+function migrateRecord(schema, record) {
+  if (!VERSIONED.includes(schema) || record === null || typeof record !== "object") return record;
+  let v = versionOf(record);
+  if (!Number.isInteger(v) || v < 1)
+    throw new SchemaVersionError(`invalid schema_version in a ${schema} record`);
+  if (v > CURRENT_SCHEMA_VERSION)
+    throw new SchemaVersionError(
+      `a ${schema} record has schema_version ${v}, newer than this ARIMA understands (${CURRENT_SCHEMA_VERSION}); upgrade the plugin`
+    );
+  let out = record;
+  while (v < CURRENT_SCHEMA_VERSION) {
+    const step = STEPS[v];
+    if (step === void 0) throw new SchemaVersionError(`no migration from ${schema} v${v}`);
+    out = step(out);
+    v += 1;
+  }
+  return out;
+}
+
 // plugins/arima/scripts/src/lib/jsonl.ts
 async function appendJsonl(file, schema, record) {
   const validate = getValidator(schema);
+  if (VERSIONED.includes(schema) && typeof record === "object" && record !== null)
+    record = { schema_version: CURRENT_SCHEMA_VERSION, ...record };
   if (!validate(record)) {
     throw new Error(
       `Invalid ${schema} record: ${(validate.errors ?? []).map(describeError).join("; ")}`
@@ -15929,6 +15960,11 @@ function readJsonl(file, schema) {
       parsed = JSON.parse(raw);
     } catch (e) {
       throw new Error(`${file}:${i + 1}: not valid JSON`, { cause: e });
+    }
+    try {
+      parsed = migrateRecord(schema, parsed);
+    } catch (e) {
+      throw new Error(`${file}:${i + 1}: ${e.message}`, { cause: e });
     }
     if (!validate(parsed)) {
       throw new Error(

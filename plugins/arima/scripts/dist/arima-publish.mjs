@@ -18837,9 +18837,15 @@ function parseAllowlist(text2) {
   return out;
 }
 
+// plugins/arima/scripts/src/lib/migrate.ts
+var CURRENT_SCHEMA_VERSION = 1;
+var VERSIONED = ["ledger", "event", "outbox"];
+
 // plugins/arima/scripts/src/lib/jsonl.ts
 async function appendJsonl(file, schema, record) {
   const validate = getValidator(schema);
+  if (VERSIONED.includes(schema) && typeof record === "object" && record !== null)
+    record = { schema_version: CURRENT_SCHEMA_VERSION, ...record };
   if (!validate(record)) {
     throw new Error(
       `Invalid ${schema} record: ${(validate.errors ?? []).map(describeError).join("; ")}`

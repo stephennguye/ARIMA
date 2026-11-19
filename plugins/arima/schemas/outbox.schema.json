@@ -7,6 +7,7 @@
   "additionalProperties": false,
   "required": ["id", "created_at", "run_id", "role", "op", "database"],
   "properties": {
+    "schema_version": { "const": 1, "description": "Optional; absent means 1 (written before the field existed). A larger number is refused by the reader (WP-195)." },
     "id": { "type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,79}$", "description": "Unique outbox entry id; letters, digits, dot, underscore, hyphen only (it becomes a file name)" },
     "created_at": { "type": "string", "format": "date-time" },
     "run_id": { "type": "string" },
