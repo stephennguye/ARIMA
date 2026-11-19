@@ -28,7 +28,7 @@ Fixed or being fixed in Stage 0 (see the status column there):
 
 1. Real Notion, real GitHub and the live behaviour of skills were never exercised. The Claude side is now proven; Notion and GitHub are waiting on a shared page and a throwaway repo.
 2. The guard, role lists, kill switch, environment and secret handling were weaker than the guides claimed: agents could merge, push to the default branch, clear the kill switch and edit approver config; secrets could reach Notion; the child environment was not trimmed. Stage 0A raised the bar with tests that try a list of forbidden actions; the second independent review (`docs/process/reviews/2026-11-18-judge-2.md`) then found bypasses the list did not contain, and those are being closed one by one. Passing those tests means "the listed forms are blocked", not "the action is impossible".
-3. Charter, budget plan and gate pages now render from templates and the 58-artifact catalog exists with a document validator (Stage 0B, built). The 28 new templates are builder drafts awaiting the owner's review.
+3. Charter, budget plan and gate pages now render from templates and the 58-artifact catalog exists with a document validator (Stage 0B, built). The 28 new templates have owner-approved section lists.
 4. Profiles now have an artifact-level check (`profileStatus`); gate criteria checks arrive with `gate-check` in Stage 2.
 5. Seventeen spec issues need the owner's decision (`docs/process/spec-issues.md`), including how a gate approver's identity can be verified, who merges, and Windows versus WSL 2.
 6. Packaging gaps against Anthropic's norms (S0.8, S0.9).

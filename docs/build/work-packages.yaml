@@ -147,9 +147,8 @@ packages:
   - id: WP-012
     stage: 0
     track: owner
-    status: owner
-    owner_input: Approve or edit the 28 draft template section lists; confirm the v0.1.1 tag
-    title: "Stage 0 close-out: owner approvals and tag v0.1.1"
+    status: done
+    title: "Stage 0 close-out: owner approved the 28 draft section lists (2026-11-19); the v0.1.1 tag is created only when the owner says so"
     deps:
       - WP-009
       - WP-010
@@ -163,21 +162,20 @@ packages:
     spec:
       - "8.2"
     acceptance:
-      - owner approval recorded in spec issues file
-      - tag created only after owner confirms
+      - owner approval of the 28 section lists recorded in STATE.md and the catalog header
+      - tag v0.1.1 is NOT created until the owner confirms it explicitly
   - id: WP-013
     stage: 0
     track: owner
-    status: owner
-    owner_input: Approve the spec amendments listed in docs/build/10-spec-amendments.md (spec text may only change with the owner's approval)
+    status: done
     title: Reconcile the master spec text with the owner decisions D-43 to D-49
     deps:
       - WP-012
     spec:
       - "16.2"
     acceptance:
-      - every item of docs/build/10-spec-amendments.md is applied to the spec or rejected in writing
-      - build-docs test still passes after the edits
+      - every row of docs/build/10-spec-amendments.md is applied or rejected in writing
+      - build-docs test passes after the edits
   - id: WP-101
     stage: 1
     track: contracts

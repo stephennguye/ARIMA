@@ -45,7 +45,7 @@ describe('agents/orchestrator.md (spec §5.2)', () => {
     const tools = String(front['tools'])
       .split(',')
       .map((t) => t.trim());
-    expect(tools).toEqual(['Read', 'Write', 'Edit', 'Glob', 'Grep', 'Bash']);
+    expect(tools).toEqual(['Read', 'Write', 'Edit', 'Glob', 'Grep']);
     expect(tools.some((t) => /notion|mcp__/i.test(t))).toBe(false);
   });
 

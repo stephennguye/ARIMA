@@ -1,6 +1,6 @@
 # Operations manual
 
-<!-- arima-template: ops-manual; DRAFT for the owner's review. The H2 headings below are the required sections. Owner: devops. Master location: `docs/ops/ops-manual.md`. -->
+<!-- arima-template: ops-manual; Section list approved by the owner 2026-11-19. The H2 headings below are the required sections. Owner: devops. Master location: `docs/ops/ops-manual.md`. -->
 
 ## Architecture summary
 

@@ -1,6 +1,6 @@
 # Engineering conventions
 
-<!-- arima-template: conventions; DRAFT for the owner's review. The H2 headings below are the required sections. Owner: tech-lead. Master location: `docs/engineering/conventions.md`. -->
+<!-- arima-template: conventions; Section list approved by the owner 2026-11-19. The H2 headings below are the required sections. Owner: tech-lead. Master location: `docs/engineering/conventions.md`. -->
 
 ## Code style
 

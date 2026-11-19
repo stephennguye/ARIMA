@@ -1,6 +1,6 @@
 # Pre-release security report
 
-<!-- arima-template: security-report; DRAFT for the owner's review. The H2 headings below are the required sections. Owner: security. Master location: Notion Documents. -->
+<!-- arima-template: security-report; Section list approved by the owner 2026-11-19. The H2 headings below are the required sections. Owner: security. Master location: Notion Documents. -->
 
 ## Scope
 

@@ -26,7 +26,7 @@ The owner steers by commands, answers only critical-blocker questions and review
 
 ## Next action
 
-1. Owner: approve or edit the 28 draft template section lists (`plugins/arima/catalog/artifacts.yaml`) and the spec amendments in `10-spec-amendments.md`; confirm whether to tag v0.1.1 (WP-012, WP-013). **Do not tag without the owner.**
+1. **Approved by the owner on 2026-11-19:** the 28 template section lists and the 21 spec amendments (applied to the spec as version 0.5). The v0.1.1 tag has **not** been confirmed: do not create it unless the owner says so.
 2. Builder: WP-101 (contracts v1). Read `03-contracts.md` sections 3 to 6 and `02-stages.md` section 4 first.
 3. WP-201 is done (ADR-0007: reference stack, local Docker).
 
@@ -34,8 +34,7 @@ The owner steers by commands, answers only critical-blocker questions and review
 
 | Item | Question | Blocks |
 | --- | --- | --- |
-| WP-012 | Approve the 28 draft section lists; tag v0.1.1? | Tag only |
-| WP-013 | Approve the spec amendments list | Spec edits only |
+| v0.1.1 tag | Tag now, or wait? | Nothing |
 | S15 / Gate U | Seat terms for unattended runs; Docker token | WP-230 |
 | History | Rewrite git history to remove a workspace name from an old fixture (commit `b5831ea`)? Needs a force-push to a public repo. | nothing |
 

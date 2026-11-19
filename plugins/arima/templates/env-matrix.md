@@ -1,6 +1,6 @@
 # Environment matrix, pipeline design
 
-<!-- arima-template: env-matrix; DRAFT for the owner's review. The H2 headings below are the required sections. Owner: devops. Master location: `docs/ops/`. -->
+<!-- arima-template: env-matrix; Section list approved by the owner 2026-11-19. The H2 headings below are the required sections. Owner: devops. Master location: `docs/ops/`. -->
 
 ## Environment matrix
 

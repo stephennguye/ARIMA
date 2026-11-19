@@ -1,6 +1,6 @@
 # Feasibility note
 
-<!-- arima-template: feasibility-note; DRAFT for the owner's review. The H2 headings below are the required sections. Owner: architect. Master location: Notion Documents. -->
+<!-- arima-template: feasibility-note; Section list approved by the owner 2026-11-19. The H2 headings below are the required sections. Owner: architect. Master location: Notion Documents. -->
 
 ## Platform and stack fit
 

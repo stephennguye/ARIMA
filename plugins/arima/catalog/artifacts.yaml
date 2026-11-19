@@ -1,7 +1,7 @@
 # ARIMA artifact catalog (spec section 8.1), 58 artifacts. Source of truth for ids, owners, master locations,
 # which profiles require each artifact, its template and the template's required sections. It was generated
 # once from the spec and is edited by hand now. Section lists for artifacts the spec does not define in 8.2
-# follow the wording of the spec's phase tables (6.x) and role outputs (5.x) and are DRAFTS for the owner's review.
+# follow the wording of the spec's phase tables (6.x) and role outputs (5.x) and were approved by the owner on 2026-11-19.
 schema_version: 1
 artifacts:
   - id: project-brief

@@ -37,7 +37,7 @@ Cross-cutting tracks run alongside: **Safety** (sandbox, branch protection, cred
 
 Delivered: repo, TypeScript tooling, bundled scripts, CI on Windows and Linux with pinned actions and strict plugin validation; config schemas, validator, three profiles; IDs, event log, run ledger, run ids; the headless run wrapper (caps, env allow-list, process-tree kill); preflight, kill switch (Notion + `PAUSE` + remote state branch, fails closed), run lock; the safety envelope (role tool lists, guard hook with fail-closed launcher, secret scanner with allow-list, public/unknown-remote refusal, Status-write refusal, dispatch re-check); the `arima-state` branch; the Notion layer (19-database template, bootstrap, map, mirror, outbox with human-only refusal and value-based conflicts, read retry); `init`, `status`, `pause` and the orchestrator agent (v0); the 58-artifact catalog with draft templates, validator and profile checks; the live test tier with scrubbed fixtures; four independent judge reviews.
 
-**Close-out (WP-012):** the owner approves or edits the 28 draft section lists; tag v0.1.1 after the owner confirms.
+**Close-out (WP-012):** the owner approved the 28 section lists on 2026-11-19; the v0.1.1 tag waits for the owner's explicit go.
 
 ## 4. Stage 1: Platform kit
 

@@ -1,6 +1,6 @@
 # Glossary
 
-<!-- arima-template: glossary; DRAFT for the owner's review. The H2 headings below are the required sections. Owner: ba. Master location: Notion page. -->
+<!-- arima-template: glossary; Section list approved by the owner 2026-11-19. The H2 headings below are the required sections. Owner: ba. Master location: Notion page. -->
 
 ## Terms and definitions
 
