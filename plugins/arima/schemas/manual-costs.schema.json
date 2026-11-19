@@ -1,0 +1,40 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/stephennguye/ARIMA/schemas/manual-costs.schema.json",
+  "title": "Manual costs",
+  "description": ".arima/manual-costs.json: what the ledger cannot know, written by a human (spec 13.4 total cost of ownership): infrastructure bills and the hours people spent, with an hourly rate. Agents never write it.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version"],
+  "properties": {
+    "schema_version": { "const": 1 },
+    "hourly_rate_usd": { "type": "number", "minimum": 0 },
+    "infrastructure": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["date", "description", "usd"],
+        "properties": {
+          "date": { "type": "string", "format": "date" },
+          "description": { "type": "string", "minLength": 1, "maxLength": 200 },
+          "usd": { "type": "number", "minimum": 0 }
+        }
+      }
+    },
+    "human_hours": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["date", "who", "hours"],
+        "properties": {
+          "date": { "type": "string", "format": "date" },
+          "who": { "type": "string", "minLength": 1, "maxLength": 80 },
+          "hours": { "type": "number", "exclusiveMinimum": 0, "maximum": 24 },
+          "note": { "type": "string", "maxLength": 200 }
+        }
+      }
+    }
+  }
+}

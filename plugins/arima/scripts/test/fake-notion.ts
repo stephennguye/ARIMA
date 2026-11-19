@@ -119,6 +119,20 @@ export class FakeNotion {
     row.last_edited_time = this.tick();
   }
 
+  /** Every row whose title text equals `id` in the database titled `dbTitle` (titles are not always unique). */
+  rowsByTitle(dbTitle: string, id: string): Row[] {
+    const db = [...this.databases.values()].find((d) => d.title === dbTitle);
+    return [...this.rows.values()].filter(
+      (r) =>
+        r.dsId === db?.dataSourceId &&
+        Object.values(r.properties).some(
+          (p) =>
+            p.type === 'title' &&
+            (p['title'] as { plain_text: string }[]).map((x) => x.plain_text).join('') === id,
+        ),
+    );
+  }
+
   /** The row whose title text equals `id` in the database titled `dbTitle`. */
   rowByTitle(dbTitle: string, id: string): Row | undefined {
     const db = [...this.databases.values()].find((d) => d.title === dbTitle);

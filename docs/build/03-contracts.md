@@ -29,6 +29,7 @@ Every interface between components. If code crosses a boundary in a way this fil
 | `evidence/<run_id>/` | the report collector `[PROPOSED]` WP-103 | read by the packet builder only | Copied bug evidence and design-QA screenshots |
 | `state/ids.json`, `state/run-seq.json` | `arima-ids` / run id issuer | no | Locked counters |
 | `state/engine-entries.json` | `registerEngineEntry` (init, the state machine) | no | Outbox entry ids made by the engine; only these may carry `Status` at push (WP-108) |
+| `manual-costs.json` | a human | **never** | Infrastructure bills and human hours with an hourly rate, for the total cost of ownership (`manual-costs.schema.json`, WP-131) |
 | `state/allocations.json` | `allocateId` (`notion/allocations.ts`) | no | Issued id -> run id. Push accepts a created id-titled row only if its id was issued to the entry's run (WP-104) |
 | `items/<id>.json` | the state machine only `[BUILT]` WP-106 | never | Item counters and blocked-from (section 9a); `[BUILT]` WP-106 |
 | `PAUSE` | `arima-pause` only | **never** | Kill switch file; first line is the reason |
@@ -147,6 +148,7 @@ Types: `run.start run.end run.paused preflight.fail killswitch.on killswitch.off
 | `arima-worktree` | 0 ok, 1 git failure or refusal, 2 usage |
 | `arima-publish` | 0 ok, 2 usage, 12 kill switch, 14 GitHub token missing, 31 branch refused (protected path, secret, attribution, scope), 32 push or GitHub refused |
 | `arima-merge` | 0 merged, 2 usage, 12 kill switch, 14 GitHub token missing, 30 refused (each missing condition named), 32 GitHub refused or unreachable |
+| `arima-cost` | 0 ok, 1 ledger or bills file unreadable, 2 usage, 10 config invalid, 11 a run holds the lock (reserved for WP-160) |
 | `arima-status` | 0 ok, 1 other error, 2 usage, 10 invalid config |
 
 Planned scripts reserve these codes (final values are fixed by the package that builds each; the table is the plan, not yet code):
@@ -157,7 +159,7 @@ Planned scripts reserve these codes (final values are fixed by the package that 
 | `arima-notion` additions | 11 run lock held after waiting 60 s, 12 paused (push) |
 | `arima-gate` | 0, 2, 40 to 43 criteria unmet, 10-14 |
 | `arima-meeting` | 0, 2, 3, 10-14 |
-| `arima-digest`, `arima-cost` | 0, 1, 2, 10, 11 |
+| `arima-digest` | 0, 1, 2, 10, 11 |
 | `arima-env` (local Docker, staging and preview only) | 0, 2, 12, 14 Docker not running, 70 refused (production or unknown environment), 71 smoke failed and previous image restored, 72 capacity limit |
 | `arima-release` (RC tag, version tag with SBOM, production deploy, rollback; human-run) | 0, 2, 12, 14, 40, 50 to 54 |
 | `arima-phase`, `arima-plan`, `arima-assign`, `arima-hypercare`, `arima-incident`, `arima-cr`, `arima-lessons`, `arima-judge` | fixed by WP-320, WP-216, WP-232, WP-403, WP-336, WP-217, WP-150 |

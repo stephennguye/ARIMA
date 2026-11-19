@@ -474,7 +474,7 @@ packages:
   - id: WP-131
     stage: 1
     track: skill
-    status: ready
+    status: done
     title: Cost roll-up per story/role/phase, Notion cost log, /arima:cost
     deps:
       - WP-003
