@@ -492,7 +492,7 @@ packages:
   - id: WP-141
     stage: 1
     track: engine
-    status: ready
+    status: done
     title: "Question and decision protocol (minimal): records, blocking vs assume-and-log, batching into the digest, hard-stop matters never assumed"
     deps:
       - WP-104
@@ -511,7 +511,7 @@ packages:
   - id: WP-140
     stage: 1
     track: engine
-    status: planned
+    status: ready
     title: "Notion inbox: apply human inputs (approvals, answers, vetoes, priority) from mirror diffs"
     deps:
       - WP-108

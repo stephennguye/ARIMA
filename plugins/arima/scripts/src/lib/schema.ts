@@ -20,7 +20,8 @@ export type SchemaName =
   | 'decision'
   | 'work-unit'
   | 'item'
-  | 'manual-costs';
+  | 'manual-costs'
+  | 'questions-state';
 
 const cache = new Map<string, ValidateFunction>();
 const instances = new Map<string, Ajv2020>();

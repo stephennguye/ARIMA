@@ -257,14 +257,6 @@ describe('an agent cannot choose an id; the engine issues them', () => {
             content_markdown: 'Depends on NEW-1 and NEW-2.',
           },
         ],
-        questions: [
-          {
-            question: 'Is guest checkout in scope for NEW-2?',
-            options: [{ label: 'No', recommendation: true }],
-            blocking: false,
-            default: 'No',
-          },
-        ],
         decisions: [
           {
             summary: 'Split NEW-2',
@@ -277,8 +269,8 @@ describe('an agent cannot choose an id; the engine issues them', () => {
       } as unknown as Partial<AgentReport>),
     });
     expect(r.ids).toEqual({ 'NEW-1': 'EP-01', 'NEW-2': 'US-001', 'NEW-3': 'RISK-001' });
-    expect(r.entries).toHaveLength(5);
-    expect(readCounters(dir)).toMatchObject({ EP: 1, US: 1, RISK: 1, Q: 1, DEC: 1 });
+    expect(r.entries).toHaveLength(4);
+    expect(readCounters(dir)).toMatchObject({ EP: 1, US: 1, RISK: 1, DEC: 1 });
 
     const files = pending(dir).map(
       (f) => JSON.parse(readFileSync(path.join(outboxDir(dir), f), 'utf8')) as OutboxEntry,
@@ -295,19 +287,11 @@ describe('an agent cannot choose an id; the engine issues them', () => {
     expect(files.find((e) => e.database === 'risks')?.content_markdown).toBe(
       'Depends on EP-01 and US-001.',
     );
-    expect(files.find((e) => e.database === 'questions')?.properties).toMatchObject({
-      ID: 'Q-001',
-      'Asked by': 'ba',
-      Blocking: false,
-      Default: 'No',
-    });
-
     // and they apply, in order, through the real push
     const pushed = await pushOutbox(dir, port, map);
     expect(pushed.rejected).toEqual([]);
-    expect(pushed.applied).toHaveLength(5);
+    expect(pushed.applied).toHaveLength(4);
     expect(fake.rowByTitle('Stories', 'US-001')).toBeDefined();
-    expect(fake.rowByTitle('Questions', 'Q-001')).toBeDefined();
     expect(fake.rowByTitle('Decisions', 'DEC-0001')).toBeDefined();
   });
 

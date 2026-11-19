@@ -30,6 +30,7 @@ Every interface between components. If code crosses a boundary in a way this fil
 | `state/ids.json`, `state/run-seq.json` | `arima-ids` / run id issuer | no | Locked counters |
 | `state/engine-entries.json` | `registerEngineEntry` (init, the state machine) | no | Outbox entry ids made by the engine; only these may carry `Status` at push (WP-108) |
 | `manual-costs.json` | a human | **never** | Infrastructure bills and human hours with an hourly rate, for the total cost of ownership (`manual-costs.schema.json`, WP-131) |
+| `state/questions.json` | the question protocol (`questions.ts`, WP-141) | no | What the engine knows about each question beyond its Notion row: route (owner or consult), forced blocking, hard-stop id, topic, default, expiry, status, linked DEC (`questions-state.schema.json`) |
 | `state/allocations.json` | `allocateId` (`notion/allocations.ts`) | no | Issued id -> run id. Push accepts a created id-titled row only if its id was issued to the entry's run (WP-104) |
 | `items/<id>.json` | the state machine only `[BUILT]` WP-106 | never | Item counters and blocked-from (section 9a); `[BUILT]` WP-106 |
 | `PAUSE` | `arima-pause` only | **never** | Kill switch file; first line is the reason |

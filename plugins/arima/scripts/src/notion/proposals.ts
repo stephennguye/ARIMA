@@ -18,25 +18,8 @@ interface Proposal {
 function fromReport(r: AgentReport, role: Role, today: string): Proposal[] {
   const out: Proposal[] = [];
   const item = r.item === 'none' ? undefined : r.item;
-  for (const q of (r.questions ?? []) as unknown as Record<string, unknown>[]) {
-    const options = q['options'] as { label: string; recommendation: boolean }[];
-    const hard =
-      typeof q['hard_stop'] === 'string' ? `[hard stop: ${q['hard_stop'] as string}] ` : '';
-    const to = typeof q['addressed_to'] === 'string' ? `[for ${q['addressed_to'] as string}] ` : '';
-    out.push({
-      database: 'questions',
-      properties: {
-        'Asked by': role,
-        Question: `${hard}${to}${q['question'] as string}`,
-        Options: options.map((o) => o.label).join('; '),
-        Recommendation: options.find((o) => o.recommendation)?.label ?? '',
-        Blocking: q['blocking'] === true,
-        ...(typeof q['default'] === 'string' ? { Default: q['default'] } : {}),
-        ...(typeof q['expires'] === 'string' ? { Expires: q['expires'] } : {}),
-        ...(typeof (q['item'] ?? item) === 'string' ? { Item: (q['item'] ?? item) as string } : {}),
-      },
-    });
-  }
+  // Questions are not enqueued here: the question protocol (questions.ts) decides who they go to,
+  // whether they block, and whether a decision is assumed.
   for (const d of (r.decisions ?? []) as unknown as Record<string, unknown>[]) {
     out.push({
       database: 'decisions',
@@ -87,7 +70,7 @@ export interface EnqueueResult {
 }
 
 /**
- * Turns the records, questions and decisions of a validated agent report into outbox entries
+ * Turns the records and decisions of a validated agent report into outbox entries
  * (03-contracts 3.3). The engine, not the agent, issues every id: each proposal in an
  * id-titled database gets the next counter value, and `NEW-n` placeholders anywhere in the batch
  * become the issued ids. An agent that supplies its own id for such a record is refused. Entries

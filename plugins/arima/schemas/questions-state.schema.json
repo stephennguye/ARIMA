@@ -1,0 +1,40 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/stephennguye/ARIMA/schemas/questions-state.schema.json",
+  "title": "Question state",
+  "description": ".arima/state/questions.json: what the engine knows about each question beyond the Notion row (route, forced blocking, hard-stop id, topic, linked decision). Written only by the question protocol (WP-141).",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "questions"],
+  "properties": {
+    "schema_version": { "const": 1 },
+    "questions": {
+      "type": "object",
+      "propertyNames": { "pattern": "^Q-[0-9]{3,}$" },
+      "additionalProperties": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["raised_by", "run_id", "item", "question", "route", "blocking", "status", "created_at"],
+        "properties": {
+          "raised_by": { "enum": ["orchestrator", "ba", "ux", "architect", "tech-lead", "developer", "qa", "security", "devops"] },
+          "run_id": { "type": "string" },
+          "item": { "type": "string" },
+          "topic": { "type": "string" },
+          "question": { "type": "string" },
+          "route": { "enum": ["owner", "consult"] },
+          "consult_role": { "enum": ["orchestrator", "ba", "ux", "architect", "tech-lead", "developer", "qa", "security", "devops"] },
+          "blocking": { "type": "boolean", "description": "After forcing: hard-stop matters and block_story policy are always blocking" },
+          "hard_stop": { "type": "string" },
+          "default": { "type": "string" },
+          "expires": { "type": "string", "format": "date" },
+          "status": { "enum": ["open", "answered", "expired"] },
+          "created_at": { "type": "string", "format": "date-time" },
+          "answer": { "type": "string" },
+          "answered_by": { "type": "string" },
+          "escalated": { "type": "boolean" },
+          "decision": { "type": "string", "pattern": "^DEC-[0-9]{4,}$" }
+        }
+      }
+    }
+  }
+}
