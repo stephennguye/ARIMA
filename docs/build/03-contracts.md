@@ -161,7 +161,7 @@ Planned scripts reserve these codes (final values are fixed by the package that 
 | `arima-release` (RC tag, version tag with SBOM, production deploy, rollback; human-run) | 0, 2, 12, 14, 40, 50 to 54 |
 | `arima-phase`, `arima-plan`, `arima-assign`, `arima-hypercare`, `arima-incident`, `arima-cr`, `arima-lessons`, `arima-judge` | fixed by WP-320, WP-216, WP-232, WP-403, WP-336, WP-217, WP-150 |
 
-## 9. Ticket state machine `[SPEC]` 7.1, built by WP-107 (table-driven, exhaustively tested)
+## 9. Ticket state machine `[SPEC]` 7.1, `[BUILT]` by WP-107 (`src/state-machine.ts`; table-driven, exhaustively tested)
 
 States: `Backlog, Ready, In Progress, In Review, In QA, PO Acceptance, Done, Released, Blocked, Cancelled`.
 

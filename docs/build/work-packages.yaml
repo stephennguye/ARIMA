@@ -294,7 +294,7 @@ packages:
   - id: WP-107
     stage: 1
     track: engine
-    status: ready
+    status: done
     title: Ticket state machine (pure, table-driven from 03-contracts section 9)
     deps:
       - WP-106
@@ -309,7 +309,7 @@ packages:
   - id: WP-108
     stage: 1
     track: engine
-    status: planned
+    status: ready
     title: "Status ownership: engine writes Status with the human flag; reconcile human status changes from the mirror"
     deps:
       - WP-107
@@ -325,7 +325,7 @@ packages:
   - id: WP-109
     stage: 1
     track: engine
-    status: planned
+    status: ready
     title: "Queue: plan-the-day order (spec 7.2.4), WIP and parallelism, review-queue limit"
     deps:
       - WP-107
