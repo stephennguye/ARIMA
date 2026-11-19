@@ -403,3 +403,25 @@ describe('storiesFromMirror', () => {
     expect(storiesFromMirror(tempDir(), cfg)).toEqual([]);
   });
 });
+
+describe('a story whose QA already passed this head (WP-121, found by E-S1)', () => {
+  it('is not sent to QA again while it waits for the human approval and the merge', () => {
+    const p = planDay({ stories: [story('US-001', 'In QA', { qaPassed: true })] }, LIMITS);
+    expect(p.units).toEqual([]);
+    expect(p.skipped).toEqual([
+      expect.objectContaining({
+        item: 'US-001',
+        reason: expect.stringMatching(/QA already passed/),
+      }),
+    ]);
+  });
+
+  it('still goes to QA when it has not passed (or after a new push, which clears the flag)', () => {
+    expect(shape(planDay({ stories: [story('US-001', 'In QA')] }, LIMITS))).toEqual([
+      '4:qa:qa:US-001',
+    ]);
+    expect(
+      shape(planDay({ stories: [story('US-001', 'In QA', { qaPassed: false })] }, LIMITS)),
+    ).toEqual(['4:qa:qa:US-001']);
+  });
+});

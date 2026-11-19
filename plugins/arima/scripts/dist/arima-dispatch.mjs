@@ -25681,6 +25681,12 @@ function planDay(input, limits, ranks = RANKS) {
                 ...limits.reviewers > 1 ? { reviewer: r } : {},
                 why: "PR open, CI green, criteria mapped"
               });
+          } else if (s.status === "In QA" && s.qaPassed === true) {
+            skip(
+              rankName,
+              s.id,
+              "QA already passed this head; waiting for the human approval and the merge"
+            );
           } else if (s.status === "In QA") {
             if (!s.budgetOk) {
               skip(rankName, s.id, "story budget used up");
@@ -26340,7 +26346,10 @@ async function runDispatch(o) {
         expired: exp.tookDefault.length
       });
     } else await step(3, { skipped: dry ? "dry run" : "degraded" });
-    if (!dry && !res.degraded) await advanceByFacts();
+    if (!dry && !res.degraded) {
+      await advanceByFacts();
+      await autoAccept();
+    }
     const stories = storiesFromMirror(o.projectDir, {
       perStoryDefault: cfg.budget.per_story_default,
       ...cfg.budget.by_size ? { bySize: cfg.budget.by_size } : {},
@@ -26349,6 +26358,8 @@ async function runDispatch(o) {
     for (const s of stories) {
       const prReady = (s.status === "In Review" || s.status === "In QA") && await gh.prReady(s.id);
       if (prReady) s.prReady = true;
+      if (s.status === "In QA" && verdictAfterLastPush(o.projectDir, s.id, "qa", "qa") === "pass")
+        s.qaPassed = true;
     }
     const developers = Math.max(
       1,
@@ -26537,6 +26548,20 @@ async function runDispatch(o) {
       }
       return handleOutcome(unit, outcome, branch);
     }
+    async function autoAccept() {
+      for (const row of readMirror(o.projectDir, "stories")?.rows ?? []) {
+        if (!/^US-\d+$/.test(row.id) || row.properties["Status"] !== "PO Acceptance") continue;
+        await moveItem({
+          projectDir: o.projectDir,
+          item: row.id,
+          to: "Done",
+          actor: "orchestrator",
+          runId,
+          now,
+          facts: { guards: { qa_passed: true } }
+        });
+      }
+    }
     async function advanceByFacts() {
       for (const s of storiesFromMirror(o.projectDir, {
         perStoryDefault: cfg.budget.per_story_default,
@@ -26624,6 +26649,8 @@ async function runDispatch(o) {
         await afterReview(unit, report.verdict.result);
       if (unit.kind === "qa" && report.status === "done" && report.verdict?.result === "fail")
         await afterQaFail(unit, report);
+      if (unit.kind === "qa" && report.status === "done" && report.verdict?.result === "pass")
+        await afterQaPass(unit);
       return base;
     }
     async function comment(unit, report) {
@@ -26685,6 +26712,27 @@ async function runDispatch(o) {
         res.warnings.push(
           `could not publish ${unit.item}: ${e instanceof Error ? e.message : String(e)}`
         );
+      }
+    }
+    async function afterQaPass(unit) {
+      const story = findRow(readMirror(o.projectDir, "stories"), unit.item);
+      const refs = Array.isArray(story?.properties["Test Cases"]) ? story?.properties["Test Cases"] : [];
+      const cases = readMirror(o.projectDir, "test_cases");
+      let n = 0;
+      for (const ref of refs) {
+        const row = findRow(cases, ref);
+        if (row === void 0) continue;
+        n += 1;
+        enqueue(o.projectDir, {
+          id: `qa-${runId}-${unit.item}-${n}`,
+          created_at: new Date(now.getTime() + n).toISOString(),
+          run_id: runId,
+          role: "orchestrator",
+          op: "update",
+          database: "test_cases",
+          item_id: row.id,
+          properties: { "Last result": "Pass" }
+        });
       }
     }
     async function afterReview(unit, verdict) {

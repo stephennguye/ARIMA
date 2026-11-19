@@ -43,6 +43,8 @@ export interface StoryFacts {
   budgetOk: boolean;
   /** A PR is open, CI is green and every criterion is mapped (from the host's read of GitHub). */
   prReady?: boolean;
+  /** QA already passed this head of the PR: the story now waits for the human approval and the merge. */
+  qaPassed?: boolean;
   /** Last rework came from QA rather than review (`failed_qa` instead of `failed_review`). */
   lastFailureQa?: boolean;
 }
@@ -236,6 +238,12 @@ export function planDay(
                 ...(limits.reviewers > 1 ? { reviewer: r } : {}),
                 why: 'PR open, CI green, criteria mapped',
               });
+          } else if (s.status === 'In QA' && s.qaPassed === true) {
+            skip(
+              rankName,
+              s.id,
+              'QA already passed this head; waiting for the human approval and the merge',
+            );
           } else if (s.status === 'In QA') {
             if (!s.budgetOk) {
               skip(rankName, s.id, 'story budget used up');

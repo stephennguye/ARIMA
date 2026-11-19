@@ -443,7 +443,7 @@ packages:
   - id: WP-121
     stage: 1
     track: eval
-    status: planned
+    status: done
     title: Stub agents (deterministic fake roles) and the E-S1 scenario
     deps:
       - WP-120

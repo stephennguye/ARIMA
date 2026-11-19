@@ -19,7 +19,8 @@ import { mirrorStatus, moveItem } from './item-status.js';
 import type { Size } from './item.js';
 import { checkKillSwitch } from './killswitch.js';
 import type { Role } from './ledger.js';
-import { mergePr, summariseChecks } from './merge.js';
+import { mergePr, summariseChecks, verdictAfterLastPush } from './merge.js';
+import { enqueue } from './notion/outbox.js';
 import { enqueueReportRecords } from './notion/proposals.js';
 import { findRow, pullMirror, readMirror, readNotionMap } from './notion/mirror.js';
 import type { NotionPort } from './notion/port.js';
@@ -400,7 +401,10 @@ export async function runDispatch(o: DispatchOptions): Promise<DispatchResult> {
       });
     } else await step(3, { skipped: dry ? 'dry run' : 'degraded' });
 
-    if (!dry && !res.degraded) await advanceByFacts();
+    if (!dry && !res.degraded) {
+      await advanceByFacts();
+      await autoAccept();
+    }
 
     // ---- 4. Plan the day ----------------------------------------------------------------------------
     const stories: StoryFacts[] = storiesFromMirror(o.projectDir, {
@@ -412,6 +416,8 @@ export async function runDispatch(o: DispatchOptions): Promise<DispatchResult> {
       const prReady =
         (s.status === 'In Review' || s.status === 'In QA') && (await gh.prReady(s.id));
       if (prReady) s.prReady = true;
+      if (s.status === 'In QA' && verdictAfterLastPush(o.projectDir, s.id, 'qa', 'qa') === 'pass')
+        s.qaPassed = true;
     }
     const developers = Math.max(
       1,
@@ -644,6 +650,26 @@ export async function runDispatch(o: DispatchOptions): Promise<DispatchResult> {
       }
     }
 
+    /**
+     * D-16: a story that passed QA and was merged (PO Acceptance) is accepted automatically, on the
+     * next run and only AFTER the human inputs of step 3 were applied, so a veto entered since the
+     * last run wins (it sends the story back from PO Acceptance, spec 7.1).
+     */
+    async function autoAccept(): Promise<void> {
+      for (const row of readMirror(o.projectDir, 'stories')?.rows ?? []) {
+        if (!/^US-\d+$/.test(row.id) || row.properties['Status'] !== 'PO Acceptance') continue;
+        await moveItem({
+          projectDir: o.projectDir,
+          item: row.id,
+          to: 'Done',
+          actor: 'orchestrator',
+          runId,
+          now,
+          facts: { guards: { qa_passed: true } },
+        });
+      }
+    }
+
     /** A story whose published PR is green moves In Progress -> In Review, when every criterion was reported met. */
     async function advanceByFacts(): Promise<void> {
       for (const s of storiesFromMirror(o.projectDir, {
@@ -816,6 +842,8 @@ export async function runDispatch(o: DispatchOptions): Promise<DispatchResult> {
         await afterReview(unit, report.verdict.result);
       if (unit.kind === 'qa' && report.status === 'done' && report.verdict?.result === 'fail')
         await afterQaFail(unit, report);
+      if (unit.kind === 'qa' && report.status === 'done' && report.verdict?.result === 'pass')
+        await afterQaPass(unit);
       return base;
     }
 
@@ -894,6 +922,31 @@ export async function runDispatch(o: DispatchOptions): Promise<DispatchResult> {
         res.warnings.push(
           `could not publish ${unit.item}: ${e instanceof Error ? e.message : String(e)}`,
         );
+      }
+    }
+
+    /** QA passed: the engine (not QA) sets `Last result` to Pass on every test case of the story (merge needs it). */
+    async function afterQaPass(unit: PlannedUnit): Promise<void> {
+      const story = findRow(readMirror(o.projectDir, 'stories'), unit.item);
+      const refs = Array.isArray(story?.properties['Test Cases'])
+        ? (story?.properties['Test Cases'] as string[])
+        : [];
+      const cases = readMirror(o.projectDir, 'test_cases');
+      let n = 0;
+      for (const ref of refs) {
+        const row = findRow(cases, ref);
+        if (row === undefined) continue;
+        n += 1;
+        enqueue(o.projectDir, {
+          id: `qa-${runId}-${unit.item}-${n}`,
+          created_at: new Date(now.getTime() + n).toISOString(),
+          run_id: runId,
+          role: 'orchestrator',
+          op: 'update',
+          database: 'test_cases',
+          item_id: row.id,
+          properties: { 'Last result': 'Pass' },
+        });
       }
     }
 

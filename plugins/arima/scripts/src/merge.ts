@@ -255,7 +255,7 @@ const REASON: Partial<Record<Condition, ReasonCode>> = {
 };
 
 /** The latest accepted report of a role and kind for an item, if it is newer than the last push of the branch. */
-function verdictAfterLastPush(
+export function verdictAfterLastPush(
   projectDir: string,
   item: string,
   role: string,
