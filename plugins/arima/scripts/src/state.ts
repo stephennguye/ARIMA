@@ -15,7 +15,7 @@ import {
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { appendEvent } from './events.js';
-import { findSecrets } from './lib/secrets.js';
+import { parseAllowlist, scanSecrets } from './lib/secrets.js';
 
 export class StateError extends Error {}
 
@@ -27,12 +27,16 @@ export interface StateOptions {
   /** The app's default branch; the state branch must differ from it. */
   defaultBranch?: string;
   remote?: string;
+  /** Allow pushing state (client data) to a PUBLIC GitHub repository. Off unless the owner opts in. */
+  allowPublic?: boolean;
+  /** Tells whether a GitHub repo is private; defaults to asking `gh`. Tests inject this. */
+  isPrivate?: (owner: string, repo: string) => boolean | undefined;
 }
 
 const DEFAULT_BRANCH = 'arima-state';
 const STATE_GITIGNORE = '*.lock\n*.tmp\nrun.lock\n';
 const STATE_GITATTRIBUTES = '* -text\n';
-const MAX_SCAN_BYTES = 5 * 1024 * 1024;
+const MAX_SCAN_BYTES = 64 * 1024 * 1024;
 
 function git(cwd: string, args: string[], input?: string): string {
   try {
@@ -235,19 +239,40 @@ export interface PushResult {
   pushed: boolean;
   commit?: string;
   files: number;
+  warnings: string[];
 }
 
-/** Files (relative to `.arima/`) that look like they contain a credential. */
-function scanStaged(r: Resolved): string[] {
+/** One thing in a staged file that stops the commit. */
+interface StagedProblem {
+  file: string;
+  rule: string;
+  fingerprint?: string;
+}
+
+/**
+ * Staged files (relative to `.arima/`) that look like they contain a credential, or are too big
+ * to scan. A human may allow a reviewed false alarm by adding its fingerprint to
+ * `.arima/secret-allowlist.txt` (agents cannot write that file).
+ */
+function scanStaged(r: Resolved): StagedProblem[] {
   const names = git(r.stateDir, ['diff', '--cached', '--name-only', '--diff-filter=AM'])
     .split('\n')
     .filter(Boolean);
-  const bad: string[] = [];
+  const allowFile = path.join(r.stateDir, 'secret-allowlist.txt');
+  const allowed = existsSync(allowFile)
+    ? parseAllowlist(readFileSync(allowFile, 'utf8'))
+    : new Set<string>();
+  const bad: StagedProblem[] = [];
   for (const name of names) {
     const file = path.join(r.stateDir, name);
     try {
-      if (statSync(file).size > MAX_SCAN_BYTES) continue;
-      if (findSecrets(readFileSync(file, 'utf8')).length > 0) bad.push(name);
+      if (statSync(file).size > MAX_SCAN_BYTES) {
+        bad.push({ file: name, rule: 'file too large to scan for secrets' });
+        continue;
+      }
+      for (const f of scanSecrets(readFileSync(file, 'utf8'), allowed)) {
+        bad.push({ file: name, rule: f.rule, fingerprint: f.fingerprint });
+      }
     } catch {
       /* deleted or unreadable: nothing to scan */
     }
@@ -277,13 +302,16 @@ export async function pushState(o: StateOptions & { runId: string }): Promise<Pu
   git(r.stateDir, ['add', '-A']);
   const staged = git(r.stateDir, ['diff', '--cached', '--name-only']).split('\n').filter(Boolean);
   if (staged.length === 0) {
-    return { committed: false, pushed: false, files: 0 };
+    return { committed: false, pushed: false, files: 0, warnings: [] };
   }
   const bad = scanStaged(r);
   if (bad.length > 0) {
     git(r.stateDir, ['reset', '-q']);
+    const lines = bad.map(
+      (p) => `  ${p.file}: ${p.rule}${p.fingerprint ? ` (${p.fingerprint})` : ''}`,
+    );
     throw new StateError(
-      `refusing to commit state: ${bad.length} file(s) look like they contain a secret: ${bad.join(', ')}`,
+      `refusing to commit state: ${bad.length} finding(s) that look like secrets:\n${lines.join('\n')}\nIf you have reviewed a finding and it is NOT a secret, add its fingerprint on its own line to .arima/secret-allowlist.txt and run again.`,
     );
   }
   git(r.stateDir, [
@@ -296,11 +324,25 @@ export async function pushState(o: StateOptions & { runId: string }): Promise<Pu
   const commit = git(r.stateDir, ['rev-parse', 'HEAD']);
 
   let pushed = false;
+  const warnings: string[] = [];
   if (r.hasRemote) {
+    // The state branch holds the Notion mirror: client names, requirements, costs. It must go only
+    // to a private repository (spec §9.4, §11.3).
+    const privacy = checkRemotePrivacy(r, o);
+    if (privacy.kind === 'public' && o.allowPublic !== true) {
+      throw new StateError(
+        `refusing to push state: ${privacy.slug} is a PUBLIC GitHub repository, and the state branch holds your Notion data (requirements, client names, costs). Make the repository private, or set github.allow_public_state: true in arima.yaml if you really mean it.`,
+      );
+    }
+    if (privacy.kind === 'unknown' && o.allowPublic !== true) {
+      throw new StateError(
+        `refusing to push state: could not check whether ${privacy.slug} is private (is the gh CLI installed and signed in, and is the remote a normal github.com repository?). The state branch holds your Notion data, so ARIMA refuses when it cannot be sure. Sign in with 'gh auth login' and run again, or set github.allow_public_state: true in arima.yaml if you accept the risk.`,
+      );
+    }
     git(r.stateDir, ['push', '--set-upstream', r.remote, `${r.branch}:${r.branch}`]);
     pushed = true;
   }
-  return { committed: true, pushed, commit, files: staged.length };
+  return { committed: true, pushed, commit, files: staged.length, warnings };
 }
 
 export interface StateStatus {
@@ -321,4 +363,95 @@ export function stateStatus(o: StateOptions): StateStatus {
     );
   }
   return { worktree: true, branch: r.branch, dirty, ahead };
+}
+
+/**
+ * Whether the PAUSE file exists on the remote state branch (spec §11.3: the kill switch must be
+ * readable from the state branch when Notion is unreachable). Fetches with a short timeout and
+ * never prompts. Returns true or false, or undefined if the answer could not be obtained (no git
+ * repo, no remote, or the network is down).
+ */
+export function remotePauseFlag(o: StateOptions): boolean | undefined {
+  let r: Resolved;
+  try {
+    r = resolve(o);
+  } catch {
+    return undefined;
+  }
+  if (!r.hasRemote) return undefined;
+  const ref = `refs/remotes/${r.remote}/${r.branch}`;
+  try {
+    execFileSync('git', ['fetch', '--quiet', r.remote, `+refs/heads/${r.branch}:${ref}`], {
+      cwd: r.repo,
+      stdio: ['ignore', 'ignore', 'pipe'],
+      timeout: 15_000,
+      env: { ...process.env, GIT_TERMINAL_PROMPT: '0' },
+    });
+  } catch (e) {
+    // A remote that simply has no state branch yet has no PAUSE file either.
+    const msg = String((e as { stderr?: unknown }).stderr ?? '');
+    if (!/couldn't find remote ref/i.test(msg)) return undefined;
+    return false;
+  }
+  return gitOk(r.repo, ['cat-file', '-e', `${ref}:PAUSE`]);
+}
+
+type Privacy = { kind: 'private' | 'public' | 'unknown'; slug: string } | { kind: 'not-github' };
+
+/** owner/repo from a GitHub remote URL (https or ssh), or undefined for any other remote. */
+const SLUG_PART = /^[A-Za-z0-9_][A-Za-z0-9._-]*$/;
+
+/**
+ * owner/repo from a GitHub remote URL (https or ssh), or undefined for any other remote, or for a
+ * github.com URL whose owner or repo contains characters GitHub does not allow (so that a hostile
+ * remote URL can never become an option to the gh CLI).
+ */
+export function githubSlug(url: string): { owner: string; repo: string } | undefined {
+  const m =
+    /^(?:https?:\/\/(?:[^@/]+@)?github\.com\/|git@github\.com:|ssh:\/\/git@github\.com\/)([^/\s]+)\/([^/\s]+?)(?:\.git)?\/?$/i.exec(
+      url.trim(),
+    );
+  if (!m) return undefined;
+  const owner = m[1] as string;
+  const repo = m[2] as string;
+  if (!SLUG_PART.test(owner) || !SLUG_PART.test(repo) || repo === '.' || repo === '..') {
+    return undefined;
+  }
+  return { owner, repo };
+}
+
+/** A URL that points at github.com in any form, valid or not. */
+const MENTIONS_GITHUB = /(^|[/@:])github\.com[/:]/i;
+
+function checkRemotePrivacy(r: Resolved, o: StateOptions): Privacy {
+  let url: string;
+  try {
+    url = git(r.repo, ['config', '--get', 'remote.' + r.remote + '.url']);
+  } catch {
+    return { kind: 'not-github' };
+  }
+  const slug = githubSlug(url);
+  if (slug === undefined) {
+    // A github.com URL we cannot parse safely is not "somewhere else": refuse rather than guess.
+    return MENTIONS_GITHUB.test(url)
+      ? { kind: 'unknown', slug: 'the remote' }
+      : { kind: 'not-github' };
+  }
+  const name = `${slug.owner}/${slug.repo}`;
+  let priv: boolean | undefined;
+  if (o.isPrivate) {
+    priv = o.isPrivate(slug.owner, slug.repo);
+  } else {
+    try {
+      const out = execFileSync(
+        'gh',
+        ['repo', 'view', name, '--json', 'isPrivate', '--jq', '.isPrivate'],
+        { encoding: 'utf8', timeout: 20_000, stdio: ['ignore', 'pipe', 'ignore'] },
+      ).trim();
+      priv = out === 'true' ? true : out === 'false' ? false : undefined;
+    } catch {
+      priv = undefined;
+    }
+  }
+  return { kind: priv === undefined ? 'unknown' : priv ? 'private' : 'public', slug: name };
 }

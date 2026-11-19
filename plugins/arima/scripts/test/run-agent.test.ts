@@ -1,6 +1,6 @@
 import { existsSync, mkdirSync, readFileSync, readdirSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
-import { afterEach, describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { runAgentCli } from '../src/cli/run-agent-cli.js';
 import { validateProject } from '../src/config.js';
 import { readEvents } from '../src/events.js';
@@ -17,6 +17,8 @@ const config = (over: Partial<AgentConfig> = {}): AgentConfig => ({
   perRunCap: 2,
   maxRunMinutes: 1,
   notionTokenEnv: 'ARIMA_NOTION_TOKEN',
+  projectCap: 100,
+  dailyCap: 20,
   githubTokenEnv: 'ARIMA_GITHUB_TOKEN',
   ...over,
 });
@@ -60,15 +62,15 @@ function go(
     promptFile: s.prompt,
     phase: 4,
     config: config(),
+    killSwitch: { notion: null },
     claudeBin: STUB,
     env: {
       ...process.env,
-      STUB_MODE: mode,
-      STUB_RECORD: s.record,
       ARIMA_NOTION_TOKEN: 'placeholder-not-a-real-token',
       ARIMA_GITHUB_TOKEN: 'placeholder-not-a-real-token',
-      ...extraEnv,
     },
+    // The child gets an allow-list of the environment; these steer the stub CLI.
+    extraEnv: { STUB_MODE: mode, STUB_RECORD: s.record, ...extraEnv },
     now: new Date(2026, 10, 17, 6, 3),
     ...over,
   });
@@ -100,7 +102,7 @@ describe('runAgent: a normal run', () => {
     expect(flag('--max-turns')).toBe('10');
     expect(flag('--permission-mode')).toBe('dontAsk');
     expect(flag('--model')).toBe('claude-sonnet-5-5');
-    expect(flag('--allowedTools')).toContain('Bash(git *)');
+    expect(flag('--allowedTools')).toContain('Bash(git push *)');
     expect(flag('--disallowedTools')).toContain('mcp__*notion*');
     expect(rec.stdin).toBe('Implement US-112.');
     expect(path.resolve(rec.cwd).toLowerCase()).toBe(path.resolve(worktree).toLowerCase());
@@ -301,7 +303,7 @@ describe('least privilege', () => {
     ] as const) {
       const allowed = allowedTools(role, '/x/scripts/dist');
       expect(allowed).not.toContain('Bash');
-      expect(allowed.some((t) => /notion/i.test(t))).toBe(false);
+      expect(allowed.some((t) => /mcp__.*notion/i.test(t))).toBe(false);
     }
   });
 
@@ -357,9 +359,14 @@ describe('arima-run-agent CLI', () => {
     return { code, out, err };
   };
 
+  beforeEach(() => {
+    process.env['ARIMA_PASSTHROUGH_ENV'] = 'STUB_MODE';
+  });
+
   afterEach(() => {
     delete process.env['ARIMA_CLAUDE_BIN'];
     delete process.env['STUB_MODE'];
+    delete process.env['ARIMA_PASSTHROUGH_ENV'];
   });
 
   it('runs end to end against the stub and prints a JSON summary', async () => {

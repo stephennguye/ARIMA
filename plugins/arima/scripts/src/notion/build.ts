@@ -1,3 +1,4 @@
+import { ensureNotionSwitch } from '../killswitch.js';
 import type { DatabaseInfo, NotionPort } from './port.js';
 import { isPlain, toApiProperty, toApiRelation } from './props.js';
 import type { ApiProperty } from './props.js';
@@ -186,5 +187,6 @@ export async function bootstrapTemplate(
     await port.appendParagraph(parentPageId, `${VERSION_MARKER} ${TEMPLATE_SCHEMA_VERSION}`);
     log('wrote    template schema version');
   }
+  if (await ensureNotionSwitch(port, parentPageId)) log('created  the Pause ARIMA kill switch');
   return report;
 }

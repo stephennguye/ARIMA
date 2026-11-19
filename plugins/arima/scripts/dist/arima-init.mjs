@@ -112,17 +112,17 @@ var require_visit = __commonJS({
     visit.BREAK = BREAK;
     visit.SKIP = SKIP;
     visit.REMOVE = REMOVE;
-    function visit_(key, node, visitor, path18) {
-      const ctrl = callVisitor(key, node, visitor, path18);
+    function visit_(key, node, visitor, path19) {
+      const ctrl = callVisitor(key, node, visitor, path19);
       if (identity.isNode(ctrl) || identity.isPair(ctrl)) {
-        replaceNode(key, path18, ctrl);
-        return visit_(key, ctrl, visitor, path18);
+        replaceNode(key, path19, ctrl);
+        return visit_(key, ctrl, visitor, path19);
       }
       if (typeof ctrl !== "symbol") {
         if (identity.isCollection(node)) {
-          path18 = Object.freeze(path18.concat(node));
+          path19 = Object.freeze(path19.concat(node));
           for (let i = 0; i < node.items.length; ++i) {
-            const ci = visit_(i, node.items[i], visitor, path18);
+            const ci = visit_(i, node.items[i], visitor, path19);
             if (typeof ci === "number")
               i = ci - 1;
             else if (ci === BREAK)
@@ -133,13 +133,13 @@ var require_visit = __commonJS({
             }
           }
         } else if (identity.isPair(node)) {
-          path18 = Object.freeze(path18.concat(node));
-          const ck = visit_("key", node.key, visitor, path18);
+          path19 = Object.freeze(path19.concat(node));
+          const ck = visit_("key", node.key, visitor, path19);
           if (ck === BREAK)
             return BREAK;
           else if (ck === REMOVE)
             node.key = null;
-          const cv = visit_("value", node.value, visitor, path18);
+          const cv = visit_("value", node.value, visitor, path19);
           if (cv === BREAK)
             return BREAK;
           else if (cv === REMOVE)
@@ -160,17 +160,17 @@ var require_visit = __commonJS({
     visitAsync.BREAK = BREAK;
     visitAsync.SKIP = SKIP;
     visitAsync.REMOVE = REMOVE;
-    async function visitAsync_(key, node, visitor, path18) {
-      const ctrl = await callVisitor(key, node, visitor, path18);
+    async function visitAsync_(key, node, visitor, path19) {
+      const ctrl = await callVisitor(key, node, visitor, path19);
       if (identity.isNode(ctrl) || identity.isPair(ctrl)) {
-        replaceNode(key, path18, ctrl);
-        return visitAsync_(key, ctrl, visitor, path18);
+        replaceNode(key, path19, ctrl);
+        return visitAsync_(key, ctrl, visitor, path19);
       }
       if (typeof ctrl !== "symbol") {
         if (identity.isCollection(node)) {
-          path18 = Object.freeze(path18.concat(node));
+          path19 = Object.freeze(path19.concat(node));
           for (let i = 0; i < node.items.length; ++i) {
-            const ci = await visitAsync_(i, node.items[i], visitor, path18);
+            const ci = await visitAsync_(i, node.items[i], visitor, path19);
             if (typeof ci === "number")
               i = ci - 1;
             else if (ci === BREAK)
@@ -181,13 +181,13 @@ var require_visit = __commonJS({
             }
           }
         } else if (identity.isPair(node)) {
-          path18 = Object.freeze(path18.concat(node));
-          const ck = await visitAsync_("key", node.key, visitor, path18);
+          path19 = Object.freeze(path19.concat(node));
+          const ck = await visitAsync_("key", node.key, visitor, path19);
           if (ck === BREAK)
             return BREAK;
           else if (ck === REMOVE)
             node.key = null;
-          const cv = await visitAsync_("value", node.value, visitor, path18);
+          const cv = await visitAsync_("value", node.value, visitor, path19);
           if (cv === BREAK)
             return BREAK;
           else if (cv === REMOVE)
@@ -214,23 +214,23 @@ var require_visit = __commonJS({
       }
       return visitor;
     }
-    function callVisitor(key, node, visitor, path18) {
+    function callVisitor(key, node, visitor, path19) {
       if (typeof visitor === "function")
-        return visitor(key, node, path18);
+        return visitor(key, node, path19);
       if (identity.isMap(node))
-        return visitor.Map?.(key, node, path18);
+        return visitor.Map?.(key, node, path19);
       if (identity.isSeq(node))
-        return visitor.Seq?.(key, node, path18);
+        return visitor.Seq?.(key, node, path19);
       if (identity.isPair(node))
-        return visitor.Pair?.(key, node, path18);
+        return visitor.Pair?.(key, node, path19);
       if (identity.isScalar(node))
-        return visitor.Scalar?.(key, node, path18);
+        return visitor.Scalar?.(key, node, path19);
       if (identity.isAlias(node))
-        return visitor.Alias?.(key, node, path18);
+        return visitor.Alias?.(key, node, path19);
       return void 0;
     }
-    function replaceNode(key, path18, node) {
-      const parent = path18[path18.length - 1];
+    function replaceNode(key, path19, node) {
+      const parent = path19[path19.length - 1];
       if (identity.isCollection(parent)) {
         parent.items[key] = node;
       } else if (identity.isPair(parent)) {
@@ -842,10 +842,10 @@ var require_Collection = __commonJS({
     var createNode = require_createNode();
     var identity = require_identity();
     var Node = require_Node();
-    function collectionFromPath(schema, path18, value) {
+    function collectionFromPath(schema, path19, value) {
       let v = value;
-      for (let i = path18.length - 1; i >= 0; --i) {
-        const k = path18[i];
+      for (let i = path19.length - 1; i >= 0; --i) {
+        const k = path19[i];
         if (typeof k === "number" && Number.isInteger(k) && k >= 0) {
           const a = [];
           a[k] = v;
@@ -864,7 +864,7 @@ var require_Collection = __commonJS({
         sourceObjects: /* @__PURE__ */ new Map()
       });
     }
-    var isEmptyPath = (path18) => path18 == null || typeof path18 === "object" && !!path18[Symbol.iterator]().next().done;
+    var isEmptyPath = (path19) => path19 == null || typeof path19 === "object" && !!path19[Symbol.iterator]().next().done;
     var Collection = class extends Node.NodeBase {
       constructor(type, schema) {
         super(type);
@@ -894,11 +894,11 @@ var require_Collection = __commonJS({
        * be a Pair instance or a `{ key, value }` object, which may not have a key
        * that already exists in the map.
        */
-      addIn(path18, value) {
-        if (isEmptyPath(path18))
+      addIn(path19, value) {
+        if (isEmptyPath(path19))
           this.add(value);
         else {
-          const [key, ...rest] = path18;
+          const [key, ...rest] = path19;
           const node = this.get(key, true);
           if (identity.isCollection(node))
             node.addIn(rest, value);
@@ -912,8 +912,8 @@ var require_Collection = __commonJS({
        * Removes a value from the collection.
        * @returns `true` if the item was found and removed.
        */
-      deleteIn(path18) {
-        const [key, ...rest] = path18;
+      deleteIn(path19) {
+        const [key, ...rest] = path19;
         if (rest.length === 0)
           return this.delete(key);
         const node = this.get(key, true);
@@ -927,8 +927,8 @@ var require_Collection = __commonJS({
        * scalar values from their surrounding node; to disable set `keepScalar` to
        * `true` (collections are always returned intact).
        */
-      getIn(path18, keepScalar) {
-        const [key, ...rest] = path18;
+      getIn(path19, keepScalar) {
+        const [key, ...rest] = path19;
         const node = this.get(key, true);
         if (rest.length === 0)
           return !keepScalar && identity.isScalar(node) ? node.value : node;
@@ -946,8 +946,8 @@ var require_Collection = __commonJS({
       /**
        * Checks if the collection includes a value with the key `key`.
        */
-      hasIn(path18) {
-        const [key, ...rest] = path18;
+      hasIn(path19) {
+        const [key, ...rest] = path19;
         if (rest.length === 0)
           return this.has(key);
         const node = this.get(key, true);
@@ -957,8 +957,8 @@ var require_Collection = __commonJS({
        * Sets a value in this collection. For `!!set`, `value` needs to be a
        * boolean to add/remove the item from the set.
        */
-      setIn(path18, value) {
-        const [key, ...rest] = path18;
+      setIn(path19, value) {
+        const [key, ...rest] = path19;
         if (rest.length === 0) {
           this.set(key, value);
         } else {
@@ -3473,9 +3473,9 @@ var require_Document = __commonJS({
           this.contents.add(value);
       }
       /** Adds a value to the document. */
-      addIn(path18, value) {
+      addIn(path19, value) {
         if (assertCollection(this.contents))
-          this.contents.addIn(path18, value);
+          this.contents.addIn(path19, value);
       }
       /**
        * Create a new `Alias` node, ensuring that the target `node` has the required anchor.
@@ -3550,14 +3550,14 @@ var require_Document = __commonJS({
        * Removes a value from the document.
        * @returns `true` if the item was found and removed.
        */
-      deleteIn(path18) {
-        if (Collection.isEmptyPath(path18)) {
+      deleteIn(path19) {
+        if (Collection.isEmptyPath(path19)) {
           if (this.contents == null)
             return false;
           this.contents = null;
           return true;
         }
-        return assertCollection(this.contents) ? this.contents.deleteIn(path18) : false;
+        return assertCollection(this.contents) ? this.contents.deleteIn(path19) : false;
       }
       /**
        * Returns item at `key`, or `undefined` if not found. By default unwraps
@@ -3572,10 +3572,10 @@ var require_Document = __commonJS({
        * scalar values from their surrounding node; to disable set `keepScalar` to
        * `true` (collections are always returned intact).
        */
-      getIn(path18, keepScalar) {
-        if (Collection.isEmptyPath(path18))
+      getIn(path19, keepScalar) {
+        if (Collection.isEmptyPath(path19))
           return !keepScalar && identity.isScalar(this.contents) ? this.contents.value : this.contents;
-        return identity.isCollection(this.contents) ? this.contents.getIn(path18, keepScalar) : void 0;
+        return identity.isCollection(this.contents) ? this.contents.getIn(path19, keepScalar) : void 0;
       }
       /**
        * Checks if the document includes a value with the key `key`.
@@ -3586,10 +3586,10 @@ var require_Document = __commonJS({
       /**
        * Checks if the document includes a value at `path`.
        */
-      hasIn(path18) {
-        if (Collection.isEmptyPath(path18))
+      hasIn(path19) {
+        if (Collection.isEmptyPath(path19))
           return this.contents !== void 0;
-        return identity.isCollection(this.contents) ? this.contents.hasIn(path18) : false;
+        return identity.isCollection(this.contents) ? this.contents.hasIn(path19) : false;
       }
       /**
        * Sets a value in this document. For `!!set`, `value` needs to be a
@@ -3606,13 +3606,13 @@ var require_Document = __commonJS({
        * Sets a value in this document. For `!!set`, `value` needs to be a
        * boolean to add/remove the item from the set.
        */
-      setIn(path18, value) {
-        if (Collection.isEmptyPath(path18)) {
+      setIn(path19, value) {
+        if (Collection.isEmptyPath(path19)) {
           this.contents = value;
         } else if (this.contents == null) {
-          this.contents = Collection.collectionFromPath(this.schema, Array.from(path18), value);
+          this.contents = Collection.collectionFromPath(this.schema, Array.from(path19), value);
         } else if (assertCollection(this.contents)) {
-          this.contents.setIn(path18, value);
+          this.contents.setIn(path19, value);
         }
       }
       /**
@@ -5573,9 +5573,9 @@ var require_cst_visit = __commonJS({
     visit.BREAK = BREAK;
     visit.SKIP = SKIP;
     visit.REMOVE = REMOVE;
-    visit.itemAtPath = (cst, path18) => {
+    visit.itemAtPath = (cst, path19) => {
       let item = cst;
-      for (const [field, index] of path18) {
+      for (const [field, index] of path19) {
         const tok = item?.[field];
         if (tok && "items" in tok) {
           item = tok.items[index];
@@ -5584,23 +5584,23 @@ var require_cst_visit = __commonJS({
       }
       return item;
     };
-    visit.parentCollection = (cst, path18) => {
-      const parent = visit.itemAtPath(cst, path18.slice(0, -1));
-      const field = path18[path18.length - 1][0];
+    visit.parentCollection = (cst, path19) => {
+      const parent = visit.itemAtPath(cst, path19.slice(0, -1));
+      const field = path19[path19.length - 1][0];
       const coll = parent?.[field];
       if (coll && "items" in coll)
         return coll;
       throw new Error("Parent collection not found");
     };
-    function _visit(path18, item, visitor) {
-      let ctrl = visitor(item, path18);
+    function _visit(path19, item, visitor) {
+      let ctrl = visitor(item, path19);
       if (typeof ctrl === "symbol")
         return ctrl;
       for (const field of ["key", "value"]) {
         const token = item[field];
         if (token && "items" in token) {
           for (let i = 0; i < token.items.length; ++i) {
-            const ci = _visit(Object.freeze(path18.concat([[field, i]])), token.items[i], visitor);
+            const ci = _visit(Object.freeze(path19.concat([[field, i]])), token.items[i], visitor);
             if (typeof ci === "number")
               i = ci - 1;
             else if (ci === BREAK)
@@ -5611,10 +5611,10 @@ var require_cst_visit = __commonJS({
             }
           }
           if (typeof ctrl === "function" && field === "key")
-            ctrl = ctrl(item, path18);
+            ctrl = ctrl(item, path19);
         }
       }
-      return typeof ctrl === "function" ? ctrl(item, path18) : ctrl;
+      return typeof ctrl === "function" ? ctrl(item, path19) : ctrl;
     }
     exports.visit = visit;
   }
@@ -10594,8 +10594,8 @@ var require_utils = __commonJS({
       }
       return ind;
     }
-    function removeDotSegments(path18) {
-      let input = path18;
+    function removeDotSegments(path19) {
+      let input = path19;
       const output = [];
       let nextSlash = -1;
       let len = 0;
@@ -10669,11 +10669,11 @@ var require_utils = __commonJS({
       }
       return output.join("");
     }
-    function removeDotSegmentsRelative(path18) {
-      if (path18 === "" || path18[0] === "/") {
-        return removeDotSegments(path18);
+    function removeDotSegmentsRelative(path19) {
+      if (path19 === "" || path19[0] === "/") {
+        return removeDotSegments(path19);
       }
-      const segments = path18.split("/");
+      const segments = path19.split("/");
       const last = segments.length - 1;
       const output = [];
       let trailingDirectory = false;
@@ -11036,8 +11036,8 @@ var require_schemes = __commonJS({
       }
       if (wsComponent.resourceName) {
         const queryIndex = wsComponent.resourceName.indexOf("?");
-        const path18 = queryIndex === -1 ? wsComponent.resourceName : wsComponent.resourceName.slice(0, queryIndex);
-        wsComponent.path = path18 && path18 !== "/" ? path18 : void 0;
+        const path19 = queryIndex === -1 ? wsComponent.resourceName : wsComponent.resourceName.slice(0, queryIndex);
+        wsComponent.path = path19 && path19 !== "/" ? path19 : void 0;
         wsComponent.query = queryIndex === -1 ? void 0 : wsComponent.resourceName.slice(queryIndex + 1);
         wsComponent.resourceName = void 0;
       }
@@ -16713,19 +16713,19 @@ var require_errors3 = __commonJS({
       }
     };
     exports.BrowserTokenNotAllowedError = BrowserTokenNotAllowedError;
-    function validateRequestPath(path18) {
-      if (path18.includes("..")) {
-        throw new InvalidPathParameterError(`Request path "${path18}" contains path traversal sequence ".."`);
+    function validateRequestPath(path19) {
+      if (path19.includes("..")) {
+        throw new InvalidPathParameterError(`Request path "${path19}" contains path traversal sequence ".."`);
       }
-      if (/%2e/i.test(path18)) {
+      if (/%2e/i.test(path19)) {
         let decoded;
         try {
-          decoded = decodeURIComponent(path18);
+          decoded = decodeURIComponent(path19);
         } catch {
           return;
         }
         if (decoded.includes("..")) {
-          throw new InvalidPathParameterError(`Request path "${path18}" contains encoded path traversal sequence`);
+          throw new InvalidPathParameterError(`Request path "${path19}" contains encoded path traversal sequence`);
         }
       }
     }
@@ -17409,17 +17409,17 @@ var require_Client = __commonJS({
        * Sends a request.
        */
       async request(args) {
-        const { path: path18, method, query, body, formDataParams, auth } = args;
-        (0, errors_1.validateRequestPath)(path18);
-        this.log(logging_1.LogLevel.INFO, "request start", { method, path: path18 });
-        const url2 = this.buildRequestUrl(path18, query);
+        const { path: path19, method, query, body, formDataParams, auth } = args;
+        (0, errors_1.validateRequestPath)(path19);
+        this.log(logging_1.LogLevel.INFO, "request start", { method, path: path19 });
+        const url2 = this.buildRequestUrl(path19, query);
         const bodyAsJsonString = this.serializeBody(body);
         const headers = this.buildRequestHeaders(args.headers, auth, bodyAsJsonString);
         const formData = this.buildFormData(formDataParams, headers);
         return this.executeWithRetry({
           url: url2,
           method,
-          path: path18,
+          path: path19,
           headers,
           body: bodyAsJsonString !== null && bodyAsJsonString !== void 0 ? bodyAsJsonString : formData
         }, (request) => this.executeSingleRequest(request));
@@ -17429,20 +17429,20 @@ var require_Client = __commonJS({
        */
       async *streamRequest(args, parseEvent) {
         var _a;
-        const { path: path18, method, query, body, auth } = args;
-        (0, errors_1.validateRequestPath)(path18);
-        this.log(logging_1.LogLevel.INFO, "stream request start", { method, path: path18 });
-        const url2 = this.buildRequestUrl(path18, query);
+        const { path: path19, method, query, body, auth } = args;
+        (0, errors_1.validateRequestPath)(path19);
+        this.log(logging_1.LogLevel.INFO, "stream request start", { method, path: path19 });
+        const url2 = this.buildRequestUrl(path19, query);
         const bodyAsJsonString = this.serializeBody(body);
         const headers = this.buildRequestHeaders(args.headers, auth, bodyAsJsonString);
         const response = await this.executeWithRetry({
           url: url2,
           method,
-          path: path18,
+          path: path19,
           headers,
           body: bodyAsJsonString
         }, (request) => this.executeSingleStreamRequest(request));
-        this.log(logging_1.LogLevel.INFO, "stream request opened", { method, path: path18 });
+        this.log(logging_1.LogLevel.INFO, "stream request opened", { method, path: path19 });
         if (response.body === void 0 || response.body === null) {
           for (const frame of takeSseFrames({
             content: await response.text(),
@@ -17494,8 +17494,8 @@ var require_Client = __commonJS({
       /**
        * Builds the full URL with query parameters.
        */
-      buildRequestUrl(path18, query) {
-        const url2 = new URL(`${__classPrivateFieldGet(this, _Client_prefixUrl, "f")}${path18}`);
+      buildRequestUrl(path19, query) {
+        const url2 = new URL(`${__classPrivateFieldGet(this, _Client_prefixUrl, "f")}${path19}`);
         if (query) {
           for (const [key, value] of Object.entries(query)) {
             if (value !== void 0 && value !== null) {
@@ -17582,14 +17582,14 @@ var require_Client = __commonJS({
        * Executes the request with retry logic.
        */
       async executeWithRetry(args, execute) {
-        const { url: url2, method, path: path18, headers, body } = args;
+        const { url: url2, method, path: path19, headers, body } = args;
         let attempt = 0;
         while (true) {
           try {
             return await execute({
               url: url2,
               method,
-              path: path18,
+              path: path19,
               headers,
               body
             });
@@ -17602,7 +17602,7 @@ var require_Client = __commonJS({
               const delayMs = this.calculateRetryDelay(error, attempt);
               this.log(logging_1.LogLevel.INFO, "retrying request", {
                 method,
-                path: path18,
+                path: path19,
                 attempt: attempt + 1,
                 delayMs
               });
@@ -17618,7 +17618,7 @@ var require_Client = __commonJS({
        * Executes a single HTTP request (no retry).
        */
       async executeSingleRequest(args) {
-        const { url: url2, method, path: path18, headers, body } = args;
+        const { url: url2, method, path: path19, headers, body } = args;
         const response = await errors_1.RequestTimeoutError.rejectAfterTimeout(__classPrivateFieldGet(this, _Client_fetch, "f").call(this, url2.toString(), {
           method: method.toUpperCase(),
           headers,
@@ -17632,7 +17632,7 @@ var require_Client = __commonJS({
         const responseJson = JSON.parse(responseText);
         this.log(logging_1.LogLevel.INFO, "request success", {
           method,
-          path: path18,
+          path: path19,
           ...this.extractRequestId(responseJson)
         });
         return responseJson;
@@ -18299,13 +18299,13 @@ var require_src = __commonJS({
 
 // plugins/arima/scripts/src/cli/project-cli.ts
 var import_yaml3 = __toESM(require_dist(), 1);
-import { existsSync as existsSync10, readFileSync as readFileSync12 } from "node:fs";
-import path17 from "node:path";
+import { existsSync as existsSync10, readFileSync as readFileSync13 } from "node:fs";
+import path18 from "node:path";
 import { parseArgs } from "node:util";
 
 // plugins/arima/scripts/src/init.ts
-import { readFileSync as readFileSync11 } from "node:fs";
-import path16 from "node:path";
+import { readFileSync as readFileSync12 } from "node:fs";
+import path17 from "node:path";
 
 // plugins/arima/scripts/src/brief.ts
 var BRIEF_SECTIONS = [
@@ -18356,6 +18356,29 @@ function describeGaps(c) {
 
 // plugins/arima/scripts/src/config.ts
 import { existsSync as existsSync2 } from "node:fs";
+
+// plugins/arima/scripts/src/hardstops.ts
+var HARD_STOPS = [
+  "G0",
+  "G1",
+  "G2",
+  "G3",
+  "G4",
+  "prod_deploy",
+  "secrets_change",
+  "budget_exceeded",
+  "story_budget",
+  "notion_delete",
+  "prod_data_migration",
+  "new_paid_service",
+  "licence",
+  "critical_finding",
+  "kill_switch",
+  "missing_credential"
+];
+var isHardStop = (id) => HARD_STOPS.includes(id);
+
+// plugins/arima/scripts/src/config.ts
 import path4 from "node:path";
 
 // plugins/arima/scripts/src/lib/paths.ts
@@ -18630,8 +18653,32 @@ function validateProject(projectDir, root = pluginRoot()) {
       message: "usage credits are enabled: set a spend cap and note it in the digest configuration (Q-22); budgets are estimates, not money spent"
     });
   }
+  const listed = new Set(
+    arima.autonomy.hard_stops
+  );
+  const missing = REQUIRED_HARD_STOPS.filter((s) => !listed.has(s));
+  const unknown = [...listed].filter((s) => !isHardStop(s));
+  if (unknown.length > 0) {
+    warnings.push({
+      severity: "warning",
+      file: aSrc.file,
+      line: aSrc.lineOf("/autonomy/hard_stops"),
+      path: "autonomy.hard_stops",
+      message: `unknown hard stop ids: ${unknown.join(", ")}. The ids are fixed in code (see src/hardstops.ts); a typo here protects nothing`
+    });
+  }
+  if (missing.length > 0) {
+    warnings.push({
+      severity: "warning",
+      file: aSrc.file,
+      line: aSrc.lineOf("/autonomy/hard_stops"),
+      path: "autonomy.hard_stops",
+      message: `hard stops missing from this list: ${missing.join(", ")}. ARIMA enforces them anyway (they cannot be disabled by configuration, spec \xA711.1); keep the list complete so it matches what is enforced`
+    });
+  }
   return { ok: errors.length === 0, errors, warnings, arima, team };
 }
+var REQUIRED_HARD_STOPS = HARD_STOPS;
 
 // plugins/arima/scripts/src/events.ts
 import path6 from "node:path";
@@ -18685,16 +18732,77 @@ async function withFileLock(lockPath, fn, { timeoutMs = 15e3, staleMs = 3e4, ret
 }
 
 // plugins/arima/scripts/src/lib/secrets.ts
-var SECRET_PATTERNS = [
-  { name: "notion token", re: /\b(?:ntn_|secret_)[A-Za-z0-9]{20,}/ },
-  { name: "github token", re: /\bgh[pousr]_[A-Za-z0-9]{20,}/ },
-  { name: "github fine-grained token", re: /\bgithub_pat_[A-Za-z0-9_]{20,}/ },
-  { name: "anthropic key", re: /\bsk-ant-[A-Za-z0-9_-]{20,}/ },
-  { name: "aws access key", re: /\bAKIA[0-9A-Z]{16}\b/ },
-  { name: "private key block", re: /-----BEGIN [A-Z ]*PRIVATE KEY-----/ }
+import { createHash } from "node:crypto";
+function entropy(s) {
+  if (s.length === 0) return 0;
+  const counts = /* @__PURE__ */ new Map();
+  for (const ch of s) counts.set(ch, (counts.get(ch) ?? 0) + 1);
+  let h = 0;
+  for (const n of counts.values()) {
+    const p = n / s.length;
+    h -= p * Math.log2(p);
+  }
+  return h;
+}
+var PLACEHOLDER = /example|placeholder|your[-_]|replace|change[-_]?me|dummy|sample|redacted|xxxx|\*\*\*|<[^>]+>/i;
+var looksRandom = (s, bits) => s.length >= 16 && /[0-9]/.test(s) && /[A-Za-z]/.test(s) && entropy(s) >= bits && !PLACEHOLDER.test(s);
+var PATTERNS = [
+  { name: "notion token", re: /\b(?:ntn_|secret_)[A-Za-z0-9]{20,}/g },
+  { name: "github token", re: /\bgh[pousr]_[A-Za-z0-9]{20,}/g },
+  { name: "github fine-grained token", re: /\bgithub_pat_[A-Za-z0-9_]{20,}/g },
+  {
+    name: "anthropic key",
+    re: /\bsk-ant-([A-Za-z0-9_-]{20,})/g,
+    accept: (_m, g) => looksRandom(g[0] ?? "", 3.4)
+  },
+  { name: "aws access key", re: /\bAKIA[0-9A-Z]{16}\b/g, accept: (m) => !/EXAMPLE/.test(m) },
+  { name: "private key block", re: /-----BEGIN [A-Z ]*PRIVATE KEY-----/g },
+  { name: "slack token", re: /\bxox[abprs]-[A-Za-z0-9-]{10,}/g },
+  { name: "stripe key", re: /\b[sr]k_(?:live|test)_[A-Za-z0-9]{16,}/g },
+  { name: "google api key", re: /\bAIza[0-9A-Za-z_-]{35}\b/g },
+  {
+    name: "json web token",
+    re: /\beyJ[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}/g
+  },
+  { name: "npm token", re: /\bnpm_[A-Za-z0-9]{36}\b/g },
+  {
+    name: "bearer token",
+    re: /\bBearer\s+([A-Za-z0-9._~+/-]{24,})=*/g,
+    accept: (_m, g) => !PLACEHOLDER.test(g[0] ?? "") && entropy(g[0] ?? "") >= 3.3
+  },
+  {
+    // key = "long random-looking value" for names that usually hold credentials
+    name: "credential assignment",
+    re: /(?<![A-Za-z])(?:api[_-]?key|secret(?:[_-]?key)?|access[_-]?token|auth[_-]?token|token|passwd|password|private[_-]?key)["']?\s*[:=]\s*["']?([A-Za-z0-9/+_=.-]{20,})/gi,
+    accept: (_m, g) => looksRandom(g[0] ?? "", 3.5)
+  }
 ];
-function findSecrets(text2) {
-  return SECRET_PATTERNS.filter((p) => p.re.test(text2)).map((p) => p.name);
+function fingerprint(match) {
+  return `sha256:${createHash("sha256").update(match).digest("hex").slice(0, 16)}`;
+}
+function scan(text2) {
+  const unescaped = text2.replace(/\\[nrt]/g, " ").replace(/\\"/g, '"');
+  const out = [];
+  const seen = /* @__PURE__ */ new Set();
+  for (const p of PATTERNS) {
+    for (const t2 of text2 === unescaped ? [text2] : [text2, unescaped]) {
+      for (const m of t2.matchAll(new RegExp(p.re.source, p.re.flags))) {
+        const groups = m.slice(1).map((x) => x ?? "");
+        if (p.accept && !p.accept(m[0], groups)) continue;
+        const f = fingerprint(m[0]);
+        if (seen.has(`${p.name}|${f}`)) continue;
+        seen.add(`${p.name}|${f}`);
+        out.push({ rule: p.name, fingerprint: f });
+      }
+    }
+  }
+  return out;
+}
+function scanSecrets(text2, allowed = /* @__PURE__ */ new Set()) {
+  return scan(text2).filter((f) => !allowed.has(f.fingerprint));
+}
+function findSecrets(text2, allowed = /* @__PURE__ */ new Set()) {
+  return [...new Set(scanSecrets(text2, allowed).map((f) => f.rule))];
 }
 function assertNoSecrets(text2, where) {
   const found = findSecrets(text2);
@@ -18703,6 +18811,14 @@ function assertNoSecrets(text2, where) {
       `Refusing to write ${where}: content looks like a secret (${found.join(", ")})`
     );
   }
+}
+function parseAllowlist(text2) {
+  const out = /* @__PURE__ */ new Set();
+  for (const line of text2.split(/\r?\n/)) {
+    const m = /^\s*(sha256:[0-9a-f]{16})\s*(?:#.*)?$/i.exec(line);
+    if (m) out.add(m[1].toLowerCase());
+  }
+  return out;
 }
 
 // plugins/arima/scripts/src/lib/jsonl.ts
@@ -18757,6 +18873,333 @@ function readEvents(projectDir) {
   return readJsonl(eventsFile(projectDir), "event");
 }
 
+// plugins/arima/scripts/src/killswitch.ts
+import { existsSync as existsSync4, mkdirSync as mkdirSync2, readFileSync as readFileSync5, rmSync, writeFileSync } from "node:fs";
+import path7 from "node:path";
+
+// plugins/arima/scripts/src/notion/port.ts
+var import_client = __toESM(require_src(), 1);
+
+// plugins/arima/scripts/src/lib/throttle.ts
+import { setTimeout as sleep2 } from "node:timers/promises";
+var Throttle = class {
+  constructor(minIntervalMs = 334, now = Date.now, wait = (ms) => sleep2(ms)) {
+    this.minIntervalMs = minIntervalMs;
+    this.now = now;
+    this.wait = wait;
+  }
+  minIntervalMs;
+  now;
+  wait;
+  next = 0;
+  async run(fn) {
+    const start = Math.max(this.now(), this.next);
+    this.next = start + this.minIntervalMs;
+    const delay = start - this.now();
+    if (delay > 0) await this.wait(delay);
+    return fn();
+  }
+};
+function isRateLimited(e) {
+  const err = e;
+  return err?.status === 429 || err?.code === "rate_limited";
+}
+function retryAfterMs(e) {
+  const headers = e?.headers;
+  if (headers === void 0 || headers === null) return void 0;
+  const raw = typeof headers.get === "function" ? headers.get("retry-after") : headers["retry-after"];
+  const seconds = Number(raw);
+  return Number.isFinite(seconds) && seconds >= 0 && raw !== null && raw !== void 0 ? seconds * 1e3 : void 0;
+}
+function isTransient(e) {
+  const err = e;
+  const code2 = String(err?.code ?? err?.cause?.code ?? "");
+  if (/^(ECONNRESET|ETIMEDOUT|ENOTFOUND|EAI_AGAIN|ECONNREFUSED|UND_ERR_.*)$/.test(code2))
+    return true;
+  if (typeof err?.status === "number" && [500, 502, 503, 504].includes(err.status)) return true;
+  if (code2 === "notionhq_client_request_timeout") return true;
+  return /fetch failed|socket hang up|network|timed out/i.test(String(err?.message ?? ""));
+}
+async function withReadRetry(fn, o = {}) {
+  const { retries = 2, baseMs = 300, sleep: wait = (ms) => sleep2(ms) } = o;
+  for (let attempt = 0; ; attempt++) {
+    try {
+      return await fn();
+    } catch (e) {
+      if (!isTransient(e) || attempt >= retries) throw e;
+      await wait(baseMs * 2 ** attempt);
+    }
+  }
+}
+async function withBackoff(fn, o = {}) {
+  const { retries = 5, baseMs = 500, maxMs = 3e4, sleep: wait = (ms) => sleep2(ms) } = o;
+  for (let attempt = 0; ; attempt++) {
+    try {
+      return await fn();
+    } catch (e) {
+      if (!isRateLimited(e) || attempt >= retries) throw e;
+      await wait(retryAfterMs(e) ?? Math.min(maxMs, baseMs * 2 ** attempt));
+    }
+  }
+}
+
+// plugins/arima/scripts/src/notion/port.ts
+var PAUSE_TODO_TEXT = "Pause ARIMA";
+var plain = (rt) => (rt ?? []).map((t2) => t2.plain_text ?? "").join("");
+function toDatabaseInfo(raw) {
+  const dataSourceId = raw.data_sources?.[0]?.id;
+  if (dataSourceId === void 0) throw new Error(`database ${raw.id} has no data source`);
+  return { id: raw.id, title: plain(raw.title), dataSourceId };
+}
+function createNotionPort(client, throttle = new Throttle(), backoff = {}) {
+  const call = (fn) => throttle.run(() => withBackoff(fn, backoff));
+  const callRead = (fn) => throttle.run(
+    () => withReadRetry(
+      () => withBackoff(fn, backoff),
+      backoff.sleep ? { sleep: async (ms) => void await backoff.sleep?.(ms) } : {}
+    )
+  );
+  const listChildren = async (pageId) => {
+    const out = [];
+    let cursor;
+    for (; ; ) {
+      const page = await callRead(
+        () => client.blocks.children.list({
+          block_id: pageId,
+          page_size: 100,
+          ...cursor !== void 0 ? { start_cursor: cursor } : {}
+        })
+      );
+      for (const raw of page.results) {
+        if (raw.id === void 0 || raw.type === void 0) continue;
+        if (raw.type === "to_do" && raw.to_do) {
+          out.push({
+            id: raw.id,
+            type: "to_do",
+            text: plain(raw.to_do.rich_text),
+            checked: raw.to_do.checked === true
+          });
+        } else if (raw.type === "paragraph") {
+          out.push({ id: raw.id, type: "paragraph", text: plain(raw.paragraph?.rich_text) });
+        } else if (raw.type === "child_database") {
+          out.push({ id: raw.id, type: "child_database", text: raw.child_database?.title ?? "" });
+        } else {
+          out.push({ id: raw.id, type: raw.type, text: "" });
+        }
+      }
+      if (!page.has_more || page.next_cursor === null) return out;
+      cursor = page.next_cursor;
+    }
+  };
+  const getDataSourceProperties = async (dataSourceId) => {
+    const raw = await callRead(
+      () => client.dataSources.retrieve({ data_source_id: dataSourceId })
+    );
+    const out = {};
+    for (const [name, p] of Object.entries(raw.properties ?? {})) {
+      const info = { id: p.id, name: p.name ?? name, type: p.type };
+      const opts = p.select?.options ?? p.multi_select?.options;
+      if (opts) info.options = opts.map((o) => o.name);
+      if (p.relation?.data_source_id) info.relationTarget = p.relation.data_source_id;
+      out[name] = info;
+    }
+    return out;
+  };
+  return {
+    listChildren,
+    async listTodoBlocks(pageId) {
+      return (await listChildren(pageId)).filter((b) => b.type === "to_do").map((b) => ({ id: b.id, text: b.text, checked: b.checked === true }));
+    },
+    async setTodoChecked(blockId, checked) {
+      await call(() => client.blocks.update({ block_id: blockId, to_do: { checked } }));
+    },
+    async appendTodo(pageId, text2, checked) {
+      const res = await call(
+        () => client.blocks.children.append({
+          block_id: pageId,
+          children: [
+            {
+              object: "block",
+              type: "to_do",
+              to_do: { rich_text: [{ type: "text", text: { content: text2 } }], checked }
+            }
+          ]
+        })
+      );
+      const id = res.results[0]?.id;
+      if (id === void 0) throw new Error("Notion did not return the created block");
+      return id;
+    },
+    async appendParagraph(pageId, text2) {
+      const res = await call(
+        () => client.blocks.children.append({
+          block_id: pageId,
+          children: [
+            {
+              object: "block",
+              type: "paragraph",
+              paragraph: { rich_text: [{ type: "text", text: { content: text2 } }] }
+            }
+          ]
+        })
+      );
+      const id = res.results[0]?.id;
+      if (id === void 0) throw new Error("Notion did not return the created block");
+      return id;
+    },
+    async createDatabase(parentPageId, title, properties) {
+      const raw = await call(
+        () => client.databases.create({
+          parent: { type: "page_id", page_id: parentPageId },
+          title: [{ type: "text", text: { content: title } }],
+          is_inline: true,
+          initial_data_source: { properties }
+        })
+      );
+      return toDatabaseInfo({ ...raw, title: raw.title ?? [{ plain_text: title }] });
+    },
+    async getDatabase(databaseId) {
+      const raw = await callRead(
+        () => client.databases.retrieve({ database_id: databaseId })
+      );
+      return toDatabaseInfo(raw);
+    },
+    getDataSourceProperties,
+    async addProperties(dataSourceId, properties) {
+      const existing = await getDataSourceProperties(dataSourceId);
+      const clash = Object.keys(properties).filter((n) => n in existing);
+      if (clash.length > 0) {
+        throw new Error(`refusing to alter existing Notion properties: ${clash.join(", ")}`);
+      }
+      await call(() => client.dataSources.update({ data_source_id: dataSourceId, properties }));
+    },
+    async queryRows(dataSourceId) {
+      const rows = [];
+      let cursor;
+      for (; ; ) {
+        const page = await callRead(
+          () => client.dataSources.query({
+            data_source_id: dataSourceId,
+            page_size: 100,
+            ...cursor !== void 0 ? { start_cursor: cursor } : {}
+          })
+        );
+        for (const raw of page.results) {
+          if (raw.object !== void 0 && raw.object !== "page") continue;
+          rows.push({
+            pageId: raw.id,
+            lastEdited: raw.last_edited_time,
+            properties: raw.properties ?? {}
+          });
+        }
+        if (!page.has_more || page.next_cursor === null) return rows;
+        cursor = page.next_cursor;
+      }
+    },
+    async getPageLastEdited(pageId) {
+      const raw = await callRead(() => client.pages.retrieve({ page_id: pageId }));
+      return raw.last_edited_time;
+    },
+    async getPage(pageId) {
+      const raw = await callRead(() => client.pages.retrieve({ page_id: pageId }));
+      return { pageId: raw.id, lastEdited: raw.last_edited_time, properties: raw.properties ?? {} };
+    },
+    async createPage(dataSourceId, properties, children) {
+      const first = children?.slice(0, 100);
+      const raw = await call(
+        () => client.pages.create({
+          parent: { type: "data_source_id", data_source_id: dataSourceId },
+          properties,
+          ...first && first.length > 0 ? { children: first } : {}
+        })
+      );
+      let lastEdited = raw.last_edited_time;
+      for (let i = 100; children && i < children.length; i += 100) {
+        const rest = children.slice(i, i + 100);
+        await call(() => client.blocks.children.append({ block_id: raw.id, children: rest }));
+      }
+      if (children && children.length > 100) lastEdited = await this.getPageLastEdited(raw.id);
+      return {
+        pageId: raw.id,
+        lastEdited,
+        ...raw.properties ? { properties: raw.properties } : {}
+      };
+    },
+    async updatePage(pageId, properties) {
+      const raw = await call(() => client.pages.update({ page_id: pageId, properties }));
+      return {
+        lastEdited: raw.last_edited_time,
+        ...raw.properties ? { properties: raw.properties } : {}
+      };
+    },
+    async appendChildren(pageId, blocks) {
+      for (let i = 0; i < blocks.length; i += 100) {
+        const chunk = blocks.slice(i, i + 100);
+        await call(() => client.blocks.children.append({ block_id: pageId, children: chunk }));
+      }
+    }
+  };
+}
+function createNotionPortFromToken(token) {
+  const client = new import_client.Client({ auth: token, retry: false });
+  return createNotionPort(client);
+}
+
+// plugins/arima/scripts/src/killswitch.ts
+function pauseFile(projectDir) {
+  return path7.join(projectDir, ".arima", "PAUSE");
+}
+async function checkKillSwitch(projectDir, notion, remotePause) {
+  const file = existsSync4(pauseFile(projectDir));
+  let remote = "unchecked";
+  let detail = "";
+  if (notion !== null) {
+    try {
+      const todos = await notion.port.listTodoBlocks(notion.rootPageId);
+      const sw = todos.find((t2) => t2.text.trim() === PAUSE_TODO_TEXT);
+      if (sw === void 0) {
+        remote = "missing";
+        detail = `the "${PAUSE_TODO_TEXT}" to-do is missing from the Notion root page, so ARIMA cannot tell whether it is paused; run /arima:pause --resume to recreate it`;
+      } else {
+        remote = sw.checked;
+      }
+    } catch (e) {
+      remote = "unreachable";
+      detail = `Notion unreachable (${e instanceof Error ? e.message : String(e)})`;
+    }
+  }
+  let stateBranch = "unchecked";
+  if (!file && remote !== true && remotePause !== void 0 && remote !== false) {
+    const r = await remotePause();
+    stateBranch = r === void 0 ? "unchecked" : r;
+  }
+  const blind = notion !== null && remote === "unreachable" && stateBranch === "unchecked";
+  const on = file || remote === true || remote === "missing" || stateBranch === true || blind;
+  if (on) {
+    const reasons = [
+      file ? "PAUSE file present" : "",
+      remote === true ? "Notion switch is on" : "",
+      remote === "missing" ? detail : "",
+      stateBranch === true ? "PAUSE file on the remote state branch" : "",
+      blind ? `${detail}; the remote state branch could not be checked either, so ARIMA cannot confirm it is not paused` : ""
+    ];
+    detail = reasons.filter(Boolean).join(" and ");
+    if (file) {
+      const first = readFileSync5(pauseFile(projectDir), "utf8").split("\n")[0] ?? "";
+      if (first.trim() !== "") detail += ` (${first.trim()})`;
+    }
+  } else if (remote === "unreachable") {
+    detail += stateBranch === false ? "; the remote state branch has no PAUSE file" : "; the remote state branch could not be checked either, so only the local PAUSE file was consulted";
+  }
+  return { on, file, notion: remote, stateBranch, detail };
+}
+async function ensureNotionSwitch(port, rootPageId) {
+  const todos = await port.listTodoBlocks(rootPageId);
+  if (todos.some((t2) => t2.text.trim() === PAUSE_TODO_TEXT)) return false;
+  await port.appendTodo(rootPageId, PAUSE_TODO_TEXT, false);
+  return true;
+}
+
 // plugins/arima/scripts/src/gates.ts
 var GATE_PHASE = { G0: 0, G1: 1, G2: 2, G3: 5, G4: 7 };
 var GATE_CRITERIA = {
@@ -18799,9 +19242,9 @@ var GATE_CRITERIA = {
 };
 
 // plugins/arima/scripts/src/ledger.ts
-import path7 from "node:path";
+import path8 from "node:path";
 function ledgerFile(projectDir) {
-  return path7.join(projectDir, ".arima", "ledger.jsonl");
+  return path8.join(projectDir, ".arima", "ledger.jsonl");
 }
 var round6 = (n) => Math.round(n * 1e6) / 1e6;
 var int = (n) => Math.max(0, Math.round(n ?? 0));
@@ -18853,16 +19296,16 @@ function readLedger(projectDir) {
 }
 
 // plugins/arima/scripts/src/notion/map-file.ts
-import { mkdirSync as mkdirSync4 } from "node:fs";
-import path10 from "node:path";
+import { mkdirSync as mkdirSync5 } from "node:fs";
+import path11 from "node:path";
 
 // plugins/arima/scripts/src/lib/atomic-file.ts
-import { mkdirSync as mkdirSync2, renameSync, unlinkSync as unlinkSync2, writeFileSync } from "node:fs";
-import path8 from "node:path";
+import { mkdirSync as mkdirSync3, renameSync, unlinkSync as unlinkSync2, writeFileSync as writeFileSync2 } from "node:fs";
+import path9 from "node:path";
 function writeFileAtomic(file, content) {
-  mkdirSync2(path8.dirname(file), { recursive: true });
+  mkdirSync3(path9.dirname(file), { recursive: true });
   const tmp = `${file}.${process.pid}.tmp`;
-  writeFileSync(tmp, content, "utf8");
+  writeFileSync2(tmp, content, "utf8");
   for (let attempt = 0; ; attempt++) {
     try {
       renameSync(tmp, file);
@@ -19020,7 +19463,7 @@ var DATABASES = [
       {
         name: "Coverage",
         type: "formula",
-        formula: 'if(prop("Test results").some(current == "Pass"), "Covered", "Not covered")'
+        formula: 'if(contains(prop("Test results"), "Pass"), "Covered", "Not covered")'
       },
       rel("Stories", "stories", "Requirements"),
       rel("Test Cases", "test_cases", "Requirements"),
@@ -19648,8 +20091,8 @@ function buildMap(rootPageId, specs, found, propsByKey, now) {
 }
 
 // plugins/arima/scripts/src/notion/mirror.ts
-import { existsSync as existsSync4, mkdirSync as mkdirSync3, readFileSync as readFileSync5 } from "node:fs";
-import path9 from "node:path";
+import { existsSync as existsSync5, mkdirSync as mkdirSync4, readFileSync as readFileSync6 } from "node:fs";
+import path10 from "node:path";
 
 // plugins/arima/scripts/src/notion/values.ts
 var CHUNK = 2e3;
@@ -19696,13 +20139,13 @@ function toNotionValue(type, name, value, resolveRelation) {
       throw new ValueError(`"${name}" is a ${type} property, which agents cannot write`);
   }
 }
-var plain = (rt) => Array.isArray(rt) ? rt.map((t2) => t2.plain_text ?? "").join("") : "";
+var plain2 = (rt) => Array.isArray(rt) ? rt.map((t2) => t2.plain_text ?? "").join("") : "";
 function fromNotionValue(raw) {
   switch (raw.type) {
     case "title":
-      return plain(raw["title"]);
+      return plain2(raw["title"]);
     case "rich_text":
-      return plain(raw["rich_text"]);
+      return plain2(raw["rich_text"]);
     case "number":
       return raw["number"] ?? null;
     case "select":
@@ -19783,9 +20226,9 @@ function markdownToBlocks(markdown) {
 }
 
 // plugins/arima/scripts/src/notion/mirror.ts
-var mirrorDir = (projectDir) => path9.join(projectDir, ".arima", "mirror");
-var mirrorFile = (projectDir, db) => path9.join(mirrorDir(projectDir), `${db}.json`);
-var notionMapFile = (projectDir) => path9.join(projectDir, ".arima", "notion-map.json");
+var mirrorDir = (projectDir) => path10.join(projectDir, ".arima", "mirror");
+var mirrorFile = (projectDir, db) => path10.join(mirrorDir(projectDir), `${db}.json`);
+var notionMapFile = (projectDir) => path10.join(projectDir, ".arima", "notion-map.json");
 function toMirrorRow(raw) {
   const properties = {};
   let id = "";
@@ -19797,11 +20240,11 @@ function toMirrorRow(raw) {
 }
 function readMirror(projectDir, db) {
   const file = mirrorFile(projectDir, db);
-  if (!existsSync4(file)) return void 0;
-  return JSON.parse(readFileSync5(file, "utf8"));
+  if (!existsSync5(file)) return void 0;
+  return JSON.parse(readFileSync6(file, "utf8"));
 }
 function writeMirror(projectDir, m) {
-  mkdirSync3(mirrorDir(projectDir), { recursive: true });
+  mkdirSync4(mirrorDir(projectDir), { recursive: true });
   writeFileAtomic(mirrorFile(projectDir, m.database), `${JSON.stringify(m, null, 2)}
 `);
 }
@@ -19841,7 +20284,7 @@ async function mapAndWrite(projectDir, port, rootPageId, opts = {}) {
     );
   }
   const file = notionMapFile(projectDir);
-  mkdirSync4(path10.dirname(file), { recursive: true });
+  mkdirSync5(path11.dirname(file), { recursive: true });
   writeFileAtomic(file, `${JSON.stringify(result.map, null, 2)}
 `);
   return { result, file };
@@ -19849,15 +20292,20 @@ async function mapAndWrite(projectDir, port, rootPageId, opts = {}) {
 
 // plugins/arima/scripts/src/notion/outbox.ts
 import {
-  existsSync as existsSync5,
-  mkdirSync as mkdirSync5,
-  readFileSync as readFileSync6,
+  existsSync as existsSync6,
+  mkdirSync as mkdirSync6,
+  readFileSync as readFileSync7,
   readdirSync as readdirSync2,
   renameSync as renameSync2,
-  writeFileSync as writeFileSync2
+  writeFileSync as writeFileSync3
 } from "node:fs";
-import path11 from "node:path";
-var outboxDir = (projectDir) => path11.join(projectDir, ".arima", "outbox");
+import path12 from "node:path";
+var outboxDir = (projectDir) => path12.join(projectDir, ".arima", "outbox");
+function secretsIn(entry) {
+  return findSecrets(
+    JSON.stringify({ p: entry.properties ?? {}, c: entry.content_markdown ?? "" })
+  );
+}
 var UUID = /^[0-9a-f]{8}-?[0-9a-f]{4}-?[0-9a-f]{4}-?[0-9a-f]{4}-?[0-9a-f]{12}$/i;
 function enqueue(projectDir, entry) {
   const validate = getValidator("outbox");
@@ -19866,24 +20314,40 @@ function enqueue(projectDir, entry) {
       `Invalid outbox entry: ${(validate.errors ?? []).map(describeError).join("; ")}`
     );
   }
+  const leaked = secretsIn(entry);
+  if (leaked.length > 0) {
+    throw new Error(
+      `Refusing outbox entry ${entry.id}: it looks like it contains a secret (${leaked.join(", ")})`
+    );
+  }
+  if (entry.base_values === void 0 && (entry.op === "update" || entry.op === "retire") && entry.item_id !== void 0) {
+    const row = findRow(readMirror(projectDir, entry.database), entry.item_id);
+    if (row !== void 0) {
+      const names = entry.op === "retire" ? ["Status"] : Object.keys(entry.properties ?? {});
+      entry = {
+        ...entry,
+        base_values: Object.fromEntries(names.map((n) => [n, row.properties[n] ?? null]))
+      };
+    }
+  }
   const dir = outboxDir(projectDir);
-  mkdirSync5(dir, { recursive: true });
-  const file = path11.join(dir, `${entry.id}.json`);
-  if (existsSync5(file)) throw new Error(`outbox entry ${entry.id} already exists`);
+  mkdirSync6(dir, { recursive: true });
+  const file = path12.join(dir, `${entry.id}.json`);
+  if (existsSync6(file)) throw new Error(`outbox entry ${entry.id} already exists`);
   writeFileAtomic(file, `${JSON.stringify(entry, null, 2)}
 `);
   return file;
 }
 function listPending(projectDir, report) {
   const dir = outboxDir(projectDir);
-  if (!existsSync5(dir)) return [];
+  if (!existsSync6(dir)) return [];
   const validate = getValidator("outbox");
   const out = [];
   for (const name of readdirSync2(dir).filter((f) => f.endsWith(".json")).sort()) {
-    const file = path11.join(dir, name);
+    const file = path12.join(dir, name);
     let data;
     try {
-      data = JSON.parse(readFileSync6(file, "utf8"));
+      data = JSON.parse(readFileSync7(file, "utf8"));
     } catch {
       settle(
         projectDir,
@@ -19912,11 +20376,11 @@ function settle(projectDir, file, id, result, report) {
   else if (result.kind === "rejected") report.rejected.push({ id, reason: result.reason });
   else report.deferred.push(id);
   if (bucket === void 0) return;
-  const dir = path11.join(outboxDir(projectDir), bucket);
-  mkdirSync5(dir, { recursive: true });
-  renameSync2(file, path11.join(dir, `${id}.json`));
-  writeFileSync2(
-    path11.join(dir, `${id}.result.json`),
+  const dir = path12.join(outboxDir(projectDir), bucket);
+  mkdirSync6(dir, { recursive: true });
+  renameSync2(file, path12.join(dir, `${id}.json`));
+  writeFileSync3(
+    path12.join(dir, `${id}.result.json`),
     `${JSON.stringify({ ...result, at: (/* @__PURE__ */ new Date()).toISOString() }, null, 2)}
 `
   );
@@ -19924,9 +20388,6 @@ function settle(projectDir, file, id, result, report) {
 function classify(e) {
   const status = e.status;
   return typeof status === "number" && status >= 400 && status < 500 && status !== 429 ? "permanent" : "transient";
-}
-function plainOf(v) {
-  return v;
 }
 async function pushOutbox(projectDir, port, map, opts = {}) {
   const report = { applied: [], rejected: [], conflicts: [], deferred: [] };
@@ -19947,7 +20408,9 @@ async function pushOutbox(projectDir, port, map, opts = {}) {
     });
     return report;
   }
-  const ownWrites = /* @__PURE__ */ new Map();
+  const snapshots = /* @__PURE__ */ new Map();
+  const normalised = (pageId, lastEdited, raw) => raw === void 0 ? void 0 : toMirrorRow({ pageId, lastEdited, properties: raw }).properties;
+  const sameValue = (a, b) => JSON.stringify(a ?? null) === JSON.stringify(b ?? null);
   const resolveAnywhere = (id) => {
     if (UUID.test(id)) return id;
     const hits = [];
@@ -20002,6 +20465,14 @@ async function pushOutbox(projectDir, port, map, opts = {}) {
     if (db === void 0)
       return { kind: "rejected", reason: `database "${entry.database}" is not in notion-map.json` };
     const mirror = mirrors.get(entry.database);
+    const leaked = secretsIn(entry);
+    if (leaked.length > 0) {
+      return {
+        kind: "rejected",
+        refused: true,
+        reason: `the entry looks like it contains a secret (${leaked.join(", ")}); secrets must never be written to Notion (spec \xA711.3)`
+      };
+    }
     const props = entry.properties ?? {};
     for (const [name, value] of Object.entries(props)) {
       const def = db.properties[name];
@@ -20009,6 +20480,13 @@ async function pushOutbox(projectDir, port, map, opts = {}) {
         return { kind: "rejected", reason: `unknown property "${name}" on ${db.title}` };
       if (name === LAST_WRITTEN_BY_RUN)
         return { kind: "rejected", reason: `"${name}" is stamped by ARIMA and cannot be set` };
+      if (name === "Status" && opts.allowStatusWrites !== true) {
+        return {
+          kind: "rejected",
+          refused: true,
+          reason: `"Status" on ${db.title} cannot be written from the outbox until the ticket state machine exists (pass --allow-status-writes, which only a human may do)`
+        };
+      }
       if (def.human_only === true) {
         return {
           kind: "rejected",
@@ -20061,12 +20539,13 @@ async function pushOutbox(projectDir, port, map, opts = {}) {
         notionProps(),
         entry.content_markdown ? markdownToBlocks(entry.content_markdown) : void 0
       );
-      ownWrites.set(created.pageId, created.lastEdited);
+      const fresh2 = normalised(created.pageId, created.lastEdited, created.properties) ?? toMirrorRow(await port.getPage(created.pageId)).properties;
+      snapshots.set(created.pageId, fresh2);
       const row2 = {
         page_id: created.pageId,
         last_edited_time: created.lastEdited,
         id: title,
-        properties: { ...props, [LAST_WRITTEN_BY_RUN]: entry.run_id }
+        properties: { ...fresh2 }
       };
       mirror.rows.push(row2);
       return { kind: "applied", pageId: created.pageId };
@@ -20085,15 +20564,39 @@ async function pushOutbox(projectDir, port, map, opts = {}) {
         return { kind: "rejected", reason: `${db.title} has no Status property` };
       if (row.properties["Status"] === status) return { kind: "applied", pageId: row.page_id };
     }
-    const basis = entry.base_last_edited ?? baseline.get(entry.database)?.rows.find((r) => r.page_id === row.page_id)?.last_edited_time;
-    const current = await port.getPageLastEdited(row.page_id);
-    if (basis !== void 0 && Date.parse(current) > Date.parse(basis) && current !== ownWrites.get(row.page_id)) {
-      return { kind: "conflict", humanEditedAt: current };
+    const touched = entry.op === "update" ? Object.keys(props) : entry.op === "retire" ? ["Status"] : [];
+    if (touched.length > 0) {
+      const live = await port.getPage(row.page_id);
+      const liveProps = toMirrorRow(live).properties;
+      if (entry.op === "update" && liveProps[LAST_WRITTEN_BY_RUN] === entry.run_id) {
+        const intended = notionProps();
+        if (touched.every(
+          (n) => sameValue(
+            fromNotionValue({
+              type: db.properties[n].type,
+              ...intended[n]
+            }),
+            liveProps[n]
+          )
+        )) {
+          return { kind: "applied", pageId: row.page_id };
+        }
+      }
+      const seen = snapshots.get(row.page_id) ?? entry.base_values ?? baseline.get(entry.database)?.rows.find((r) => r.page_id === row.page_id)?.properties;
+      if (seen !== void 0) {
+        if (touched.some((n) => !sameValue(seen[n], liveProps[n]))) {
+          return { kind: "conflict", humanEditedAt: live.lastEdited };
+        }
+      } else if (
+        // No earlier copy to compare values with: fall back to the (coarse) timestamp.
+        entry.base_last_edited !== void 0 && Date.parse(live.lastEdited) > Date.parse(entry.base_last_edited)
+      ) {
+        return { kind: "conflict", humanEditedAt: live.lastEdited };
+      }
     }
     let written;
     if (entry.op === "update") {
       written = await port.updatePage(row.page_id, notionProps());
-      Object.assign(row.properties, props);
     } else if (entry.op === "append_content") {
       if (!entry.content_markdown)
         return { kind: "rejected", reason: "append_content needs content_markdown" };
@@ -20107,11 +20610,16 @@ async function pushOutbox(projectDir, port, map, opts = {}) {
         ...notionProps(),
         Status: toNotionValue(statusType, "Status", status, resolveAnywhere)
       });
-      row.properties["Status"] = plainOf(status);
     }
-    row.properties[LAST_WRITTEN_BY_RUN] = entry.run_id;
+    const fresh = normalised(row.page_id, written.lastEdited, written.properties) ?? toMirrorRow(await port.getPage(row.page_id)).properties;
+    const wrote = [...touched, LAST_WRITTEN_BY_RUN];
+    const before = snapshots.get(row.page_id) ?? baseline.get(entry.database)?.rows.find((r) => r.page_id === row.page_id)?.properties ?? {};
+    snapshots.set(row.page_id, {
+      ...before,
+      ...Object.fromEntries(wrote.map((n) => [n, fresh[n] ?? null]))
+    });
+    row.properties = { ...fresh };
     row.last_edited_time = written.lastEdited;
-    ownWrites.set(row.page_id, written.lastEdited);
     return { kind: "applied", pageId: row.page_id };
   }
 }
@@ -20158,285 +20666,311 @@ function readAlertHistory(projectDir) {
   return readEvents(projectDir).filter((e) => e.type === "budget.alert");
 }
 
-// plugins/arima/scripts/src/killswitch.ts
-import { existsSync as existsSync6, mkdirSync as mkdirSync6, readFileSync as readFileSync7, rmSync, writeFileSync as writeFileSync3 } from "node:fs";
-import path12 from "node:path";
-
-// plugins/arima/scripts/src/notion/port.ts
-var import_client = __toESM(require_src(), 1);
-
-// plugins/arima/scripts/src/lib/throttle.ts
-import { setTimeout as sleep2 } from "node:timers/promises";
-var Throttle = class {
-  constructor(minIntervalMs = 334, now = Date.now, wait = (ms) => sleep2(ms)) {
-    this.minIntervalMs = minIntervalMs;
-    this.now = now;
-    this.wait = wait;
-  }
-  minIntervalMs;
-  now;
-  wait;
-  next = 0;
-  async run(fn) {
-    const start = Math.max(this.now(), this.next);
-    this.next = start + this.minIntervalMs;
-    const delay = start - this.now();
-    if (delay > 0) await this.wait(delay);
-    return fn();
-  }
+// plugins/arima/scripts/src/state.ts
+import { execFileSync } from "node:child_process";
+import {
+  appendFileSync as appendFileSync2,
+  cpSync,
+  existsSync as existsSync7,
+  mkdirSync as mkdirSync7,
+  mkdtempSync,
+  readFileSync as readFileSync8,
+  realpathSync,
+  readdirSync as readdirSync3,
+  rmSync as rmSync2,
+  statSync as statSync2,
+  writeFileSync as writeFileSync4
+} from "node:fs";
+import { tmpdir } from "node:os";
+import path13 from "node:path";
+var StateError = class extends Error {
 };
-function isRateLimited(e) {
-  const err = e;
-  return err?.status === 429 || err?.code === "rate_limited";
-}
-function retryAfterMs(e) {
-  const headers = e?.headers;
-  if (headers === void 0 || headers === null) return void 0;
-  const raw = typeof headers.get === "function" ? headers.get("retry-after") : headers["retry-after"];
-  const seconds = Number(raw);
-  return Number.isFinite(seconds) && seconds >= 0 && raw !== null && raw !== void 0 ? seconds * 1e3 : void 0;
-}
-async function withBackoff(fn, o = {}) {
-  const { retries = 5, baseMs = 500, maxMs = 3e4, sleep: wait = (ms) => sleep2(ms) } = o;
-  for (let attempt = 0; ; attempt++) {
-    try {
-      return await fn();
-    } catch (e) {
-      if (!isRateLimited(e) || attempt >= retries) throw e;
-      await wait(retryAfterMs(e) ?? Math.min(maxMs, baseMs * 2 ** attempt));
-    }
+var DEFAULT_BRANCH = "arima-state";
+var STATE_GITIGNORE = "*.lock\n*.tmp\nrun.lock\n";
+var STATE_GITATTRIBUTES = "* -text\n";
+var MAX_SCAN_BYTES = 64 * 1024 * 1024;
+function git(cwd, args, input) {
+  try {
+    return execFileSync("git", args, {
+      cwd,
+      encoding: "utf8",
+      input,
+      stdio: ["pipe", "pipe", "pipe"]
+    }).trimEnd();
+  } catch (e) {
+    const err = e;
+    const detail = (err.stderr ? String(err.stderr) : err.message).trim();
+    throw new StateError(`git ${args.join(" ")} failed: ${detail}`, { cause: e });
   }
 }
-
-// plugins/arima/scripts/src/notion/port.ts
-var PAUSE_TODO_TEXT = "Pause ARIMA";
-var plain2 = (rt) => (rt ?? []).map((t2) => t2.plain_text ?? "").join("");
-function toDatabaseInfo(raw) {
-  const dataSourceId = raw.data_sources?.[0]?.id;
-  if (dataSourceId === void 0) throw new Error(`database ${raw.id} has no data source`);
-  return { id: raw.id, title: plain2(raw.title), dataSourceId };
+function gitOk(cwd, args) {
+  try {
+    execFileSync("git", args, { cwd, stdio: "ignore" });
+    return true;
+  } catch {
+    return false;
+  }
 }
-function createNotionPort(client, throttle = new Throttle(), backoff = {}) {
-  const call = (fn) => throttle.run(() => withBackoff(fn, backoff));
-  const listChildren = async (pageId) => {
-    const out = [];
-    let cursor;
-    for (; ; ) {
-      const page = await call(
-        () => client.blocks.children.list({
-          block_id: pageId,
-          page_size: 100,
-          ...cursor !== void 0 ? { start_cursor: cursor } : {}
-        })
-      );
-      for (const raw of page.results) {
-        if (raw.id === void 0 || raw.type === void 0) continue;
-        if (raw.type === "to_do" && raw.to_do) {
-          out.push({
-            id: raw.id,
-            type: "to_do",
-            text: plain2(raw.to_do.rich_text),
-            checked: raw.to_do.checked === true
-          });
-        } else if (raw.type === "paragraph") {
-          out.push({ id: raw.id, type: "paragraph", text: plain2(raw.paragraph?.rich_text) });
-        } else if (raw.type === "child_database") {
-          out.push({ id: raw.id, type: "child_database", text: raw.child_database?.title ?? "" });
-        } else {
-          out.push({ id: raw.id, type: raw.type, text: "" });
-        }
-      }
-      if (!page.has_more || page.next_cursor === null) return out;
-      cursor = page.next_cursor;
+function identityArgs(cwd) {
+  const has = (key) => {
+    try {
+      return execFileSync("git", ["config", key], { cwd, encoding: "utf8" }).trim() !== "";
+    } catch {
+      return false;
     }
   };
-  const getDataSourceProperties = async (dataSourceId) => {
-    const raw = await call(
-      () => client.dataSources.retrieve({ data_source_id: dataSourceId })
+  return has("user.name") && has("user.email") ? [] : ["-c", "user.name=ARIMA", "-c", "user.email=arima@users.noreply.github.com"];
+}
+function resolve(o) {
+  const repo = path13.resolve(o.projectDir);
+  if (!existsSync7(repo) || !gitOk(repo, ["rev-parse", "--git-dir"])) {
+    throw new StateError(`${repo} is not a git repository`);
+  }
+  const norm2 = (p) => {
+    const real = realpathSync.native(p);
+    return process.platform === "win32" ? real.toLowerCase() : real;
+  };
+  if (norm2(git(repo, ["rev-parse", "--show-toplevel"])) !== norm2(repo)) {
+    throw new StateError(`${repo} is not the root of a git repository`);
+  }
+  const branch = o.branch ?? DEFAULT_BRANCH;
+  if (branch === (o.defaultBranch ?? "main") || branch === "main" || branch === "master") {
+    throw new StateError(
+      `refusing to use "${branch}" as the state branch; ARIMA never touches the default branch`
     );
-    const out = {};
-    for (const [name, p] of Object.entries(raw.properties ?? {})) {
-      const info = { id: p.id, name: p.name ?? name, type: p.type };
-      const opts = p.select?.options ?? p.multi_select?.options;
-      if (opts) info.options = opts.map((o) => o.name);
-      if (p.relation?.data_source_id) info.relationTarget = p.relation.data_source_id;
-      out[name] = info;
-    }
-    return out;
-  };
-  return {
-    listChildren,
-    async listTodoBlocks(pageId) {
-      return (await listChildren(pageId)).filter((b) => b.type === "to_do").map((b) => ({ id: b.id, text: b.text, checked: b.checked === true }));
-    },
-    async setTodoChecked(blockId, checked) {
-      await call(() => client.blocks.update({ block_id: blockId, to_do: { checked } }));
-    },
-    async appendTodo(pageId, text2, checked) {
-      const res = await call(
-        () => client.blocks.children.append({
-          block_id: pageId,
-          children: [
-            {
-              object: "block",
-              type: "to_do",
-              to_do: { rich_text: [{ type: "text", text: { content: text2 } }], checked }
-            }
-          ]
-        })
-      );
-      const id = res.results[0]?.id;
-      if (id === void 0) throw new Error("Notion did not return the created block");
-      return id;
-    },
-    async appendParagraph(pageId, text2) {
-      const res = await call(
-        () => client.blocks.children.append({
-          block_id: pageId,
-          children: [
-            {
-              object: "block",
-              type: "paragraph",
-              paragraph: { rich_text: [{ type: "text", text: { content: text2 } }] }
-            }
-          ]
-        })
-      );
-      const id = res.results[0]?.id;
-      if (id === void 0) throw new Error("Notion did not return the created block");
-      return id;
-    },
-    async createDatabase(parentPageId, title, properties) {
-      const raw = await call(
-        () => client.databases.create({
-          parent: { type: "page_id", page_id: parentPageId },
-          title: [{ type: "text", text: { content: title } }],
-          is_inline: true,
-          initial_data_source: { properties }
-        })
-      );
-      return toDatabaseInfo({ ...raw, title: raw.title ?? [{ plain_text: title }] });
-    },
-    async getDatabase(databaseId) {
-      const raw = await call(
-        () => client.databases.retrieve({ database_id: databaseId })
-      );
-      return toDatabaseInfo(raw);
-    },
-    getDataSourceProperties,
-    async addProperties(dataSourceId, properties) {
-      const existing = await getDataSourceProperties(dataSourceId);
-      const clash = Object.keys(properties).filter((n) => n in existing);
-      if (clash.length > 0) {
-        throw new Error(`refusing to alter existing Notion properties: ${clash.join(", ")}`);
-      }
-      await call(() => client.dataSources.update({ data_source_id: dataSourceId, properties }));
-    },
-    async queryRows(dataSourceId) {
-      const rows = [];
-      let cursor;
-      for (; ; ) {
-        const page = await call(
-          () => client.dataSources.query({
-            data_source_id: dataSourceId,
-            page_size: 100,
-            ...cursor !== void 0 ? { start_cursor: cursor } : {}
-          })
-        );
-        for (const raw of page.results) {
-          if (raw.object !== void 0 && raw.object !== "page") continue;
-          rows.push({
-            pageId: raw.id,
-            lastEdited: raw.last_edited_time,
-            properties: raw.properties ?? {}
-          });
-        }
-        if (!page.has_more || page.next_cursor === null) return rows;
-        cursor = page.next_cursor;
-      }
-    },
-    async getPageLastEdited(pageId) {
-      const raw = await call(() => client.pages.retrieve({ page_id: pageId }));
-      return raw.last_edited_time;
-    },
-    async createPage(dataSourceId, properties, children) {
-      const first = children?.slice(0, 100);
-      const raw = await call(
-        () => client.pages.create({
-          parent: { type: "data_source_id", data_source_id: dataSourceId },
-          properties,
-          ...first && first.length > 0 ? { children: first } : {}
-        })
-      );
-      let lastEdited = raw.last_edited_time;
-      for (let i = 100; children && i < children.length; i += 100) {
-        const rest = children.slice(i, i + 100);
-        await call(() => client.blocks.children.append({ block_id: raw.id, children: rest }));
-      }
-      if (children && children.length > 100) lastEdited = await this.getPageLastEdited(raw.id);
-      return { pageId: raw.id, lastEdited };
-    },
-    async updatePage(pageId, properties) {
-      const raw = await call(() => client.pages.update({ page_id: pageId, properties }));
-      return { lastEdited: raw.last_edited_time };
-    },
-    async appendChildren(pageId, blocks) {
-      for (let i = 0; i < blocks.length; i += 100) {
-        const chunk = blocks.slice(i, i + 100);
-        await call(() => client.blocks.children.append({ block_id: pageId, children: chunk }));
-      }
-    }
-  };
+  }
+  const remote = o.remote ?? "origin";
+  const hasRemote = git(repo, ["remote"]).split("\n").includes(remote);
+  return { repo, stateDir: path13.join(repo, ".arima"), branch, remote, hasRemote };
 }
-function createNotionPortFromToken(token) {
-  const client = new import_client.Client({ auth: token, retry: false });
-  return createNotionPort(client);
+function excludeArima(repo) {
+  const rel2 = git(repo, ["rev-parse", "--git-path", "info/exclude"]);
+  const file = path13.resolve(repo, rel2);
+  mkdirSync7(path13.dirname(file), { recursive: true });
+  const current = existsSync7(file) ? readFileSync8(file, "utf8") : "";
+  if (!current.split(/\r?\n/).includes("/.arima/")) {
+    appendFileSync2(file, `${current.endsWith("\n") || current === "" ? "" : "\n"}/.arima/
+`);
+  }
 }
-
-// plugins/arima/scripts/src/killswitch.ts
-function pauseFile(projectDir) {
-  return path12.join(projectDir, ".arima", "PAUSE");
+var isWorktree = (stateDir) => existsSync7(path13.join(stateDir, ".git"));
+var isEmptyDir = (dir) => !existsSync7(dir) || readdirSync3(dir).length === 0;
+function localBranchExists(r) {
+  return gitOk(r.repo, ["show-ref", "--verify", "--quiet", `refs/heads/${r.branch}`]);
 }
-async function checkKillSwitch(projectDir, notion) {
-  const file = existsSync6(pauseFile(projectDir));
-  let remote = "unchecked";
-  let detail = "";
-  if (notion !== null) {
+function remoteBranchExists(r) {
+  return gitOk(r.repo, ["show-ref", "--verify", "--quiet", `refs/remotes/${r.remote}/${r.branch}`]);
+}
+function createOrphanBranch(r) {
+  const tree = git(r.repo, ["mktree"], "");
+  const commit = git(r.repo, [
+    ...identityArgs(r.repo),
+    "commit-tree",
+    tree,
+    "-m",
+    "chore(state): initialise arima-state"
+  ]);
+  git(r.repo, ["branch", r.branch, commit]);
+}
+function ensureWorktree(r) {
+  excludeArima(r.repo);
+  if (r.hasRemote) {
     try {
-      const todos = await notion.port.listTodoBlocks(notion.rootPageId);
-      const sw = todos.find((t2) => t2.text.trim() === PAUSE_TODO_TEXT);
-      if (sw === void 0) {
-        remote = "missing";
-        detail = `no "${PAUSE_TODO_TEXT}" to-do found on the Notion root page`;
-      } else {
-        remote = sw.checked;
+      git(r.repo, ["fetch", r.remote, `${r.branch}:refs/remotes/${r.remote}/${r.branch}`]);
+    } catch {
+    }
+  }
+  if (isWorktree(r.stateDir)) {
+    const head = git(r.stateDir, ["rev-parse", "--abbrev-ref", "HEAD"]);
+    if (head !== r.branch)
+      throw new StateError(`.arima/ is on branch "${head}", expected "${r.branch}"`);
+    return;
+  }
+  const exists = localBranchExists(r) || remoteBranchExists(r);
+  const hasFiles = !isEmptyDir(r.stateDir);
+  if (exists && hasFiles) {
+    throw new StateError(
+      `.arima/ already has files but is not the "${r.branch}" worktree, and that branch already exists. Move .arima/ aside (or delete it if it is disposable) and run again.`
+    );
+  }
+  if (!exists) createOrphanBranch(r);
+  let aside;
+  if (hasFiles) {
+    aside = mkdtempSync(path13.join(tmpdir(), "arima-state-"));
+    cpSync(r.stateDir, aside, { recursive: true });
+    rmSync2(r.stateDir, { recursive: true, force: true });
+  }
+  try {
+    if (!localBranchExists(r)) {
+      git(r.repo, ["branch", "--track", r.branch, `${r.remote}/${r.branch}`]);
+    }
+    git(r.repo, ["worktree", "add", r.stateDir, r.branch]);
+  } finally {
+    if (aside !== void 0) {
+      mkdirSync7(r.stateDir, { recursive: true });
+      cpSync(aside, r.stateDir, { recursive: true, force: false, errorOnExist: false });
+      rmSync2(aside, { recursive: true, force: true });
+    }
+  }
+}
+function ensureStateFiles(r) {
+  const write = (name, body) => {
+    const file = path13.join(r.stateDir, name);
+    if (!existsSync7(file)) writeFileSync4(file, body, "utf8");
+  };
+  write(".gitignore", STATE_GITIGNORE);
+  write(".gitattributes", STATE_GITATTRIBUTES);
+}
+function scanStaged(r) {
+  const names = git(r.stateDir, ["diff", "--cached", "--name-only", "--diff-filter=AM"]).split("\n").filter(Boolean);
+  const allowFile = path13.join(r.stateDir, "secret-allowlist.txt");
+  const allowed = existsSync7(allowFile) ? parseAllowlist(readFileSync8(allowFile, "utf8")) : /* @__PURE__ */ new Set();
+  const bad2 = [];
+  for (const name of names) {
+    const file = path13.join(r.stateDir, name);
+    try {
+      if (statSync2(file).size > MAX_SCAN_BYTES) {
+        bad2.push({ file: name, rule: "file too large to scan for secrets" });
+        continue;
       }
-    } catch (e) {
-      remote = "unreachable";
-      detail = `Notion unreachable (${e instanceof Error ? e.message : String(e)}); using the PAUSE file only`;
+      for (const f of scanSecrets(readFileSync8(file, "utf8"), allowed)) {
+        bad2.push({ file: name, rule: f.rule, fingerprint: f.fingerprint });
+      }
+    } catch {
     }
   }
-  const on = file || remote === true;
-  if (on) {
-    const reasons = [
-      file ? "PAUSE file present" : "",
-      remote === true ? "Notion switch is on" : ""
-    ];
-    detail = reasons.filter(Boolean).join(" and ");
-    if (file) {
-      const first = readFileSync7(pauseFile(projectDir), "utf8").split("\n")[0] ?? "";
-      if (first.trim() !== "") detail += ` (${first.trim()})`;
+  return bad2;
+}
+async function pushState(o) {
+  if (!/^r-\d{8}-\d{4}-\d{2,}$/.test(o.runId)) {
+    throw new StateError(`run id "${o.runId}" does not look like r-YYYYMMDD-HHMM-NN`);
+  }
+  const r = resolve(o);
+  ensureWorktree(r);
+  ensureStateFiles(r);
+  await appendEvent(r.repo, {
+    type: "state.push",
+    actor: "system",
+    run_id: o.runId,
+    data: { branch: r.branch }
+  });
+  git(r.stateDir, ["add", "-A"]);
+  const staged = git(r.stateDir, ["diff", "--cached", "--name-only"]).split("\n").filter(Boolean);
+  if (staged.length === 0) {
+    return { committed: false, pushed: false, files: 0, warnings: [] };
+  }
+  const bad2 = scanStaged(r);
+  if (bad2.length > 0) {
+    git(r.stateDir, ["reset", "-q"]);
+    const lines = bad2.map(
+      (p) => `  ${p.file}: ${p.rule}${p.fingerprint ? ` (${p.fingerprint})` : ""}`
+    );
+    throw new StateError(
+      `refusing to commit state: ${bad2.length} finding(s) that look like secrets:
+${lines.join("\n")}
+If you have reviewed a finding and it is NOT a secret, add its fingerprint on its own line to .arima/secret-allowlist.txt and run again.`
+    );
+  }
+  git(r.stateDir, [
+    ...identityArgs(r.stateDir),
+    "commit",
+    "-q",
+    "-m",
+    `chore(state): run ${o.runId}`
+  ]);
+  const commit = git(r.stateDir, ["rev-parse", "HEAD"]);
+  let pushed = false;
+  const warnings = [];
+  if (r.hasRemote) {
+    const privacy = checkRemotePrivacy(r, o);
+    if (privacy.kind === "public" && o.allowPublic !== true) {
+      throw new StateError(
+        `refusing to push state: ${privacy.slug} is a PUBLIC GitHub repository, and the state branch holds your Notion data (requirements, client names, costs). Make the repository private, or set github.allow_public_state: true in arima.yaml if you really mean it.`
+      );
+    }
+    if (privacy.kind === "unknown" && o.allowPublic !== true) {
+      throw new StateError(
+        `refusing to push state: could not check whether ${privacy.slug} is private (is the gh CLI installed and signed in, and is the remote a normal github.com repository?). The state branch holds your Notion data, so ARIMA refuses when it cannot be sure. Sign in with 'gh auth login' and run again, or set github.allow_public_state: true in arima.yaml if you accept the risk.`
+      );
+    }
+    git(r.stateDir, ["push", "--set-upstream", r.remote, `${r.branch}:${r.branch}`]);
+    pushed = true;
+  }
+  return { committed: true, pushed, commit, files: staged.length, warnings };
+}
+function remotePauseFlag(o) {
+  let r;
+  try {
+    r = resolve(o);
+  } catch {
+    return void 0;
+  }
+  if (!r.hasRemote) return void 0;
+  const ref = `refs/remotes/${r.remote}/${r.branch}`;
+  try {
+    execFileSync("git", ["fetch", "--quiet", r.remote, `+refs/heads/${r.branch}:${ref}`], {
+      cwd: r.repo,
+      stdio: ["ignore", "ignore", "pipe"],
+      timeout: 15e3,
+      env: { ...process.env, GIT_TERMINAL_PROMPT: "0" }
+    });
+  } catch (e) {
+    const msg = String(e.stderr ?? "");
+    if (!/couldn't find remote ref/i.test(msg)) return void 0;
+    return false;
+  }
+  return gitOk(r.repo, ["cat-file", "-e", `${ref}:PAUSE`]);
+}
+var SLUG_PART = /^[A-Za-z0-9_][A-Za-z0-9._-]*$/;
+function githubSlug(url2) {
+  const m = /^(?:https?:\/\/(?:[^@/]+@)?github\.com\/|git@github\.com:|ssh:\/\/git@github\.com\/)([^/\s]+)\/([^/\s]+?)(?:\.git)?\/?$/i.exec(
+    url2.trim()
+  );
+  if (!m) return void 0;
+  const owner = m[1];
+  const repo = m[2];
+  if (!SLUG_PART.test(owner) || !SLUG_PART.test(repo) || repo === "." || repo === "..") {
+    return void 0;
+  }
+  return { owner, repo };
+}
+var MENTIONS_GITHUB = /(^|[/@:])github\.com[/:]/i;
+function checkRemotePrivacy(r, o) {
+  let url2;
+  try {
+    url2 = git(r.repo, ["config", "--get", "remote." + r.remote + ".url"]);
+  } catch {
+    return { kind: "not-github" };
+  }
+  const slug = githubSlug(url2);
+  if (slug === void 0) {
+    return MENTIONS_GITHUB.test(url2) ? { kind: "unknown", slug: "the remote" } : { kind: "not-github" };
+  }
+  const name = `${slug.owner}/${slug.repo}`;
+  let priv;
+  if (o.isPrivate) {
+    priv = o.isPrivate(slug.owner, slug.repo);
+  } else {
+    try {
+      const out = execFileSync(
+        "gh",
+        ["repo", "view", name, "--json", "isPrivate", "--jq", ".isPrivate"],
+        { encoding: "utf8", timeout: 2e4, stdio: ["ignore", "pipe", "ignore"] }
+      ).trim();
+      priv = out === "true" ? true : out === "false" ? false : void 0;
+    } catch {
+      priv = void 0;
     }
   }
-  return { on, file, notion: remote, detail };
+  return { kind: priv === void 0 ? "unknown" : priv ? "private" : "public", slug: name };
 }
 
 // plugins/arima/scripts/src/runlock.ts
-import { existsSync as existsSync7, mkdirSync as mkdirSync7, readFileSync as readFileSync8, rmSync as rmSync2, writeFileSync as writeFileSync4 } from "node:fs";
+import { existsSync as existsSync8, mkdirSync as mkdirSync8, readFileSync as readFileSync9, rmSync as rmSync3, writeFileSync as writeFileSync5 } from "node:fs";
 import { hostname } from "node:os";
-import path13 from "node:path";
+import path14 from "node:path";
 function runLockFile(projectDir) {
-  return path13.join(projectDir, ".arima", "run.lock");
+  return path14.join(projectDir, ".arima", "run.lock");
 }
 function alive(pid) {
   try {
@@ -20448,10 +20982,10 @@ function alive(pid) {
 }
 function lockStatus(projectDir, staleAfterMs, now = Date.now()) {
   const file = runLockFile(projectDir);
-  if (!existsSync7(file)) return { held: false, stale: false };
+  if (!existsSync8(file)) return { held: false, stale: false };
   let lock;
   try {
-    lock = JSON.parse(readFileSync8(file, "utf8"));
+    lock = JSON.parse(readFileSync9(file, "utf8"));
   } catch {
     return { held: false, stale: true };
   }
@@ -20463,7 +20997,7 @@ function lockStatus(projectDir, staleAfterMs, now = Date.now()) {
 }
 function acquireRunLock(projectDir, runId, staleAfterMs) {
   const file = runLockFile(projectDir);
-  mkdirSync7(path13.dirname(file), { recursive: true });
+  mkdirSync8(path14.dirname(file), { recursive: true });
   const body = {
     pid: process.pid,
     run_id: runId,
@@ -20472,27 +21006,27 @@ function acquireRunLock(projectDir, runId, staleAfterMs) {
   };
   for (let attempt = 0; attempt < 2; attempt++) {
     try {
-      writeFileSync4(file, `${JSON.stringify(body)}
+      writeFileSync5(file, `${JSON.stringify(body)}
 `, { flag: "wx" });
       return true;
     } catch (e) {
       if (e.code !== "EEXIST") throw e;
       const status = lockStatus(projectDir, staleAfterMs);
       if (status.held) return false;
-      rmSync2(file, { force: true });
+      rmSync3(file, { force: true });
     }
   }
   return false;
 }
 function releaseRunLock(projectDir, runId) {
   const file = runLockFile(projectDir);
-  if (!existsSync7(file)) return false;
+  if (!existsSync8(file)) return false;
   try {
-    const lock = JSON.parse(readFileSync8(file, "utf8"));
+    const lock = JSON.parse(readFileSync9(file, "utf8"));
     if (lock.run_id !== runId) return false;
   } catch {
   }
-  rmSync2(file, { force: true });
+  rmSync3(file, { force: true });
   return true;
 }
 
@@ -20527,7 +21061,15 @@ async function runPreflight(opts) {
   });
   const arima = cfg.arima;
   const notionTarget = opts.notion && arima ? { port: opts.notion, rootPageId: arima.notion.root_page_id } : null;
-  const ks = await checkKillSwitch(opts.projectDir, notionTarget);
+  const stateBranch = arima;
+  const statePause = opts.statePause ?? (() => Promise.resolve(
+    remotePauseFlag({
+      projectDir: opts.projectDir,
+      ...stateBranch?.github?.state_branch ? { branch: stateBranch.github.state_branch } : {},
+      ...stateBranch?.github?.default_branch ? { defaultBranch: stateBranch.github.default_branch } : {}
+    })
+  ));
+  const ks = await checkKillSwitch(opts.projectDir, notionTarget, statePause);
   const ksCheck = {
     check: "kill_switch",
     ok: !ks.on,
@@ -20615,19 +21157,36 @@ async function runPreflight(opts) {
   return { ok: failed.length === 0, exitCode, checks, acquired };
 }
 
+// plugins/arima/scripts/src/templates.ts
+import { readFileSync as readFileSync10 } from "node:fs";
+import path15 from "node:path";
+function renderTemplate(name, vars, root = pluginRoot()) {
+  const text2 = readFileSync10(path15.join(root, "templates", `${name}.md`), "utf8");
+  const used = /* @__PURE__ */ new Set();
+  const out = text2.replace(/\{\{([a-z_]+)\}\}/g, (_m, key) => {
+    const v = vars[key];
+    if (v === void 0) throw new Error(`template ${name}: no value for {{${key}}}`);
+    used.add(key);
+    return v;
+  });
+  const extra = Object.keys(vars).filter((k) => !used.has(k));
+  if (extra.length > 0) throw new Error(`template ${name}: unused values ${extra.join(", ")}`);
+  return out;
+}
+
 // plugins/arima/scripts/src/runid.ts
-import { existsSync as existsSync8, mkdirSync as mkdirSync8, readFileSync as readFileSync9 } from "node:fs";
-import path14 from "node:path";
+import { existsSync as existsSync9, mkdirSync as mkdirSync9, readFileSync as readFileSync11 } from "node:fs";
+import path16 from "node:path";
 var pad = (n, w = 2) => String(n).padStart(w, "0");
 async function issueRunId(projectDir, now = /* @__PURE__ */ new Date()) {
   const day = `${now.getFullYear()}${pad(now.getMonth() + 1)}${pad(now.getDate())}`;
   const hhmm = `${pad(now.getHours())}${pad(now.getMinutes())}`;
-  const file = path14.join(projectDir, ".arima", "state", "run-seq.json");
-  mkdirSync8(path14.dirname(file), { recursive: true });
+  const file = path16.join(projectDir, ".arima", "state", "run-seq.json");
+  mkdirSync9(path16.dirname(file), { recursive: true });
   return withFileLock(`${file}.lock`, () => {
     let state = { day, last: 0 };
-    if (existsSync8(file)) {
-      const parsed = JSON.parse(readFileSync9(file, "utf8"));
+    if (existsSync9(file)) {
+      const parsed = JSON.parse(readFileSync11(file, "utf8"));
       if (parsed.day === day && Number.isInteger(parsed.last))
         state = { day, last: parsed.last };
     }
@@ -20638,217 +21197,15 @@ async function issueRunId(projectDir, now = /* @__PURE__ */ new Date()) {
   });
 }
 
-// plugins/arima/scripts/src/state.ts
-import { execFileSync } from "node:child_process";
-import {
-  appendFileSync as appendFileSync2,
-  cpSync,
-  existsSync as existsSync9,
-  mkdirSync as mkdirSync9,
-  mkdtempSync,
-  readFileSync as readFileSync10,
-  realpathSync,
-  readdirSync as readdirSync3,
-  rmSync as rmSync3,
-  statSync as statSync2,
-  writeFileSync as writeFileSync5
-} from "node:fs";
-import { tmpdir } from "node:os";
-import path15 from "node:path";
-var StateError = class extends Error {
-};
-var DEFAULT_BRANCH = "arima-state";
-var STATE_GITIGNORE = "*.lock\n*.tmp\nrun.lock\n";
-var STATE_GITATTRIBUTES = "* -text\n";
-var MAX_SCAN_BYTES = 5 * 1024 * 1024;
-function git(cwd, args, input) {
-  try {
-    return execFileSync("git", args, {
-      cwd,
-      encoding: "utf8",
-      input,
-      stdio: ["pipe", "pipe", "pipe"]
-    }).trimEnd();
-  } catch (e) {
-    const err = e;
-    const detail = (err.stderr ? String(err.stderr) : err.message).trim();
-    throw new StateError(`git ${args.join(" ")} failed: ${detail}`, { cause: e });
-  }
-}
-function gitOk(cwd, args) {
-  try {
-    execFileSync("git", args, { cwd, stdio: "ignore" });
-    return true;
-  } catch {
-    return false;
-  }
-}
-function identityArgs(cwd) {
-  const has = (key) => {
-    try {
-      return execFileSync("git", ["config", key], { cwd, encoding: "utf8" }).trim() !== "";
-    } catch {
-      return false;
-    }
-  };
-  return has("user.name") && has("user.email") ? [] : ["-c", "user.name=ARIMA", "-c", "user.email=arima@users.noreply.github.com"];
-}
-function resolve(o) {
-  const repo = path15.resolve(o.projectDir);
-  if (!existsSync9(repo) || !gitOk(repo, ["rev-parse", "--git-dir"])) {
-    throw new StateError(`${repo} is not a git repository`);
-  }
-  const norm2 = (p) => {
-    const real = realpathSync.native(p);
-    return process.platform === "win32" ? real.toLowerCase() : real;
-  };
-  if (norm2(git(repo, ["rev-parse", "--show-toplevel"])) !== norm2(repo)) {
-    throw new StateError(`${repo} is not the root of a git repository`);
-  }
-  const branch = o.branch ?? DEFAULT_BRANCH;
-  if (branch === (o.defaultBranch ?? "main") || branch === "main" || branch === "master") {
-    throw new StateError(
-      `refusing to use "${branch}" as the state branch; ARIMA never touches the default branch`
-    );
-  }
-  const remote = o.remote ?? "origin";
-  const hasRemote = git(repo, ["remote"]).split("\n").includes(remote);
-  return { repo, stateDir: path15.join(repo, ".arima"), branch, remote, hasRemote };
-}
-function excludeArima(repo) {
-  const rel2 = git(repo, ["rev-parse", "--git-path", "info/exclude"]);
-  const file = path15.resolve(repo, rel2);
-  mkdirSync9(path15.dirname(file), { recursive: true });
-  const current = existsSync9(file) ? readFileSync10(file, "utf8") : "";
-  if (!current.split(/\r?\n/).includes("/.arima/")) {
-    appendFileSync2(file, `${current.endsWith("\n") || current === "" ? "" : "\n"}/.arima/
-`);
-  }
-}
-var isWorktree = (stateDir) => existsSync9(path15.join(stateDir, ".git"));
-var isEmptyDir = (dir) => !existsSync9(dir) || readdirSync3(dir).length === 0;
-function localBranchExists(r) {
-  return gitOk(r.repo, ["show-ref", "--verify", "--quiet", `refs/heads/${r.branch}`]);
-}
-function remoteBranchExists(r) {
-  return gitOk(r.repo, ["show-ref", "--verify", "--quiet", `refs/remotes/${r.remote}/${r.branch}`]);
-}
-function createOrphanBranch(r) {
-  const tree = git(r.repo, ["mktree"], "");
-  const commit = git(r.repo, [
-    ...identityArgs(r.repo),
-    "commit-tree",
-    tree,
-    "-m",
-    "chore(state): initialise arima-state"
-  ]);
-  git(r.repo, ["branch", r.branch, commit]);
-}
-function ensureWorktree(r) {
-  excludeArima(r.repo);
-  if (r.hasRemote) {
-    try {
-      git(r.repo, ["fetch", r.remote, `${r.branch}:refs/remotes/${r.remote}/${r.branch}`]);
-    } catch {
-    }
-  }
-  if (isWorktree(r.stateDir)) {
-    const head = git(r.stateDir, ["rev-parse", "--abbrev-ref", "HEAD"]);
-    if (head !== r.branch)
-      throw new StateError(`.arima/ is on branch "${head}", expected "${r.branch}"`);
-    return;
-  }
-  const exists = localBranchExists(r) || remoteBranchExists(r);
-  const hasFiles = !isEmptyDir(r.stateDir);
-  if (exists && hasFiles) {
-    throw new StateError(
-      `.arima/ already has files but is not the "${r.branch}" worktree, and that branch already exists. Move .arima/ aside (or delete it if it is disposable) and run again.`
-    );
-  }
-  if (!exists) createOrphanBranch(r);
-  let aside;
-  if (hasFiles) {
-    aside = mkdtempSync(path15.join(tmpdir(), "arima-state-"));
-    cpSync(r.stateDir, aside, { recursive: true });
-    rmSync3(r.stateDir, { recursive: true, force: true });
-  }
-  try {
-    if (!localBranchExists(r)) {
-      git(r.repo, ["branch", "--track", r.branch, `${r.remote}/${r.branch}`]);
-    }
-    git(r.repo, ["worktree", "add", r.stateDir, r.branch]);
-  } finally {
-    if (aside !== void 0) {
-      mkdirSync9(r.stateDir, { recursive: true });
-      cpSync(aside, r.stateDir, { recursive: true, force: false, errorOnExist: false });
-      rmSync3(aside, { recursive: true, force: true });
-    }
-  }
-}
-function ensureStateFiles(r) {
-  const write = (name, body) => {
-    const file = path15.join(r.stateDir, name);
-    if (!existsSync9(file)) writeFileSync5(file, body, "utf8");
-  };
-  write(".gitignore", STATE_GITIGNORE);
-  write(".gitattributes", STATE_GITATTRIBUTES);
-}
-function scanStaged(r) {
-  const names = git(r.stateDir, ["diff", "--cached", "--name-only", "--diff-filter=AM"]).split("\n").filter(Boolean);
-  const bad2 = [];
-  for (const name of names) {
-    const file = path15.join(r.stateDir, name);
-    try {
-      if (statSync2(file).size > MAX_SCAN_BYTES) continue;
-      if (findSecrets(readFileSync10(file, "utf8")).length > 0) bad2.push(name);
-    } catch {
-    }
-  }
-  return bad2;
-}
-async function pushState(o) {
-  if (!/^r-\d{8}-\d{4}-\d{2,}$/.test(o.runId)) {
-    throw new StateError(`run id "${o.runId}" does not look like r-YYYYMMDD-HHMM-NN`);
-  }
-  const r = resolve(o);
-  ensureWorktree(r);
-  ensureStateFiles(r);
-  await appendEvent(r.repo, {
-    type: "state.push",
-    actor: "system",
-    run_id: o.runId,
-    data: { branch: r.branch }
-  });
-  git(r.stateDir, ["add", "-A"]);
-  const staged = git(r.stateDir, ["diff", "--cached", "--name-only"]).split("\n").filter(Boolean);
-  if (staged.length === 0) {
-    return { committed: false, pushed: false, files: 0 };
-  }
-  const bad2 = scanStaged(r);
-  if (bad2.length > 0) {
-    git(r.stateDir, ["reset", "-q"]);
-    throw new StateError(
-      `refusing to commit state: ${bad2.length} file(s) look like they contain a secret: ${bad2.join(", ")}`
-    );
-  }
-  git(r.stateDir, [
-    ...identityArgs(r.stateDir),
-    "commit",
-    "-q",
-    "-m",
-    `chore(state): run ${o.runId}`
-  ]);
-  const commit = git(r.stateDir, ["rev-parse", "HEAD"]);
-  let pushed = false;
-  if (r.hasRemote) {
-    git(r.stateDir, ["push", "--set-upstream", r.remote, `${r.branch}:${r.branch}`]);
-    pushed = true;
-  }
-  return { committed: true, pushed, commit, files: staged.length };
-}
-
 // plugins/arima/scripts/src/init.ts
-var INIT_EXIT = { ok: 0, usage: 2, briefGaps: 3, mapFailed: 4, pushFailed: 5 };
+var INIT_EXIT = {
+  ok: 0,
+  usage: 2,
+  briefGaps: 3,
+  mapFailed: 4,
+  pushFailed: 5,
+  briefSecret: 6
+};
 var fmt = (n) => `$${n}`;
 function charter(name, arima, team, brief) {
   const a = arima;
@@ -20856,85 +21213,41 @@ function charter(name, arima, team, brief) {
     const who = r.type === "human" ? `human: ${team.people[r.person ?? ""]?.name ?? r.person}` : `agent${r.count ? ` x${r.count}` : ""}`;
     return `- ${role}: ${who}`;
   });
-  return [
-    `# Charter: ${name}`,
-    "",
-    `Project ${a.project.key} for ${a.project.client}. Profile: ${a.profile}. Skeleton drafted by the orchestrator from the brief; the sponsor reviews it at G0.`,
-    "",
-    "## Scope",
-    "### In scope (must-have features)",
-    brief["Must-have features"] ?? "None",
-    "### Out of scope",
-    brief["Out of scope"] ?? "None",
-    "",
-    "## Goals and KPIs",
-    brief["Goals and KPIs"] ?? "None",
-    "",
-    "## Rough milestones",
-    "To be proposed after G0. Milestones of 8-12 points are planned in Phase 2.",
-    "",
-    "## Budget plan",
-    `Project cap ${fmt(a.budget.project_cap)} (estimated consumption). See the Budget plan document.`,
-    "",
-    "## Risks",
-    brief["Known risks"] ?? "None",
-    "",
-    "## Roles and responsibilities (from team.yaml)",
-    ...raci,
-    ""
-  ].join("\n");
+  return renderTemplate("charter", {
+    name,
+    key: a.project.key,
+    client: a.project.client,
+    profile: a.profile,
+    in_scope: brief["Must-have features"] ?? "None",
+    out_of_scope: brief["Out of scope"] ?? "None",
+    goals: brief["Goals and KPIs"] ?? "None",
+    roles: raci.join("\n"),
+    project_cap: fmt(a.budget.project_cap),
+    constraints: brief["Constraints"] ?? "None",
+    risks: brief["Known risks"] ?? "None"
+  });
 }
 function budgetPlan(arima) {
   const b = arima.budget;
   const sizes = b.by_size ?? { S: 1, M: 3, L: 6 };
-  return [
-    "# Budget plan",
-    "",
-    `All amounts are estimated USD consumption, not money spent (spec \xA74.4, \xA713.6).`,
-    "",
-    "## Caps",
-    `- Project cap: ${fmt(b.project_cap)}`,
-    `- Daily cap: ${fmt(b.daily_cap)}`,
-    `- Per-run cap: ${fmt(b.per_run_cap)}`,
-    `- Default per story: ${fmt(b.per_story_default)}`,
-    "",
-    "## Story budgets by size",
-    ...Object.entries(sizes).map(([k, v]) => `- ${k}: ${fmt(v)}`),
-    "",
-    "## Alerts",
-    `Alerts at ${b.alert_thresholds.map((t2) => `${Math.round(t2 * 100)}%`).join(", ")} of each budget.`,
-    "",
-    "## Infrastructure and hosting",
-    "To be estimated by the architect at Phase 2 (hosting cost estimate).",
-    ""
-  ].join("\n");
+  return renderTemplate("budget-plan", {
+    project_cap: fmt(b.project_cap),
+    daily_cap: fmt(b.daily_cap),
+    per_run_cap: fmt(b.per_run_cap),
+    per_story_default: fmt(b.per_story_default),
+    story_budgets: Object.entries(sizes).map(([k, v]) => `- ${k}: ${fmt(v)}`).join("\n"),
+    alerts: b.alert_thresholds.map((t2) => `${Math.round(t2 * 100)}%`).join(", ")
+  });
 }
 function evidencePack(gate, name, runId, date2, approvers, checked) {
-  return [
-    `# ${gate} evidence pack: ${name}`,
-    "",
-    `Prepared by orchestrator run ${runId} on ${date2}. Approvers: ${approvers}.`,
-    "Decision: Not ready.",
-    "",
-    "## Criteria checklist",
-    ...GATE_CRITERIA[gate].map((c) => `- [${checked.has(c) ? "x" : " "}] ${c}`),
-    "",
-    "## Artifact links",
-    "None yet.",
-    "",
-    "## Open risks",
-    "None recorded yet.",
-    "",
-    "## Known issues",
-    "None.",
-    "",
-    "## Agent recommendation",
-    "Not ready: the criteria above are not all met.",
-    "",
-    "## Cost and time to date",
-    "See the Cost log.",
-    ""
-  ].join("\n");
+  return renderTemplate("gate-page", {
+    gate,
+    name,
+    run_id: runId,
+    date: date2,
+    approvers,
+    criteria: GATE_CRITERIA[gate].map((c) => `- [${checked.has(c) ? "x" : " "}] ${c}`).join("\n")
+  });
 }
 async function runInit(o) {
   const log = o.log ?? (() => void 0);
@@ -20949,7 +21262,16 @@ async function runInit(o) {
     warnings: [],
     nextSteps: []
   };
-  const brief = checkBrief(readFileSync11(o.briefFile, "utf8"));
+  const briefText = readFileSync12(o.briefFile, "utf8");
+  const leaked = findSecrets(briefText);
+  if (leaked.length > 0) {
+    result.problems = [
+      `the brief looks like it contains a secret (${leaked.join(", ")}); remove it and keep credentials out of the brief`
+    ];
+    result.exitCode = INIT_EXIT.briefSecret;
+    return result;
+  }
+  const brief = checkBrief(briefText);
   if (!brief.ok) {
     result.gaps = describeGaps(brief);
     result.exitCode = INIT_EXIT.briefGaps;
@@ -20958,7 +21280,7 @@ async function runInit(o) {
   log("brief complete");
   const cfg = validateProject(o.projectDir);
   if (!cfg.ok || cfg.arima === void 0 || cfg.team === void 0) {
-    result.problems = cfg.errors.map((e) => `${path16.basename(e.file)}:${e.line}: ${e.message}`);
+    result.problems = cfg.errors.map((e) => `${path17.basename(e.file)}:${e.line}: ${e.message}`);
     result.exitCode = PREFLIGHT_EXIT.config;
     return result;
   }
@@ -20968,6 +21290,10 @@ async function runInit(o) {
   const raw = arima;
   const name = raw.project.name;
   const root = o.rootPageId ?? raw.notion.root_page_id;
+  try {
+    await ensureNotionSwitch(o.port, root);
+  } catch {
+  }
   const runId = await issueRunId(o.projectDir, now);
   result.runId = runId;
   const pre = await runPreflight({
@@ -21012,7 +21338,10 @@ async function runInit(o) {
     const map = mapped.result.map;
     log(`mapped ${Object.keys(map.databases).length} databases`);
     await pullMirror(o.projectDir, o.port, map, { now, runId });
-    const leftover = await pushOutbox(o.projectDir, o.port, map, { now });
+    const leftover = await pushOutbox(o.projectDir, o.port, map, {
+      now,
+      allowStatusWrites: true
+    });
     for (const r of leftover.rejected)
       result.warnings.push("earlier outbox entry " + r.id + " was rejected: " + r.reason);
     const profile = loadProfile(arima.profile);
@@ -21051,7 +21380,7 @@ async function runInit(o) {
       });
       result.created.push(title);
     };
-    doc("Project brief", "Project brief", "human", readFileSync11(o.briefFile, "utf8"));
+    doc("Project brief", "Project brief", "human", readFileSync12(o.briefFile, "utf8"));
     doc(
       "Charter",
       "Charter",
@@ -21081,7 +21410,7 @@ async function runInit(o) {
       });
       result.created.push(`${gate} gate page`);
     }
-    const report = await pushOutbox(o.projectDir, o.port, map, { now });
+    const report = await pushOutbox(o.projectDir, o.port, map, { now, allowStatusWrites: true });
     if (report.rejected.length + report.conflicts.length + report.deferred.length > 0) {
       result.problems = [
         ...report.rejected.map((r) => `${r.id}: ${r.reason}`),
@@ -21148,8 +21477,10 @@ async function runInit(o) {
         projectDir: o.projectDir,
         runId,
         branch: raw.github.state_branch,
-        defaultBranch: raw.github.default_branch
+        defaultBranch: raw.github.default_branch,
+        ...raw.github.allow_public_state === true ? { allowPublic: true } : {}
       });
+      for (const w of s.warnings) result.warnings.push(w);
       log(
         s.committed ? `state committed${s.pushed ? " and pushed" : " (no remote yet)"}` : "state unchanged"
       );
@@ -21170,10 +21501,11 @@ async function runInit(o) {
 // plugins/arima/scripts/src/cli/project-cli.ts
 function settingsOf(projectDir) {
   const out = { tokenEnv: "ARIMA_NOTION_TOKEN" };
-  const file = path17.join(projectDir, "arima.yaml");
+  const file = path18.join(projectDir, "arima.yaml");
   if (!existsSync10(file)) return out;
   try {
-    const doc = (0, import_yaml3.parse)(readFileSync12(file, "utf8"));
+    const doc = (0, import_yaml3.parse)(readFileSync13(file, "utf8"));
+    if (doc.github?.allow_public_state === true) out.allowPublic = true;
     if (doc.notion?.root_page_id && !doc.notion.root_page_id.startsWith("<"))
       out.rootPageId = doc.notion.root_page_id;
     if (doc.notion?.token_env) out.tokenEnv = doc.notion.token_env;
@@ -21190,7 +21522,7 @@ ${usage}
   return 2;
 };
 var INIT_USAGE = `Usage: arima-init --brief <file> [--project <dir>] [--root <notion-page-id>] [--skip-state] [--json]
-Exit codes: 0 ok, 2 usage, 3 brief has gaps, 4 Notion workspace does not match the template, 5 Notion writes failed, 10-14 preflight failed (see arima-preflight)`;
+Exit codes: 0 ok, 2 usage, 3 brief has gaps, 4 Notion workspace does not match the template, 5 Notion writes failed, 6 brief contains a secret, 10-14 preflight failed (see arima-preflight)`;
 async function runInitCli(argv, io, deps = {}) {
   let v;
   try {
@@ -21209,8 +21541,8 @@ async function runInitCli(argv, io, deps = {}) {
     return bad(io, INIT_USAGE, e instanceof Error ? e.message : String(e));
   }
   if (v.brief === void 0) return bad(io, INIT_USAGE, "--brief is required");
-  const projectDir = path17.resolve(io.cwd, v.project ?? ".");
-  const briefFile = path17.resolve(io.cwd, v.brief);
+  const projectDir = path18.resolve(io.cwd, v.project ?? ".");
+  const briefFile = path18.resolve(io.cwd, v.brief);
   if (!existsSync10(briefFile)) return bad(io, INIT_USAGE, `brief file not found: ${briefFile}`);
   const s = settingsOf(projectDir);
   const env = deps.env ?? process.env;

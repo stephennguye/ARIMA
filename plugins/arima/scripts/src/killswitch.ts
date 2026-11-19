@@ -10,6 +10,8 @@ export interface KillSwitchState {
   on: boolean;
   file: boolean;
   notion: NotionPauseState;
+  /** The PAUSE file on the remote state branch, when it had to be consulted. */
+  stateBranch: boolean | 'unchecked';
   detail: string;
 }
 
@@ -28,13 +30,20 @@ export function setPauseFile(projectDir: string, on: boolean, reason = 'paused b
 }
 
 /**
- * Reads both kill switches: the "Pause ARIMA" to-do on the Notion root page and the PAUSE file
- * on the state branch. Either one being on pauses ARIMA. If Notion cannot be reached the PAUSE
- * file alone decides (spec §11.3); that is reported, not silently ignored.
+ * Reads the kill switches: the "Pause ARIMA" to-do on the Notion root page, the local PAUSE file,
+ * and (when Notion cannot be consulted) the PAUSE file on the remote state branch. ANY of them
+ * being on pauses ARIMA, and uncertainty also pauses (spec principle 10, fail closed):
+ *  - a Notion root page with no "Pause ARIMA" to-do counts as paused, because a deleted switch
+ *    must not mean "running";
+ *  - if Notion is unreachable, the local PAUSE file and the remote state branch decide, and the
+ *    outage is reported.
+ * `remotePause` returns true/false for the state branch's PAUSE file, or undefined if it could not
+ * be checked.
  */
 export async function checkKillSwitch(
   projectDir: string,
   notion: { port: PauseSwitchPort; rootPageId: string } | null,
+  remotePause?: () => Promise<boolean | undefined>,
 ): Promise<KillSwitchState> {
   const file = existsSync(pauseFile(projectDir));
   let remote: NotionPauseState = 'unchecked';
@@ -45,28 +54,46 @@ export async function checkKillSwitch(
       const sw = todos.find((t) => t.text.trim() === PAUSE_TODO_TEXT);
       if (sw === undefined) {
         remote = 'missing';
-        detail = `no "${PAUSE_TODO_TEXT}" to-do found on the Notion root page`;
+        detail = `the "${PAUSE_TODO_TEXT}" to-do is missing from the Notion root page, so ARIMA cannot tell whether it is paused; run /arima:pause --resume to recreate it`;
       } else {
         remote = sw.checked;
       }
     } catch (e) {
       remote = 'unreachable';
-      detail = `Notion unreachable (${e instanceof Error ? e.message : String(e)}); using the PAUSE file only`;
+      detail = `Notion unreachable (${e instanceof Error ? e.message : String(e)})`;
     }
   }
-  const on = file || remote === true;
+  let stateBranch: boolean | 'unchecked' = 'unchecked';
+  if (!file && remote !== true && remotePause !== undefined && remote !== false) {
+    const r = await remotePause();
+    stateBranch = r === undefined ? 'unchecked' : r;
+  }
+  // Owner decision (S18, principle 10): when Notion is configured but neither it nor the remote
+  // state branch could be read, nothing confirms "not paused", so ARIMA counts as paused.
+  const blind = notion !== null && remote === 'unreachable' && stateBranch === 'unchecked';
+  const on = file || remote === true || remote === 'missing' || stateBranch === true || blind;
   if (on) {
     const reasons = [
       file ? 'PAUSE file present' : '',
       remote === true ? 'Notion switch is on' : '',
+      remote === 'missing' ? detail : '',
+      stateBranch === true ? 'PAUSE file on the remote state branch' : '',
+      blind
+        ? `${detail}; the remote state branch could not be checked either, so ARIMA cannot confirm it is not paused`
+        : '',
     ];
     detail = reasons.filter(Boolean).join(' and ');
     if (file) {
       const first = readFileSync(pauseFile(projectDir), 'utf8').split('\n')[0] ?? '';
       if (first.trim() !== '') detail += ` (${first.trim()})`;
     }
+  } else if (remote === 'unreachable') {
+    detail +=
+      stateBranch === false
+        ? '; the remote state branch has no PAUSE file'
+        : '; the remote state branch could not be checked either, so only the local PAUSE file was consulted';
   }
-  return { on, file, notion: remote, detail };
+  return { on, file, notion: remote, stateBranch, detail };
 }
 
 /** Turns the Notion switch on or off, creating the to-do on first use. Never deletes anything. */
@@ -82,4 +109,18 @@ export async function setNotionSwitch(
   } else if (sw.checked !== on) {
     await port.setTodoChecked(sw.id, on);
   }
+}
+
+/**
+ * Makes sure the Notion switch exists, creating it UNCHECKED if it is missing. Never changes an
+ * existing switch, so it cannot clear a pause. Returns true if it had to create it.
+ */
+export async function ensureNotionSwitch(
+  port: PauseSwitchPort,
+  rootPageId: string,
+): Promise<boolean> {
+  const todos = await port.listTodoBlocks(rootPageId);
+  if (todos.some((t) => t.text.trim() === PAUSE_TODO_TEXT)) return false;
+  await port.appendTodo(rootPageId, PAUSE_TODO_TEXT, false);
+  return true;
 }

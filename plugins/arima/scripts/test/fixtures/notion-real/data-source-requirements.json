@@ -1,0 +1,263 @@
+{
+  "object": "data_source",
+  "id": "00000000-0000-4000-8000-000000000001",
+  "cover": null,
+  "icon": null,
+  "created_time": "2026-11-18T07:02:00.000Z",
+  "created_by": {
+    "object": "user",
+    "id": "00000000-0000-4000-8000-000000000002"
+  },
+  "last_edited_by": {
+    "object": "user",
+    "id": "00000000-0000-4000-8000-000000000002"
+  },
+  "last_edited_time": "2026-11-18T07:03:00.000Z",
+  "title": [
+    {
+      "type": "text",
+      "text": {
+        "content": "Requirements",
+        "link": null
+      },
+      "annotations": {
+        "bold": false,
+        "italic": false,
+        "strikethrough": false,
+        "underline": false,
+        "code": false,
+        "color": "default"
+      },
+      "plain_text": "Requirements",
+      "href": null
+    }
+  ],
+  "description": [],
+  "is_inline": true,
+  "database_type": null,
+  "properties": {
+    "Baseline version": {
+      "id": "%3AzJC",
+      "name": "Baseline version",
+      "description": null,
+      "type": "rich_text",
+      "rich_text": {}
+    },
+    "Coverage": {
+      "id": "DypW",
+      "name": "Coverage",
+      "description": null,
+      "type": "formula",
+      "formula": {
+        "expression": "if(contains(prop(\"Test results\"), \"Pass\"), \"Covered\", \"Not covered\")"
+      }
+    },
+    "Title": {
+      "id": "FDJC",
+      "name": "Title",
+      "description": null,
+      "type": "rich_text",
+      "rich_text": {}
+    },
+    "Priority": {
+      "id": "T%5C%3Cm",
+      "name": "Priority",
+      "description": null,
+      "type": "select",
+      "select": {
+        "options": [
+          {
+            "id": "00000000-0000-4000-8000-000000000003",
+            "name": "Must",
+            "color": "default",
+            "description": null
+          },
+          {
+            "id": "00000000-0000-4000-8000-000000000004",
+            "name": "Should",
+            "color": "default",
+            "description": null
+          },
+          {
+            "id": "00000000-0000-4000-8000-000000000005",
+            "name": "Could",
+            "color": "default",
+            "description": null
+          },
+          {
+            "id": "00000000-0000-4000-8000-000000000006",
+            "name": "Won't",
+            "color": "default",
+            "description": null
+          }
+        ]
+      }
+    },
+    "Test Cases": {
+      "id": "W%5Brp",
+      "name": "Test Cases",
+      "description": null,
+      "type": "relation",
+      "relation": {
+        "database_id": "00000000-0000-4000-8000-000000000007",
+        "data_source_id": "00000000-0000-4000-8000-000000000008",
+        "limit": null,
+        "type": "dual_property",
+        "dual_property": {
+          "synced_property_name": "Requirements",
+          "synced_property_id": "x%3A%3CJ"
+        }
+      }
+    },
+    "Status": {
+      "id": "_wwa",
+      "name": "Status",
+      "description": null,
+      "type": "select",
+      "select": {
+        "options": [
+          {
+            "id": "00000000-0000-4000-8000-000000000009",
+            "name": "Draft",
+            "color": "default",
+            "description": null
+          },
+          {
+            "id": "00000000-0000-4000-8000-000000000010",
+            "name": "Approved",
+            "color": "default",
+            "description": null
+          },
+          {
+            "id": "00000000-0000-4000-8000-000000000011",
+            "name": "Changed",
+            "color": "default",
+            "description": null
+          },
+          {
+            "id": "00000000-0000-4000-8000-000000000012",
+            "name": "Retired",
+            "color": "default",
+            "description": null
+          }
+        ]
+      }
+    },
+    "Stories": {
+      "id": "%60EnH",
+      "name": "Stories",
+      "description": null,
+      "type": "relation",
+      "relation": {
+        "database_id": "00000000-0000-4000-8000-000000000013",
+        "data_source_id": "00000000-0000-4000-8000-000000000014",
+        "limit": null,
+        "type": "dual_property",
+        "dual_property": {
+          "synced_property_name": "Requirements",
+          "synced_property_id": "x%5BK%5E"
+        }
+      }
+    },
+    "Change Requests": {
+      "id": "i%3E_i",
+      "name": "Change Requests",
+      "description": null,
+      "type": "relation",
+      "relation": {
+        "database_id": "00000000-0000-4000-8000-000000000015",
+        "data_source_id": "00000000-0000-4000-8000-000000000016",
+        "limit": null,
+        "type": "dual_property",
+        "dual_property": {
+          "synced_property_name": "Requirements",
+          "synced_property_id": "VV~%7C"
+        }
+      }
+    },
+    "Type": {
+      "id": "pASa",
+      "name": "Type",
+      "description": null,
+      "type": "select",
+      "select": {
+        "options": [
+          {
+            "id": "00000000-0000-4000-8000-000000000017",
+            "name": "Functional",
+            "color": "default",
+            "description": null
+          },
+          {
+            "id": "00000000-0000-4000-8000-000000000018",
+            "name": "NFR",
+            "color": "default",
+            "description": null
+          },
+          {
+            "id": "00000000-0000-4000-8000-000000000019",
+            "name": "Security",
+            "color": "default",
+            "description": null
+          }
+        ]
+      }
+    },
+    "Epics": {
+      "id": "qtpF",
+      "name": "Epics",
+      "description": null,
+      "type": "relation",
+      "relation": {
+        "database_id": "00000000-0000-4000-8000-000000000020",
+        "data_source_id": "00000000-0000-4000-8000-000000000021",
+        "limit": null,
+        "type": "dual_property",
+        "dual_property": {
+          "synced_property_name": "Requirements",
+          "synced_property_id": "oZSl"
+        }
+      }
+    },
+    "Last written by run": {
+      "id": "rtLF",
+      "name": "Last written by run",
+      "description": null,
+      "type": "rich_text",
+      "rich_text": {}
+    },
+    "Test results": {
+      "id": "xayY",
+      "name": "Test results",
+      "description": null,
+      "type": "rollup",
+      "rollup": {
+        "rollup_property_name": "Last result",
+        "relation_property_name": "Test Cases",
+        "rollup_property_id": "@<]f",
+        "relation_property_id": "W[rp",
+        "function": "show_original"
+      }
+    },
+    "ID": {
+      "id": "title",
+      "name": "ID",
+      "description": null,
+      "type": "title",
+      "title": {}
+    }
+  },
+  "parent": {
+    "type": "database_id",
+    "database_id": "00000000-0000-4000-8000-000000000022"
+  },
+  "database_parent": {
+    "type": "page_id",
+    "page_id": "00000000-0000-4000-8000-000000000023"
+  },
+  "url": "https://notion.example/page",
+  "public_url": null,
+  "in_trash": false,
+  "archived": false,
+  "request_id": "00000000-0000-4000-8000-000000000024"
+}

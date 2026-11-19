@@ -15416,6 +15416,29 @@ import path5 from "node:path";
 
 // plugins/arima/scripts/src/config.ts
 import { existsSync as existsSync2 } from "node:fs";
+
+// plugins/arima/scripts/src/hardstops.ts
+var HARD_STOPS = [
+  "G0",
+  "G1",
+  "G2",
+  "G3",
+  "G4",
+  "prod_deploy",
+  "secrets_change",
+  "budget_exceeded",
+  "story_budget",
+  "notion_delete",
+  "prod_data_migration",
+  "new_paid_service",
+  "licence",
+  "critical_finding",
+  "kill_switch",
+  "missing_credential"
+];
+var isHardStop = (id) => HARD_STOPS.includes(id);
+
+// plugins/arima/scripts/src/config.ts
 import path4 from "node:path";
 
 // plugins/arima/scripts/src/lib/paths.ts
@@ -15687,8 +15710,32 @@ function validateProject(projectDir, root = pluginRoot()) {
       message: "usage credits are enabled: set a spend cap and note it in the digest configuration (Q-22); budgets are estimates, not money spent"
     });
   }
+  const listed = new Set(
+    arima.autonomy.hard_stops
+  );
+  const missing = REQUIRED_HARD_STOPS.filter((s) => !listed.has(s));
+  const unknown = [...listed].filter((s) => !isHardStop(s));
+  if (unknown.length > 0) {
+    warnings.push({
+      severity: "warning",
+      file: aSrc.file,
+      line: aSrc.lineOf("/autonomy/hard_stops"),
+      path: "autonomy.hard_stops",
+      message: `unknown hard stop ids: ${unknown.join(", ")}. The ids are fixed in code (see src/hardstops.ts); a typo here protects nothing`
+    });
+  }
+  if (missing.length > 0) {
+    warnings.push({
+      severity: "warning",
+      file: aSrc.file,
+      line: aSrc.lineOf("/autonomy/hard_stops"),
+      path: "autonomy.hard_stops",
+      message: `hard stops missing from this list: ${missing.join(", ")}. ARIMA enforces them anyway (they cannot be disabled by configuration, spec \xA711.1); keep the list complete so it matches what is enforced`
+    });
+  }
   return { ok: errors.length === 0, errors, warnings, arima, team };
 }
+var REQUIRED_HARD_STOPS = HARD_STOPS;
 function formatIssue(i) {
   return `${i.file}:${i.line}: ${i.severity}: ${i.message}`;
 }

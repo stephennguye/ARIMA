@@ -4,10 +4,12 @@ Nov 17, 2026 · @Stephen
 
 ## 0. Document control
 
-This spec is the single source of truth for how ARIMA behaves; the Claude Code build package is generated from it. Version 0.3 is a draft: 33 decisions are recorded, and the 3 remaining questions in section 16 each have a working default.
+This spec is the single source of truth for how ARIMA behaves; the Claude Code build package is generated from it. Version 0.5 is a draft: 49 decisions are recorded, and the 3 remaining questions in section 16 each have a working default.
 
 | Version | Date | Change |
 | --- | --- | --- |
+| 0.5 | 2026-11-19 | Owner decisions D-43 to D-49 applied: the orchestrator is the host process and no agent role holds a GitHub credential (D-49); local Docker Compose environments with no cloud CLI and no deploy workflows (D-47); `arima-merge` is the only merger and `arima-release` the only tagger and production deployer; baseline frozen when the gate is approved (D-45); `/arima:stabilize` makes 19 commands and `/arima:run` covers Phase 4 and operations (D-46); 16 canonical hard stops (D-42); on-demand digest and attended v0.2 (D-41); reference stack `stacks/default-web` (D-47); new config keys; role phase, tool and permission corrections |
+| 0.4 | 2026-11-18 | Notion access is the public API, not MCP (D-34, supersedes D-02); solo-first build order (D-35); Docker Sandbox for unattended runs where available (D-36); stale "Notion MCP" wording, Q-07 wording and the `shell` example corrected |
 | 0.3 | 2026-11-17 | Scope narrowed to web apps only (D-33): mobile platforms, app stores and mobile testing removed |
 | 0.2 | 2026-11-17 | 21 open questions resolved (D-12 to D-32): runtime, billing, Notion and GitHub Free constraints, approvals, sizing, design, license, hypercare |
 | 0.1 | 2026-11-17 | First draft from the design conversation: client-project profile, Notion + GitHub, autonomous daily runs, web + mobile |
@@ -57,13 +59,13 @@ ARIMA is a Claude Code plugin that runs a client-grade, gated software lifecycle
 3. **One master per artifact.** Every artifact has exactly one source of truth (section 3.3); everything else is a read-only mirror.
 4. **Derive, don't duplicate.** RTM, release notes, test reports and changelogs are generated from existing data, never maintained by hand.
 5. **Separation of duties.** No agent reviews, tests or approves its own work.
-6. **Least privilege.** Each agent gets only the tools it needs. Only the orchestrator writes to Notion. No agent holds production credentials.
+6. **Least privilege.** Each agent gets only the tools it needs. Only the orchestrator writes to Notion. No agent holds production credentials or any GitHub credential (D-49).
 7. **Humans own judgment.** Gates, production, money and legal decisions always need a human.
 8. **Every assumption is visible.** Any guess an agent makes is written to the decision log and shown in the digest.
 9. **Every unit of work is attributable.** Each run records cost and time against project, phase, story and role.
 10. **Fail closed.** When uncertain on a hard-stop matter, over budget or missing a credential, ARIMA stops and asks rather than guessing.
 11. **Profile-driven rigor.** The client-project profile is the default (D-01); solo-lite and regulated adjust which gates and artifacts are mandatory.
-12. **Opinionated stacks.** Each platform has one default stack with templates; deviations need an approved ADR.
+12. **Opinionated stacks.** Each platform has one default stack with templates; deviations need an ADR approved by the tech-lead.
 
 ## 2. Glossary and ID conventions
 
@@ -77,9 +79,9 @@ Every tracked item carries a project-unique ID; commits, PRs, Notion rows and le
 | Gate | A formal approval point (G0–G4) that only a human can pass |
 | Hard stop | Any condition where ARIMA must pause and wait for a human (section 11.1) |
 | Run | One headless Claude Code invocation with its own ID, budget and ledger row |
-| Daily run | The scheduled orchestrator session that plans, dispatches runs and writes the digest |
-| Orchestrator | The lead session; fills the PjM / Scrum Master role and is the only Notion writer |
-| Role agent | A subagent with one role's instructions, tools and limits (section 5) |
+| Daily run | The orchestrator's run (attended until Gate U, D-41) that plans, dispatches runs and writes the digest |
+| Orchestrator | The host process (ARIMA's scripts, which dispatch every role run) plus short judgment calls; fills the PjM / Scrum Master role and is the only Notion writer |
+| Role agent | An agent definition with one role's instructions, tools and limits, run by script as its own headless process (section 5) |
 | Human role | A role assigned to a person in `team.yaml`; ARIMA hands them tasks instead of spawning an agent |
 | Profile | A rigor preset (solo-lite, client-project, regulated) that sets mandatory gates and artifacts |
 | Stack | A default technology set with templates, conventions and CI for one platform |
@@ -131,19 +133,19 @@ ARIMA has one writer to Notion (the orchestrator), many short-lived role-agent r
 
 &#91;embedded content: ARIMA architecture · components and data flows\]
 
-Humans act only through Notion and GitHub; every agent change to Notion passes through the outbox, and production is reached only through the human-approved deploy job.
+Humans act only through Notion and GitHub; every agent change to Notion passes through the outbox, and production is reached only through the approval-gated local script `arima-release`.
 
 ### 3.2 Components
 
 | Component | What it is | Responsibilities |
 | --- | --- | --- |
 | ARIMA plugin | The Claude Code plugin from the ARIMA GitHub repo | Skills (phase playbooks, commands), agent definitions, hooks, templates, scripts, schemas, profiles, stacks |
-| Orchestrator | The lead Claude Code session, started by `/arima:run` or by the scheduler in headless mode | Sync, planning, dispatch, meetings, gate preparation, digest, Notion writes, ID issuing, budget checks |
-| Role agents | Subagents defined in `agents/` | Produce phase artifacts; build-pipeline stages (dev, review, QA) run as separate headless runs for clean attribution (D-08) |
+| Orchestrator | The host process: ARIMA's scripts, started by a command or by the scheduler, which dispatch every role run by script (there is no in-session Agent tool) and call the model only for judgment. "The orchestrator holds the Notion token" means this host process | Sync, planning, dispatch, meetings, gate preparation, digest, Notion writes, ID issuing, budget checks |
+| Role agents | Agent definitions in `agents/`, each run by script as its own headless process | Produce phase artifacts; every unit (dev, review, QA and the rest) runs as a separate headless run for clean attribution (D-08) |
 | Local state | `.arima/` folder in the app repo, persisted on the `arima-state` branch (D-09) | Notion mirror (read-only for agents), outbox of pending Notion writes, `events.jsonl`, `ledger.jsonl`, locks, run reports |
 | Notion workspace | Project-management layer, duplicated from the ARIMA template | Board, requirements, documents, gates, decisions, questions, meetings, digests, cost log (section 9) |
-| GitHub | Repo, PRs, Actions | Code, tests, engineering docs, CI, scheduled daily run once moved off your PC (D-13), releases |
-| Environments | Staging and production hosting | Staging deploys are automatic; production deploys are a hard stop |
+| GitHub | Repo, PRs, Actions | Code, tests, engineering docs, CI checks (no deploy workflows), scheduled daily run once moved off your PC (D-13), releases |
+| Environments | Local Docker Compose projects on the owner's machine: `preview-<pr>`, `staging` and `production` (D-47) | Staging is rebuilt from `main` by a host script after each merge; production deploys only through the approval-gated script `arima-release` and is a hard stop |
 | Telemetry (optional) | OpenTelemetry backend | Detailed cost, token and tool-time monitoring (section 13) |
 | Humans | Everyone whose role in `team.yaml` is `human` | Gates, approvals, vetoes, answers, UAT, human-assigned tasks |
 
@@ -152,13 +154,13 @@ Humans act only through Notion and GitHub; every agent change to Notion passes t
 | Data or artifact | Master | Mirror | Sync rule |
 | --- | --- | --- | --- |
 | Requirements, epics, stories, acceptance criteria | Notion | `.arima/mirror/` | Pulled at the start of every run; agents propose edits through the outbox |
-| PRD, URS, SRS, glossary, Master Test Plan | Notion (Documents DB) | `docs/spec/*.md` in repo | Frozen copy committed at each gate approval as the baseline |
+| PRD, URS, SRS, glossary, Master Test Plan | Notion (Documents DB) | `docs/spec/*.md` in repo | Frozen copy committed when the gate is approved as the baseline; a pre-gate snapshot is kept as evidence-pack input |
 | Test case records, bugs, gates, decisions, questions, meetings, digests, CRs, incidents, releases, risks, lessons | Notion | `.arima/mirror/` | Orchestrator writes via outbox; humans edit in Notion |
 | SAD, ADRs, OpenAPI spec, data model, threat model, runbooks, ops manual | GitHub (`docs/`) | Notion Documents DB row with link + summary | Notion row updated when the file changes on main |
 | Code, tests, CI config, infrastructure config, CHANGELOG | GitHub | none | n/a |
 | Run ledger, event log | `.arima/` on `arima-state` | Notion Cost log (daily aggregates) | Aggregated at the end of each daily run |
 | Configuration (`arima.yaml`, `team.yaml`) | GitHub | none | Read at the start of every run |
-| Secrets | Secret store (GitHub Actions secrets or host secret manager) | none | Never copied anywhere |
+| Secrets | Host secret manager (GitHub Actions secrets for CI checks only); agents see names, never values | none | Never copied anywhere |
 
 **Rules**
 
@@ -181,18 +183,19 @@ project:
   platforms: [web]
   docs_language: en             # set per project (D-22)
 profile: client-project         # solo-lite | client-project | regulated (D-01)
-stacks:                         # Q-03
-  web: default-web
-  backend: default-backend
+stacks:                         # Q-03; reference stack stacks/default-web (D-47, ADR-0007)
+  web: default-web              # another stack needs an ADR approved by the tech-lead (D-12)
 autonomy:
   mode: autonomous              # assisted | gated | autonomous
-  question_policy: block_story  # block_story | assume_and_log (non-hard-stop questions only)
-  hard_stops: [G0, G1, G2, G3, G4, prod_deploy, secrets_change,
-               budget_exceeded, notion_delete, prod_data_migration, new_paid_service]
+  question_policy: assume_and_log  # assume_and_log (default, D-43) | block_story (non-hard-stop questions only)
+  hard_stops: [G0, G1, G2, G3, G4, prod_deploy, secrets_change, budget_exceeded,
+               story_budget, notion_delete, prod_data_migration, new_paid_service,
+               licence, critical_finding, kill_switch, missing_credential]
+                                # documentation only: the 16 ids are fixed in code (D-42); the validator warns if this differs
 schedule:                       # Q-01
   timezone: Asia/Ho_Chi_Minh
   daily_run: "02:00"
-  digest_ready_by: "07:00"
+  digest_ready_by: "07:00"      # used once scheduled runs exist (after Gate U, D-41); until then the digest is built on demand
   max_run_minutes: 240
 budget:
   currency: USD
@@ -201,12 +204,18 @@ budget:
   per_story_default: 3
   per_run_cap: 2
   alert_thresholds: [0.5, 0.8, 1.0]
+  role_caps: { architect: 3, security: 2 }  # optional per-role cap on one run (est. USD); a role not listed uses per_run_cap
 models:
   tiers: { strong: "<model id>", standard: "<model id>", fast: "<model id>" }
   by_role: { orchestrator: standard, ba: strong, ux: standard, architect: strong,
              tech_lead: strong, developer: standard, qa: standard, security: strong, devops: standard }
 parallelism:
   max_developer_agents: 3
+review:
+  max_prs_awaiting_human: 5     # new stories pause when this many PRs await your approval (D-21)
+  architecture_paths: ["api/**", "docs/architecture/**", "infra/**"]  # PRs touching these paths are routed to the architect
+licence:
+  allowed: [Apache-2.0, MIT, BSD-2-Clause, BSD-3-Clause, ISC, 0BSD]   # any other dependency licence is a hard stop
 notion:
   root_page_id: "<id>"
   token_env: ARIMA_NOTION_TOKEN
@@ -214,9 +223,11 @@ github:
   repo: "<owner>/<repo>"
   default_branch: main
   state_branch: arima-state
-environments:
-  staging:    { url: "<url>", deploy: auto }
-  production: { url: "<url>", deploy: gated }
+  allow_unchecked_remote: false # true lets host scripts use a remote that is not github.com, whose privacy cannot be checked
+environments:                   # local Docker Compose projects on the owner's machine (D-47)
+  max_previews: 3               # preview-<pr> projects running at once; the oldest is removed first
+  staging:    { compose_project: "<key>-staging", url: "http://localhost:<port>", deploy: auto }      # rebuilt from main after each merge
+  production: { compose_project: "<key>-production", url: "http://localhost:<port>", deploy: gated }  # only through arima-release
 telemetry:
   otel_enabled: false
   endpoint_env: OTEL_EXPORTER_OTLP_ENDPOINT
@@ -265,7 +276,7 @@ roles:
   po:      { type: human, person: me }
 ```
 
-Guests see only the Client portal (section 9.2). A gate decision counts only when the Notion user who set it matches an approver listed for that gate.
+Guests see only the Client portal (section 9.2). A gate decision counts only when the decider is a named approver for that gate (the per-property editor check is deferred, D-40).
 
 ### 4.3 Profiles
 
@@ -285,20 +296,22 @@ Guests see only the Client portal (section 9.2). A gate decision counts only whe
 
 ### 4.4 Runtime and billing
 
-Until ARIMA is stable, it runs on your Windows PC inside WSL 2 and draws on your Claude Team seat; moving to GitHub Actions comes later (D-13, D-14, D-15).
+Until ARIMA is stable, it runs attended on your Windows PC (WSL 2 or native Windows, with Docker) and draws on your Claude Team seat; moving to GitHub Actions comes later (D-13, D-14, D-15). Unattended runs wait for Gate U (D-41) and use a Docker sandbox (D-36, D-37, ADR-0006).
 
 | Setting | Now | Later |
 | --- | --- | --- |
-| Host | Your Windows PC, inside WSL 2 | GitHub Actions, Linux runners |
-| Why WSL 2 | Sandboxed command execution is supported in WSL 2 and not on native Windows ([source](https://code.claude.com/docs/en/setup?m=1)); Linux also matches the future runners | n/a |
-| Scheduler | Windows Task Scheduler starts `wsl.exe` → `claude -p "/arima:run"`; wake timer on; a missed run starts as soon as the PC is available | GitHub schedule |
+| Host | Your Windows PC: WSL 2 or native Windows, plus Docker | GitHub Actions, Linux runners |
+| Why WSL 2 is preferred | Sandboxed command execution is supported in WSL 2 and not on native Windows ([source](https://code.claude.com/docs/en/setup?m=1)); Linux also matches the future runners. Native Windows works for attended runs | n/a |
+| Sandbox | Attended runs use the Claude Code CLI directly, with the local safety layers (role tool lists, guard hook, scrubbed environment) treated as advisory; unattended runs use a Docker sandbox with no push credentials (`runtime.sandbox: docker`, ADR-0006) | Linux runners |
+| Scheduler | After Gate U (D-41): Windows Task Scheduler starts `wsl.exe` → `claude -p "/arima:run"`; wake timer on; a missed run starts as soon as the PC is available | GitHub schedule |
 | Authentication | Your Team seat, signed in once interactively; `claude -p` signed in with a plan draws on that plan's usage limits ([source](https://support.claude.com/en/articles/17154008-monthly-api-credits-for-max-ultra-and-team-plans)) | Q-21 |
 
 ```yaml
 # added to arima.yaml
 runtime:
   host: local                 # local | github-actions
-  shell: wsl2                 # wsl2 | native
+  shell: native               # native | wsl2
+  sandbox: none               # docker | none; docker is required for unattended runs (ADR-0006, D-37)
   scheduler: windows-task-scheduler
   auth: seat                  # seat | api_key
   allow_usage_credits: false  # true only once a spend cap is set (Q-22)
@@ -322,11 +335,11 @@ ARIMA has 9 agents covering 11 roles; Sponsor, PO and Legal default to humans. E
 | orchestrator | PjM, Scrum Master | standard | Read + write (no delete) | No | All |
 | ba | Business Analyst | strong | Via outbox | No | 1, 4, 8 |
 | ux | UX/UI Designer | standard | Via outbox | Prototype only | 1, 2, 4, 5 |
-| architect | Solution Architect | strong | Via outbox | No | 2, 4 |
+| architect | Solution Architect | strong | Via outbox | No | 0, 1, 2, 4 |
 | tech-lead | Tech Lead, code reviewer | strong | Via outbox | No | 3, 4, 5 |
 | developer (×N) | Developer | standard | Via outbox | Yes, own worktree only | 3, 4, 5, 7, 8 |
-| qa | QA Engineer | standard | Via outbox | Tests only | 1, 2, 4, 5, 6 |
-| security | Security Engineer | strong | Via outbox | No | 1, 2, 4, 5 |
+| qa | QA Engineer | standard | Via outbox | Tests only | 1, 2, 4, 5 |
+| security | Security Engineer | strong | Via outbox | No | 0, 1, 2, 4, 5 |
 | devops | DevOps, SRE, Support L1/L2 | standard | Via outbox | Infra and CI only | 2, 3, 5, 6, 7, 8 |
 | (human) | Sponsor, PO, Legal | n/a | Direct | n/a | Gates, approvals, answers |
 
@@ -336,7 +349,7 @@ ARIMA has 9 agents covering 11 roles; Sponsor, PO and Legal default to humans. E
 - **Triggered by:** the daily schedule; any `/arima:*` command.
 - **Reads:** `arima.yaml`, `team.yaml`, Notion, GitHub status, `.arima/` state, ledger.
 - **Writes:** all Notion records (flushing the outbox), IDs, milestone plan, risk register, meeting minutes, gate pages and evidence packs, digest, cost log, event log.
-- **Tools:** Notion MCP (delete disabled), subagent dispatch, Bash limited to git, `gh` read commands and ARIMA scripts; file writes only in `.arima/` and `docs/spec/`.
+- **Tools:** the host process, not the model session, runs ARIMA's scripts, holds the Notion token (public API, no delete operation) and dispatches role runs by script; the model session used for judgment has Read, Write, Edit, Glob and Grep only, with file writes only in `.arima/` and `docs/spec/`. It holds no GitHub credential (D-49).
 - **Must not:** write product code, approve a gate, merge a PR, deploy to production, delete anything in Notion.
 - **Done when:** digest published, outbox empty, ledger rows closed for every run.
 - **Escalates when:** any hard stop; the same run fails 3 times; a budget threshold is crossed; a human edit conflicts with a pending write.
@@ -346,9 +359,9 @@ ARIMA has 9 agents covering 11 roles; Sponsor, PO and Legal default to humans. E
 - **Mission:** turn the brief and human answers into precise, testable requirements.
 - **Triggered by:** Phase 1; story refinement; new CRs; answers that change scope.
 - **Reads:** brief, interview answers, reference material, glossary, requirements mirror.
-- **Writes:** PRD draft (PO owns it), URS, SRS, REQ records, epics, stories with Given/When/Then acceptance criteria, glossary, REQ↔US links, CR impact analyses, questions for humans.
+- **Writes:** PRD draft (PO owns it), URS, SRS, REQ records, epics, stories with Given/When/Then acceptance criteria, glossary, REQ↔US links, priority recommendations, CR impact analyses, questions for humans.
 - **Tools:** Read; Write in `docs/spec/drafts/` and the outbox; web fetch for reference material the human supplied.
-- **Must not:** change code; set priorities (PO decides); approve anything.
+- **Must not:** change code; decide priorities (it recommends an order; the engine applies the recommended order as a logged decision after the veto window, and the PO's edit wins); approve anything.
 - **Done when:** every Must requirement has at least one story, every story meets the DoR, and QA's testability review has no open items.
 - **Escalates when:** requirements contradict; a business rule is missing; scope grows beyond the approved baseline (opens a CR).
 
@@ -357,32 +370,32 @@ ARIMA has 9 agents covering 11 roles; Sponsor, PO and Legal default to humans. E
 - **Mission:** design flows and UI that satisfy the stories and WCAG 2.2 AA.
 - **Triggered by:** Phase 1 (journeys, wireframes), Phase 2 (prototype, tokens), UI stories in Phase 4, accessibility audit in Phase 5.
 - **Reads:** PRD, stories, brand assets, the stack's design-system conventions.
-- **Writes:** personas, journeys, sitemap, wireframes, clickable HTML prototype (`design/`), design tokens, per-story screen states (empty, loading, error, success) and accessibility notes, design-QA comments on UI PRs. The HTML prototype and design tokens are the only design source; no external design tool is used (D-24).
-- **Tools:** Read; Write in `design/`; Bash to serve the prototype; Playwright MCP for screenshots.
+- **Writes:** personas, journeys, sitemap, wireframes, clickable HTML prototype (`design/`), design tokens, per-story screen states (empty, loading, error, success) and accessibility notes, design-QA verdicts on UI PRs (in its report; the host posts them as PR comments). The HTML prototype and design tokens are the only design source; no external design tool is used (D-24).
+- **Tools:** Read; Write in `design/`; Playwright MCP for screenshots. It has no Bash: the host serves the prototype through a script.
 - **Must not:** change backend or business logic; invent requirements (raises a question instead).
 - **Done when:** each UI story has screens for all states plus accessibility notes, linked from the story.
 - **Escalates when:** brand assets are missing; a requirement implies an inaccessible pattern.
 
 ### 5.5 architect
 
-- **Mission:** shape the system to meet the non-functional requirements within the default stack.
-- **Triggered by:** Phase 2; any story or CR flagged as architecture-impacting.
+- **Mission:** shape the system to meet the non-functional requirements within the approved stack (the reference stack `stacks/default-web` unless an ADR says otherwise).
+- **Triggered by:** Phase 0 (feasibility), Phase 1 (non-functional requirements), Phase 2; any story or CR flagged as architecture-impacting.
 - **Reads:** PRD, SRS, NFRs, stack documentation, ADR history.
-- **Writes:** SAD, ADRs, OpenAPI spec, data model, infrastructure diagram, hosting cost estimate, measurable NFR targets; reviews of architecture-impacting PRs.
+- **Writes:** SAD, ADRs (status Proposed; the tech-lead decides, D-44), OpenAPI spec, data model, infrastructure diagram, hosting cost estimate, measurable NFR targets; reviews of architecture-impacting PRs (in its report; the host posts them as comments).
 - **Tools:** Read; Write in `docs/architecture/` and `api/`.
-- **Must not:** merge, deploy, or deviate from the default stack without an ADR approved at G2.
+- **Must not:** merge, deploy, or deviate from the reference stack without an ADR approved by the tech-lead (D-44; the owner sees it at G2).
 - **Done when:** every NFR has a design response and a verification method, and the OpenAPI spec covers every story in the next milestone.
 - **Escalates when:** an NFR cannot be met in budget; a deviation from the stack is needed.
 
 ### 5.6 tech-lead
 
-- **Mission:** guard code quality and conventions; decide merges.
+- **Mission:** guard code quality and conventions; recommend whether a PR may merge (it never merges).
 - **Triggered by:** Phase 3 (conventions, scaffold review); every PR marked ready for review.
 - **Reads:** PR diff, story and acceptance criteria, conventions, ADRs, CI results.
-- **Writes:** PR reviews (approve or request changes, findings tagged blocker/major/minor/nit), convention updates (proposed as lessons), tech-debt register entries.
-- **Tools:** Read; Bash for checkout, tests and `gh pr review` / `gh pr merge`.
-- **Must not:** push commits to the PR branch; merge without green CI, a QA pass and a human approval.
-- **Done when:** a verdict is posted; on approve + green CI + QA pass, the PR waits for your approval and is then merged automatically (squash, D-21).
+- **Writes:** PR reviews as comment reviews (ready for QA or changes requested, findings tagged blocker/major/minor/nit; the host posts them, and the tech-lead never approves), ADR decisions (sets the status, D-44), approval of lessons, convention updates, tech-debt register entries.
+- **Tools:** Read; Bash for checkout and tests. It has no GitHub credential (D-49): the host reads the PR into its packet and posts its comments.
+- **Must not:** push commits to the PR branch; approve or merge a PR (`arima-merge` merges only with green CI, a QA pass and your approving review).
+- **Done when:** a verdict is posted as a comment review; on a ready verdict + green CI + QA pass, the PR waits for your approval and is then merged by `arima-merge` (squash, D-21).
 - **Escalates when:** the same PR fails review 3 times; a change conflicts with an ADR.
 
 ### 5.7 developer (×N)
@@ -390,8 +403,8 @@ ARIMA has 9 agents covering 11 roles; Sponsor, PO and Legal default to humans. E
 - **Mission:** implement exactly one story or bug per run to the Definition of Done.
 - **Triggered by:** the orchestrator assigning a Ready item.
 - **Reads:** the story and its acceptance criteria, linked REQs, OpenAPI spec, relevant ADRs, the story's screens, its test cases.
-- **Writes:** code plus unit and integration tests on its own branch in its own worktree; a PR with the template filled, mapping each acceptance criterion to code and tests.
-- **Tools:** Read/Edit/Write inside its worktree; Bash for build, test, lint, git in its worktree, `gh pr create`.
+- **Writes:** code plus unit and integration tests on its own branch in its own worktree; the PR description with the template filled, mapping each acceptance criterion to code and tests (the host opens the PR).
+- **Tools:** Read/Edit/Write inside its worktree; Bash for build, test, lint and git in its worktree. It has no GitHub credential (D-49): the host pushes the branch and opens the PR.
 - **Must not:** touch other worktrees or `main`; edit CI, hooks or infrastructure; read or set secrets; merge; add a dependency with a non-approved license or a paid service.
 - **Done when:** PR open, CI green, every acceptance criterion mapped.
 - **Escalates when:** acceptance criteria are ambiguous (story blocked with a question); the API contract needs to change (to architect).
@@ -413,7 +426,7 @@ ARIMA has 9 agents covering 11 roles; Sponsor, PO and Legal default to humans. E
 - **Triggered by:** Phase 1 (security requirements, DPIA draft), Phase 2 (threat model), every PR (scan triage), Phase 5 (pre-release report).
 - **Reads:** SAD, data model, OpenAPI spec, diffs, dependency manifests, scanner output.
 - **Writes:** security requirements, threat model, DPIA draft (for human sign-off), finding records, pre-release security report.
-- **Tools:** Read; Bash for static analysis, dependency audit, secret scanning, and dynamic scanning against staging only.
+- **Tools:** Read; `arima-scan` (the host script that runs static analysis, dependency audit and secret scanning); dynamic scanning against staging only. It has no GitHub credential (D-49).
 - **Must not:** modify code (files bugs instead); accept risk on its own findings.
 - **Done when:** no open critical or high finding without a human-accepted risk record.
 - **Escalates when:** a critical finding appears; a secret is detected in history.
@@ -421,11 +434,11 @@ ARIMA has 9 agents covering 11 roles; Sponsor, PO and Legal default to humans. E
 ### 5.10 devops
 
 - **Mission:** run environments, pipelines, releases and operations.
-- **Triggered by:** Phase 2 (environment plan), Phase 3 (setup), merges (staging deploy), Phase 6 (release), alerts and incidents, recurring jobs.
+- **Triggered by:** Phase 2 (environment plan), Phase 3 (setup), merges (staging rebuilt by the host), Phase 6 (release), alerts and incidents, recurring jobs.
 - **Reads:** SAD, infrastructure config, CI results, monitoring alerts, runbooks.
-- **Writes:** CI/CD config, infrastructure as code, environment matrix, staging deploys, release candidates, runbooks, rollback plans, incident records, postmortem drafts, SLO reports, SBOM, dependency-update PRs.
-- **Tools:** Read; Write in `infra/`, `.github/`, `docs/ops/`; Bash with cloud CLIs scoped to staging; `gh`.
-- **Must not:** deploy to production without the approval recorded on the release page; read production credentials, which only the approval-gated deploy script can access (D-29).
+- **Writes:** CI config (GitHub Actions, checks only), Dockerfiles and Compose files, environment matrix, release plans, runbooks, rollback plans and rollback proposals (section 7.8), incident records, postmortem drafts, SLO reports, SBOM, dependency-update PRs.
+- **Tools:** Read; Write in `infra/`, `.github/`, `docs/ops/`; Bash for git, Docker and Docker Compose against the local preview and staging environments. No cloud CLI and no GitHub credential (D-47, D-49).
+- **Must not:** run the production script or deploy to production (only the approval-gated local script `arima-release` does, after the approval recorded on the release page); read production credentials (D-29).
 - **Done when:** a deploy is verified by smoke test; an incident is closed with its postmortem.
 - **Escalates when:** production is degraded (P1/P2); a deploy fails and rollback is needed.
 
@@ -463,13 +476,13 @@ Each phase has an objective, entry criteria, inputs, ordered steps with an owner
 | 5 | ba | Epics, stories with acceptance criteria, story map, REQ↔US links | Backlog |
 | 6 | orchestrator | Requirements review meeting (ba, qa, architect, ux) | Minutes, fixes |
 | 7 | qa | Close the testability review | Requirement review log |
-| 8 | orchestrator | Freeze baseline to `docs/spec/baseline-G1/`; open G1 | G1 page |
+| 8 | orchestrator | Snapshot the pre-gate set as evidence-pack input; open G1 (the baseline is frozen to `docs/spec/baseline-G1/` when G1 is approved) | G1 page |
 
 **Exit G1 (approvers: sponsor and PO):** every Must requirement has at least one story; every story in the first milestone meets the DoR; no open blocking questions; all NFRs measurable; DPIA signed by Legal if required.
 
 ### 6.2 Design (1–2 weeks elapsed)
 
-**Objective:** an approved design that meets every NFR within the default stack. **Entry:** G1 approved. **Inputs:** baseline, NFRs, wireframes, stack template.
+**Objective:** an approved design that meets every NFR within the approved stack. **Entry:** G1 approved. **Inputs:** baseline, NFRs, wireframes, stack template.
 
 | # | Owner | Activity | Output |
 | --- | --- | --- | --- |
@@ -490,14 +503,14 @@ Each phase has an objective, entry criteria, inputs, ordered steps with an owner
 
 | # | Owner | Activity | Output |
 | --- | --- | --- | --- |
-| 1 | devops | Repo from stack template, CI pipeline, staging infrastructure as code, secrets wiring, monitoring baseline, protected production environment | Pipeline, staging |
+| 1 | devops | Repo from stack template, GitHub Actions CI (checks only), local Docker Compose staging and production projects, secrets wiring (names only), monitoring baseline | Pipeline, staging |
 | 2 ∥ | tech-lead | Conventions, PR template, lint rules, merge-guard hook | Conventions doc |
 | 2 ∥ | qa | End-to-end test framework, test data strategy | Test skeleton |
 | 2 ∥ | security | Static analysis, dependency audit and secret scanning in CI | Security checks |
 | 3 | developer | Walking skeleton: one thin slice through web UI, API and database, deployed to staging | Skeleton on staging |
 | 4 | orchestrator | Board ready; first-milestone stories Ready | Phase 3 exit check |
 
-**Exit (checklist, no gate):** walking skeleton green on staging; every CI stage runs; ARIMA's merge guard and approval-gated deploy script active (D-29).
+**Exit (checklist, no gate):** walking skeleton green on staging; every CI stage runs; `arima-merge` and the approval-gated `arima-release` script active (D-29).
 
 ### 6.4 Build (one or more milestones)
 
@@ -508,10 +521,10 @@ Each phase has an objective, entry criteria, inputs, ordered steps with an owner
 | 1 | orchestrator | Daily run: pick Ready stories within budget and parallelism (section 7.2) | Day plan |
 | 2 | qa | Write test cases from acceptance criteria before development | TC records |
 | 3 | developer | Implement in own worktree; open PR | PR |
-| 4 | tech-lead | Review; request changes or approve | Review |
+| 4 | tech-lead | Comment review: request changes or mark ready for QA (never approves) | Review |
 | 5 | qa | Test on preview or QA environment; file bugs | Results, bugs |
 | 6 | ux | Design QA on UI stories | Design-QA verdict |
-| 7 | tech-lead | Merge when approved, CI green and QA passed; devops deploys to staging | Merged, on staging |
+| 7 | `arima-merge` (host) | Merge when your approving review is present, CI green and QA passed; the host rebuilds staging from `main` | Merged, on staging |
 | 8 | orchestrator (auto) | Auto-accept on QA pass (D-16); humans review every accepted story at the milestone review, and a veto reopens it | Done |
 | 9 | orchestrator | Milestone review (staging link, screenshots, notes) and retro | Review page, lessons |
 
@@ -519,11 +532,11 @@ Each phase has an objective, entry criteria, inputs, ordered steps with an owner
 
 ### 6.5 Stabilization, testing and UAT (1–2 weeks elapsed)
 
-**Objective:** prove the release candidate is fit for production. **Entry:** all Must stories in release scope Done, or the PO calls the release. **Inputs:** release scope, Master Test Plan, NFRs.
+**Objective:** prove the release candidate is fit for production. **Entry:** all Must stories in release scope Done, or the PO calls the release; run by `/arima:stabilize`. **Inputs:** release scope, Master Test Plan, NFRs.
 
 | # | Owner | Activity | Output |
 | --- | --- | --- | --- |
-| 1 | tech-lead | Code freeze: bug fixes only; tag release candidate | RC tag |
+| 1 | tech-lead + `arima-release` | Code freeze: bug fixes only; `arima-release` tags the release candidate | RC tag |
 | 2 ∥ | qa | Full regression, integration, cross-browser and cross-device testing | Test summary, defect log |
 | 2 ∥ | devops + qa | Load and stress tests against NFR targets | Performance report |
 | 2 ∥ | security | Dynamic scan of staging; pre-release security report | Security report |
@@ -542,9 +555,9 @@ Each phase has an objective, entry criteria, inputs, ordered steps with an owner
 
 | # | Owner | Activity | Output |
 | --- | --- | --- | --- |
-| 1 | devops | Release plan; release notes drafted from merged PRs; version tag | Release record |
+| 1 | devops | Release plan; release notes drafted from merged PRs; `arima-release` applies the version tag | Release record |
 | 2 | human | Approve the production deploy on the release page (hard stop) | Approval |
-| 3 | devops | Protected deploy job; gradual rollout; smoke test | Deploy log, smoke result |
+| 3 | `arima-release` (host); devops | `arima-release` deploys the production Compose project, only on the approval recorded on the release page; devops runs the production smoke test | Deploy log, smoke result |
 | 4 ∥ | ba + orchestrator | Release notes, user guide, FAQ published | User-facing docs |
 | 5 ∥ | devops | Support knowledge base, escalation matrix | Support pack |
 
@@ -579,16 +592,16 @@ The guard for every transition is in the table below; the third failed review or
 
 | From | To | Actor | Guard (must be true) |
 | --- | --- | --- | --- |
-| Backlog | Ready | ba (+ po priority) | DoR: acceptance criteria, linked REQ, screens for UI stories, complexity S/M/L, no open dependency, API spec covers it |
+| Backlog | Ready | ba (+ po priority, or the ba's recommended order applied after the veto window) | DoR: acceptance criteria, linked REQ, screens for UI stories, complexity S/M/L, no open dependency, API spec covers it |
 | Ready | In Progress | orchestrator assigns developer | Test cases exist; budget available; WIP and parallelism limits respected |
 | In Progress | In Review | developer | PR open, CI green, every acceptance criterion mapped |
 | In Review | In Progress | tech-lead | Changes requested; attempt +1 |
-| In Review | In QA | tech-lead | Approved; preview or QA environment deployed |
+| In Review | In QA | tech-lead | Ready-for-QA comment review posted; local preview or QA environment up |
 | In QA | In Progress | qa | A test case failed; BUG linked; attempt +1 |
-| In QA | PO Acceptance | human approves the PR; ARIMA merges; devops deploys staging | All test cases passed; design QA passed for UI stories; human PR approval received (D-21). While waiting, the story stays In QA flagged "Awaiting you" |
+| In QA | PO Acceptance | human approves the PR; `arima-merge` merges; the host rebuilds staging | All test cases passed; design QA passed for UI stories; human PR approval received (D-21). While waiting, the story stays In QA flagged "Awaiting you" |
 | PO Acceptance | Done | orchestrator (auto) | Auto-accepted on QA pass (D-16); humans may veto at the milestone review |
 | PO Acceptance | In Progress | po or sponsor (human) | Vetoed at the milestone review; BUG created with the reason |
-| Done | Released | devops | Included in a production release |
+| Done | Released | engine, on a recorded production deploy | Included in a production release whose deploy is recorded as succeeded |
 | any open status | Blocked | any agent via orchestrator | Blocking question, missing dependency or credential, or story budget exhausted |
 | Blocked | previous status | orchestrator | Cause resolved |
 | any status before Done | Cancelled | po | Reason recorded |
@@ -632,7 +645,7 @@ The third failed review or QA attempt on the same item moves it to Blocked and r
 - **Round 1:** each participant writes an independent assessment without seeing the others.
 - **Round 2:** participants respond only to points of disagreement (max 2 rounds).
 - **Close:** the facilitator writes minutes: decisions, open issues, action items with owner and ID. Unresolved disagreements become questions for a human.
-- **Mechanism:** Claude Code agent teams when enabled; otherwise sequential subagent runs. Each meeting has a budget cap.
+- **Mechanism:** sequential role runs dispatched by script; each meeting has a budget cap.
 
 | Meeting | Trigger | Participants | Output |
 | --- | --- | --- | --- |
@@ -647,10 +660,10 @@ The third failed review or QA attempt on the same item moves it to Blocked and r
 ### 7.4 Gate protocol
 
 1. The orchestrator checks exit criteria; mechanical checks (RTM coverage, bug counts, CI status) run as scripts.
-2. It assembles the evidence pack: links to every required artifact, check results, open risks, known issues and the agents' recommendation.
+2. It assembles the evidence pack: links to every required artifact, check results, open risks, known issues and the agents' recommendation. A pre-gate snapshot of the baseline set is kept as evidence-pack input.
 3. The gate page moves to Ready for review and the approvers are notified.
 4. An approver sets the decision: Approved, Approved with conditions, or Rejected, with comments.
-5. The orchestrator accepts the decision only if the Notion editor of the decision field is a person listed as approver for that gate.
+5. The orchestrator accepts the decision only if the decider is a named approver for that gate (checking the Notion editor of the decision property is deferred, D-40).
 6. Approved: the baseline is frozen and the next phase starts. Conditions become tasks with due dates. Rejected: comments become action items and the phase continues.
 
 **Evidence packs (D-28)** live on the Notion gate page only. After approval the orchestrator locks the page, and the daily mirror snapshot on the `arima-state` branch keeps a durable copy beyond Notion Free's 7-day page history. The regulated profile still requires a PDF export.
@@ -681,7 +694,7 @@ Bugs found while testing a story attach to that story as rework. Regressions and
 ### 7.8 Incident and hotfix
 
 1. An alert or user report creates an INC record with priority: P1 (down, data loss, breach), P2 (major function broken), P3 (workaround exists), P4 (minor).
-2. devops triages and mitigates: rollback, feature flag or configuration change.
+2. devops triages and proposes the mitigation: rollback, feature flag or configuration change. The owner runs a rollback through the approval-gated script `arima-release`; for P1/P2 devops requests it by urgent @mention (D-23).
 3. A developer fixes on a `hotfix/INC-NNN` branch; review and QA run in expedited mode.
 4. The production deploy is still a hard stop, sent to humans as an urgent Notion mention (D-23).
 5. For P1/P2, a blameless postmortem is written within 5 working days; its actions go into the backlog.
@@ -708,7 +721,7 @@ Bugs found while testing a story attach to that story as rework. Regressions and
 
 ### 7.11 Retro and lessons
 
-At each milestone end, the orchestrator feeds agents the ledger metrics, rework reasons, review findings and vetoes. Agents propose LES records: changes to their instructions, templates or conventions. Approved lessons are stored as project overrides in `.arima/overrides/`; lessons that would help every project are proposed upstream as a PR to the ARIMA repo.
+At each milestone end, the orchestrator feeds agents the ledger metrics, rework reasons, review findings and vetoes. Agents propose LES records: changes to their instructions, templates or conventions. The tech-lead approves lessons (the owner may veto from the digest); approved lessons are stored as project overrides in `.arima/overrides/`; lessons that would help every project are proposed upstream as a PR to the ARIMA repo.
 
 ### 7.12 Failure handling
 
@@ -719,7 +732,7 @@ At each milestone end, the orchestrator feeds agents the ledger metrics, rework 
 | Run hits its budget cap | Item Blocked; question with cost so far and options |
 | Third failed review or QA attempt | Item Blocked; escalated in digest |
 | Missing credential or account | Hard stop; question to the responsible human |
-| Notion or GitHub unreachable | Work continues on local state; outbox retried next run |
+| Notion or GitHub unreachable | Work continues on local state; outbox retried next run. Exception (D-39): if no kill-switch source can be read at all, ARIMA counts as paused |
 
 ## 8. Artifact catalog
 
@@ -768,11 +781,11 @@ ARIMA produces 58 artifact types; each has one owner, one master location and a 
 | Decision log | all | any agent via orchestrator | humans (veto) | Notion Decisions DB | humans, agents | S C R |
 | Questions | all | any agent via orchestrator | humans answer | Notion Questions DB | humans | S C R |
 | Meeting minutes | all | orchestrator | none | Notion Meetings DB | all | C R |
-| Lessons | 4+ | all agents | po | Notion Lessons DB + `.arima/overrides/` | agents | S C R |
+| Lessons | 4+ | all agents | tech-lead (owner may veto) | Notion Lessons DB + `.arima/overrides/` | agents | S C R |
 | Test, regression, performance, accessibility reports | 5 | qa, devops | po | Notion Documents (generated from CI output) | po, sponsor | C R |
 | Pre-release security report | 5 | security | sponsor ack | Notion Documents | sponsor | C R |
 | Penetration test report | 5 | external human | sponsor | Notion Documents (uploaded) | security | R; C recommended |
-| UAT scripts and sign-off | 5 | orchestrator / humans | sponsor | Notion Test Runs | sponsor | C R |
+| UAT scripts and sign-off | 5 | orchestrator / humans | sponsor | Notion Documents (UAT rows) | sponsor | C R |
 | Go/No-Go minutes | 5 | orchestrator | sponsor | Notion Meetings DB | sponsor | C R |
 | Runbook, rollback plan | 5–6 | devops | tech-lead | `docs/ops/` | devops | S C R |
 | Release record, release notes | 6 | devops, ba | po | Notion Releases DB + GitHub release | users, humans | S C R |
@@ -830,7 +843,7 @@ The workspace has 19 linked databases under one project root page; relations bet
 | Change Requests | ID, Title, Requester, Status, Impact, Cost estimate, Schedule impact, Decision, Approver (person) | Requirements, Stories |
 | Risks | ID, Title, Probability (1–5), Impact (1–5), Score (formula), Owner role, Mitigation, Status | Items |
 | Lessons | ID, Proposed by, Change, Scope (project / upstream), Status (Proposed / Approved / Rejected / Applied) | Milestone |
-| Cost log | Date, Role, Phase, Runs, Input tokens, Output tokens, Cache-read tokens, Cost USD, Agent minutes, Rework | Story or Bug, Milestone |
+| Cost log | Date, Role, Phase, Item (ID text, ADR-0004), Runs, Input tokens, Output tokens, Cache-read tokens, Cost USD, Agent minutes, Rework | Story, Milestone |
 | Human tasks | Task, Assignee (person), Role, Template link, Due, Status | Item |
 
 ### 9.2 Views
@@ -844,7 +857,7 @@ The workspace has 19 linked databases under one project root page; relations bet
 | Open bugs | Bugs not Done, by severity |
 | Portfolio | A read-only public page with the overview, digests and selected documents |
 
-**Client portal (D-17).** A page shared with client guests: gate pages awaiting them, approved documents (PRD, URS, prototype link), milestone reviews, UAT runs and release notes. It excludes the decision log, cost log, ledger, internal meetings and agent questions unless deliberately shared. The number of guests allowed depends on the Notion plan (Q-06).
+**Client portal (D-17).** A page shared with client guests: gate pages awaiting them, approved documents (PRD, URS, prototype link), milestone reviews, UAT documents and release notes. It excludes the decision log, cost log, ledger, internal meetings and agent questions unless deliberately shared. The number of guests allowed depends on the Notion plan (Q-06).
 
 ### 9.3 Rules
 
@@ -863,11 +876,11 @@ ARIMA runs on Notion's Free plan, which caps external guests at 10, file uploads
 | 5 MB per file | Screenshots, PDFs, test evidence and pentest reports live in GitHub (repo or release assets); Notion links to them |
 | 7-day page history | The orchestrator commits a daily snapshot of the Notion mirror to the `arima-state` branch, which serves as long-term history and recovery |
 | Block limit with 2+ members | Solo use is unaffected; team mode with more than one Notion member requires upgrading to Plus |
-| Database query tools in the hosted MCP vary by plan | Sync uses the Notion public API through the integration token and ARIMA's own scripts, not the hosted MCP query tools |
+| Notion API features vary by plan and workspace | Sync uses only the Notion public API through the integration token and ARIMA's own scripts (D-34); what the API accepts is checked against a real workspace by the live test tier |
 
 ## 10. GitHub conventions
 
-Every app repo follows one layout, one branch scheme and one PR template so that agents and humans find things in the same place. Production secrets live only in a protected GitHub environment that requires a human reviewer.
+Every app repo follows one layout, one branch scheme and one PR template so that agents and humans find things in the same place. Production secrets live only in a store that only the approval-gated local script `arima-release` can read, and no agent role holds a GitHub credential (D-49).
 
 ### 10.1 App repo layout
 
@@ -882,8 +895,8 @@ Every app repo follows one layout, one branch scheme and one PR template so that
 │   ├── architecture/  (sad.md, adr/, data-model.md)
 │   ├── security/  ops/  engineering/
 ├── tests/e2e/
-├── infra/
-├── .github/workflows/  (ci, deploy-staging, deploy-prod, arima-daily)
+├── infra/                                      # Dockerfiles and Compose files for preview, staging, production
+├── .github/workflows/  (ci, arima-daily; no deploy workflows)
 ├── .github/pull_request_template.md
 └── CHANGELOG.md
 ```
@@ -908,28 +921,30 @@ Every app repo follows one layout, one branch scheme and one PR template so that
 
 ### 10.3 CI and merge policy
 
-- **Required checks:** lint, type check, unit tests, integration tests, build, static analysis, dependency audit, secret scan, web end-to-end tests on a preview, coverage on changed lines ≥ 80% (configurable).
-- **Merge:** squash only; linear history; `main` guarded by ARIMA's merge hook; merge requires green checks, the tech-lead agent's review, a QA pass recorded on the story, and your approval (D-21); ARIMA merges automatically once all four are present. GitHub Free does not offer protected branches or required reviewers on private repos, so ARIMA enforces this itself: a hook blocks pushes to main and any merge whose PR lacks your approving review (D-29).
-- **Reviewer identity:** Agents open PRs from one machine account, because GitHub does not let an account approve its own PR; your approving review then comes from your own account, and the tech-lead agent posts a comment review (D-30). The machine account is a collaborator with write access, and its token is the only GitHub credential agents receive.
+- **Required checks:** lint, type check, unit tests, integration tests, build, static analysis, dependency audit, secret scan, web end-to-end tests on an ephemeral stack, container image build and smoke test, coverage on changed lines ≥ 80% (configurable).
+- **Merge:** squash only; linear history; `main` guarded by ARIMA's merge hook; merge requires green checks, the tech-lead agent's comment review, a QA pass recorded on the story, and your approval (D-21); `arima-merge`, the only merger (D-38), merges automatically once all four are present. GitHub Free does not offer protected branches or required reviewers on private repos, so ARIMA enforces this itself: a hook blocks pushes to main and any merge whose PR lacks your approving review (D-29).
+- **Reviewer identity:** The host opens PRs from one machine account, because GitHub does not let an account approve its own PR; your approving review then comes from your own account, and the host posts the tech-lead's verdict as a comment review (D-30). The machine account is a collaborator with write access; its token is held by the host only. No agent role holds any GitHub credential (D-49): the host reads PRs, CI and review threads into each run packet, posts each role's comments from its validated report, and does all pushing, PR opening, merging and tagging.
 
 **Review queue limit (D-21).** When `review.max_prs_awaiting_human` PRs (default 5) are waiting for your approval, the orchestrator stops starting new stories and spends the day on rework, tests and documentation instead. PRs SHOULD stay small (one story each) so your daily review fits in minutes.
 
 ### 10.4 Releases and environments
 
-- Tags follow `vMAJOR.MINOR.PATCH`; each GitHub release carries release notes and the SBOM; `CHANGELOG.md` is generated from merged PR titles.
-- GitHub environment `staging`: deploys automatically on merge to `main`.
-- GitHub environment `production`: not available for private repos on GitHub Free, and required reviewers are public-repo-only on Free, Pro and Team (per GitHub's environments documentation). Production deploys therefore run from ARIMA's deploy script on your PC, which proceeds only when your approval is recorded on the Notion release page; production credentials sit in a store the agent sandbox cannot read (D-29).
+- Tags follow `vMAJOR.MINOR.PATCH`; `arima-release` applies the release-candidate and version tags; each GitHub release carries release notes and the SBOM; `CHANGELOG.md` is generated from merged PR titles.
+- Environments are Docker Compose projects on the owner's machine (D-47): `preview-<pr>` per pull request on a free local port (created when the PR reaches In Review, removed on merge or cancel), `staging` (rebuilt from `main` by a host script after each merge) and `production` (a separate project with its own data volume). There is no cloud account, no cloud CLI and no deploy workflow in GitHub Actions: Actions runners cannot reach the owner's machine, so Actions only runs checks.
+- Production: GitHub environments are not available for private repos on GitHub Free, and required reviewers are public-repo-only on Free, Pro and Team (per GitHub's environments documentation). Production deploys therefore run only from the approval-gated local script `arima-release`, which proceeds only when your approval is recorded on the Notion release page and has no override flag; production credentials sit in a store the agent sandbox cannot read, and DevOps never runs the script (D-29, D-47).
 
 ## 11. Guardrails, permissions and security
 
-ARIMA is safe to leave running because 11 hard stops are enforced in code (hooks, CI and GitHub environment rules), not only in agent instructions.
+ARIMA is safe to leave running because 16 hard stops are enforced in code (hooks, CI checks and host scripts), not only in agent instructions.
 
 ### 11.1 Hard stops
+
+There are sixteen hard stops, identified by the ids G0, G1, G2, G3, G4, prod_deploy, secrets_change, budget_exceeded, story_budget, notion_delete, prod_data_migration, new_paid_service, licence, critical_finding, kill_switch and missing_credential. The canonical list is in code (D-42).
 
 | Hard stop | Detected by | ARIMA action | Resolved by |
 | --- | --- | --- | --- |
 | Gates G0–G4 | Gate protocol | Opens gate page; next phase waits | Gate approvers |
-| Production deploy | Release workflow | Prepares deploy; deploy script waits for your Notion release approval (D-29) | Human release approver |
+| Production deploy | `arima-release` script | Prepares deploy; deploy script waits for your Notion release approval (D-29) | Human release approver |
 | Secrets change | Hook on files and commands touching secrets | Blocks the action; question raised | Human with secret access |
 | Daily or project budget reached | Orchestrator preflight and ledger | No new runs; digest alert | Sponsor raises budget or waits |
 | Story budget reached | Ledger | Story Blocked with cost and options | PO |
@@ -939,6 +954,7 @@ ARIMA is safe to leave running because 11 hard stops are enforced in code (hooks
 | Dependency with non-approved license | Dependency audit in CI | PR blocked | Tech-lead proposes alternative; human may approve |
 | Critical security finding | Security scans | Merge and release blocked | Fix, or human-accepted risk |
 | Kill switch on | Preflight | Run exits immediately | Human turns it off |
+| Missing credential or account | Preflight and run start | Hard stop; question to the responsible human | Human who owns the credential |
 
 ### 11.2 Permissions matrix
 
@@ -950,21 +966,23 @@ ARIMA is safe to leave running because 11 hard stops are enforced in code (hooks
 | Write docs (own area) | ✓ spec | drafts | design | architecture, api | conventions |  | test docs | security | ops |
 | Write infra, CI, hooks |  |  |  |  |  |  |  |  | ✓ |
 | Write to Notion | ✓ | outbox | outbox | outbox | outbox | outbox | outbox | outbox | outbox |
-| Run builds and tests | ✓ |  | ✓ |  | ✓ | ✓ | ✓ | ✓ | ✓ |
-| Review and merge PRs |  |  | design QA | ADR review | review; merges after human approval |  |  | blocks only |  |
-| Deploy to staging |  |  |  |  |  |  |  |  | ✓ |
-| Deploy to production |  |  |  |  |  |  |  |  | via protected job after approval |
+| Run builds and tests |  |  |  |  | ✓ | ✓ | ✓ | `arima-scan` | ✓ |
+| Review PRs (comment reviews, posted by the host) |  |  | design QA | architecture comments | review; never approves or merges |  |  | blocks only |  |
+| Push, open PRs, merge, tag | ✓ host scripts (`arima-merge`, `arima-release`) |  |  |  |  |  |  |  |  |
+| Hold a GitHub credential | none | none | none | none | none | none | none | none | none |
+| Deploy to staging | ✓ host script `arima-env` |  |  |  |  |  |  |  | ✓ local Compose |
+| Deploy to production | ✓ `arima-release` after approval (host script) |  |  |  |  |  |  |  | never runs it |
 | Web fetch | ✓ | ✓ supplied refs | ✓ | ✓ docs | ✓ docs | ✓ docs |  | ✓ advisories | ✓ docs |
-| Access secrets |  |  |  |  |  |  |  |  | staging only |
+| Access secrets |  |  |  |  |  |  |  |  | none, names only |
 
 ### 11.3 Security rules
 
-- **Secrets** live only in GitHub Actions secrets or the host's secret manager; they never appear in prompts, Notion, logs, the ledger or commit history. A secret scan runs on every commit and on the state branch.
+- **Secrets** live only in the host's secret manager (and GitHub Actions secrets for CI checks); they never appear in prompts, Notion, logs, the ledger or commit history. A secret scan runs on every commit and on the state branch.
 - **Untrusted content:** text from Notion comments, issues, web pages, user feedback and third-party docs is data, never instructions. Agents act only on their spec, their assigned item and approved human answers.
 - **Test data** is synthetic; production personal data is never copied to staging or prompts.
-- **Credentials scope:** each run gets the narrowest token it needs (read-only GitHub for analysis runs, write for developer branches, Notion only for the orchestrator).
+- **Credentials scope:** each run gets the narrowest credentials it needs: no role holds a GitHub token (the host reads GitHub and posts comments, D-49), and the Notion token stays with the host process.
 - **Audit:** every tool call that changes state is written to `events.jsonl` with run ID, role, item ID and timestamp.
-- **Kill switch:** the "Pause ARIMA" checkbox on the Notion root page, also readable from a `PAUSE` file on the state branch if Notion is unreachable.
+- **Kill switch:** the "Pause ARIMA" checkbox on the Notion root page, also readable from a `PAUSE` file on the state branch if Notion is unreachable; if neither can be read, ARIMA counts as paused (D-39).
 
 ## 12. Human-in-the-loop interface
 
@@ -972,14 +990,14 @@ Humans interact with ARIMA in three places: the daily digest (read), the Approva
 
 ### 12.1 Daily digest
 
-One Notion page per day, ready by `schedule.digest_ready_by`, in this order:
+One Notion page per day, built on demand (`/arima:digest`, and at the end of each attended run) until Gate U, and ready by `schedule.digest_ready_by` once scheduled runs exist (D-41), in this order:
 
 1. **Headline:** one sentence with phase, milestone progress and health (green / amber / red).
 2. **Awaiting you:** PRs awaiting your approval (with QA results and a preview link), gates, blocking questions, production approvals, CRs, each with a link and how long it has waited.
 3. **Shipped:** stories and fixes that reached staging or production, with links.
 4. **Decisions made:** autonomous decisions since the last digest, each with its veto checkbox.
 5. **Blockers and risks:** blocked items with reason; new or changed risks.
-6. **Cost and time:** today vs daily budget, month to date vs project budget, top 3 most expensive items, rework share, hours spent waiting on humans.
+6. **Cost and time:** today vs daily budget, month-to-date spend shown beside lifetime spend against the project cap (the cap is lifetime), top 3 most expensive items, rework share, hours spent waiting on humans.
 7. **Tomorrow's plan:** items the next run intends to pick.
 8. **Run health:** runs started, succeeded, failed, retried.
 
@@ -1005,7 +1023,7 @@ Humans can run any command in section 14 from Claude Code at any time; an intera
 
 ### 12.5 Recording human time
 
-Digests, gate pages and UAT runs have a "Minutes spent" field. It is optional but feeds total cost of ownership (section 13).
+Digests, gate pages and UAT documents have a "Minutes spent" field. It is optional but feeds total cost of ownership (section 13).
 
 ## 13. Cost and time tracking
 
@@ -1071,7 +1089,7 @@ Cost per story; cost per accepted story (rework included); rework share; cost by
 
 ## 14. Command reference
 
-ARIMA exposes 18 commands as Claude Code skills under the `arima:` namespace; the scheduler only ever calls `/arima:run`.
+ARIMA exposes 19 commands as Claude Code skills under the `arima:` namespace; the scheduler only ever calls `/arima:run`.
 
 | Command | Arguments | Phase | Who runs it | Effect |
 | --- | --- | --- | --- | --- |
@@ -1080,10 +1098,11 @@ ARIMA exposes 18 commands as Claude Code skills under the `arima:` namespace; th
 | `/arima:design` | none | 2 | Human or orchestrator | Runs Phase 2 steps to G2 |
 | `/arima:setup` | none | 3 | Human or orchestrator | Runs Phase 3 to the walking skeleton |
 | `/arima:plan` | `[MS-NN]` | 2, 4 | Human or orchestrator | Builds or revises a milestone plan within budget |
-| `/arima:run` | `[--dry-run] [--only <item>]` | 1–8 | Scheduler or human | The daily run (section 7.2) |
+| `/arima:run` | `[--dry-run] [--only <item>]` | 4, 8 | Human (scheduler after Gate U) | The daily run (section 7.2) for Phase 4 and operations; refuses to start Phase 4 until the Phase 3 exit checklist holds |
 | `/arima:digest` | `[--date]` | any | Human | Rebuilds the digest on demand |
 | `/arima:meeting` | `<type> [items]` | any | Human or orchestrator | Runs a meeting by protocol (section 7.3) |
 | `/arima:gate` | `<G0–G4>` | gates | Human or orchestrator | Checks criteria, builds evidence pack, opens the gate |
+| `/arima:stabilize` | none | 5 | Human or orchestrator | Runs Phase 5 (RC tag, regression, performance, security and accessibility checks, UAT scripts, Go/No-Go) to G3 |
 | `/arima:release` | `<version>` | 6 | Human or orchestrator | Prepares release; waits for production approval |
 | `/arima:hypercare` | `[--days N]` | 7 | Orchestrator | Starts hypercare; builds report and G4 pack at the end |
 | `/arima:incident` | `<description or alert id>` | 7–8 | Human or devops | Opens INC, triage, hotfix flow, postmortem |
@@ -1114,7 +1133,7 @@ arima/
 ├── scripts/                # notion-sync, outbox, ledger, digest, rtm, gate-check, migrate
 ├── schemas/                # arima.yaml, team.yaml, notion-map, ledger, events, outbox
 ├── profiles/               # solo-lite, client-project, regulated
-├── stacks/                 # default-web, default-backend (Q-03)
+├── stacks/                 # default-web, the reference stack (D-47, ADR-0007)
 ├── notion-template/        # template link + setup and migration scripts
 ├── ci/                     # arima-daily.yml and app CI templates
 ├── evals/                  # sample project + expected outcomes
@@ -1142,7 +1161,7 @@ The repo is public under the Apache License 2.0 (D-26), with a `LICENSE` and `NO
 ### 15.3 Build roadmap
 
 1. **v0.1 Foundations:** config schemas and validation; Notion template and sync with outbox; ID issuing; event log and ledger; `/arima:init`, `/arima:status`, `/arima:pause`. Done when: init creates a working workspace from a brief and every run leaves a ledger row.
-2. **v0.2 Build loop (web):** ticket state machine; developer, tech-lead and qa agents; worktrees; hooks for IDs and DoD; `/arima:run` for Phase 4 on the web stack; daily digest. Done when: 5 stories go from Ready to staging unattended, with digest and cost per story.
+2. **v0.2 Build loop (web):** ticket state machine; developer, tech-lead and qa agents; worktrees; hooks for IDs and DoD; `/arima:run` for Phase 4 on the web stack; daily digest. Done when: 5 stories go from Ready to staging in attended runs (D-41), with digest and cost per story.
 3. **v0.3 Discovery and design:** ba, ux, architect and security agents; templates; meetings; gates G0–G2 with evidence packs; RTM view. Done when: a brief reaches G2 with every required artifact and no human editing of agent output beyond answers.
 4. **v0.4 Release and operations:** Phases 5–8, G3–G4, incidents, CRs, recurring jobs, retros and lessons, OpenTelemetry option. Done when: the eval project completes a release, a simulated incident and a CR.
 5. **v1.0 Stable:** showcase project completed end to end; eval suite in CI; schema migrations; install in under 30 minutes from the marketplace; docs complete; semantic versioning.
@@ -1153,7 +1172,7 @@ The repo is public under the Apache License 2.0 (D-26), with a `LICENSE` and `NO
 
 ## 16. Open questions and decision log
 
-3 questions are open, each with a working default; 33 decisions are made. Each answered question becomes a decision and updates the sections it names.
+3 questions are open, each with a working default; 49 decisions are made. Each answered question becomes a decision and updates the sections it names.
 
 ### 16.1 Open questions
 
@@ -1161,10 +1180,10 @@ The repo is public under the Apache License 2.0 (D-26), with a `LICENSE` and `NO
 | --- | --- | --- | --- |
 | Q-01 | Where does the daily run execute? | 3, 4, 7.2 | Decided (D-13): your Windows PC in WSL 2 now; GitHub Actions later |
 | Q-02 | Claude billing for scheduled runs | 4.4, 13 | Decided (D-14): Team seat usage limits, usage credits as overflow |
-| Q-03 | Default stacks for web and backend | 4, 10, 15 | Decided (D-12): the architect agent proposes per project; humans approve at G2 |
-| Q-04 | Hosting for staging and production, and database | 3, 6.3 | Architect proposes at first G2 |
+| Q-03 | Default stacks for web and backend | 4, 10, 15 | Decided (D-12): the architect agent proposes per project; the reference stack `stacks/default-web` ships for the sample project (D-47), and any other stack needs an ADR approved by the tech-lead |
+| Q-04 | Hosting for staging and production, and database | 3, 6.3 | Largely settled by D-47 (local Docker Compose, PostgreSQL in the reference stack); the architect confirms capacity limits at first G2 |
 | Q-06 | Notion plan | 9 | Decided (D-19): Free plan, with the constraints in section 9.4 |
-| Q-07 | Urgent notification channel beyond Notion | 12.3 | Decided (D-20): email plus Notion notifications |
+| Q-07 | Urgent notification channel beyond Notion | 12.3 | Decided (D-20, amended by D-23): Notion @mentions, delivered by Notion's own email and mobile notifications; ARIMA sends no email |
 | Q-08 | Design tool: Figma, or HTML prototypes only | 5.4 | Decided (D-24): HTML prototypes only |
 | Q-09 | Documentation language | 4 | Decided (D-22): set per project in arima.yaml |
 | Q-10 | Does the real client approve in Notion as a guest, or do you relay approvals? | 7.4 | Decided (D-17): the client approves in Notion as a guest |
@@ -1187,6 +1206,22 @@ The repo is public under the Apache License 2.0 (D-26), with a `LICENSE` and `NO
 
 | ID | Decision | Date | By |
 | --- | --- | --- | --- |
+| D-49 | No agent role holds any GitHub credential: the host reads PRs and CI into the run packet, posts agents' comments as comment reviews, and does all pushing, merging and tagging | 2026-11-19 | You (principle) |
+| D-48 | No AI attribution anywhere: no `Co-Authored-By` trailer naming Claude and no "Generated with Claude" line in any commit, PR, comment or document, in this repo or in any app repo ARIMA touches | 2026-11-19 | You |
+| D-47 | Hosting is local: staging and production are Docker Compose projects on the owner's machine, CI is GitHub Actions, DevOps works only with GitHub, Git, GitHub Actions and Docker (K3s/K8s later); deploys are local scripts and production only through the approval-gated script | 2026-11-19 | You |
+| D-46 | `/arima:run` covers Phase 4 and operations only; Phases 0 to 3 and Phase 5 run through their playbook commands | 2026-11-19 | You |
+| D-45 | A baseline is frozen when its gate is approved (not before opening the gate) | 2026-11-19 | You |
+| D-44 | The tech-lead approves ADRs and sets their status; the architect drafts them as Proposed | 2026-11-19 | You |
+| D-43 | The owner steers by commands, answers critical-blocker questions and reviews results; agents collaborate without asking permission and decide non-critical matters themselves (assume-and-log); a critical blocker is a hard stop, a missing credential or account, money or a paid service, a legal or privacy matter, an irreversible or production action, or an unresolved contradiction | 2026-11-19 | You |
+| D-42 | The hard stops are one fixed canonical list of ids in code (gates, prod_deploy, secrets_change, budget_exceeded, story_budget, notion_delete, prod_data_migration, new_paid_service, licence, critical_finding, kill_switch, missing_credential); `autonomy.hard_stops` is documentation only and the validator warns when it differs (answers S2) | 2026-11-18 | You |
+| D-41 | No unattended runs for now: attended runs are made stable first; scheduled runs and seat terms (S15) wait | 2026-11-18 | You |
+| D-40 | Gate approver identity (S1) uses a placeholder at first so plugin development is not blocked; the real mechanism comes later | 2026-11-18 | You |
+| D-39 | If no kill-switch source can be read (Notion down and state branch unreadable), ARIMA counts as paused | 2026-11-18 | You |
+| D-38 | One ARIMA merge script is the only merger (CI green, QA passed, your approving review); no agent merges or pushes to the default branch | 2026-11-18 | You |
+| D-37 | Unattended runs use a Docker sandbox with no push credentials; a host script pushes and opens PRs (ADR-0006) | 2026-11-18 | You |
+| D-36 | Agent runs execute inside a Docker Sandbox where one is available (mandatory for unattended runs, D-37); otherwise attended runs use the Claude Code CLI directly, with the local safety layers (role tool lists, guard hook, scrubbed environment) treated as advisory (see ADR-0005 and the Stage 0 review notes) | 2026-11-18 | You |
+| D-35 | Solo-first: ARIMA is built and proven for one owner first; team features (the Client portal and guest approvals of D-17, multi-person approver groups) are deferred until after solo use is stable | 2026-11-18 | You |
+| D-34 | Notion is accessed through the public Notion API with an integration token and ARIMA's own scripts, not through a Notion MCP server (supersedes D-02; see ADR-0003) | 2026-11-18 | You |
 | D-33 | ARIMA builds web apps only; mobile platforms, app-store distribution and mobile testing are out of scope for v1.0 | 2026-11-17 | You |
 | D-32 | Human tasks get a reminder after 24 weekday hours and escalate to the sponsor after 48 (answers Q-16) | 2026-11-17 | You |
 | D-31 | Hypercare lasts 2 weeks by default; default SLO is 99.5% availability (answers Q-19) | 2026-11-17 | You |
@@ -1203,9 +1238,9 @@ The repo is public under the Apache License 2.0 (D-26), with a `LICENSE` and `NO
 | D-20 | Urgent alerts reach you through Notion notifications, including email (answers Q-07; see D-23) | 2026-11-17 | You |
 | D-19 | Notion Free plan: up to 10 client guests, large files in GitHub, daily mirror snapshots as history; team mode with 2+ members needs Plus (answers Q-06) | 2026-11-17 | You |
 | D-18 | Usage credits stay off: when the seat limit is reached, runs pause and resume at the next scheduled run (answers Q-22) | 2026-11-17 | You |
-| D-17 | On client projects the client is the sponsor and approves gates in Notion as a guest, through a Client portal (answers Q-10) | 2026-11-17 | You |
+| D-17 | On client projects the client is the sponsor and approves gates in Notion as a guest, through a Client portal (answers Q-10; deferred by D-35 until after solo use is stable) | 2026-11-17 | You |
 | D-16 | Stories are auto-accepted when QA passes; humans review every accepted story at the milestone review and can veto (answers Q-17) | 2026-11-17 | You |
-| D-15 | ARIMA runs on your Windows PC inside WSL 2 | 2026-11-17 | You |
+| D-15 | ARIMA runs on your Windows PC inside WSL 2 (amended by D-36 and spec issue S6: native Windows is supported for interactive use; unattended runs prefer WSL 2, Linux or the Docker sandbox) | 2026-11-17 | You |
 | D-14 | Billing: your Claude Team seat's usage limits, with usage credits as overflow (answers Q-02) | 2026-11-17 | You |
 | D-13 | Execution: your own machine now, GitHub Actions later; ARIMA stays runner-agnostic (answers Q-01) | 2026-11-17 | You |
 | D-12 | No fixed default stack: the architect agent proposes web and backend stacks per project in the SAD, approved at G2 (answers Q-03) | 2026-11-17 | You |
@@ -1218,5 +1253,5 @@ The repo is public under the Apache License 2.0 (D-26), with a `LICENSE` and `NO
 | D-05 | v1.0 targets new web apps only (narrowed by D-33) | 2026-11-17 | You |
 | D-04 | Autonomy: mostly autonomous, with a daily digest and hard stops | 2026-11-17 | You |
 | D-03 | GitHub is the engineering layer and hosts the plugin | 2026-11-17 | You |
-| D-02 | Notion is the project-management layer, accessed via MCP | 2026-11-17 | You |
+| D-02 | Notion is the project-management layer (access method: see D-34, the public Notion API) | 2026-11-17 | You |
 | D-01 | Default profile is client-project, so ARIMA transfers to multi-person teams | 2026-11-17 | You |

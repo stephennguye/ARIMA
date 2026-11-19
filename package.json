@@ -20,7 +20,9 @@
     "format:check": "prettier --check .",
     "test": "vitest run",
     "prepare": "node scripts/setup-hooks.mjs",
-    "eval": "vitest run --config vitest.evals.config.ts"
+    "eval": "vitest run --config vitest.evals.config.ts",
+    "test:live": "vitest run --config vitest.live.config.ts",
+    "eval:agents": "vitest run --config vitest.agents.config.ts"
   },
   "devDependencies": {
     "@emnapi/core": "2.0.0-beta.2",

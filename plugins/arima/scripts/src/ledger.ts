@@ -59,6 +59,10 @@ export interface ClaudeResult {
   /** Older CLI versions. */
   cost_usd?: number;
   result?: string;
+  /** Present on error results, e.g. "Reached maximum number of turns (1)". */
+  errors?: string[];
+  /** completed | max_turns | budget_exhausted | ... (seen in claude 2.1.326). */
+  terminal_reason?: string;
   usage?: {
     input_tokens?: number;
     output_tokens?: number;

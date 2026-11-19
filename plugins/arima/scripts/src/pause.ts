@@ -16,6 +16,7 @@ export interface PauseOptions {
   /** Commit the PAUSE file to the state branch so it survives a Notion outage. */
   saveState?: boolean;
   branch?: string;
+  allowPublic?: boolean;
   defaultBranch?: string;
   now?: Date;
 }
@@ -27,6 +28,12 @@ export interface PauseResult {
   notion: 'set' | 'unreachable' | 'skipped';
   /** Resume could not clear the Notion switch, so ARIMA is still paused there. */
   stillPausedInNotion: boolean;
+  /**
+   * What happened to the state branch: pushed to the remote, committed locally (no remote
+   * configured), unchanged (nothing new), skipped (not asked for), or failed (see messages). A
+   * failure means other machines will not see this change.
+   */
+  stateSaved: 'pushed' | 'committed' | 'unchanged' | 'skipped' | 'failed';
   messages: string[];
 }
 
@@ -60,19 +67,23 @@ export async function setKillSwitch(o: PauseOptions): Promise<PauseResult> {
     data: { notion, ...(o.reason ? { reason: o.reason } : {}) },
   });
 
+  let stateSaved: PauseResult['stateSaved'] = 'skipped';
   if (o.saveState === true) {
     try {
       const runId = await issueRunId(o.projectDir, o.now);
       const s = await pushState({
         projectDir: o.projectDir,
         runId,
+        ...(o.allowPublic ? { allowPublic: true } : {}),
         ...(o.branch ? { branch: o.branch } : {}),
         ...(o.defaultBranch ? { defaultBranch: o.defaultBranch } : {}),
       });
+      stateSaved = s.pushed ? 'pushed' : s.committed ? 'committed' : 'unchanged';
       messages.push(
         s.pushed ? 'state pushed' : s.committed ? 'state committed locally' : 'state unchanged',
       );
     } catch (e) {
+      stateSaved = 'failed';
       messages.push(
         `state not saved: ${e instanceof StateError || e instanceof Error ? e.message : String(e)}`,
       );
@@ -85,6 +96,7 @@ export async function setKillSwitch(o: PauseOptions): Promise<PauseResult> {
     file: existsSync(pauseFile(o.projectDir)),
     notion,
     stillPausedInNotion,
+    stateSaved,
     messages,
   };
 }

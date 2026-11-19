@@ -18304,6 +18304,29 @@ import { parseArgs } from "node:util";
 
 // plugins/arima/scripts/src/config.ts
 import { existsSync as existsSync2 } from "node:fs";
+
+// plugins/arima/scripts/src/hardstops.ts
+var HARD_STOPS = [
+  "G0",
+  "G1",
+  "G2",
+  "G3",
+  "G4",
+  "prod_deploy",
+  "secrets_change",
+  "budget_exceeded",
+  "story_budget",
+  "notion_delete",
+  "prod_data_migration",
+  "new_paid_service",
+  "licence",
+  "critical_finding",
+  "kill_switch",
+  "missing_credential"
+];
+var isHardStop = (id) => HARD_STOPS.includes(id);
+
+// plugins/arima/scripts/src/config.ts
 import path4 from "node:path";
 
 // plugins/arima/scripts/src/lib/paths.ts
@@ -18578,8 +18601,32 @@ function validateProject(projectDir, root = pluginRoot()) {
       message: "usage credits are enabled: set a spend cap and note it in the digest configuration (Q-22); budgets are estimates, not money spent"
     });
   }
+  const listed = new Set(
+    arima.autonomy.hard_stops
+  );
+  const missing = REQUIRED_HARD_STOPS.filter((s) => !listed.has(s));
+  const unknown = [...listed].filter((s) => !isHardStop(s));
+  if (unknown.length > 0) {
+    warnings.push({
+      severity: "warning",
+      file: aSrc.file,
+      line: aSrc.lineOf("/autonomy/hard_stops"),
+      path: "autonomy.hard_stops",
+      message: `unknown hard stop ids: ${unknown.join(", ")}. The ids are fixed in code (see src/hardstops.ts); a typo here protects nothing`
+    });
+  }
+  if (missing.length > 0) {
+    warnings.push({
+      severity: "warning",
+      file: aSrc.file,
+      line: aSrc.lineOf("/autonomy/hard_stops"),
+      path: "autonomy.hard_stops",
+      message: `hard stops missing from this list: ${missing.join(", ")}. ARIMA enforces them anyway (they cannot be disabled by configuration, spec \xA711.1); keep the list complete so it matches what is enforced`
+    });
+  }
   return { ok: errors.length === 0, errors, warnings, arima, team };
 }
+var REQUIRED_HARD_STOPS = HARD_STOPS;
 
 // plugins/arima/scripts/src/lib/jsonl.ts
 import { appendFileSync, existsSync as existsSync3, mkdirSync, readFileSync as readFileSync4 } from "node:fs";
@@ -18606,6 +18653,17 @@ function readJsonl(file, schema) {
   return out;
 }
 
+// plugins/arima/scripts/src/killswitch.ts
+import path5 from "node:path";
+
+// plugins/arima/scripts/src/notion/port.ts
+var import_client = __toESM(require_src(), 1);
+
+// plugins/arima/scripts/src/killswitch.ts
+function pauseFile(projectDir) {
+  return path5.join(projectDir, ".arima", "PAUSE");
+}
+
 // plugins/arima/scripts/src/gates.ts
 var PHASE_AFTER_GATE = {
   G0: "1 Discovery and requirements",
@@ -18616,9 +18674,9 @@ var PHASE_AFTER_GATE = {
 };
 
 // plugins/arima/scripts/src/ledger.ts
-import path5 from "node:path";
+import path6 from "node:path";
 function ledgerFile(projectDir) {
-  return path5.join(projectDir, ".arima", "ledger.jsonl");
+  return path6.join(projectDir, ".arima", "ledger.jsonl");
 }
 function readLedger(projectDir) {
   return readJsonl(ledgerFile(projectDir), "ledger");
@@ -18709,7 +18767,7 @@ var DATABASES = [
       {
         name: "Coverage",
         type: "formula",
-        formula: 'if(prop("Test results").some(current == "Pass"), "Covered", "Not covered")'
+        formula: 'if(contains(prop("Test results"), "Pass"), "Covered", "Not covered")'
       },
       rel("Stories", "stories", "Requirements"),
       rel("Test Cases", "test_cases", "Requirements"),
@@ -19049,9 +19107,9 @@ var DATABASES = [
 
 // plugins/arima/scripts/src/notion/mirror.ts
 import { existsSync as existsSync4, mkdirSync as mkdirSync2, readFileSync as readFileSync5 } from "node:fs";
-import path6 from "node:path";
-var mirrorDir = (projectDir) => path6.join(projectDir, ".arima", "mirror");
-var mirrorFile = (projectDir, db) => path6.join(mirrorDir(projectDir), `${db}.json`);
+import path7 from "node:path";
+var mirrorDir = (projectDir) => path7.join(projectDir, ".arima", "mirror");
+var mirrorFile = (projectDir, db) => path7.join(mirrorDir(projectDir), `${db}.json`);
 function readMirror(projectDir, db) {
   const file = mirrorFile(projectDir, db);
   if (!existsSync4(file)) return void 0;
@@ -19077,16 +19135,8 @@ function budgetStatus(projectDir, limits, today) {
   };
 }
 
-// plugins/arima/scripts/src/killswitch.ts
-import path7 from "node:path";
-
-// plugins/arima/scripts/src/notion/port.ts
-var import_client = __toESM(require_src(), 1);
-
-// plugins/arima/scripts/src/killswitch.ts
-function pauseFile(projectDir) {
-  return path7.join(projectDir, ".arima", "PAUSE");
-}
+// plugins/arima/scripts/src/state.ts
+var MAX_SCAN_BYTES = 64 * 1024 * 1024;
 
 // plugins/arima/scripts/src/preflight.ts
 var PREFLIGHT_EXIT = {
@@ -19105,9 +19155,6 @@ var CODE = {
   budget: PREFLIGHT_EXIT.budget,
   env: PREFLIGHT_EXIT.env
 };
-
-// plugins/arima/scripts/src/state.ts
-var MAX_SCAN_BYTES = 5 * 1024 * 1024;
 
 // plugins/arima/scripts/src/status.ts
 import path8 from "node:path";

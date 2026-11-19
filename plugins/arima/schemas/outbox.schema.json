@@ -7,7 +7,7 @@
   "additionalProperties": false,
   "required": ["id", "created_at", "run_id", "role", "op", "database"],
   "properties": {
-    "id": { "type": "string", "description": "Unique outbox entry id" },
+    "id": { "type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,79}$", "description": "Unique outbox entry id; letters, digits, dot, underscore, hyphen only (it becomes a file name)" },
     "created_at": { "type": "string", "format": "date-time" },
     "run_id": { "type": "string" },
     "role": { "type": "string" },
@@ -18,6 +18,7 @@
     "item_id": { "type": "string", "description": "ARIMA ID of the target (required for update, append_content, retire)" },
     "properties": { "type": "object", "description": "Property name -> value, using names from notion-map.json" },
     "content_markdown": { "type": "string", "description": "Page body for create / append_content" },
+    "base_values": { "type": "object", "description": "Values of the properties this entry writes, as the agent saw them (a human edit since then wins, section 3.3); filled by enqueue from the mirror when absent" },
     "base_last_edited": { "type": "string", "format": "date-time", "description": "Notion last_edited_time the agent saw; a newer human edit wins (§3.3)" }
   },
   "allOf": [

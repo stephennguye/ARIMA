@@ -1,3 +1,5 @@
+> **History.** The v0.1 task list below is complete. The live plan is `docs/build/02-stages.md` and `docs/build/work-packages.yaml`.
+
 # ARIMA build plan
 
 Five increments (spec §15.3). v0.1 is broken into tasks with acceptance criteria; later increments are outlined and get detailed when the previous one ships. Tick a task only when every acceptance criterion holds, tests pass and `claude plugin validate ./plugins/arima` passes.
@@ -11,6 +13,17 @@ Spec references use §N (e.g. §4.1 = spec section 4.1).
 **Goal:** `/arima:init` turns a brief into a working, mapped Notion workspace and project config; every run leaves a ledger row and events. No agents build product code yet.
 
 **Done when:** on a fresh sample project, `/arima:init` with `examples/brief.md` validates config, maps the Notion workspace, writes the brief and charter skeleton to Notion, opens the G0 page, and `.arima/` on the `arima-state` branch holds a valid ledger row and event log. `/arima:status` and `/arima:pause` work.
+
+### Status corrections after the independent review (2026-11-18)
+
+Four tasks were ticked while an acceptance criterion was still unmet. The truth, with the evidence in `docs/process/reviews/`:
+
+- **T-06:** the "one manual smoke run against the real CLI" was NOT done when ticked. **Done 2026-11-18** (real headless runs on Windows, real result JSON recorded as fixtures).
+- **T-11:** "agent loads in an interactive session" was NOT done when ticked. **Done 2026-11-18** (the agent loads with `--plugin-dir` and resolves as `arima:orchestrator`; a headless run under it succeeded).
+- **T-12:** skills were never invoked in a live session when ticked. The three skills now load live (`arima:init`, `arima:status`, `arima:pause`); running `/arima:init` end to end against real Notion is still **open** (waiting for a shared Notion page).
+- **T-09:** the "one manual run against a real workspace" is still **open** (waiting for a shared Notion page). T-10 and T-12 depend on it for real-API behaviour.
+
+The v0.1 hard stops were also weaker than the guides said; see `docs/process/reviews/2026-11-18-pre-stage0.md` and the Stage 0A fixes in `docs/BUILD-GUIDE.md`.
 
 ### T-01 Tooling and CI for this repo
 - [x] `package.json` at repo root (workspace) with TypeScript strict, ESM, Node 22 engines, Vitest, ESLint, Prettier, esbuild.
@@ -123,7 +136,7 @@ Spec references use §N (e.g. §4.1 = spec section 4.1).
   - arima-notion pull mirrors every mapped database to .arima/mirror/<db>.json (plain values, row id = title text, last_edited_time kept); arima-notion push applies .arima/outbox/. Entries move to outbox/applied, outbox/rejected or outbox/conflicts with a .result.json beside them; transient failures stay in place and are retried next run (spec §7.12), a permanent 4xx rejects just that entry.
   - Delete is impossible by construction: the outbox schema allows only create, update, append_content, retire; the NotionPort exposes no delete/archive/trash call; retire sets the Status from RETIRE_STATUS (Retired/Cancelled/Superseded/Withdrawn/Closed/Rejected), and databases with no such status reject retire.
   - Human-only fields (from notion-map.json) are refused whole-entry with a notion.refused event: Approvers, Decided by, Veto, Answer, Prod deploy approval etc., and the Approved/Rejected values of Gates.Status. The audit property 'Last written by run' is stamped on every write and cannot be set by an agent.
-  - Human edits win: conflict if the page's current last_edited_time is later than the entry's base_last_edited (or, if absent, than the row in the mirror agents last saw) and is not ARIMA's own write in this push; the entry goes to outbox/conflicts and a notion.conflict event is logged for the orchestrator to re-read and re-apply or raise a question.
+  - Human edits win, detected by VALUE (Stage 0, D): Notion rounds last_edited_time to the minute, so a conflict is a property this entry writes whose current Notion value differs from the value the agent saw (the mirror before the push) or from what Notion held after ARIMA's own earlier write in this push; edits to other properties do not conflict and appending content never does. base_last_edited is only a fallback when there is no earlier copy to compare. The mirror stores Notion's own values after each write. The entry goes to outbox/conflicts and a notion.conflict event is logged for the orchestrator to re-read and re-apply or raise a question.
   - Rate limits: every API call goes through Throttle (~3 req/s) and withBackoff (429: wait Retry-After, else exponential, 5 retries); the SDK's own retry is switched off so retry behaviour is ours and tested.
   - Creates are idempotent: an existing row with the same title and the same run id counts as already applied. Relations are written as ARIMA IDs and resolved to page ids from the mirror. enqueue() in notion/outbox.ts validates and writes entries for scripts; agents may also write the JSON directly.
   - Mirror read-only for agents is enforced by role tool rules (T-06) and the T-13 hook, not by file permissions (would break atomic rewrites on Windows). Still tested only against the in-memory fake; real-API behaviour is covered by the pending T-09 manual run.

@@ -18382,6 +18382,282 @@ function describeError(e) {
   }
 }
 
+// plugins/arima/scripts/src/notion/port.ts
+var import_client = __toESM(require_src(), 1);
+
+// plugins/arima/scripts/src/lib/throttle.ts
+import { setTimeout as sleep } from "node:timers/promises";
+var Throttle = class {
+  constructor(minIntervalMs = 334, now = Date.now, wait = (ms) => sleep(ms)) {
+    this.minIntervalMs = minIntervalMs;
+    this.now = now;
+    this.wait = wait;
+  }
+  minIntervalMs;
+  now;
+  wait;
+  next = 0;
+  async run(fn) {
+    const start = Math.max(this.now(), this.next);
+    this.next = start + this.minIntervalMs;
+    const delay = start - this.now();
+    if (delay > 0) await this.wait(delay);
+    return fn();
+  }
+};
+function isRateLimited(e) {
+  const err = e;
+  return err?.status === 429 || err?.code === "rate_limited";
+}
+function retryAfterMs(e) {
+  const headers = e?.headers;
+  if (headers === void 0 || headers === null) return void 0;
+  const raw = typeof headers.get === "function" ? headers.get("retry-after") : headers["retry-after"];
+  const seconds = Number(raw);
+  return Number.isFinite(seconds) && seconds >= 0 && raw !== null && raw !== void 0 ? seconds * 1e3 : void 0;
+}
+function isTransient(e) {
+  const err = e;
+  const code2 = String(err?.code ?? err?.cause?.code ?? "");
+  if (/^(ECONNRESET|ETIMEDOUT|ENOTFOUND|EAI_AGAIN|ECONNREFUSED|UND_ERR_.*)$/.test(code2))
+    return true;
+  if (typeof err?.status === "number" && [500, 502, 503, 504].includes(err.status)) return true;
+  if (code2 === "notionhq_client_request_timeout") return true;
+  return /fetch failed|socket hang up|network|timed out/i.test(String(err?.message ?? ""));
+}
+async function withReadRetry(fn, o = {}) {
+  const { retries = 2, baseMs = 300, sleep: wait = (ms) => sleep(ms) } = o;
+  for (let attempt = 0; ; attempt++) {
+    try {
+      return await fn();
+    } catch (e) {
+      if (!isTransient(e) || attempt >= retries) throw e;
+      await wait(baseMs * 2 ** attempt);
+    }
+  }
+}
+async function withBackoff(fn, o = {}) {
+  const { retries = 5, baseMs = 500, maxMs = 3e4, sleep: wait = (ms) => sleep(ms) } = o;
+  for (let attempt = 0; ; attempt++) {
+    try {
+      return await fn();
+    } catch (e) {
+      if (!isRateLimited(e) || attempt >= retries) throw e;
+      await wait(retryAfterMs(e) ?? Math.min(maxMs, baseMs * 2 ** attempt));
+    }
+  }
+}
+
+// plugins/arima/scripts/src/notion/port.ts
+var PAUSE_TODO_TEXT = "Pause ARIMA";
+var plain = (rt) => (rt ?? []).map((t2) => t2.plain_text ?? "").join("");
+function toDatabaseInfo(raw) {
+  const dataSourceId = raw.data_sources?.[0]?.id;
+  if (dataSourceId === void 0) throw new Error(`database ${raw.id} has no data source`);
+  return { id: raw.id, title: plain(raw.title), dataSourceId };
+}
+function createNotionPort(client, throttle = new Throttle(), backoff = {}) {
+  const call = (fn) => throttle.run(() => withBackoff(fn, backoff));
+  const callRead = (fn) => throttle.run(
+    () => withReadRetry(
+      () => withBackoff(fn, backoff),
+      backoff.sleep ? { sleep: async (ms) => void await backoff.sleep?.(ms) } : {}
+    )
+  );
+  const listChildren = async (pageId) => {
+    const out = [];
+    let cursor;
+    for (; ; ) {
+      const page = await callRead(
+        () => client.blocks.children.list({
+          block_id: pageId,
+          page_size: 100,
+          ...cursor !== void 0 ? { start_cursor: cursor } : {}
+        })
+      );
+      for (const raw of page.results) {
+        if (raw.id === void 0 || raw.type === void 0) continue;
+        if (raw.type === "to_do" && raw.to_do) {
+          out.push({
+            id: raw.id,
+            type: "to_do",
+            text: plain(raw.to_do.rich_text),
+            checked: raw.to_do.checked === true
+          });
+        } else if (raw.type === "paragraph") {
+          out.push({ id: raw.id, type: "paragraph", text: plain(raw.paragraph?.rich_text) });
+        } else if (raw.type === "child_database") {
+          out.push({ id: raw.id, type: "child_database", text: raw.child_database?.title ?? "" });
+        } else {
+          out.push({ id: raw.id, type: raw.type, text: "" });
+        }
+      }
+      if (!page.has_more || page.next_cursor === null) return out;
+      cursor = page.next_cursor;
+    }
+  };
+  const getDataSourceProperties = async (dataSourceId) => {
+    const raw = await callRead(
+      () => client.dataSources.retrieve({ data_source_id: dataSourceId })
+    );
+    const out = {};
+    for (const [name, p] of Object.entries(raw.properties ?? {})) {
+      const info = { id: p.id, name: p.name ?? name, type: p.type };
+      const opts = p.select?.options ?? p.multi_select?.options;
+      if (opts) info.options = opts.map((o) => o.name);
+      if (p.relation?.data_source_id) info.relationTarget = p.relation.data_source_id;
+      out[name] = info;
+    }
+    return out;
+  };
+  return {
+    listChildren,
+    async listTodoBlocks(pageId) {
+      return (await listChildren(pageId)).filter((b) => b.type === "to_do").map((b) => ({ id: b.id, text: b.text, checked: b.checked === true }));
+    },
+    async setTodoChecked(blockId, checked) {
+      await call(() => client.blocks.update({ block_id: blockId, to_do: { checked } }));
+    },
+    async appendTodo(pageId, text2, checked) {
+      const res = await call(
+        () => client.blocks.children.append({
+          block_id: pageId,
+          children: [
+            {
+              object: "block",
+              type: "to_do",
+              to_do: { rich_text: [{ type: "text", text: { content: text2 } }], checked }
+            }
+          ]
+        })
+      );
+      const id = res.results[0]?.id;
+      if (id === void 0) throw new Error("Notion did not return the created block");
+      return id;
+    },
+    async appendParagraph(pageId, text2) {
+      const res = await call(
+        () => client.blocks.children.append({
+          block_id: pageId,
+          children: [
+            {
+              object: "block",
+              type: "paragraph",
+              paragraph: { rich_text: [{ type: "text", text: { content: text2 } }] }
+            }
+          ]
+        })
+      );
+      const id = res.results[0]?.id;
+      if (id === void 0) throw new Error("Notion did not return the created block");
+      return id;
+    },
+    async createDatabase(parentPageId, title, properties) {
+      const raw = await call(
+        () => client.databases.create({
+          parent: { type: "page_id", page_id: parentPageId },
+          title: [{ type: "text", text: { content: title } }],
+          is_inline: true,
+          initial_data_source: { properties }
+        })
+      );
+      return toDatabaseInfo({ ...raw, title: raw.title ?? [{ plain_text: title }] });
+    },
+    async getDatabase(databaseId) {
+      const raw = await callRead(
+        () => client.databases.retrieve({ database_id: databaseId })
+      );
+      return toDatabaseInfo(raw);
+    },
+    getDataSourceProperties,
+    async addProperties(dataSourceId, properties) {
+      const existing = await getDataSourceProperties(dataSourceId);
+      const clash = Object.keys(properties).filter((n) => n in existing);
+      if (clash.length > 0) {
+        throw new Error(`refusing to alter existing Notion properties: ${clash.join(", ")}`);
+      }
+      await call(() => client.dataSources.update({ data_source_id: dataSourceId, properties }));
+    },
+    async queryRows(dataSourceId) {
+      const rows = [];
+      let cursor;
+      for (; ; ) {
+        const page = await callRead(
+          () => client.dataSources.query({
+            data_source_id: dataSourceId,
+            page_size: 100,
+            ...cursor !== void 0 ? { start_cursor: cursor } : {}
+          })
+        );
+        for (const raw of page.results) {
+          if (raw.object !== void 0 && raw.object !== "page") continue;
+          rows.push({
+            pageId: raw.id,
+            lastEdited: raw.last_edited_time,
+            properties: raw.properties ?? {}
+          });
+        }
+        if (!page.has_more || page.next_cursor === null) return rows;
+        cursor = page.next_cursor;
+      }
+    },
+    async getPageLastEdited(pageId) {
+      const raw = await callRead(() => client.pages.retrieve({ page_id: pageId }));
+      return raw.last_edited_time;
+    },
+    async getPage(pageId) {
+      const raw = await callRead(() => client.pages.retrieve({ page_id: pageId }));
+      return { pageId: raw.id, lastEdited: raw.last_edited_time, properties: raw.properties ?? {} };
+    },
+    async createPage(dataSourceId, properties, children) {
+      const first = children?.slice(0, 100);
+      const raw = await call(
+        () => client.pages.create({
+          parent: { type: "data_source_id", data_source_id: dataSourceId },
+          properties,
+          ...first && first.length > 0 ? { children: first } : {}
+        })
+      );
+      let lastEdited = raw.last_edited_time;
+      for (let i = 100; children && i < children.length; i += 100) {
+        const rest = children.slice(i, i + 100);
+        await call(() => client.blocks.children.append({ block_id: raw.id, children: rest }));
+      }
+      if (children && children.length > 100) lastEdited = await this.getPageLastEdited(raw.id);
+      return {
+        pageId: raw.id,
+        lastEdited,
+        ...raw.properties ? { properties: raw.properties } : {}
+      };
+    },
+    async updatePage(pageId, properties) {
+      const raw = await call(() => client.pages.update({ page_id: pageId, properties }));
+      return {
+        lastEdited: raw.last_edited_time,
+        ...raw.properties ? { properties: raw.properties } : {}
+      };
+    },
+    async appendChildren(pageId, blocks) {
+      for (let i = 0; i < blocks.length; i += 100) {
+        const chunk = blocks.slice(i, i + 100);
+        await call(() => client.blocks.children.append({ block_id: pageId, children: chunk }));
+      }
+    }
+  };
+}
+function createNotionPortFromToken(token) {
+  const client = new import_client.Client({ auth: token, retry: false });
+  return createNotionPort(client);
+}
+
+// plugins/arima/scripts/src/killswitch.ts
+async function ensureNotionSwitch(port, rootPageId) {
+  const todos = await port.listTodoBlocks(rootPageId);
+  if (todos.some((t2) => t2.text.trim() === PAUSE_TODO_TEXT)) return false;
+  await port.appendTodo(rootPageId, PAUSE_TODO_TEXT, false);
+  return true;
+}
+
 // plugins/arima/scripts/src/notion/props.ts
 var options = (names) => (names ?? []).map((name) => ({ name }));
 function toApiProperty(p) {
@@ -18520,7 +18796,7 @@ var DATABASES = [
       {
         name: "Coverage",
         type: "formula",
-        formula: 'if(prop("Test results").some(current == "Pass"), "Covered", "Not covered")'
+        formula: 'if(contains(prop("Test results"), "Pass"), "Covered", "Not covered")'
       },
       rel("Stories", "stories", "Requirements"),
       rel("Test Cases", "test_cases", "Requirements"),
@@ -19019,6 +19295,7 @@ async function bootstrapTemplate(port, parentPageId, log = () => void 0) {
     await port.appendParagraph(parentPageId, `${VERSION_MARKER} ${TEMPLATE_SCHEMA_VERSION}`);
     log("wrote    template schema version");
   }
+  if (await ensureNotionSwitch(port, parentPageId)) log("created  the Pause ARIMA kill switch");
   return report;
 }
 
@@ -19199,7 +19476,7 @@ import path4 from "node:path";
 
 // plugins/arima/scripts/src/lib/filelock.ts
 import { closeSync, openSync, statSync, unlinkSync as unlinkSync2, writeSync } from "node:fs";
-import { setTimeout as sleep } from "node:timers/promises";
+import { setTimeout as sleep2 } from "node:timers/promises";
 var RETRYABLE = /* @__PURE__ */ new Set(["EEXIST", "EPERM", "EACCES", "EBUSY"]);
 function code(e) {
   return typeof e === "object" && e !== null && "code" in e ? String(e.code) : void 0;
@@ -19228,7 +19505,7 @@ async function withFileLock(lockPath, fn, { timeoutMs = 15e3, staleMs = 3e4, ret
           cause: e
         });
       }
-      await sleep(retryMs + Math.floor(Math.random() * retryMs * 2));
+      await sleep2(retryMs + Math.floor(Math.random() * retryMs * 2));
     }
   }
   try {
@@ -19242,16 +19519,77 @@ async function withFileLock(lockPath, fn, { timeoutMs = 15e3, staleMs = 3e4, ret
 }
 
 // plugins/arima/scripts/src/lib/secrets.ts
-var SECRET_PATTERNS = [
-  { name: "notion token", re: /\b(?:ntn_|secret_)[A-Za-z0-9]{20,}/ },
-  { name: "github token", re: /\bgh[pousr]_[A-Za-z0-9]{20,}/ },
-  { name: "github fine-grained token", re: /\bgithub_pat_[A-Za-z0-9_]{20,}/ },
-  { name: "anthropic key", re: /\bsk-ant-[A-Za-z0-9_-]{20,}/ },
-  { name: "aws access key", re: /\bAKIA[0-9A-Z]{16}\b/ },
-  { name: "private key block", re: /-----BEGIN [A-Z ]*PRIVATE KEY-----/ }
+import { createHash } from "node:crypto";
+function entropy(s) {
+  if (s.length === 0) return 0;
+  const counts = /* @__PURE__ */ new Map();
+  for (const ch of s) counts.set(ch, (counts.get(ch) ?? 0) + 1);
+  let h = 0;
+  for (const n of counts.values()) {
+    const p = n / s.length;
+    h -= p * Math.log2(p);
+  }
+  return h;
+}
+var PLACEHOLDER = /example|placeholder|your[-_]|replace|change[-_]?me|dummy|sample|redacted|xxxx|\*\*\*|<[^>]+>/i;
+var looksRandom = (s, bits) => s.length >= 16 && /[0-9]/.test(s) && /[A-Za-z]/.test(s) && entropy(s) >= bits && !PLACEHOLDER.test(s);
+var PATTERNS = [
+  { name: "notion token", re: /\b(?:ntn_|secret_)[A-Za-z0-9]{20,}/g },
+  { name: "github token", re: /\bgh[pousr]_[A-Za-z0-9]{20,}/g },
+  { name: "github fine-grained token", re: /\bgithub_pat_[A-Za-z0-9_]{20,}/g },
+  {
+    name: "anthropic key",
+    re: /\bsk-ant-([A-Za-z0-9_-]{20,})/g,
+    accept: (_m, g) => looksRandom(g[0] ?? "", 3.4)
+  },
+  { name: "aws access key", re: /\bAKIA[0-9A-Z]{16}\b/g, accept: (m) => !/EXAMPLE/.test(m) },
+  { name: "private key block", re: /-----BEGIN [A-Z ]*PRIVATE KEY-----/g },
+  { name: "slack token", re: /\bxox[abprs]-[A-Za-z0-9-]{10,}/g },
+  { name: "stripe key", re: /\b[sr]k_(?:live|test)_[A-Za-z0-9]{16,}/g },
+  { name: "google api key", re: /\bAIza[0-9A-Za-z_-]{35}\b/g },
+  {
+    name: "json web token",
+    re: /\beyJ[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}/g
+  },
+  { name: "npm token", re: /\bnpm_[A-Za-z0-9]{36}\b/g },
+  {
+    name: "bearer token",
+    re: /\bBearer\s+([A-Za-z0-9._~+/-]{24,})=*/g,
+    accept: (_m, g) => !PLACEHOLDER.test(g[0] ?? "") && entropy(g[0] ?? "") >= 3.3
+  },
+  {
+    // key = "long random-looking value" for names that usually hold credentials
+    name: "credential assignment",
+    re: /(?<![A-Za-z])(?:api[_-]?key|secret(?:[_-]?key)?|access[_-]?token|auth[_-]?token|token|passwd|password|private[_-]?key)["']?\s*[:=]\s*["']?([A-Za-z0-9/+_=.-]{20,})/gi,
+    accept: (_m, g) => looksRandom(g[0] ?? "", 3.5)
+  }
 ];
-function findSecrets(text2) {
-  return SECRET_PATTERNS.filter((p) => p.re.test(text2)).map((p) => p.name);
+function fingerprint(match) {
+  return `sha256:${createHash("sha256").update(match).digest("hex").slice(0, 16)}`;
+}
+function scan(text2) {
+  const unescaped = text2.replace(/\\[nrt]/g, " ").replace(/\\"/g, '"');
+  const out = [];
+  const seen = /* @__PURE__ */ new Set();
+  for (const p of PATTERNS) {
+    for (const t2 of text2 === unescaped ? [text2] : [text2, unescaped]) {
+      for (const m of t2.matchAll(new RegExp(p.re.source, p.re.flags))) {
+        const groups = m.slice(1).map((x) => x ?? "");
+        if (p.accept && !p.accept(m[0], groups)) continue;
+        const f = fingerprint(m[0]);
+        if (seen.has(`${p.name}|${f}`)) continue;
+        seen.add(`${p.name}|${f}`);
+        out.push({ rule: p.name, fingerprint: f });
+      }
+    }
+  }
+  return out;
+}
+function scanSecrets(text2, allowed = /* @__PURE__ */ new Set()) {
+  return scan(text2).filter((f) => !allowed.has(f.fingerprint));
+}
+function findSecrets(text2, allowed = /* @__PURE__ */ new Set()) {
+  return [...new Set(scanSecrets(text2, allowed).map((f) => f.rule))];
 }
 function assertNoSecrets(text2, where) {
   const found = findSecrets(text2);
@@ -19334,13 +19672,13 @@ function toNotionValue(type, name, value, resolveRelation) {
       throw new ValueError(`"${name}" is a ${type} property, which agents cannot write`);
   }
 }
-var plain = (rt) => Array.isArray(rt) ? rt.map((t2) => t2.plain_text ?? "").join("") : "";
+var plain2 = (rt) => Array.isArray(rt) ? rt.map((t2) => t2.plain_text ?? "").join("") : "";
 function fromNotionValue(raw) {
   switch (raw.type) {
     case "title":
-      return plain(raw["title"]);
+      return plain2(raw["title"]);
     case "rich_text":
-      return plain(raw["rich_text"]);
+      return plain2(raw["rich_text"]);
     case "number":
       return raw["number"] ?? null;
     case "select":
@@ -19489,6 +19827,11 @@ import {
 } from "node:fs";
 import path7 from "node:path";
 var outboxDir = (projectDir) => path7.join(projectDir, ".arima", "outbox");
+function secretsIn(entry) {
+  return findSecrets(
+    JSON.stringify({ p: entry.properties ?? {}, c: entry.content_markdown ?? "" })
+  );
+}
 var UUID = /^[0-9a-f]{8}-?[0-9a-f]{4}-?[0-9a-f]{4}-?[0-9a-f]{4}-?[0-9a-f]{12}$/i;
 function listPending(projectDir, report) {
   const dir = outboxDir(projectDir);
@@ -19541,9 +19884,6 @@ function classify(e) {
   const status = e.status;
   return typeof status === "number" && status >= 400 && status < 500 && status !== 429 ? "permanent" : "transient";
 }
-function plainOf(v) {
-  return v;
-}
 async function pushOutbox(projectDir, port, map, opts = {}) {
   const report = { applied: [], rejected: [], conflicts: [], deferred: [] };
   const pending = listPending(projectDir, report);
@@ -19563,7 +19903,9 @@ async function pushOutbox(projectDir, port, map, opts = {}) {
     });
     return report;
   }
-  const ownWrites = /* @__PURE__ */ new Map();
+  const snapshots = /* @__PURE__ */ new Map();
+  const normalised = (pageId, lastEdited, raw) => raw === void 0 ? void 0 : toMirrorRow({ pageId, lastEdited, properties: raw }).properties;
+  const sameValue = (a, b) => JSON.stringify(a ?? null) === JSON.stringify(b ?? null);
   const resolveAnywhere = (id) => {
     if (UUID.test(id)) return id;
     const hits = [];
@@ -19618,6 +19960,14 @@ async function pushOutbox(projectDir, port, map, opts = {}) {
     if (db === void 0)
       return { kind: "rejected", reason: `database "${entry.database}" is not in notion-map.json` };
     const mirror = mirrors.get(entry.database);
+    const leaked = secretsIn(entry);
+    if (leaked.length > 0) {
+      return {
+        kind: "rejected",
+        refused: true,
+        reason: `the entry looks like it contains a secret (${leaked.join(", ")}); secrets must never be written to Notion (spec \xA711.3)`
+      };
+    }
     const props = entry.properties ?? {};
     for (const [name, value] of Object.entries(props)) {
       const def = db.properties[name];
@@ -19625,6 +19975,13 @@ async function pushOutbox(projectDir, port, map, opts = {}) {
         return { kind: "rejected", reason: `unknown property "${name}" on ${db.title}` };
       if (name === LAST_WRITTEN_BY_RUN)
         return { kind: "rejected", reason: `"${name}" is stamped by ARIMA and cannot be set` };
+      if (name === "Status" && opts.allowStatusWrites !== true) {
+        return {
+          kind: "rejected",
+          refused: true,
+          reason: `"Status" on ${db.title} cannot be written from the outbox until the ticket state machine exists (pass --allow-status-writes, which only a human may do)`
+        };
+      }
       if (def.human_only === true) {
         return {
           kind: "rejected",
@@ -19677,12 +20034,13 @@ async function pushOutbox(projectDir, port, map, opts = {}) {
         notionProps(),
         entry.content_markdown ? markdownToBlocks(entry.content_markdown) : void 0
       );
-      ownWrites.set(created.pageId, created.lastEdited);
+      const fresh2 = normalised(created.pageId, created.lastEdited, created.properties) ?? toMirrorRow(await port.getPage(created.pageId)).properties;
+      snapshots.set(created.pageId, fresh2);
       const row2 = {
         page_id: created.pageId,
         last_edited_time: created.lastEdited,
         id: title,
-        properties: { ...props, [LAST_WRITTEN_BY_RUN]: entry.run_id }
+        properties: { ...fresh2 }
       };
       mirror.rows.push(row2);
       return { kind: "applied", pageId: created.pageId };
@@ -19701,15 +20059,39 @@ async function pushOutbox(projectDir, port, map, opts = {}) {
         return { kind: "rejected", reason: `${db.title} has no Status property` };
       if (row.properties["Status"] === status) return { kind: "applied", pageId: row.page_id };
     }
-    const basis = entry.base_last_edited ?? baseline.get(entry.database)?.rows.find((r) => r.page_id === row.page_id)?.last_edited_time;
-    const current = await port.getPageLastEdited(row.page_id);
-    if (basis !== void 0 && Date.parse(current) > Date.parse(basis) && current !== ownWrites.get(row.page_id)) {
-      return { kind: "conflict", humanEditedAt: current };
+    const touched = entry.op === "update" ? Object.keys(props) : entry.op === "retire" ? ["Status"] : [];
+    if (touched.length > 0) {
+      const live = await port.getPage(row.page_id);
+      const liveProps = toMirrorRow(live).properties;
+      if (entry.op === "update" && liveProps[LAST_WRITTEN_BY_RUN] === entry.run_id) {
+        const intended = notionProps();
+        if (touched.every(
+          (n) => sameValue(
+            fromNotionValue({
+              type: db.properties[n].type,
+              ...intended[n]
+            }),
+            liveProps[n]
+          )
+        )) {
+          return { kind: "applied", pageId: row.page_id };
+        }
+      }
+      const seen = snapshots.get(row.page_id) ?? entry.base_values ?? baseline.get(entry.database)?.rows.find((r) => r.page_id === row.page_id)?.properties;
+      if (seen !== void 0) {
+        if (touched.some((n) => !sameValue(seen[n], liveProps[n]))) {
+          return { kind: "conflict", humanEditedAt: live.lastEdited };
+        }
+      } else if (
+        // No earlier copy to compare values with: fall back to the (coarse) timestamp.
+        entry.base_last_edited !== void 0 && Date.parse(live.lastEdited) > Date.parse(entry.base_last_edited)
+      ) {
+        return { kind: "conflict", humanEditedAt: live.lastEdited };
+      }
     }
     let written;
     if (entry.op === "update") {
       written = await port.updatePage(row.page_id, notionProps());
-      Object.assign(row.properties, props);
     } else if (entry.op === "append_content") {
       if (!entry.content_markdown)
         return { kind: "rejected", reason: "append_content needs content_markdown" };
@@ -19723,251 +20105,27 @@ async function pushOutbox(projectDir, port, map, opts = {}) {
         ...notionProps(),
         Status: toNotionValue(statusType, "Status", status, resolveAnywhere)
       });
-      row.properties["Status"] = plainOf(status);
     }
-    row.properties[LAST_WRITTEN_BY_RUN] = entry.run_id;
+    const fresh = normalised(row.page_id, written.lastEdited, written.properties) ?? toMirrorRow(await port.getPage(row.page_id)).properties;
+    const wrote = [...touched, LAST_WRITTEN_BY_RUN];
+    const before = snapshots.get(row.page_id) ?? baseline.get(entry.database)?.rows.find((r) => r.page_id === row.page_id)?.properties ?? {};
+    snapshots.set(row.page_id, {
+      ...before,
+      ...Object.fromEntries(wrote.map((n) => [n, fresh[n] ?? null]))
+    });
+    row.properties = { ...fresh };
     row.last_edited_time = written.lastEdited;
-    ownWrites.set(row.page_id, written.lastEdited);
     return { kind: "applied", pageId: row.page_id };
   }
 }
 var errText2 = (e) => e instanceof Error ? e.message : String(e);
 
-// plugins/arima/scripts/src/notion/port.ts
-var import_client = __toESM(require_src(), 1);
-
-// plugins/arima/scripts/src/lib/throttle.ts
-import { setTimeout as sleep2 } from "node:timers/promises";
-var Throttle = class {
-  constructor(minIntervalMs = 334, now = Date.now, wait = (ms) => sleep2(ms)) {
-    this.minIntervalMs = minIntervalMs;
-    this.now = now;
-    this.wait = wait;
-  }
-  minIntervalMs;
-  now;
-  wait;
-  next = 0;
-  async run(fn) {
-    const start = Math.max(this.now(), this.next);
-    this.next = start + this.minIntervalMs;
-    const delay = start - this.now();
-    if (delay > 0) await this.wait(delay);
-    return fn();
-  }
-};
-function isRateLimited(e) {
-  const err = e;
-  return err?.status === 429 || err?.code === "rate_limited";
-}
-function retryAfterMs(e) {
-  const headers = e?.headers;
-  if (headers === void 0 || headers === null) return void 0;
-  const raw = typeof headers.get === "function" ? headers.get("retry-after") : headers["retry-after"];
-  const seconds = Number(raw);
-  return Number.isFinite(seconds) && seconds >= 0 && raw !== null && raw !== void 0 ? seconds * 1e3 : void 0;
-}
-async function withBackoff(fn, o = {}) {
-  const { retries = 5, baseMs = 500, maxMs = 3e4, sleep: wait = (ms) => sleep2(ms) } = o;
-  for (let attempt = 0; ; attempt++) {
-    try {
-      return await fn();
-    } catch (e) {
-      if (!isRateLimited(e) || attempt >= retries) throw e;
-      await wait(retryAfterMs(e) ?? Math.min(maxMs, baseMs * 2 ** attempt));
-    }
-  }
-}
-
-// plugins/arima/scripts/src/notion/port.ts
-var plain2 = (rt) => (rt ?? []).map((t2) => t2.plain_text ?? "").join("");
-function toDatabaseInfo(raw) {
-  const dataSourceId = raw.data_sources?.[0]?.id;
-  if (dataSourceId === void 0) throw new Error(`database ${raw.id} has no data source`);
-  return { id: raw.id, title: plain2(raw.title), dataSourceId };
-}
-function createNotionPort(client, throttle = new Throttle(), backoff = {}) {
-  const call = (fn) => throttle.run(() => withBackoff(fn, backoff));
-  const listChildren = async (pageId) => {
-    const out = [];
-    let cursor;
-    for (; ; ) {
-      const page = await call(
-        () => client.blocks.children.list({
-          block_id: pageId,
-          page_size: 100,
-          ...cursor !== void 0 ? { start_cursor: cursor } : {}
-        })
-      );
-      for (const raw of page.results) {
-        if (raw.id === void 0 || raw.type === void 0) continue;
-        if (raw.type === "to_do" && raw.to_do) {
-          out.push({
-            id: raw.id,
-            type: "to_do",
-            text: plain2(raw.to_do.rich_text),
-            checked: raw.to_do.checked === true
-          });
-        } else if (raw.type === "paragraph") {
-          out.push({ id: raw.id, type: "paragraph", text: plain2(raw.paragraph?.rich_text) });
-        } else if (raw.type === "child_database") {
-          out.push({ id: raw.id, type: "child_database", text: raw.child_database?.title ?? "" });
-        } else {
-          out.push({ id: raw.id, type: raw.type, text: "" });
-        }
-      }
-      if (!page.has_more || page.next_cursor === null) return out;
-      cursor = page.next_cursor;
-    }
-  };
-  const getDataSourceProperties = async (dataSourceId) => {
-    const raw = await call(
-      () => client.dataSources.retrieve({ data_source_id: dataSourceId })
-    );
-    const out = {};
-    for (const [name, p] of Object.entries(raw.properties ?? {})) {
-      const info = { id: p.id, name: p.name ?? name, type: p.type };
-      const opts = p.select?.options ?? p.multi_select?.options;
-      if (opts) info.options = opts.map((o) => o.name);
-      if (p.relation?.data_source_id) info.relationTarget = p.relation.data_source_id;
-      out[name] = info;
-    }
-    return out;
-  };
-  return {
-    listChildren,
-    async listTodoBlocks(pageId) {
-      return (await listChildren(pageId)).filter((b) => b.type === "to_do").map((b) => ({ id: b.id, text: b.text, checked: b.checked === true }));
-    },
-    async setTodoChecked(blockId, checked) {
-      await call(() => client.blocks.update({ block_id: blockId, to_do: { checked } }));
-    },
-    async appendTodo(pageId, text2, checked) {
-      const res = await call(
-        () => client.blocks.children.append({
-          block_id: pageId,
-          children: [
-            {
-              object: "block",
-              type: "to_do",
-              to_do: { rich_text: [{ type: "text", text: { content: text2 } }], checked }
-            }
-          ]
-        })
-      );
-      const id = res.results[0]?.id;
-      if (id === void 0) throw new Error("Notion did not return the created block");
-      return id;
-    },
-    async appendParagraph(pageId, text2) {
-      const res = await call(
-        () => client.blocks.children.append({
-          block_id: pageId,
-          children: [
-            {
-              object: "block",
-              type: "paragraph",
-              paragraph: { rich_text: [{ type: "text", text: { content: text2 } }] }
-            }
-          ]
-        })
-      );
-      const id = res.results[0]?.id;
-      if (id === void 0) throw new Error("Notion did not return the created block");
-      return id;
-    },
-    async createDatabase(parentPageId, title, properties) {
-      const raw = await call(
-        () => client.databases.create({
-          parent: { type: "page_id", page_id: parentPageId },
-          title: [{ type: "text", text: { content: title } }],
-          is_inline: true,
-          initial_data_source: { properties }
-        })
-      );
-      return toDatabaseInfo({ ...raw, title: raw.title ?? [{ plain_text: title }] });
-    },
-    async getDatabase(databaseId) {
-      const raw = await call(
-        () => client.databases.retrieve({ database_id: databaseId })
-      );
-      return toDatabaseInfo(raw);
-    },
-    getDataSourceProperties,
-    async addProperties(dataSourceId, properties) {
-      const existing = await getDataSourceProperties(dataSourceId);
-      const clash = Object.keys(properties).filter((n) => n in existing);
-      if (clash.length > 0) {
-        throw new Error(`refusing to alter existing Notion properties: ${clash.join(", ")}`);
-      }
-      await call(() => client.dataSources.update({ data_source_id: dataSourceId, properties }));
-    },
-    async queryRows(dataSourceId) {
-      const rows = [];
-      let cursor;
-      for (; ; ) {
-        const page = await call(
-          () => client.dataSources.query({
-            data_source_id: dataSourceId,
-            page_size: 100,
-            ...cursor !== void 0 ? { start_cursor: cursor } : {}
-          })
-        );
-        for (const raw of page.results) {
-          if (raw.object !== void 0 && raw.object !== "page") continue;
-          rows.push({
-            pageId: raw.id,
-            lastEdited: raw.last_edited_time,
-            properties: raw.properties ?? {}
-          });
-        }
-        if (!page.has_more || page.next_cursor === null) return rows;
-        cursor = page.next_cursor;
-      }
-    },
-    async getPageLastEdited(pageId) {
-      const raw = await call(() => client.pages.retrieve({ page_id: pageId }));
-      return raw.last_edited_time;
-    },
-    async createPage(dataSourceId, properties, children) {
-      const first = children?.slice(0, 100);
-      const raw = await call(
-        () => client.pages.create({
-          parent: { type: "data_source_id", data_source_id: dataSourceId },
-          properties,
-          ...first && first.length > 0 ? { children: first } : {}
-        })
-      );
-      let lastEdited = raw.last_edited_time;
-      for (let i = 100; children && i < children.length; i += 100) {
-        const rest = children.slice(i, i + 100);
-        await call(() => client.blocks.children.append({ block_id: raw.id, children: rest }));
-      }
-      if (children && children.length > 100) lastEdited = await this.getPageLastEdited(raw.id);
-      return { pageId: raw.id, lastEdited };
-    },
-    async updatePage(pageId, properties) {
-      const raw = await call(() => client.pages.update({ page_id: pageId, properties }));
-      return { lastEdited: raw.last_edited_time };
-    },
-    async appendChildren(pageId, blocks) {
-      for (let i = 0; i < blocks.length; i += 100) {
-        const chunk = blocks.slice(i, i + 100);
-        await call(() => client.blocks.children.append({ block_id: pageId, children: chunk }));
-      }
-    }
-  };
-}
-function createNotionPortFromToken(token) {
-  const client = new import_client.Client({ auth: token, retry: false });
-  return createNotionPort(client);
-}
-
 // plugins/arima/scripts/src/cli/notion-cli.ts
 var USAGE = `Usage: arima-notion bootstrap --parent <page-id> [--token-env NAME]
        arima-notion map [--root <page-id>] [--migrate] [--project <dir>] [--token-env NAME]
        arima-notion pull [--project <dir>]     mirror every mapped database to .arima/mirror/
-       arima-notion push [--project <dir>]     apply .arima/outbox/ to Notion (orchestrator only)
+       arima-notion push [--project <dir>] [--allow-status-writes]
+                                               apply .arima/outbox/ to Notion (orchestrator only)
 bootstrap builds the 19 ARIMA databases under a page (run once, to build the public template).
 map finds them under a duplicated template, verifies every property, writes .arima/notion-map.json.
 The Notion integration token is read from the environment (default ARIMA_NOTION_TOKEN); it is never printed.
@@ -20002,7 +20160,8 @@ async function runNotionCli(argv, io, deps = {}) {
         root: { type: "string" },
         migrate: { type: "boolean" },
         project: { type: "string" },
-        "token-env": { type: "string" }
+        "token-env": { type: "string" },
+        "allow-status-writes": { type: "boolean" }
       }
     }).values;
   } catch (e) {
@@ -20064,7 +20223,8 @@ ${USAGE}
     }
     if (command === "push") {
       const report = await pushOutbox(projectDir, port, readNotionMap(projectDir), {
-        ...deps.now ? { now: deps.now } : {}
+        ...deps.now ? { now: deps.now } : {},
+        ...values["allow-status-writes"] === true ? { allowStatusWrites: true } : {}
       });
       io.out(
         `outbox: ${report.applied.length} applied, ${report.rejected.length} rejected, ${report.conflicts.length} in conflict (human edit kept), ${report.deferred.length} deferred

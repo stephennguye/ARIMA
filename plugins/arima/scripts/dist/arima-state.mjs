@@ -15487,16 +15487,77 @@ async function withFileLock(lockPath, fn, { timeoutMs = 15e3, staleMs = 3e4, ret
 }
 
 // plugins/arima/scripts/src/lib/secrets.ts
-var SECRET_PATTERNS = [
-  { name: "notion token", re: /\b(?:ntn_|secret_)[A-Za-z0-9]{20,}/ },
-  { name: "github token", re: /\bgh[pousr]_[A-Za-z0-9]{20,}/ },
-  { name: "github fine-grained token", re: /\bgithub_pat_[A-Za-z0-9_]{20,}/ },
-  { name: "anthropic key", re: /\bsk-ant-[A-Za-z0-9_-]{20,}/ },
-  { name: "aws access key", re: /\bAKIA[0-9A-Z]{16}\b/ },
-  { name: "private key block", re: /-----BEGIN [A-Z ]*PRIVATE KEY-----/ }
+import { createHash } from "node:crypto";
+function entropy(s) {
+  if (s.length === 0) return 0;
+  const counts = /* @__PURE__ */ new Map();
+  for (const ch of s) counts.set(ch, (counts.get(ch) ?? 0) + 1);
+  let h = 0;
+  for (const n of counts.values()) {
+    const p = n / s.length;
+    h -= p * Math.log2(p);
+  }
+  return h;
+}
+var PLACEHOLDER = /example|placeholder|your[-_]|replace|change[-_]?me|dummy|sample|redacted|xxxx|\*\*\*|<[^>]+>/i;
+var looksRandom = (s, bits) => s.length >= 16 && /[0-9]/.test(s) && /[A-Za-z]/.test(s) && entropy(s) >= bits && !PLACEHOLDER.test(s);
+var PATTERNS = [
+  { name: "notion token", re: /\b(?:ntn_|secret_)[A-Za-z0-9]{20,}/g },
+  { name: "github token", re: /\bgh[pousr]_[A-Za-z0-9]{20,}/g },
+  { name: "github fine-grained token", re: /\bgithub_pat_[A-Za-z0-9_]{20,}/g },
+  {
+    name: "anthropic key",
+    re: /\bsk-ant-([A-Za-z0-9_-]{20,})/g,
+    accept: (_m, g) => looksRandom(g[0] ?? "", 3.4)
+  },
+  { name: "aws access key", re: /\bAKIA[0-9A-Z]{16}\b/g, accept: (m) => !/EXAMPLE/.test(m) },
+  { name: "private key block", re: /-----BEGIN [A-Z ]*PRIVATE KEY-----/g },
+  { name: "slack token", re: /\bxox[abprs]-[A-Za-z0-9-]{10,}/g },
+  { name: "stripe key", re: /\b[sr]k_(?:live|test)_[A-Za-z0-9]{16,}/g },
+  { name: "google api key", re: /\bAIza[0-9A-Za-z_-]{35}\b/g },
+  {
+    name: "json web token",
+    re: /\beyJ[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}/g
+  },
+  { name: "npm token", re: /\bnpm_[A-Za-z0-9]{36}\b/g },
+  {
+    name: "bearer token",
+    re: /\bBearer\s+([A-Za-z0-9._~+/-]{24,})=*/g,
+    accept: (_m, g) => !PLACEHOLDER.test(g[0] ?? "") && entropy(g[0] ?? "") >= 3.3
+  },
+  {
+    // key = "long random-looking value" for names that usually hold credentials
+    name: "credential assignment",
+    re: /(?<![A-Za-z])(?:api[_-]?key|secret(?:[_-]?key)?|access[_-]?token|auth[_-]?token|token|passwd|password|private[_-]?key)["']?\s*[:=]\s*["']?([A-Za-z0-9/+_=.-]{20,})/gi,
+    accept: (_m, g) => looksRandom(g[0] ?? "", 3.5)
+  }
 ];
-function findSecrets(text) {
-  return SECRET_PATTERNS.filter((p) => p.re.test(text)).map((p) => p.name);
+function fingerprint(match) {
+  return `sha256:${createHash("sha256").update(match).digest("hex").slice(0, 16)}`;
+}
+function scan(text) {
+  const unescaped = text.replace(/\\[nrt]/g, " ").replace(/\\"/g, '"');
+  const out = [];
+  const seen = /* @__PURE__ */ new Set();
+  for (const p of PATTERNS) {
+    for (const t of text === unescaped ? [text] : [text, unescaped]) {
+      for (const m of t.matchAll(new RegExp(p.re.source, p.re.flags))) {
+        const groups = m.slice(1).map((x) => x ?? "");
+        if (p.accept && !p.accept(m[0], groups)) continue;
+        const f = fingerprint(m[0]);
+        if (seen.has(`${p.name}|${f}`)) continue;
+        seen.add(`${p.name}|${f}`);
+        out.push({ rule: p.name, fingerprint: f });
+      }
+    }
+  }
+  return out;
+}
+function scanSecrets(text, allowed = /* @__PURE__ */ new Set()) {
+  return scan(text).filter((f) => !allowed.has(f.fingerprint));
+}
+function findSecrets(text, allowed = /* @__PURE__ */ new Set()) {
+  return [...new Set(scanSecrets(text, allowed).map((f) => f.rule))];
 }
 function assertNoSecrets(text, where) {
   const found = findSecrets(text);
@@ -15505,6 +15566,14 @@ function assertNoSecrets(text, where) {
       `Refusing to write ${where}: content looks like a secret (${found.join(", ")})`
     );
   }
+}
+function parseAllowlist(text) {
+  const out = /* @__PURE__ */ new Set();
+  for (const line of text.split(/\r?\n/)) {
+    const m = /^\s*(sha256:[0-9a-f]{16})\s*(?:#.*)?$/i.exec(line);
+    if (m) out.add(m[1].toLowerCase());
+  }
+  return out;
 }
 
 // plugins/arima/scripts/src/lib/schema.ts
@@ -15593,7 +15662,7 @@ var StateError = class extends Error {
 var DEFAULT_BRANCH = "arima-state";
 var STATE_GITIGNORE = "*.lock\n*.tmp\nrun.lock\n";
 var STATE_GITATTRIBUTES = "* -text\n";
-var MAX_SCAN_BYTES = 5 * 1024 * 1024;
+var MAX_SCAN_BYTES = 64 * 1024 * 1024;
 function git(cwd, args, input) {
   try {
     return execFileSync("git", args, {
@@ -15753,12 +15822,19 @@ async function pullState(o) {
 }
 function scanStaged(r) {
   const names = git(r.stateDir, ["diff", "--cached", "--name-only", "--diff-filter=AM"]).split("\n").filter(Boolean);
+  const allowFile = path5.join(r.stateDir, "secret-allowlist.txt");
+  const allowed = existsSync3(allowFile) ? parseAllowlist(readFileSync3(allowFile, "utf8")) : /* @__PURE__ */ new Set();
   const bad = [];
   for (const name of names) {
     const file = path5.join(r.stateDir, name);
     try {
-      if (statSync2(file).size > MAX_SCAN_BYTES) continue;
-      if (findSecrets(readFileSync3(file, "utf8")).length > 0) bad.push(name);
+      if (statSync2(file).size > MAX_SCAN_BYTES) {
+        bad.push({ file: name, rule: "file too large to scan for secrets" });
+        continue;
+      }
+      for (const f of scanSecrets(readFileSync3(file, "utf8"), allowed)) {
+        bad.push({ file: name, rule: f.rule, fingerprint: f.fingerprint });
+      }
     } catch {
     }
   }
@@ -15780,13 +15856,18 @@ async function pushState(o) {
   git(r.stateDir, ["add", "-A"]);
   const staged = git(r.stateDir, ["diff", "--cached", "--name-only"]).split("\n").filter(Boolean);
   if (staged.length === 0) {
-    return { committed: false, pushed: false, files: 0 };
+    return { committed: false, pushed: false, files: 0, warnings: [] };
   }
   const bad = scanStaged(r);
   if (bad.length > 0) {
     git(r.stateDir, ["reset", "-q"]);
+    const lines = bad.map(
+      (p) => `  ${p.file}: ${p.rule}${p.fingerprint ? ` (${p.fingerprint})` : ""}`
+    );
     throw new StateError(
-      `refusing to commit state: ${bad.length} file(s) look like they contain a secret: ${bad.join(", ")}`
+      `refusing to commit state: ${bad.length} finding(s) that look like secrets:
+${lines.join("\n")}
+If you have reviewed a finding and it is NOT a secret, add its fingerprint on its own line to .arima/secret-allowlist.txt and run again.`
     );
   }
   git(r.stateDir, [
@@ -15798,11 +15879,23 @@ async function pushState(o) {
   ]);
   const commit = git(r.stateDir, ["rev-parse", "HEAD"]);
   let pushed = false;
+  const warnings = [];
   if (r.hasRemote) {
+    const privacy = checkRemotePrivacy(r, o);
+    if (privacy.kind === "public" && o.allowPublic !== true) {
+      throw new StateError(
+        `refusing to push state: ${privacy.slug} is a PUBLIC GitHub repository, and the state branch holds your Notion data (requirements, client names, costs). Make the repository private, or set github.allow_public_state: true in arima.yaml if you really mean it.`
+      );
+    }
+    if (privacy.kind === "unknown" && o.allowPublic !== true) {
+      throw new StateError(
+        `refusing to push state: could not check whether ${privacy.slug} is private (is the gh CLI installed and signed in, and is the remote a normal github.com repository?). The state branch holds your Notion data, so ARIMA refuses when it cannot be sure. Sign in with 'gh auth login' and run again, or set github.allow_public_state: true in arima.yaml if you accept the risk.`
+      );
+    }
     git(r.stateDir, ["push", "--set-upstream", r.remote, `${r.branch}:${r.branch}`]);
     pushed = true;
   }
-  return { committed: true, pushed, commit, files: staged.length };
+  return { committed: true, pushed, commit, files: staged.length, warnings };
 }
 function stateStatus(o) {
   const r = resolve(o);
@@ -15816,6 +15909,49 @@ function stateStatus(o) {
   }
   return { worktree: true, branch: r.branch, dirty, ahead };
 }
+var SLUG_PART = /^[A-Za-z0-9_][A-Za-z0-9._-]*$/;
+function githubSlug(url) {
+  const m = /^(?:https?:\/\/(?:[^@/]+@)?github\.com\/|git@github\.com:|ssh:\/\/git@github\.com\/)([^/\s]+)\/([^/\s]+?)(?:\.git)?\/?$/i.exec(
+    url.trim()
+  );
+  if (!m) return void 0;
+  const owner = m[1];
+  const repo = m[2];
+  if (!SLUG_PART.test(owner) || !SLUG_PART.test(repo) || repo === "." || repo === "..") {
+    return void 0;
+  }
+  return { owner, repo };
+}
+var MENTIONS_GITHUB = /(^|[/@:])github\.com[/:]/i;
+function checkRemotePrivacy(r, o) {
+  let url;
+  try {
+    url = git(r.repo, ["config", "--get", "remote." + r.remote + ".url"]);
+  } catch {
+    return { kind: "not-github" };
+  }
+  const slug = githubSlug(url);
+  if (slug === void 0) {
+    return MENTIONS_GITHUB.test(url) ? { kind: "unknown", slug: "the remote" } : { kind: "not-github" };
+  }
+  const name = `${slug.owner}/${slug.repo}`;
+  let priv;
+  if (o.isPrivate) {
+    priv = o.isPrivate(slug.owner, slug.repo);
+  } else {
+    try {
+      const out = execFileSync(
+        "gh",
+        ["repo", "view", name, "--json", "isPrivate", "--jq", ".isPrivate"],
+        { encoding: "utf8", timeout: 2e4, stdio: ["ignore", "pipe", "ignore"] }
+      ).trim();
+      priv = out === "true" ? true : out === "false" ? false : void 0;
+    } catch {
+      priv = void 0;
+    }
+  }
+  return { kind: priv === void 0 ? "unknown" : priv ? "private" : "public", slug: name };
+}
 
 // plugins/arima/scripts/src/cli/state-cli.ts
 var USAGE = `Usage: arima-state pull [--project <dir>]
@@ -15828,6 +15964,7 @@ function branchesFromConfig(projectDir) {
   try {
     const doc = (0, import_yaml.parse)(readFileSync4(file, "utf8"));
     return {
+      ...doc.github?.allow_public_state === true ? { allowPublic: true } : {},
       ...doc.github?.state_branch ? { branch: doc.github.state_branch } : {},
       ...doc.github?.default_branch ? { defaultBranch: doc.github.default_branch } : {}
     };

@@ -1,5 +1,6 @@
 // Stand-in for the `claude` CLI. Behaviour is chosen by STUB_MODE; what it was called with is
 // written to STUB_RECORD so tests can assert on flags, env and prompt. No network, no cost.
+import { spawn } from 'node:child_process';
 import { readFileSync, writeFileSync } from 'node:fs';
 
 const mode = process.env.STUB_MODE ?? 'success';
@@ -84,6 +85,21 @@ switch (mode) {
   case 'hang':
     setInterval(() => undefined, 1000);
     break;
+  case 'hang_tree': {
+    // Starts a grandchild that OUTLIVES a plain kill of this process. On Windows, libuv puts a
+    // Node child into a job object that dies with its parent, so the grandchild must break away
+    // (detached) or the test could never fail. On POSIX it stays in this process group, which is
+    // what the wrapper kills.
+    const grandchild = spawn(process.execPath, ['-e', 'setInterval(() => {}, 1000)'], {
+      stdio: 'ignore',
+      detached: process.platform === 'win32',
+      windowsHide: true,
+    });
+    grandchild.unref();
+    writeFileSync(process.env.STUB_PIDFILE, String(grandchild.pid));
+    setInterval(() => undefined, 1000);
+    break;
+  }
   case 'echo_resume':
     console.log(
       JSON.stringify({

@@ -1,0 +1,1011 @@
+# ARIMA artifact catalog (spec section 8.1), 58 artifacts. Source of truth for ids, owners, master locations,
+# which profiles require each artifact, its template and the template's required sections. It was generated
+# once from the spec and is edited by hand now. Section lists for artifacts the spec does not define in 8.2
+# follow the wording of the spec's phase tables (6.x) and role outputs (5.x) and were approved by the owner on 2026-11-19.
+schema_version: 1
+artifacts:
+  - id: project-brief
+    name: Project brief
+    phase: "0"
+    owner: po (human)
+    approver: orchestrator checks completeness
+    master: Notion page
+    consumers: ba, architect
+    required_in: S C R
+    required:
+      solo_lite: true
+      client_project: true
+      regulated: true
+    kind: document
+    template: project-brief.md
+    sections:
+      - Problem
+      - Target users
+      - Goals and KPIs
+      - Must-have features
+      - Out of scope
+      - Constraints
+      - Known risks
+  - id: charter
+    name: Charter
+    phase: "0"
+    owner: orchestrator
+    approver: sponsor (G0)
+    master: Notion page
+    consumers: all
+    required_in: C R
+    required:
+      solo_lite: false
+      client_project: true
+      regulated: true
+    kind: document
+    template: charter.md
+    sections:
+      - Scope
+      - Rough milestones
+      - Budget plan
+      - Risks
+      - Roles and responsibilities
+  - id: budget-plan
+    name: Budget plan
+    phase: "0"
+    owner: orchestrator
+    approver: sponsor
+    master: Notion page
+    consumers: orchestrator
+    required_in: S C R
+    required:
+      solo_lite: true
+      client_project: true
+      regulated: true
+    kind: document
+    template: budget-plan.md
+    sections:
+      - Agent budget
+      - Infrastructure budget
+      - Assumptions
+  - id: feasibility-note
+    name: Feasibility note
+    phase: "0"
+    owner: architect
+    approver: sponsor
+    master: Notion Documents
+    consumers: sponsor, architect
+    required_in: C R
+    required:
+      solo_lite: false
+      client_project: true
+      regulated: true
+    kind: document
+    template: feasibility-note.md
+    sections:
+      - Platform and stack fit
+      - Third-party needs
+      - Major risks
+      - Recommendation
+  - id: compliance-screen
+    name: Compliance screen
+    phase: "0"
+    owner: security
+    approver: legal (human)
+    master: Notion Documents
+    consumers: ba, security
+    required_in: C R
+    required:
+      solo_lite: false
+      client_project: true
+      regulated: true
+    kind: document
+    template: compliance-screen.md
+    sections:
+      - Data classification
+      - DPIA flag
+      - Required controls
+      - Open questions for legal
+  - id: sow
+    name: SOW / contract
+    phase: "0"
+    owner: human
+    approver: client
+    master: Outside ARIMA (linked)
+    consumers: sponsor
+    required_in: C R (human-only)
+    required:
+      solo_lite: false
+      client_project: true
+      regulated: true
+    kind: external
+    template: null
+  - id: risk-register
+    name: Risk register
+    phase: 0+
+    owner: orchestrator
+    approver: sponsor reads
+    master: Notion Risks DB
+    consumers: digest
+    required_in: C R
+    required:
+      solo_lite: false
+      client_project: true
+      regulated: true
+    kind: record
+    template: null
+  - id: prd
+    name: PRD
+    phase: "1"
+    owner: ba (po owns content)
+    approver: po
+    master: Notion Documents
+    consumers: all
+    required_in: S C R
+    required:
+      solo_lite: true
+      client_project: true
+      regulated: true
+    kind: document
+    template: prd.md
+    sections:
+      - Summary
+      - Problem
+      - Users and personas
+      - Goals and KPIs
+      - Scope
+      - Feature list
+      - Assumptions
+      - Dependencies
+      - Release criteria
+      - Open questions
+  - id: urs
+    name: URS + REQ items
+    phase: "1"
+    owner: ba
+    approver: sponsor (G1)
+    master: Notion Documents + Requirements DB
+    consumers: architect, qa
+    required_in: C R
+    required:
+      solo_lite: false
+      client_project: true
+      regulated: true
+    kind: document
+    template: urs.md
+    sections:
+      - REQ items
+      - Business needs
+      - Priorities
+      - Out of scope
+      - Open questions
+  - id: srs
+    name: SRS
+    phase: "1"
+    owner: ba
+    approver: po, architect
+    master: Notion Documents
+    consumers: developer, qa
+    required_in: C R (inside PRD for S)
+    required:
+      solo_lite: false
+      client_project: true
+      regulated: true
+    kind: document
+    template: srs.md
+    sections:
+      - Functional detail
+      - Business rules
+      - Non-functional requirements
+      - External interfaces
+      - Traceability to REQ items
+  - id: nfr
+    name: NFR items
+    phase: "1"
+    owner: architect
+    approver: po
+    master: Notion Requirements DB (type NFR)
+    consumers: architect, qa, devops
+    required_in: S C R
+    required:
+      solo_lite: true
+      client_project: true
+      regulated: true
+    kind: record
+    template: null
+  - id: glossary
+    name: Glossary
+    phase: "1"
+    owner: ba
+    approver: none
+    master: Notion page
+    consumers: all
+    required_in: C R
+    required:
+      solo_lite: false
+      client_project: true
+      regulated: true
+    kind: document
+    template: glossary.md
+    sections:
+      - Terms and definitions
+      - Abbreviations
+  - id: personas-journeys-sitemap
+    name: Personas, journeys, sitemap
+    phase: "1"
+    owner: ux
+    approver: po
+    master: Notion Documents
+    consumers: ux, ba
+    required_in: C R
+    required:
+      solo_lite: false
+      client_project: true
+      regulated: true
+    kind: document
+    template: personas-journeys-sitemap.md
+    sections:
+      - Personas
+      - Journeys
+      - Sitemap
+  - id: wireframes
+    name: Wireframes
+    phase: "1"
+    owner: ux
+    approver: po
+    master: "`design/wireframes/`"
+    consumers: ux, developer
+    required_in: C R
+    required:
+      solo_lite: false
+      client_project: true
+      regulated: true
+    kind: code
+    template: null
+  - id: security-requirements
+    name: Security requirements
+    phase: "1"
+    owner: security
+    approver: po
+    master: Notion Documents
+    consumers: architect, developer, qa
+    required_in: C R
+    required:
+      solo_lite: false
+      client_project: true
+      regulated: true
+    kind: document
+    template: security-requirements.md
+    sections:
+      - Assets
+      - Requirements
+      - Authentication and authorisation
+      - Data protection
+      - Logging and monitoring
+  - id: dpia
+    name: DPIA
+    phase: "1"
+    owner: security (draft)
+    approver: legal (human)
+    master: Notion Documents
+    consumers: security
+    required_in: C R if personal data; R always
+    required:
+      solo_lite: false
+      client_project: true
+      regulated: true
+    kind: document
+    template: dpia.md
+    sections:
+      - Processing description
+      - Necessity and proportionality
+      - Risks to people
+      - Mitigations
+      - Legal sign-off
+  - id: backlog
+    name: Epics, stories, acceptance criteria
+    phase: 1, 4
+    owner: ba
+    approver: po
+    master: Notion Stories DB
+    consumers: developer, qa, ux
+    required_in: S C R
+    required:
+      solo_lite: true
+      client_project: true
+      regulated: true
+    kind: record
+    template: user-story.md
+    sections:
+      - Story
+      - Acceptance criteria
+      - Screens
+      - Test cases
+      - Notes
+  - id: requirement-review-log
+    name: Requirement review log
+    phase: "1"
+    owner: qa
+    approver: ba
+    master: Notion Meetings DB
+    consumers: ba
+    required_in: C R
+    required:
+      solo_lite: false
+      client_project: true
+      regulated: true
+    kind: record
+    template: null
+  - id: sad
+    name: SAD
+    phase: "2"
+    owner: architect
+    approver: tech-lead; G2
+    master: "`docs/architecture/sad.md`"
+    consumers: developer, devops, security
+    required_in: C R
+    required:
+      solo_lite: false
+      client_project: true
+      regulated: true
+    kind: document
+    template: sad.md
+    sections:
+      - Architecture
+      - Decisions
+      - API and data model
+      - Infrastructure and hosting cost estimate
+      - Quality attributes
+      - Risks
+  - id: adrs
+    name: ADRs
+    phase: 2+
+    owner: architect
+    approver: tech-lead
+    master: "`docs/architecture/adr/ADR-NNNN.md`"
+    consumers: all engineering
+    required_in: S C R
+    required:
+      solo_lite: true
+      client_project: true
+      regulated: true
+    kind: code
+    template: adr.md
+    sections:
+      - Context
+      - Decision
+      - Alternatives considered
+      - Consequences
+  - id: openapi
+    name: OpenAPI spec
+    phase: 2+
+    owner: architect
+    approver: tech-lead
+    master: "`api/openapi.yaml`"
+    consumers: developer, qa
+    required_in: S C R
+    required:
+      solo_lite: true
+      client_project: true
+      regulated: true
+    kind: code
+    template: null
+  - id: data-model
+    name: Data model
+    phase: "2"
+    owner: architect
+    approver: tech-lead
+    master: "`docs/architecture/data-model.md` + migrations"
+    consumers: developer
+    required_in: S C R
+    required:
+      solo_lite: true
+      client_project: true
+      regulated: true
+    kind: document
+    template: data-model.md
+    sections:
+      - Entities
+      - Relationships
+      - Constraints
+      - Migrations
+  - id: infra-diagram
+    name: Infrastructure diagram, hosting cost estimate
+    phase: "2"
+    owner: architect
+    approver: sponsor reads
+    master: "`docs/architecture/`"
+    consumers: devops, sponsor
+    required_in: C R
+    required:
+      solo_lite: false
+      client_project: true
+      regulated: true
+    kind: document
+    template: infra-diagram.md
+    sections:
+      - Infrastructure diagram
+      - Hosting cost estimate
+      - Assumptions
+  - id: prototype
+    name: Prototype, design tokens
+    phase: "2"
+    owner: ux
+    approver: po, client (G2)
+    master: "`design/`"
+    consumers: developer, qa
+    required_in: C R
+    required:
+      solo_lite: false
+      client_project: true
+      regulated: true
+    kind: document
+    template: prototype.md
+    sections:
+      - Prototype
+      - Design tokens
+      - Screens
+  - id: threat-model
+    name: Threat model
+    phase: "2"
+    owner: security
+    approver: architect
+    master: "`docs/security/threat-model.md`"
+    consumers: developer, qa
+    required_in: C R
+    required:
+      solo_lite: false
+      client_project: true
+      regulated: true
+    kind: document
+    template: threat-model.md
+    sections:
+      - Assets and trust boundaries
+      - STRIDE analysis
+      - Controls
+      - Residual risk
+  - id: master-test-plan
+    name: Master Test Plan
+    phase: "2"
+    owner: qa
+    approver: po
+    master: Notion Documents
+    consumers: qa, orchestrator
+    required_in: C R
+    required:
+      solo_lite: false
+      client_project: true
+      regulated: true
+    kind: document
+    template: master-test-plan.md
+    sections:
+      - Test levels
+      - Tools
+      - Environments
+      - Test data
+      - Entry and exit criteria
+      - RTM coverage rule
+  - id: env-matrix
+    name: Environment matrix, pipeline design
+    phase: "2"
+    owner: devops
+    approver: tech-lead
+    master: "`docs/ops/`"
+    consumers: devops
+    required_in: C R
+    required:
+      solo_lite: false
+      client_project: true
+      regulated: true
+    kind: document
+    template: env-matrix.md
+    sections:
+      - Environment matrix
+      - Pipeline design
+  - id: milestone-plan
+    name: Milestone plan
+    phase: 2+
+    owner: orchestrator
+    approver: po
+    master: Notion Milestones DB
+    consumers: all
+    required_in: S C R
+    required:
+      solo_lite: true
+      client_project: true
+      regulated: true
+    kind: record
+    template: null
+  - id: dor-dod
+    name: DoR / DoD
+    phase: "2"
+    owner: orchestrator (from profile)
+    approver: po
+    master: Notion page
+    consumers: all
+    required_in: S C R
+    required:
+      solo_lite: true
+      client_project: true
+      regulated: true
+    kind: document
+    template: dor-dod.md
+    sections:
+      - Definition of Ready
+      - Definition of Done
+  - id: conventions
+    name: Engineering conventions
+    phase: "3"
+    owner: tech-lead
+    approver: none
+    master: "`docs/engineering/conventions.md`"
+    consumers: developer, tech-lead
+    required_in: S C R
+    required:
+      solo_lite: true
+      client_project: true
+      regulated: true
+    kind: document
+    template: conventions.md
+    sections:
+      - Code style
+      - Branching and commits
+      - Review rules
+      - Testing rules
+  - id: test-cases
+    name: Test cases
+    phase: "4"
+    owner: qa
+    approver: tech-lead spot-check
+    master: Notion Test Cases DB + `tests/e2e/`
+    consumers: qa
+    required_in: S C R
+    required:
+      solo_lite: true
+      client_project: true
+      regulated: true
+    kind: record
+    template: null
+  - id: code-tests
+    name: Code, unit and integration tests
+    phase: "4"
+    owner: developer
+    approver: tech-lead
+    master: Repo
+    consumers: all
+    required_in: S C R
+    required:
+      solo_lite: true
+      client_project: true
+      regulated: true
+    kind: code
+    template: null
+  - id: pull-requests
+    name: Pull requests and reviews
+    phase: "4"
+    owner: developer / tech-lead
+    approver: tech-lead
+    master: GitHub
+    consumers: orchestrator
+    required_in: S C R
+    required:
+      solo_lite: true
+      client_project: true
+      regulated: true
+    kind: code
+    template: null
+  - id: bug-reports
+    name: Bug reports
+    phase: 4+
+    owner: qa, devops
+    approver: po (severity)
+    master: Notion Bugs DB
+    consumers: developer
+    required_in: S C R
+    required:
+      solo_lite: true
+      client_project: true
+      regulated: true
+    kind: record
+    template: bug.md
+    sections:
+      - Steps to reproduce
+      - Expected
+      - Actual
+      - Evidence
+  - id: milestone-review
+    name: Milestone review
+    phase: "4"
+    owner: orchestrator
+    approver: po
+    master: Notion Milestones DB
+    consumers: humans
+    required_in: S C R
+    required:
+      solo_lite: true
+      client_project: true
+      regulated: true
+    kind: record
+    template: null
+  - id: digest
+    name: Daily digest
+    phase: all
+    owner: orchestrator
+    approver: humans read
+    master: Notion Digests DB
+    consumers: humans
+    required_in: S C R
+    required:
+      solo_lite: true
+      client_project: true
+      regulated: true
+    kind: record
+    template: digest.md
+    sections:
+      - Headline
+      - Awaiting you
+      - Shipped
+      - Decisions made
+      - Blockers and risks
+      - Cost and time
+      - Run health
+  - id: decision-log
+    name: Decision log
+    phase: all
+    owner: any agent via orchestrator
+    approver: humans (veto)
+    master: Notion Decisions DB
+    consumers: humans, agents
+    required_in: S C R
+    required:
+      solo_lite: true
+      client_project: true
+      regulated: true
+    kind: record
+    template: null
+  - id: questions
+    name: Questions
+    phase: all
+    owner: any agent via orchestrator
+    approver: humans answer
+    master: Notion Questions DB
+    consumers: humans
+    required_in: S C R
+    required:
+      solo_lite: true
+      client_project: true
+      regulated: true
+    kind: record
+    template: null
+  - id: meeting-minutes
+    name: Meeting minutes
+    phase: all
+    owner: orchestrator
+    approver: none
+    master: Notion Meetings DB
+    consumers: all
+    required_in: C R
+    required:
+      solo_lite: false
+      client_project: true
+      regulated: true
+    kind: record
+    template: meeting-minutes.md
+    sections:
+      - Inputs
+      - Decisions
+      - Open issues
+      - Action items
+  - id: lessons
+    name: Lessons
+    phase: 4+
+    owner: all agents
+    approver: po
+    master: Notion Lessons DB + `.arima/overrides/`
+    consumers: agents
+    required_in: S C R
+    required:
+      solo_lite: true
+      client_project: true
+      regulated: true
+    kind: record
+    template: null
+  - id: test-reports
+    name: Test, regression, performance, accessibility reports
+    phase: "5"
+    owner: qa, devops
+    approver: po
+    master: Notion Documents (generated from CI output)
+    consumers: po, sponsor
+    required_in: C R
+    required:
+      solo_lite: false
+      client_project: true
+      regulated: true
+    kind: document
+    template: test-reports.md
+    sections:
+      - Test results
+      - Regression
+      - Performance
+      - Accessibility
+  - id: security-report
+    name: Pre-release security report
+    phase: "5"
+    owner: security
+    approver: sponsor ack
+    master: Notion Documents
+    consumers: sponsor
+    required_in: C R
+    required:
+      solo_lite: false
+      client_project: true
+      regulated: true
+    kind: document
+    template: security-report.md
+    sections:
+      - Scope
+      - Findings by severity
+      - Fixed and open
+      - Recommendation
+  - id: pentest-report
+    name: Penetration test report
+    phase: "5"
+    owner: external human
+    approver: sponsor
+    master: Notion Documents (uploaded)
+    consumers: security
+    required_in: R; C recommended
+    required:
+      solo_lite: false
+      client_project: false
+      regulated: true
+    kind: document
+    template: pentest-report.md
+    sections:
+      - Scope
+      - Method
+      - Findings
+      - Retest
+  - id: uat
+    name: UAT scripts and sign-off
+    phase: "5"
+    owner: orchestrator / humans
+    approver: sponsor
+    master: Notion Test Runs
+    consumers: sponsor
+    required_in: C R
+    required:
+      solo_lite: false
+      client_project: true
+      regulated: true
+    kind: record
+    template: null
+  - id: go-no-go-minutes
+    name: Go/No-Go minutes
+    phase: "5"
+    owner: orchestrator
+    approver: sponsor
+    master: Notion Meetings DB
+    consumers: sponsor
+    required_in: C R
+    required:
+      solo_lite: false
+      client_project: true
+      regulated: true
+    kind: record
+    template: null
+  - id: runbook-rollback
+    name: Runbook, rollback plan
+    phase: 5–6
+    owner: devops
+    approver: tech-lead
+    master: "`docs/ops/`"
+    consumers: devops
+    required_in: S C R
+    required:
+      solo_lite: true
+      client_project: true
+      regulated: true
+    kind: document
+    template: runbook-rollback.md
+    sections:
+      - Runbook
+      - Rollback plan
+      - Health checks
+      - Contacts
+  - id: release-record
+    name: Release record, release notes
+    phase: "6"
+    owner: devops, ba
+    approver: po
+    master: Notion Releases DB + GitHub release
+    consumers: users, humans
+    required_in: S C R
+    required:
+      solo_lite: true
+      client_project: true
+      regulated: true
+    kind: record
+    template: null
+  - id: user-guide-faq
+    name: User guide, FAQ
+    phase: "6"
+    owner: ba
+    approver: po
+    master: Notion (published)
+    consumers: end users
+    required_in: C R
+    required:
+      solo_lite: false
+      client_project: true
+      regulated: true
+    kind: document
+    template: user-guide-faq.md
+    sections:
+      - User guide
+      - FAQ
+  - id: support-kb
+    name: Support knowledge base, escalation matrix
+    phase: "6"
+    owner: devops
+    approver: po
+    master: Notion page
+    consumers: support
+    required_in: C R
+    required:
+      solo_lite: false
+      client_project: true
+      regulated: true
+    kind: document
+    template: support-kb.md
+    sections:
+      - Support knowledge base
+      - Escalation matrix
+  - id: hypercare-closure
+    name: Hypercare report, closure report
+    phase: "7"
+    owner: orchestrator
+    approver: sponsor (G4)
+    master: Notion Documents
+    consumers: sponsor
+    required_in: C R
+    required:
+      solo_lite: false
+      client_project: true
+      regulated: true
+    kind: document
+    template: hypercare-closure.md
+    sections:
+      - Hypercare report
+      - Closure report
+  - id: ops-manual
+    name: Operations manual
+    phase: "7"
+    owner: devops
+    approver: tech-lead
+    master: "`docs/ops/ops-manual.md`"
+    consumers: devops, humans
+    required_in: C R
+    required:
+      solo_lite: false
+      client_project: true
+      regulated: true
+    kind: document
+    template: ops-manual.md
+    sections:
+      - Architecture summary
+      - Monitoring and alerts
+      - Routine tasks
+      - Incident handling
+      - Runbooks
+  - id: incidents
+    name: Incident records, postmortems
+    phase: "8"
+    owner: devops
+    approver: po reads
+    master: Notion Incidents DB
+    consumers: all
+    required_in: S C R
+    required:
+      solo_lite: true
+      client_project: true
+      regulated: true
+    kind: record
+    template: postmortem.md
+    sections:
+      - Summary
+      - Impact
+      - Timeline
+      - Root cause
+      - Contributing factors
+      - What went well
+      - Action items
+  - id: change-requests
+    name: Change requests, impact analyses
+    phase: "8"
+    owner: requester, ba
+    approver: po or sponsor
+    master: Notion CR DB
+    consumers: all
+    required_in: C R
+    required:
+      solo_lite: false
+      client_project: true
+      regulated: true
+    kind: record
+    template: change-request.md
+    sections:
+      - Description
+      - Reason
+      - Impact analysis
+      - Decision
+  - id: slo-cost-reports
+    name: SLO and cost reports
+    phase: "8"
+    owner: orchestrator
+    approver: sponsor reads
+    master: Notion Documents
+    consumers: sponsor
+    required_in: C R
+    required:
+      solo_lite: false
+      client_project: true
+      regulated: true
+    kind: document
+    template: slo-cost-reports.md
+    sections:
+      - SLO report
+      - Cost report
+  - id: sbom
+    name: SBOM
+    phase: 6, 8
+    owner: devops
+    approver: security
+    master: GitHub release asset
+    consumers: security
+    required_in: C R
+    required:
+      solo_lite: false
+      client_project: true
+      regulated: true
+    kind: generated
+    template: null
+  - id: rtm
+    name: RTM
+    phase: derived
+    owner: generated
+    approver: none
+    master: Notion relations view
+    consumers: qa, sponsor
+    required_in: C R
+    required:
+      solo_lite: false
+      client_project: true
+      regulated: true
+    kind: generated
+    template: null
+  - id: changelog
+    name: CHANGELOG
+    phase: derived
+    owner: generated from PRs
+    approver: none
+    master: "`CHANGELOG.md`"
+    consumers: users
+    required_in: S C R
+    required:
+      solo_lite: true
+      client_project: true
+      regulated: true
+    kind: generated
+    template: null
+  - id: ledger-events
+    name: Run ledger, event log
+    phase: all
+    owner: orchestrator
+    approver: none
+    master: "`.arima/` on state branch"
+    consumers: orchestrator, cost reports
+    required_in: S C R
+    required:
+      solo_lite: true
+      client_project: true
+      regulated: true
+    kind: generated
+    template: null

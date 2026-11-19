@@ -1,4 +1,5 @@
 import { existsSync } from 'node:fs';
+import { HARD_STOPS, isHardStop } from './hardstops.js';
 import path from 'node:path';
 import type { ErrorObject } from 'ajv/dist/2020.js';
 import { pluginRoot } from './lib/paths.js';
@@ -211,8 +212,38 @@ export function validateProject(projectDir: string, root: string = pluginRoot())
     });
   }
 
+  // Rule 5 (warn only): the hard stops are fixed in ARIMA's code (spec §11.1); this list is
+  // documentation, and shortening it does not switch anything off. Say so rather than let a
+  // reader believe the config controls them.
+  const listed = new Set(
+    (arima as unknown as { autonomy: { hard_stops: string[] } }).autonomy.hard_stops,
+  );
+  const missing = REQUIRED_HARD_STOPS.filter((s) => !listed.has(s));
+  const unknown = [...listed].filter((s) => !isHardStop(s));
+  if (unknown.length > 0) {
+    warnings.push({
+      severity: 'warning',
+      file: aSrc.file,
+      line: aSrc.lineOf('/autonomy/hard_stops'),
+      path: 'autonomy.hard_stops',
+      message: `unknown hard stop ids: ${unknown.join(', ')}. The ids are fixed in code (see src/hardstops.ts); a typo here protects nothing`,
+    });
+  }
+  if (missing.length > 0) {
+    warnings.push({
+      severity: 'warning',
+      file: aSrc.file,
+      line: aSrc.lineOf('/autonomy/hard_stops'),
+      path: 'autonomy.hard_stops',
+      message: `hard stops missing from this list: ${missing.join(', ')}. ARIMA enforces them anyway (they cannot be disabled by configuration, spec §11.1); keep the list complete so it matches what is enforced`,
+    });
+  }
+
   return { ok: errors.length === 0, errors, warnings, arima, team };
 }
+
+/** The hard stops arima.yaml should list: the canonical list in code (spec 11.1, D-42). */
+export const REQUIRED_HARD_STOPS = HARD_STOPS;
 
 export function formatIssue(i: Issue): string {
   return `${i.file}:${i.line}: ${i.severity}: ${i.message}`;

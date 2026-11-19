@@ -18412,16 +18412,77 @@ async function withFileLock(lockPath, fn, { timeoutMs = 15e3, staleMs = 3e4, ret
 }
 
 // plugins/arima/scripts/src/lib/secrets.ts
-var SECRET_PATTERNS = [
-  { name: "notion token", re: /\b(?:ntn_|secret_)[A-Za-z0-9]{20,}/ },
-  { name: "github token", re: /\bgh[pousr]_[A-Za-z0-9]{20,}/ },
-  { name: "github fine-grained token", re: /\bgithub_pat_[A-Za-z0-9_]{20,}/ },
-  { name: "anthropic key", re: /\bsk-ant-[A-Za-z0-9_-]{20,}/ },
-  { name: "aws access key", re: /\bAKIA[0-9A-Z]{16}\b/ },
-  { name: "private key block", re: /-----BEGIN [A-Z ]*PRIVATE KEY-----/ }
+import { createHash } from "node:crypto";
+function entropy(s) {
+  if (s.length === 0) return 0;
+  const counts = /* @__PURE__ */ new Map();
+  for (const ch of s) counts.set(ch, (counts.get(ch) ?? 0) + 1);
+  let h = 0;
+  for (const n of counts.values()) {
+    const p = n / s.length;
+    h -= p * Math.log2(p);
+  }
+  return h;
+}
+var PLACEHOLDER = /example|placeholder|your[-_]|replace|change[-_]?me|dummy|sample|redacted|xxxx|\*\*\*|<[^>]+>/i;
+var looksRandom = (s, bits) => s.length >= 16 && /[0-9]/.test(s) && /[A-Za-z]/.test(s) && entropy(s) >= bits && !PLACEHOLDER.test(s);
+var PATTERNS = [
+  { name: "notion token", re: /\b(?:ntn_|secret_)[A-Za-z0-9]{20,}/g },
+  { name: "github token", re: /\bgh[pousr]_[A-Za-z0-9]{20,}/g },
+  { name: "github fine-grained token", re: /\bgithub_pat_[A-Za-z0-9_]{20,}/g },
+  {
+    name: "anthropic key",
+    re: /\bsk-ant-([A-Za-z0-9_-]{20,})/g,
+    accept: (_m, g) => looksRandom(g[0] ?? "", 3.4)
+  },
+  { name: "aws access key", re: /\bAKIA[0-9A-Z]{16}\b/g, accept: (m) => !/EXAMPLE/.test(m) },
+  { name: "private key block", re: /-----BEGIN [A-Z ]*PRIVATE KEY-----/g },
+  { name: "slack token", re: /\bxox[abprs]-[A-Za-z0-9-]{10,}/g },
+  { name: "stripe key", re: /\b[sr]k_(?:live|test)_[A-Za-z0-9]{16,}/g },
+  { name: "google api key", re: /\bAIza[0-9A-Za-z_-]{35}\b/g },
+  {
+    name: "json web token",
+    re: /\beyJ[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}/g
+  },
+  { name: "npm token", re: /\bnpm_[A-Za-z0-9]{36}\b/g },
+  {
+    name: "bearer token",
+    re: /\bBearer\s+([A-Za-z0-9._~+/-]{24,})=*/g,
+    accept: (_m, g) => !PLACEHOLDER.test(g[0] ?? "") && entropy(g[0] ?? "") >= 3.3
+  },
+  {
+    // key = "long random-looking value" for names that usually hold credentials
+    name: "credential assignment",
+    re: /(?<![A-Za-z])(?:api[_-]?key|secret(?:[_-]?key)?|access[_-]?token|auth[_-]?token|token|passwd|password|private[_-]?key)["']?\s*[:=]\s*["']?([A-Za-z0-9/+_=.-]{20,})/gi,
+    accept: (_m, g) => looksRandom(g[0] ?? "", 3.5)
+  }
 ];
-function findSecrets(text2) {
-  return SECRET_PATTERNS.filter((p) => p.re.test(text2)).map((p) => p.name);
+function fingerprint(match) {
+  return `sha256:${createHash("sha256").update(match).digest("hex").slice(0, 16)}`;
+}
+function scan(text2) {
+  const unescaped = text2.replace(/\\[nrt]/g, " ").replace(/\\"/g, '"');
+  const out = [];
+  const seen = /* @__PURE__ */ new Set();
+  for (const p of PATTERNS) {
+    for (const t2 of text2 === unescaped ? [text2] : [text2, unescaped]) {
+      for (const m of t2.matchAll(new RegExp(p.re.source, p.re.flags))) {
+        const groups = m.slice(1).map((x) => x ?? "");
+        if (p.accept && !p.accept(m[0], groups)) continue;
+        const f = fingerprint(m[0]);
+        if (seen.has(`${p.name}|${f}`)) continue;
+        seen.add(`${p.name}|${f}`);
+        out.push({ rule: p.name, fingerprint: f });
+      }
+    }
+  }
+  return out;
+}
+function scanSecrets(text2, allowed = /* @__PURE__ */ new Set()) {
+  return scan(text2).filter((f) => !allowed.has(f.fingerprint));
+}
+function findSecrets(text2, allowed = /* @__PURE__ */ new Set()) {
+  return [...new Set(scanSecrets(text2, allowed).map((f) => f.rule))];
 }
 function assertNoSecrets(text2, where) {
   const found = findSecrets(text2);
@@ -18430,6 +18491,14 @@ function assertNoSecrets(text2, where) {
       `Refusing to write ${where}: content looks like a secret (${found.join(", ")})`
     );
   }
+}
+function parseAllowlist(text2) {
+  const out = /* @__PURE__ */ new Set();
+  for (const line of text2.split(/\r?\n/)) {
+    const m = /^\s*(sha256:[0-9a-f]{16})\s*(?:#.*)?$/i.exec(line);
+    if (m) out.add(m[1].toLowerCase());
+  }
+  return out;
 }
 
 // plugins/arima/scripts/src/lib/jsonl.ts
@@ -18459,13 +18528,310 @@ async function appendEvent(projectDir, event) {
   return full;
 }
 
-// plugins/arima/scripts/src/lib/atomic-file.ts
-import { mkdirSync as mkdirSync2, renameSync, unlinkSync as unlinkSync2, writeFileSync } from "node:fs";
+// plugins/arima/scripts/src/killswitch.ts
+import { existsSync as existsSync3, mkdirSync as mkdirSync2, readFileSync as readFileSync3, rmSync, writeFileSync } from "node:fs";
 import path5 from "node:path";
+
+// plugins/arima/scripts/src/notion/port.ts
+var import_client = __toESM(require_src(), 1);
+
+// plugins/arima/scripts/src/lib/throttle.ts
+import { setTimeout as sleep2 } from "node:timers/promises";
+var Throttle = class {
+  constructor(minIntervalMs = 334, now = Date.now, wait = (ms) => sleep2(ms)) {
+    this.minIntervalMs = minIntervalMs;
+    this.now = now;
+    this.wait = wait;
+  }
+  minIntervalMs;
+  now;
+  wait;
+  next = 0;
+  async run(fn) {
+    const start = Math.max(this.now(), this.next);
+    this.next = start + this.minIntervalMs;
+    const delay = start - this.now();
+    if (delay > 0) await this.wait(delay);
+    return fn();
+  }
+};
+function isRateLimited(e) {
+  const err = e;
+  return err?.status === 429 || err?.code === "rate_limited";
+}
+function retryAfterMs(e) {
+  const headers = e?.headers;
+  if (headers === void 0 || headers === null) return void 0;
+  const raw = typeof headers.get === "function" ? headers.get("retry-after") : headers["retry-after"];
+  const seconds = Number(raw);
+  return Number.isFinite(seconds) && seconds >= 0 && raw !== null && raw !== void 0 ? seconds * 1e3 : void 0;
+}
+function isTransient(e) {
+  const err = e;
+  const code2 = String(err?.code ?? err?.cause?.code ?? "");
+  if (/^(ECONNRESET|ETIMEDOUT|ENOTFOUND|EAI_AGAIN|ECONNREFUSED|UND_ERR_.*)$/.test(code2))
+    return true;
+  if (typeof err?.status === "number" && [500, 502, 503, 504].includes(err.status)) return true;
+  if (code2 === "notionhq_client_request_timeout") return true;
+  return /fetch failed|socket hang up|network|timed out/i.test(String(err?.message ?? ""));
+}
+async function withReadRetry(fn, o = {}) {
+  const { retries = 2, baseMs = 300, sleep: wait = (ms) => sleep2(ms) } = o;
+  for (let attempt = 0; ; attempt++) {
+    try {
+      return await fn();
+    } catch (e) {
+      if (!isTransient(e) || attempt >= retries) throw e;
+      await wait(baseMs * 2 ** attempt);
+    }
+  }
+}
+async function withBackoff(fn, o = {}) {
+  const { retries = 5, baseMs = 500, maxMs = 3e4, sleep: wait = (ms) => sleep2(ms) } = o;
+  for (let attempt = 0; ; attempt++) {
+    try {
+      return await fn();
+    } catch (e) {
+      if (!isRateLimited(e) || attempt >= retries) throw e;
+      await wait(retryAfterMs(e) ?? Math.min(maxMs, baseMs * 2 ** attempt));
+    }
+  }
+}
+
+// plugins/arima/scripts/src/notion/port.ts
+var PAUSE_TODO_TEXT = "Pause ARIMA";
+var plain = (rt) => (rt ?? []).map((t2) => t2.plain_text ?? "").join("");
+function toDatabaseInfo(raw) {
+  const dataSourceId = raw.data_sources?.[0]?.id;
+  if (dataSourceId === void 0) throw new Error(`database ${raw.id} has no data source`);
+  return { id: raw.id, title: plain(raw.title), dataSourceId };
+}
+function createNotionPort(client, throttle = new Throttle(), backoff = {}) {
+  const call = (fn) => throttle.run(() => withBackoff(fn, backoff));
+  const callRead = (fn) => throttle.run(
+    () => withReadRetry(
+      () => withBackoff(fn, backoff),
+      backoff.sleep ? { sleep: async (ms) => void await backoff.sleep?.(ms) } : {}
+    )
+  );
+  const listChildren = async (pageId) => {
+    const out = [];
+    let cursor;
+    for (; ; ) {
+      const page = await callRead(
+        () => client.blocks.children.list({
+          block_id: pageId,
+          page_size: 100,
+          ...cursor !== void 0 ? { start_cursor: cursor } : {}
+        })
+      );
+      for (const raw of page.results) {
+        if (raw.id === void 0 || raw.type === void 0) continue;
+        if (raw.type === "to_do" && raw.to_do) {
+          out.push({
+            id: raw.id,
+            type: "to_do",
+            text: plain(raw.to_do.rich_text),
+            checked: raw.to_do.checked === true
+          });
+        } else if (raw.type === "paragraph") {
+          out.push({ id: raw.id, type: "paragraph", text: plain(raw.paragraph?.rich_text) });
+        } else if (raw.type === "child_database") {
+          out.push({ id: raw.id, type: "child_database", text: raw.child_database?.title ?? "" });
+        } else {
+          out.push({ id: raw.id, type: raw.type, text: "" });
+        }
+      }
+      if (!page.has_more || page.next_cursor === null) return out;
+      cursor = page.next_cursor;
+    }
+  };
+  const getDataSourceProperties = async (dataSourceId) => {
+    const raw = await callRead(
+      () => client.dataSources.retrieve({ data_source_id: dataSourceId })
+    );
+    const out = {};
+    for (const [name, p] of Object.entries(raw.properties ?? {})) {
+      const info = { id: p.id, name: p.name ?? name, type: p.type };
+      const opts = p.select?.options ?? p.multi_select?.options;
+      if (opts) info.options = opts.map((o) => o.name);
+      if (p.relation?.data_source_id) info.relationTarget = p.relation.data_source_id;
+      out[name] = info;
+    }
+    return out;
+  };
+  return {
+    listChildren,
+    async listTodoBlocks(pageId) {
+      return (await listChildren(pageId)).filter((b) => b.type === "to_do").map((b) => ({ id: b.id, text: b.text, checked: b.checked === true }));
+    },
+    async setTodoChecked(blockId, checked) {
+      await call(() => client.blocks.update({ block_id: blockId, to_do: { checked } }));
+    },
+    async appendTodo(pageId, text2, checked) {
+      const res = await call(
+        () => client.blocks.children.append({
+          block_id: pageId,
+          children: [
+            {
+              object: "block",
+              type: "to_do",
+              to_do: { rich_text: [{ type: "text", text: { content: text2 } }], checked }
+            }
+          ]
+        })
+      );
+      const id = res.results[0]?.id;
+      if (id === void 0) throw new Error("Notion did not return the created block");
+      return id;
+    },
+    async appendParagraph(pageId, text2) {
+      const res = await call(
+        () => client.blocks.children.append({
+          block_id: pageId,
+          children: [
+            {
+              object: "block",
+              type: "paragraph",
+              paragraph: { rich_text: [{ type: "text", text: { content: text2 } }] }
+            }
+          ]
+        })
+      );
+      const id = res.results[0]?.id;
+      if (id === void 0) throw new Error("Notion did not return the created block");
+      return id;
+    },
+    async createDatabase(parentPageId, title, properties) {
+      const raw = await call(
+        () => client.databases.create({
+          parent: { type: "page_id", page_id: parentPageId },
+          title: [{ type: "text", text: { content: title } }],
+          is_inline: true,
+          initial_data_source: { properties }
+        })
+      );
+      return toDatabaseInfo({ ...raw, title: raw.title ?? [{ plain_text: title }] });
+    },
+    async getDatabase(databaseId) {
+      const raw = await callRead(
+        () => client.databases.retrieve({ database_id: databaseId })
+      );
+      return toDatabaseInfo(raw);
+    },
+    getDataSourceProperties,
+    async addProperties(dataSourceId, properties) {
+      const existing = await getDataSourceProperties(dataSourceId);
+      const clash = Object.keys(properties).filter((n) => n in existing);
+      if (clash.length > 0) {
+        throw new Error(`refusing to alter existing Notion properties: ${clash.join(", ")}`);
+      }
+      await call(() => client.dataSources.update({ data_source_id: dataSourceId, properties }));
+    },
+    async queryRows(dataSourceId) {
+      const rows = [];
+      let cursor;
+      for (; ; ) {
+        const page = await callRead(
+          () => client.dataSources.query({
+            data_source_id: dataSourceId,
+            page_size: 100,
+            ...cursor !== void 0 ? { start_cursor: cursor } : {}
+          })
+        );
+        for (const raw of page.results) {
+          if (raw.object !== void 0 && raw.object !== "page") continue;
+          rows.push({
+            pageId: raw.id,
+            lastEdited: raw.last_edited_time,
+            properties: raw.properties ?? {}
+          });
+        }
+        if (!page.has_more || page.next_cursor === null) return rows;
+        cursor = page.next_cursor;
+      }
+    },
+    async getPageLastEdited(pageId) {
+      const raw = await callRead(() => client.pages.retrieve({ page_id: pageId }));
+      return raw.last_edited_time;
+    },
+    async getPage(pageId) {
+      const raw = await callRead(() => client.pages.retrieve({ page_id: pageId }));
+      return { pageId: raw.id, lastEdited: raw.last_edited_time, properties: raw.properties ?? {} };
+    },
+    async createPage(dataSourceId, properties, children) {
+      const first = children?.slice(0, 100);
+      const raw = await call(
+        () => client.pages.create({
+          parent: { type: "data_source_id", data_source_id: dataSourceId },
+          properties,
+          ...first && first.length > 0 ? { children: first } : {}
+        })
+      );
+      let lastEdited = raw.last_edited_time;
+      for (let i = 100; children && i < children.length; i += 100) {
+        const rest = children.slice(i, i + 100);
+        await call(() => client.blocks.children.append({ block_id: raw.id, children: rest }));
+      }
+      if (children && children.length > 100) lastEdited = await this.getPageLastEdited(raw.id);
+      return {
+        pageId: raw.id,
+        lastEdited,
+        ...raw.properties ? { properties: raw.properties } : {}
+      };
+    },
+    async updatePage(pageId, properties) {
+      const raw = await call(() => client.pages.update({ page_id: pageId, properties }));
+      return {
+        lastEdited: raw.last_edited_time,
+        ...raw.properties ? { properties: raw.properties } : {}
+      };
+    },
+    async appendChildren(pageId, blocks) {
+      for (let i = 0; i < blocks.length; i += 100) {
+        const chunk = blocks.slice(i, i + 100);
+        await call(() => client.blocks.children.append({ block_id: pageId, children: chunk }));
+      }
+    }
+  };
+}
+function createNotionPortFromToken(token) {
+  const client = new import_client.Client({ auth: token, retry: false });
+  return createNotionPort(client);
+}
+
+// plugins/arima/scripts/src/killswitch.ts
+function pauseFile(projectDir) {
+  return path5.join(projectDir, ".arima", "PAUSE");
+}
+function setPauseFile(projectDir, on, reason = "paused by a human") {
+  const file = pauseFile(projectDir);
+  if (on) {
+    mkdirSync2(path5.dirname(file), { recursive: true });
+    writeFileSync(file, `${reason}
+${(/* @__PURE__ */ new Date()).toISOString()}
+`, "utf8");
+  } else {
+    rmSync(file, { force: true });
+  }
+}
+async function setNotionSwitch(port, rootPageId, on) {
+  const todos = await port.listTodoBlocks(rootPageId);
+  const sw = todos.find((t2) => t2.text.trim() === PAUSE_TODO_TEXT);
+  if (sw === void 0) {
+    await port.appendTodo(rootPageId, PAUSE_TODO_TEXT, on);
+  } else if (sw.checked !== on) {
+    await port.setTodoChecked(sw.id, on);
+  }
+}
+
+// plugins/arima/scripts/src/lib/atomic-file.ts
+import { mkdirSync as mkdirSync3, renameSync, unlinkSync as unlinkSync2, writeFileSync as writeFileSync2 } from "node:fs";
+import path6 from "node:path";
 function writeFileAtomic(file, content) {
-  mkdirSync2(path5.dirname(file), { recursive: true });
+  mkdirSync3(path6.dirname(file), { recursive: true });
   const tmp = `${file}.${process.pid}.tmp`;
-  writeFileSync(tmp, content, "utf8");
+  writeFileSync2(tmp, content, "utf8");
   for (let attempt = 0; ; attempt++) {
     try {
       renameSync(tmp, file);
@@ -18570,7 +18936,7 @@ var DATABASES = [
       {
         name: "Coverage",
         type: "formula",
-        formula: 'if(prop("Test results").some(current == "Pass"), "Covered", "Not covered")'
+        formula: 'if(contains(prop("Test results"), "Pass"), "Covered", "Not covered")'
       },
       rel("Stories", "stories", "Requirements"),
       rel("Test Cases", "test_cases", "Requirements"),
@@ -18908,316 +19274,15 @@ var DATABASES = [
   }
 ];
 
-// plugins/arima/scripts/src/killswitch.ts
-import { existsSync as existsSync3, mkdirSync as mkdirSync3, readFileSync as readFileSync3, rmSync, writeFileSync as writeFileSync2 } from "node:fs";
-import path6 from "node:path";
-
-// plugins/arima/scripts/src/notion/port.ts
-var import_client = __toESM(require_src(), 1);
-
-// plugins/arima/scripts/src/lib/throttle.ts
-import { setTimeout as sleep2 } from "node:timers/promises";
-var Throttle = class {
-  constructor(minIntervalMs = 334, now = Date.now, wait = (ms) => sleep2(ms)) {
-    this.minIntervalMs = minIntervalMs;
-    this.now = now;
-    this.wait = wait;
-  }
-  minIntervalMs;
-  now;
-  wait;
-  next = 0;
-  async run(fn) {
-    const start = Math.max(this.now(), this.next);
-    this.next = start + this.minIntervalMs;
-    const delay = start - this.now();
-    if (delay > 0) await this.wait(delay);
-    return fn();
-  }
-};
-function isRateLimited(e) {
-  const err = e;
-  return err?.status === 429 || err?.code === "rate_limited";
-}
-function retryAfterMs(e) {
-  const headers = e?.headers;
-  if (headers === void 0 || headers === null) return void 0;
-  const raw = typeof headers.get === "function" ? headers.get("retry-after") : headers["retry-after"];
-  const seconds = Number(raw);
-  return Number.isFinite(seconds) && seconds >= 0 && raw !== null && raw !== void 0 ? seconds * 1e3 : void 0;
-}
-async function withBackoff(fn, o = {}) {
-  const { retries = 5, baseMs = 500, maxMs = 3e4, sleep: wait = (ms) => sleep2(ms) } = o;
-  for (let attempt = 0; ; attempt++) {
-    try {
-      return await fn();
-    } catch (e) {
-      if (!isRateLimited(e) || attempt >= retries) throw e;
-      await wait(retryAfterMs(e) ?? Math.min(maxMs, baseMs * 2 ** attempt));
-    }
-  }
-}
-
-// plugins/arima/scripts/src/notion/port.ts
-var PAUSE_TODO_TEXT = "Pause ARIMA";
-var plain = (rt) => (rt ?? []).map((t2) => t2.plain_text ?? "").join("");
-function toDatabaseInfo(raw) {
-  const dataSourceId = raw.data_sources?.[0]?.id;
-  if (dataSourceId === void 0) throw new Error(`database ${raw.id} has no data source`);
-  return { id: raw.id, title: plain(raw.title), dataSourceId };
-}
-function createNotionPort(client, throttle = new Throttle(), backoff = {}) {
-  const call = (fn) => throttle.run(() => withBackoff(fn, backoff));
-  const listChildren = async (pageId) => {
-    const out = [];
-    let cursor;
-    for (; ; ) {
-      const page = await call(
-        () => client.blocks.children.list({
-          block_id: pageId,
-          page_size: 100,
-          ...cursor !== void 0 ? { start_cursor: cursor } : {}
-        })
-      );
-      for (const raw of page.results) {
-        if (raw.id === void 0 || raw.type === void 0) continue;
-        if (raw.type === "to_do" && raw.to_do) {
-          out.push({
-            id: raw.id,
-            type: "to_do",
-            text: plain(raw.to_do.rich_text),
-            checked: raw.to_do.checked === true
-          });
-        } else if (raw.type === "paragraph") {
-          out.push({ id: raw.id, type: "paragraph", text: plain(raw.paragraph?.rich_text) });
-        } else if (raw.type === "child_database") {
-          out.push({ id: raw.id, type: "child_database", text: raw.child_database?.title ?? "" });
-        } else {
-          out.push({ id: raw.id, type: raw.type, text: "" });
-        }
-      }
-      if (!page.has_more || page.next_cursor === null) return out;
-      cursor = page.next_cursor;
-    }
-  };
-  const getDataSourceProperties = async (dataSourceId) => {
-    const raw = await call(
-      () => client.dataSources.retrieve({ data_source_id: dataSourceId })
-    );
-    const out = {};
-    for (const [name, p] of Object.entries(raw.properties ?? {})) {
-      const info = { id: p.id, name: p.name ?? name, type: p.type };
-      const opts = p.select?.options ?? p.multi_select?.options;
-      if (opts) info.options = opts.map((o) => o.name);
-      if (p.relation?.data_source_id) info.relationTarget = p.relation.data_source_id;
-      out[name] = info;
-    }
-    return out;
-  };
-  return {
-    listChildren,
-    async listTodoBlocks(pageId) {
-      return (await listChildren(pageId)).filter((b) => b.type === "to_do").map((b) => ({ id: b.id, text: b.text, checked: b.checked === true }));
-    },
-    async setTodoChecked(blockId, checked) {
-      await call(() => client.blocks.update({ block_id: blockId, to_do: { checked } }));
-    },
-    async appendTodo(pageId, text2, checked) {
-      const res = await call(
-        () => client.blocks.children.append({
-          block_id: pageId,
-          children: [
-            {
-              object: "block",
-              type: "to_do",
-              to_do: { rich_text: [{ type: "text", text: { content: text2 } }], checked }
-            }
-          ]
-        })
-      );
-      const id = res.results[0]?.id;
-      if (id === void 0) throw new Error("Notion did not return the created block");
-      return id;
-    },
-    async appendParagraph(pageId, text2) {
-      const res = await call(
-        () => client.blocks.children.append({
-          block_id: pageId,
-          children: [
-            {
-              object: "block",
-              type: "paragraph",
-              paragraph: { rich_text: [{ type: "text", text: { content: text2 } }] }
-            }
-          ]
-        })
-      );
-      const id = res.results[0]?.id;
-      if (id === void 0) throw new Error("Notion did not return the created block");
-      return id;
-    },
-    async createDatabase(parentPageId, title, properties) {
-      const raw = await call(
-        () => client.databases.create({
-          parent: { type: "page_id", page_id: parentPageId },
-          title: [{ type: "text", text: { content: title } }],
-          is_inline: true,
-          initial_data_source: { properties }
-        })
-      );
-      return toDatabaseInfo({ ...raw, title: raw.title ?? [{ plain_text: title }] });
-    },
-    async getDatabase(databaseId) {
-      const raw = await call(
-        () => client.databases.retrieve({ database_id: databaseId })
-      );
-      return toDatabaseInfo(raw);
-    },
-    getDataSourceProperties,
-    async addProperties(dataSourceId, properties) {
-      const existing = await getDataSourceProperties(dataSourceId);
-      const clash = Object.keys(properties).filter((n) => n in existing);
-      if (clash.length > 0) {
-        throw new Error(`refusing to alter existing Notion properties: ${clash.join(", ")}`);
-      }
-      await call(() => client.dataSources.update({ data_source_id: dataSourceId, properties }));
-    },
-    async queryRows(dataSourceId) {
-      const rows = [];
-      let cursor;
-      for (; ; ) {
-        const page = await call(
-          () => client.dataSources.query({
-            data_source_id: dataSourceId,
-            page_size: 100,
-            ...cursor !== void 0 ? { start_cursor: cursor } : {}
-          })
-        );
-        for (const raw of page.results) {
-          if (raw.object !== void 0 && raw.object !== "page") continue;
-          rows.push({
-            pageId: raw.id,
-            lastEdited: raw.last_edited_time,
-            properties: raw.properties ?? {}
-          });
-        }
-        if (!page.has_more || page.next_cursor === null) return rows;
-        cursor = page.next_cursor;
-      }
-    },
-    async getPageLastEdited(pageId) {
-      const raw = await call(() => client.pages.retrieve({ page_id: pageId }));
-      return raw.last_edited_time;
-    },
-    async createPage(dataSourceId, properties, children) {
-      const first = children?.slice(0, 100);
-      const raw = await call(
-        () => client.pages.create({
-          parent: { type: "data_source_id", data_source_id: dataSourceId },
-          properties,
-          ...first && first.length > 0 ? { children: first } : {}
-        })
-      );
-      let lastEdited = raw.last_edited_time;
-      for (let i = 100; children && i < children.length; i += 100) {
-        const rest = children.slice(i, i + 100);
-        await call(() => client.blocks.children.append({ block_id: raw.id, children: rest }));
-      }
-      if (children && children.length > 100) lastEdited = await this.getPageLastEdited(raw.id);
-      return { pageId: raw.id, lastEdited };
-    },
-    async updatePage(pageId, properties) {
-      const raw = await call(() => client.pages.update({ page_id: pageId, properties }));
-      return { lastEdited: raw.last_edited_time };
-    },
-    async appendChildren(pageId, blocks) {
-      for (let i = 0; i < blocks.length; i += 100) {
-        const chunk = blocks.slice(i, i + 100);
-        await call(() => client.blocks.children.append({ block_id: pageId, children: chunk }));
-      }
-    }
-  };
-}
-function createNotionPortFromToken(token) {
-  const client = new import_client.Client({ auth: token, retry: false });
-  return createNotionPort(client);
-}
-
-// plugins/arima/scripts/src/killswitch.ts
-function pauseFile(projectDir) {
-  return path6.join(projectDir, ".arima", "PAUSE");
-}
-function setPauseFile(projectDir, on, reason = "paused by a human") {
-  const file = pauseFile(projectDir);
-  if (on) {
-    mkdirSync3(path6.dirname(file), { recursive: true });
-    writeFileSync2(file, `${reason}
-${(/* @__PURE__ */ new Date()).toISOString()}
-`, "utf8");
-  } else {
-    rmSync(file, { force: true });
-  }
-}
-async function setNotionSwitch(port, rootPageId, on) {
-  const todos = await port.listTodoBlocks(rootPageId);
-  const sw = todos.find((t2) => t2.text.trim() === PAUSE_TODO_TEXT);
-  if (sw === void 0) {
-    await port.appendTodo(rootPageId, PAUSE_TODO_TEXT, on);
-  } else if (sw.checked !== on) {
-    await port.setTodoChecked(sw.id, on);
-  }
-}
-
-// plugins/arima/scripts/src/preflight.ts
-var PREFLIGHT_EXIT = {
-  ok: 0,
-  usage: 2,
-  config: 10,
-  locked: 11,
-  killSwitch: 12,
-  budget: 13,
-  env: 14
-};
-var CODE = {
-  config: PREFLIGHT_EXIT.config,
-  kill_switch: PREFLIGHT_EXIT.killSwitch,
-  run_lock: PREFLIGHT_EXIT.locked,
-  budget: PREFLIGHT_EXIT.budget,
-  env: PREFLIGHT_EXIT.env
-};
-
-// plugins/arima/scripts/src/runid.ts
-import { existsSync as existsSync4, mkdirSync as mkdirSync4, readFileSync as readFileSync4 } from "node:fs";
-import path7 from "node:path";
-var pad = (n, w = 2) => String(n).padStart(w, "0");
-async function issueRunId(projectDir, now = /* @__PURE__ */ new Date()) {
-  const day = `${now.getFullYear()}${pad(now.getMonth() + 1)}${pad(now.getDate())}`;
-  const hhmm = `${pad(now.getHours())}${pad(now.getMinutes())}`;
-  const file = path7.join(projectDir, ".arima", "state", "run-seq.json");
-  mkdirSync4(path7.dirname(file), { recursive: true });
-  return withFileLock(`${file}.lock`, () => {
-    let state = { day, last: 0 };
-    if (existsSync4(file)) {
-      const parsed = JSON.parse(readFileSync4(file, "utf8"));
-      if (parsed.day === day && Number.isInteger(parsed.last))
-        state = { day, last: parsed.last };
-    }
-    state.last += 1;
-    writeFileAtomic(file, `${JSON.stringify(state)}
-`);
-    return `r-${day}-${hhmm}-${pad(state.last)}`;
-  });
-}
-
 // plugins/arima/scripts/src/state.ts
 import { execFileSync } from "node:child_process";
 import {
   appendFileSync as appendFileSync2,
   cpSync,
-  existsSync as existsSync5,
-  mkdirSync as mkdirSync5,
+  existsSync as existsSync4,
+  mkdirSync as mkdirSync4,
   mkdtempSync,
-  readFileSync as readFileSync5,
+  readFileSync as readFileSync4,
   realpathSync,
   readdirSync,
   rmSync as rmSync2,
@@ -19225,13 +19290,13 @@ import {
   writeFileSync as writeFileSync3
 } from "node:fs";
 import { tmpdir } from "node:os";
-import path8 from "node:path";
+import path7 from "node:path";
 var StateError = class extends Error {
 };
 var DEFAULT_BRANCH = "arima-state";
 var STATE_GITIGNORE = "*.lock\n*.tmp\nrun.lock\n";
 var STATE_GITATTRIBUTES = "* -text\n";
-var MAX_SCAN_BYTES = 5 * 1024 * 1024;
+var MAX_SCAN_BYTES = 64 * 1024 * 1024;
 function git(cwd, args, input) {
   try {
     return execFileSync("git", args, {
@@ -19265,8 +19330,8 @@ function identityArgs(cwd) {
   return has("user.name") && has("user.email") ? [] : ["-c", "user.name=ARIMA", "-c", "user.email=arima@users.noreply.github.com"];
 }
 function resolve(o) {
-  const repo = path8.resolve(o.projectDir);
-  if (!existsSync5(repo) || !gitOk(repo, ["rev-parse", "--git-dir"])) {
+  const repo = path7.resolve(o.projectDir);
+  if (!existsSync4(repo) || !gitOk(repo, ["rev-parse", "--git-dir"])) {
     throw new StateError(`${repo} is not a git repository`);
   }
   const norm = (p) => {
@@ -19284,20 +19349,20 @@ function resolve(o) {
   }
   const remote = o.remote ?? "origin";
   const hasRemote = git(repo, ["remote"]).split("\n").includes(remote);
-  return { repo, stateDir: path8.join(repo, ".arima"), branch, remote, hasRemote };
+  return { repo, stateDir: path7.join(repo, ".arima"), branch, remote, hasRemote };
 }
 function excludeArima(repo) {
   const rel2 = git(repo, ["rev-parse", "--git-path", "info/exclude"]);
-  const file = path8.resolve(repo, rel2);
-  mkdirSync5(path8.dirname(file), { recursive: true });
-  const current = existsSync5(file) ? readFileSync5(file, "utf8") : "";
+  const file = path7.resolve(repo, rel2);
+  mkdirSync4(path7.dirname(file), { recursive: true });
+  const current = existsSync4(file) ? readFileSync4(file, "utf8") : "";
   if (!current.split(/\r?\n/).includes("/.arima/")) {
     appendFileSync2(file, `${current.endsWith("\n") || current === "" ? "" : "\n"}/.arima/
 `);
   }
 }
-var isWorktree = (stateDir) => existsSync5(path8.join(stateDir, ".git"));
-var isEmptyDir = (dir) => !existsSync5(dir) || readdirSync(dir).length === 0;
+var isWorktree = (stateDir) => existsSync4(path7.join(stateDir, ".git"));
+var isEmptyDir = (dir) => !existsSync4(dir) || readdirSync(dir).length === 0;
 function localBranchExists(r) {
   return gitOk(r.repo, ["show-ref", "--verify", "--quiet", `refs/heads/${r.branch}`]);
 }
@@ -19339,7 +19404,7 @@ function ensureWorktree(r) {
   if (!exists) createOrphanBranch(r);
   let aside;
   if (hasFiles) {
-    aside = mkdtempSync(path8.join(tmpdir(), "arima-state-"));
+    aside = mkdtempSync(path7.join(tmpdir(), "arima-state-"));
     cpSync(r.stateDir, aside, { recursive: true });
     rmSync2(r.stateDir, { recursive: true, force: true });
   }
@@ -19350,7 +19415,7 @@ function ensureWorktree(r) {
     git(r.repo, ["worktree", "add", r.stateDir, r.branch]);
   } finally {
     if (aside !== void 0) {
-      mkdirSync5(r.stateDir, { recursive: true });
+      mkdirSync4(r.stateDir, { recursive: true });
       cpSync(aside, r.stateDir, { recursive: true, force: false, errorOnExist: false });
       rmSync2(aside, { recursive: true, force: true });
     }
@@ -19358,20 +19423,27 @@ function ensureWorktree(r) {
 }
 function ensureStateFiles(r) {
   const write = (name, body) => {
-    const file = path8.join(r.stateDir, name);
-    if (!existsSync5(file)) writeFileSync3(file, body, "utf8");
+    const file = path7.join(r.stateDir, name);
+    if (!existsSync4(file)) writeFileSync3(file, body, "utf8");
   };
   write(".gitignore", STATE_GITIGNORE);
   write(".gitattributes", STATE_GITATTRIBUTES);
 }
 function scanStaged(r) {
   const names = git(r.stateDir, ["diff", "--cached", "--name-only", "--diff-filter=AM"]).split("\n").filter(Boolean);
+  const allowFile = path7.join(r.stateDir, "secret-allowlist.txt");
+  const allowed = existsSync4(allowFile) ? parseAllowlist(readFileSync4(allowFile, "utf8")) : /* @__PURE__ */ new Set();
   const bad2 = [];
   for (const name of names) {
-    const file = path8.join(r.stateDir, name);
+    const file = path7.join(r.stateDir, name);
     try {
-      if (statSync2(file).size > MAX_SCAN_BYTES) continue;
-      if (findSecrets(readFileSync5(file, "utf8")).length > 0) bad2.push(name);
+      if (statSync2(file).size > MAX_SCAN_BYTES) {
+        bad2.push({ file: name, rule: "file too large to scan for secrets" });
+        continue;
+      }
+      for (const f of scanSecrets(readFileSync4(file, "utf8"), allowed)) {
+        bad2.push({ file: name, rule: f.rule, fingerprint: f.fingerprint });
+      }
     } catch {
     }
   }
@@ -19393,13 +19465,18 @@ async function pushState(o) {
   git(r.stateDir, ["add", "-A"]);
   const staged = git(r.stateDir, ["diff", "--cached", "--name-only"]).split("\n").filter(Boolean);
   if (staged.length === 0) {
-    return { committed: false, pushed: false, files: 0 };
+    return { committed: false, pushed: false, files: 0, warnings: [] };
   }
   const bad2 = scanStaged(r);
   if (bad2.length > 0) {
     git(r.stateDir, ["reset", "-q"]);
+    const lines = bad2.map(
+      (p) => `  ${p.file}: ${p.rule}${p.fingerprint ? ` (${p.fingerprint})` : ""}`
+    );
     throw new StateError(
-      `refusing to commit state: ${bad2.length} file(s) look like they contain a secret: ${bad2.join(", ")}`
+      `refusing to commit state: ${bad2.length} finding(s) that look like secrets:
+${lines.join("\n")}
+If you have reviewed a finding and it is NOT a secret, add its fingerprint on its own line to .arima/secret-allowlist.txt and run again.`
     );
   }
   git(r.stateDir, [
@@ -19411,11 +19488,107 @@ async function pushState(o) {
   ]);
   const commit = git(r.stateDir, ["rev-parse", "HEAD"]);
   let pushed = false;
+  const warnings = [];
   if (r.hasRemote) {
+    const privacy = checkRemotePrivacy(r, o);
+    if (privacy.kind === "public" && o.allowPublic !== true) {
+      throw new StateError(
+        `refusing to push state: ${privacy.slug} is a PUBLIC GitHub repository, and the state branch holds your Notion data (requirements, client names, costs). Make the repository private, or set github.allow_public_state: true in arima.yaml if you really mean it.`
+      );
+    }
+    if (privacy.kind === "unknown" && o.allowPublic !== true) {
+      throw new StateError(
+        `refusing to push state: could not check whether ${privacy.slug} is private (is the gh CLI installed and signed in, and is the remote a normal github.com repository?). The state branch holds your Notion data, so ARIMA refuses when it cannot be sure. Sign in with 'gh auth login' and run again, or set github.allow_public_state: true in arima.yaml if you accept the risk.`
+      );
+    }
     git(r.stateDir, ["push", "--set-upstream", r.remote, `${r.branch}:${r.branch}`]);
     pushed = true;
   }
-  return { committed: true, pushed, commit, files: staged.length };
+  return { committed: true, pushed, commit, files: staged.length, warnings };
+}
+var SLUG_PART = /^[A-Za-z0-9_][A-Za-z0-9._-]*$/;
+function githubSlug(url2) {
+  const m = /^(?:https?:\/\/(?:[^@/]+@)?github\.com\/|git@github\.com:|ssh:\/\/git@github\.com\/)([^/\s]+)\/([^/\s]+?)(?:\.git)?\/?$/i.exec(
+    url2.trim()
+  );
+  if (!m) return void 0;
+  const owner = m[1];
+  const repo = m[2];
+  if (!SLUG_PART.test(owner) || !SLUG_PART.test(repo) || repo === "." || repo === "..") {
+    return void 0;
+  }
+  return { owner, repo };
+}
+var MENTIONS_GITHUB = /(^|[/@:])github\.com[/:]/i;
+function checkRemotePrivacy(r, o) {
+  let url2;
+  try {
+    url2 = git(r.repo, ["config", "--get", "remote." + r.remote + ".url"]);
+  } catch {
+    return { kind: "not-github" };
+  }
+  const slug = githubSlug(url2);
+  if (slug === void 0) {
+    return MENTIONS_GITHUB.test(url2) ? { kind: "unknown", slug: "the remote" } : { kind: "not-github" };
+  }
+  const name = `${slug.owner}/${slug.repo}`;
+  let priv;
+  if (o.isPrivate) {
+    priv = o.isPrivate(slug.owner, slug.repo);
+  } else {
+    try {
+      const out = execFileSync(
+        "gh",
+        ["repo", "view", name, "--json", "isPrivate", "--jq", ".isPrivate"],
+        { encoding: "utf8", timeout: 2e4, stdio: ["ignore", "pipe", "ignore"] }
+      ).trim();
+      priv = out === "true" ? true : out === "false" ? false : void 0;
+    } catch {
+      priv = void 0;
+    }
+  }
+  return { kind: priv === void 0 ? "unknown" : priv ? "private" : "public", slug: name };
+}
+
+// plugins/arima/scripts/src/preflight.ts
+var PREFLIGHT_EXIT = {
+  ok: 0,
+  usage: 2,
+  config: 10,
+  locked: 11,
+  killSwitch: 12,
+  budget: 13,
+  env: 14
+};
+var CODE = {
+  config: PREFLIGHT_EXIT.config,
+  kill_switch: PREFLIGHT_EXIT.killSwitch,
+  run_lock: PREFLIGHT_EXIT.locked,
+  budget: PREFLIGHT_EXIT.budget,
+  env: PREFLIGHT_EXIT.env
+};
+
+// plugins/arima/scripts/src/runid.ts
+import { existsSync as existsSync5, mkdirSync as mkdirSync5, readFileSync as readFileSync5 } from "node:fs";
+import path8 from "node:path";
+var pad = (n, w = 2) => String(n).padStart(w, "0");
+async function issueRunId(projectDir, now = /* @__PURE__ */ new Date()) {
+  const day = `${now.getFullYear()}${pad(now.getMonth() + 1)}${pad(now.getDate())}`;
+  const hhmm = `${pad(now.getHours())}${pad(now.getMinutes())}`;
+  const file = path8.join(projectDir, ".arima", "state", "run-seq.json");
+  mkdirSync5(path8.dirname(file), { recursive: true });
+  return withFileLock(`${file}.lock`, () => {
+    let state = { day, last: 0 };
+    if (existsSync5(file)) {
+      const parsed = JSON.parse(readFileSync5(file, "utf8"));
+      if (parsed.day === day && Number.isInteger(parsed.last))
+        state = { day, last: parsed.last };
+    }
+    state.last += 1;
+    writeFileAtomic(file, `${JSON.stringify(state)}
+`);
+    return `r-${day}-${hhmm}-${pad(state.last)}`;
+  });
 }
 
 // plugins/arima/scripts/src/pause.ts
@@ -19442,19 +19615,23 @@ async function setKillSwitch(o) {
     actor: o.actor ?? "human",
     data: { notion, ...o.reason ? { reason: o.reason } : {} }
   });
+  let stateSaved = "skipped";
   if (o.saveState === true) {
     try {
       const runId = await issueRunId(o.projectDir, o.now);
       const s = await pushState({
         projectDir: o.projectDir,
         runId,
+        ...o.allowPublic ? { allowPublic: true } : {},
         ...o.branch ? { branch: o.branch } : {},
         ...o.defaultBranch ? { defaultBranch: o.defaultBranch } : {}
       });
+      stateSaved = s.pushed ? "pushed" : s.committed ? "committed" : "unchanged";
       messages.push(
         s.pushed ? "state pushed" : s.committed ? "state committed locally" : "state unchanged"
       );
     } catch (e) {
+      stateSaved = "failed";
       messages.push(
         `state not saved: ${e instanceof StateError || e instanceof Error ? e.message : String(e)}`
       );
@@ -19466,6 +19643,7 @@ async function setKillSwitch(o) {
     file: existsSync6(pauseFile(o.projectDir)),
     notion,
     stillPausedInNotion,
+    stateSaved,
     messages
   };
 }
@@ -19477,6 +19655,7 @@ function settingsOf(projectDir) {
   if (!existsSync7(file)) return out;
   try {
     const doc = (0, import_yaml3.parse)(readFileSync6(file, "utf8"));
+    if (doc.github?.allow_public_state === true) out.allowPublic = true;
     if (doc.notion?.root_page_id && !doc.notion.root_page_id.startsWith("<"))
       out.rootPageId = doc.notion.root_page_id;
     if (doc.notion?.token_env) out.tokenEnv = doc.notion.token_env;
@@ -19527,15 +19706,22 @@ async function runPauseCli(argv, io, deps = {}) {
     ...v.reason !== void 0 ? { reason: v.reason } : {},
     notion,
     saveState: v["no-state"] !== true,
+    ...s.allowPublic ? { allowPublic: true } : {},
     ...s.branch ? { branch: s.branch } : {},
     ...s.defaultBranch ? { defaultBranch: s.defaultBranch } : {},
     ...deps.now ? { now: deps.now } : {}
   });
   for (const m of r.messages) io.out(`${m}
 `);
+  const unsaved = r.stateSaved === "failed";
+  if (unsaved) {
+    io.err(
+      on ? "The pause is on here, but the state was NOT saved: other machines will not see it until it is pushed. Fix the problem above and run again.\n" : "Resumed here, but the state was NOT saved: the remote state branch may still carry PAUSE, so other machines may stay paused. Fix the problem above and run again.\n"
+    );
+  }
   if (on) {
     io.out("ARIMA is paused: the next run will stop at preflight.\n");
-    return 0;
+    return unsaved ? 1 : 0;
   }
   if (r.stillPausedInNotion) {
     io.err(
@@ -19544,7 +19730,7 @@ async function runPauseCli(argv, io, deps = {}) {
     return 1;
   }
   io.out("ARIMA is resumed.\n");
-  return 0;
+  return unsaved ? 1 : 0;
 }
 
 // plugins/arima/scripts/src/bin/arima-pause.ts
