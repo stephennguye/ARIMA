@@ -578,7 +578,7 @@ packages:
   - id: WP-160
     stage: 1
     track: engine
-    status: ready
+    status: done
     title: Interactive commands respect the run lock (spec 12.4)
     deps:
       - WP-004

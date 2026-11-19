@@ -2,6 +2,8 @@ import { existsSync, readFileSync } from 'node:fs';
 import path from 'node:path';
 import { parseArgs } from 'node:util';
 import { parse } from 'yaml';
+import { guardInteractive } from '../interactive.js';
+import type { WaitOptions } from '../interactive.js';
 import { StateError, pullState, pushState, stateStatus } from '../state.js';
 import type { Io } from './config-cli.js';
 
@@ -31,8 +33,12 @@ function branchesFromConfig(projectDir: string): {
   }
 }
 
-/** Runs `arima-state`; exit 0 ok, 1 failure, 2 usage. */
-export async function runStateCli(argv: string[], io: Io): Promise<number> {
+/** Runs `arima-state`; exit 0 ok, 1 failure, 2 usage, 11 a run holds the lock (pull and push wait up to 60 s). */
+export async function runStateCli(
+  argv: string[],
+  io: Io,
+  deps: { lock?: Pick<WaitOptions, 'maxWaitMs' | 'pollMs' | 'sleep' | 'clock'> } = {},
+): Promise<number> {
   const [command, ...rest] = argv;
   if (command !== 'pull' && command !== 'push' && command !== 'status') {
     io.err(`${USAGE}\n`);
@@ -51,6 +57,18 @@ export async function runStateCli(argv: string[], io: Io): Promise<number> {
   }
   const projectDir = path.resolve(io.cwd, values.project ?? '.');
   const opts = { projectDir, ...branchesFromConfig(projectDir) };
+  if (command === 'pull' || command === 'push') {
+    // Spec 12.4: wait for a live run (exit 11). The run saving its own state names its id with --run-id.
+    const stop = await guardInteractive({
+      projectDir,
+      command: `arima-state ${command}`,
+      holderRunId: values['run-id'],
+      ...(deps.lock ?? {}),
+      err: io.err,
+      note: io.err,
+    });
+    if (stop !== undefined) return stop;
+  }
 
   try {
     if (command === 'pull') {

@@ -16,6 +16,8 @@ import {
 } from '../cost.js';
 import type { Filter, Totals } from '../cost.js';
 import { appendEvent, readEvents } from '../events.js';
+import { guardInteractive } from '../interactive.js';
+import type { WaitOptions } from '../interactive.js';
 import { delivery, describeDelivery } from '../metrics.js';
 import { readLedger } from '../ledger.js';
 import { issueRunId } from '../runid.js';
@@ -45,7 +47,11 @@ function table(title: string, rows: Map<string | number, Totals>): string[] {
 }
 
 /** `arima-cost`: cost per story, role and phase, estimate accuracy, alerts, total cost of ownership; `--sync` queues the Cost log. */
-export async function runCostCli(argv: string[], io: Io): Promise<number> {
+export async function runCostCli(
+  argv: string[],
+  io: Io,
+  deps: { lock?: Pick<WaitOptions, 'maxWaitMs' | 'pollMs' | 'sleep' | 'clock'> } = {},
+): Promise<number> {
   let v: Record<string, string | boolean | undefined>;
   try {
     v = parseArgs({
@@ -104,6 +110,16 @@ export async function runCostCli(argv: string[], io: Io): Promise<number> {
     };
 
     if (v['sync'] === true) {
+      // --sync writes to the outbox: it waits for a live run (spec 12.4, exit 11). The run itself names its id.
+      const stop = await guardInteractive({
+        projectDir,
+        command: 'arima-cost --sync',
+        holderRunId: v['run-id'] as string | undefined,
+        ...(deps.lock ?? {}),
+        err: io.err,
+        note: io.err,
+      });
+      if (stop !== undefined) return stop;
       let runId = v['run-id'] as string | undefined;
       if (runId === undefined) {
         runId = await issueRunId(projectDir);

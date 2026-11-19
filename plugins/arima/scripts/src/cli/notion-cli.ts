@@ -6,6 +6,11 @@ import { writeFileAtomic } from '../lib/atomic-file.js';
 import { describeError, getValidator } from '../lib/schema.js';
 import { bootstrapTemplate } from '../notion/build.js';
 import { mapWorkspace } from '../notion/mapper.js';
+import { guardInteractive } from '../interactive.js';
+import type { WaitOptions } from '../interactive.js';
+import { checkKillSwitch } from '../killswitch.js';
+import type { PauseSwitchPort } from '../notion/port.js';
+import { remotePauseFlag } from '../state.js';
 import { notionMapFile, pullMirror, readNotionMap } from '../notion/mirror.js';
 import { pushOutbox } from '../notion/outbox.js';
 import { createNotionPortFromToken } from '../notion/port.js';
@@ -15,7 +20,7 @@ import type { Io } from './config-cli.js';
 export const USAGE = `Usage: arima-notion bootstrap --parent <page-id> [--token-env NAME]
        arima-notion map [--root <page-id>] [--migrate] [--project <dir>] [--token-env NAME]
        arima-notion pull [--project <dir>]     mirror every mapped database to .arima/mirror/
-       arima-notion push [--project <dir>] [--allow-status-writes]
+       arima-notion push [--project <dir>] [--allow-status-writes] [--as-run <run-id>]
                                                apply .arima/outbox/ to Notion (orchestrator only)
 bootstrap builds the 19 ARIMA databases under a page (run once, to build the public template).
 map finds them under a duplicated template, verifies every property, writes .arima/notion-map.json.
@@ -26,6 +31,10 @@ export interface NotionCliDeps {
   portFactory?: (token: string) => NotionPort;
   env?: NodeJS.ProcessEnv;
   now?: Date;
+  /** Test seams for the run-lock wait (spec 12.4). */
+  lock?: Pick<WaitOptions, 'maxWaitMs' | 'pollMs' | 'sleep' | 'clock'>;
+  /** Overrides the kill-switch check of `push`. */
+  isPaused?: () => Promise<boolean>;
 }
 
 function rootFromConfig(projectDir: string): { root?: string; tokenEnv?: string } {
@@ -63,6 +72,7 @@ export async function runNotionCli(
     project?: string;
     'token-env'?: string;
     'allow-status-writes'?: boolean;
+    'as-run'?: string;
   };
   try {
     values = parseArgs({
@@ -75,6 +85,7 @@ export async function runNotionCli(
         project: { type: 'string' },
         'token-env': { type: 'string' },
         'allow-status-writes': { type: 'boolean' },
+        'as-run': { type: 'string' },
       },
     }).values;
   } catch (e) {
@@ -91,6 +102,35 @@ export async function runNotionCli(
     return 2;
   }
   const port = (deps.portFactory ?? createNotionPortFromToken)(token);
+
+  if (command === 'pull' || command === 'push') {
+    // Spec 12.4: wait for a live run (exit 11); push also refuses while paused (exit 12), pull never does.
+    const stop = await guardInteractive({
+      projectDir,
+      command: `arima-notion ${command}`,
+      holderRunId: values['as-run'],
+      ...(deps.lock ?? {}),
+      err: io.err,
+      note: io.err,
+      ...(command === 'push'
+        ? {
+            isPaused:
+              deps.isPaused ??
+              (async () =>
+                (
+                  await checkKillSwitch(
+                    projectDir,
+                    cfg.root
+                      ? { port: port as unknown as PauseSwitchPort, rootPageId: cfg.root }
+                      : null,
+                    () => Promise.resolve(remotePauseFlag({ projectDir })),
+                  )
+                ).on),
+          }
+        : {}),
+    });
+    if (stop !== undefined) return stop;
+  }
 
   try {
     if (command === 'bootstrap') {

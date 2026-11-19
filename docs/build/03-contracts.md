@@ -142,14 +142,14 @@ Types: `run.start run.end run.paused preflight.fail killswitch.on killswitch.off
 | `arima-run-agent` | 0 pass, 1 failed/error, 2 usage or config, 3 blocked (turn or budget cap), 12 kill switch, 13 budget used up (project, day or story), 75 paused (usage limit) |
 | `arima-init` | 0 ok, 2 usage, 3 brief gaps, 4 map failed, 5 push failed, 6 brief contains a secret, 7 state not saved; 10-14 as preflight (init needs no GitHub token) |
 | `arima-pause` | 0 ok (and state saved), 1 not saved or Notion not cleared, 2 usage |
-| `arima-state` | 0 ok, 1 failure (including refused push), 2 usage |
-| `arima-notion` | 0 ok, 1 verification failed / Notion error / entries rejected, in conflict or deferred, 2 usage |
+| `arima-state` | 0 ok, 1 failure (including refused push), 2 usage, 11 `pull` or `push` while a run holds the lock (after waiting 60 s) |
+| `arima-notion` | 0 ok, 1 verification failed / Notion error / entries rejected, in conflict or deferred, 2 usage, 11 `pull` or `push` while a run holds the lock (after waiting 60 s), 12 `push` while the kill switch is on |
 | `arima-hook` | 0 allow, 2 block, 1 usage |
 | `arima-packet` | 0 ok, 2 usage, 20 packet invalid |
 | `arima-worktree` | 0 ok, 1 git failure or refusal, 2 usage |
 | `arima-publish` | 0 ok, 2 usage, 12 kill switch, 14 GitHub token missing, 31 branch refused (protected path, secret, attribution, scope), 32 push or GitHub refused |
 | `arima-merge` | 0 merged, 2 usage, 12 kill switch, 14 GitHub token missing, 30 refused (each missing condition named), 32 GitHub refused or unreachable |
-| `arima-cost` | 0 ok, 1 ledger or bills file unreadable, 2 usage, 10 config invalid, 11 a run holds the lock (reserved for WP-160) |
+| `arima-cost` | 0 ok, 1 ledger or bills file unreadable, 2 usage, 10 config invalid, 11 `--sync` while a run holds the lock (after waiting 60 s) |
 | `arima-status` | 0 ok, 1 other error, 2 usage, 10 invalid config |
 
 Planned scripts reserve these codes (final values are fixed by the package that builds each; the table is the plan, not yet code):
@@ -157,7 +157,6 @@ Planned scripts reserve these codes (final values are fixed by the package that 
 | Planned script | Codes |
 | --- | --- |
 | `arima-dispatch` (the daily run; Phase 4 and operations) | 0, 1, 2, 4 nothing to do, 5 phase refusal (Phase 3 exit not green), 10-14 as preflight, 75 paused (never 3) |
-| `arima-notion` additions | 11 run lock held after waiting 60 s, 12 paused (push) |
 | `arima-gate` | 0, 2, 40 to 43 criteria unmet, 10-14 |
 | `arima-meeting` | 0, 2, 3, 10-14 |
 | `arima-digest` | 0, 1, 2, 10, 11 |
