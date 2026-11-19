@@ -11,7 +11,7 @@ The dispatcher is the deterministic program behind the daily run (spec 7.2, 14):
 | Entry | Form | Status |
 | --- | --- | --- |
 | Skill | `/arima:run [--dry-run] [--only <item>]` (spec 14); `disable-model-invocation: true`; `allowed-tools` lists the exact `arima-dispatch` path | `[SPEC]` WP-120 |
-| Script | `arima-dispatch --project-dir <dir> [--dry-run] [--only <ID>]` (`scripts/dist/arima-dispatch.mjs`, bundled) | `[SPEC]` WP-120 |
+| Script | `arima-dispatch --project <dir> [--dry-run] [--only <ID>]` (`scripts/dist/arima-dispatch.mjs`, bundled) | `[SPEC]` WP-120 |
 | Scheduler | Only ever calls `/arima:run` (spec 14); **not allowed** until Gate U (D-41, `02-stages.md` section 5) | `[SPEC]` WP-230 |
 
 Arguments: `--dry-run` runs steps 1 to 4 and prints the plan; `--only <ID>` limits step 4 to the next work unit of one item (US-, BUG-, INC-, CR-, MS- ids, spec section 2). Both may combine. Unknown flags: exit 2. An item id that fails the id format of `ids.schema.json`: exit 2.
@@ -84,18 +84,18 @@ Ties within a rank: PO priority, then size S before L, then oldest first (ESTIMA
 
 ## 7. Exit codes
 
-Registry (`03-contracts.md` section 8): `arima-dispatch` 0 ok, 3 nothing to do/blocked, 12/13/14 as preflight (reserved, final values fixed by WP-120).
+Registry (`03-contracts.md` section 8): `arima-dispatch` 0 ok, 4 nothing to do, 12/13/14 as preflight (reserved, final values fixed by WP-120).
 
 | Code | Meaning | Status |
 | --- | --- | --- |
 | 0 | Run completed (units may have failed individually; see digest) or dry-run printed | `[SPEC]` |
 | 2 | Usage error | `[SPEC]` |
-| 3 | Plan empty because everything is blocked, queue full or no Ready work | `[SPEC]` reserved |
+| 4 | Plan empty because everything is blocked, queue full or no Ready work | `[SPEC]` reserved |
 | 10, 11, 12, 13, 14 | Config, locked, kill switch, budget, environment (as `PREFLIGHT_EXIT`) | `[BUILT]` in preflight |
 | 75 | Usage limit reached mid-run; later units skipped | `[PROPOSED]` (mirrors `arima-run-agent`) |
 | 1 | Run completed but sync out or state push failed (outbox kept) | `[PROPOSED]` WP-120 |
 
-Note: code 3 means "blocked by a turn or budget cap" in `arima-run-agent` and "nothing to do" in `arima-dispatch`. The skill must map each per script; see contradiction C-1 in section 12.
+Note: code 3 means "blocked by a turn or budget cap" in `arima-run-agent`; `arima-dispatch` uses 4 for "nothing to do" so the two never clash (resolved, `07-known-gaps.md` G-24).
 
 ## 8. Conditions and rules
 
@@ -125,7 +125,7 @@ Attended-first (D-41): until Gate U every real run is started by the human, who 
 | --- | --- | --- |
 | Preflight fails | Exit with the code; no state change; event logged | 7.2 step 1 |
 | Notion or GitHub unreachable | Continue on local state; deferred outbox | 7.12 |
-| Unit fails validation (report, template, secret scan) | Run result `fail`; output discarded; counts as an attempt | `01-architecture.md` section 7 |
+| Unit fails validation (report, template, secret scan) | Run result `fail`; output discarded; counts as a run failure (`run_failures`), not as an `attempt` | `01-architecture.md` section 7 |
 | Child hangs or exceeds `max_run_minutes` | Process tree killed, result `error` `[BUILT]` (`killtree.test.ts`) | 7.2 |
 | Dispatcher crashes between steps | Lock goes stale after `max_run_minutes + 30`; next run replaces it; ledger rows already written stay | 4.1 |
 | Outbox push fails permanently for an entry | Entry rejected with reason, others continue | `outbox.ts` `[BUILT]` |
@@ -164,4 +164,4 @@ Status: `[SPEC]` for the dispatcher, queue and retry rules; `[BUILT]` for the gu
 | O-5 | Does `--only` bypass rank order and review-queue limit? | Bypass order only; every guard still applies |
 | O-6 | Retry-once: same packet and same budget, or fresh worktree? | Fresh worktree, same packet, budget = remaining cap |
 
-Contradictions found: C-1 exit code 3 has two meanings across scripts (`03-contracts.md` section 8). C-2 WP-120 omits WP-140/108 though spec 7.2 steps 3 and 9 need them. C-3 spec 7.12 says second failure blocks the item, spec 7.1 says third failed review/QA attempt blocks it: they are different counters (run errors versus rework attempts); the dispatcher must keep both, and `03-contracts.md` section 9 mentions only the second. C-4 `03-contracts.md` section 3.1 says `budget_usd <= min(per_run_cap, remaining story budget)` while spec 13.5 says caps may overshoot after spend is added; the dispatcher refuses to start rather than trusting the cap.
+Resolved since writing (see `07-known-gaps.md` G-24, G-25, G-50): C-1, C-2 and C-3 below are fixed in the contracts and work packages. Contradictions found: C-1 exit code 3 has two meanings across scripts (`03-contracts.md` section 8). C-2 WP-120 omits WP-140/108 though spec 7.2 steps 3 and 9 need them. C-3 spec 7.12 says second failure blocks the item, spec 7.1 says third failed review/QA attempt blocks it: they are different counters (run errors versus rework attempts); the dispatcher must keep both, and `03-contracts.md` section 9 mentions only the second. C-4 `03-contracts.md` section 3.1 says `budget_usd <= min(per_run_cap, remaining story budget)` while spec 13.5 says caps may overshoot after spend is added; the dispatcher refuses to start rather than trusting the cap.

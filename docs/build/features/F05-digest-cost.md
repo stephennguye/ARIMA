@@ -10,7 +10,7 @@ Tags: `[BUILT]` exists with tests, `[SPEC]` required by the spec, not built, `[P
 
 | Entry | Form | Status |
 | --- | --- | --- |
-| `/arima:digest [--date YYYY-MM-DD]` | skill over `arima-digest --project-dir <d> [--date D] [--no-push]` | `[SPEC]` WP-130 (spec 14) |
+| `/arima:digest [--date YYYY-MM-DD]` | skill over `arima-digest --project <d> [--date D] [--no-push]` | `[SPEC]` WP-130 (spec 14) |
 | Daily run step 10 | dispatcher calls `buildDigest` then enqueues the page (F02) | `[SPEC]` WP-120/130 |
 | `/arima:cost [--by role\|phase\|item]` | skill over `arima-cost --by role|phase|item [--milestone MS-nn] [--json]` (spec 14 lists `[--by role/phase/item]`) | `[SPEC]` WP-131 |
 | Cost log sync | `arima-cost --sync` enqueues Cost log rows; also called by step 10 | `[SPEC]` WP-131 |

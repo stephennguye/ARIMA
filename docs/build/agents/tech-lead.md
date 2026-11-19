@@ -33,7 +33,7 @@ IF the item is not In Review THEN the dispatcher never creates a review unit. IF
 | Conventions and ADRs | `docs/engineering/conventions.md`, `docs/architecture/adr/` | files exist; ADR status Accepted | Repo file (reviewed) | Standard to review against |
 | OpenAPI spec | `api/openapi.yaml` | parses | Repo file | Contract conformance |
 | Test cases | Mirror `test_cases.json`, `tests/e2e/` | each criterion has one | Untrusted text | Coverage check |
-| Prior findings | `runs/*.report.json` of the same item | schema-valid | Agent output, treated as data | Re-review |
+| Prior findings | Inlined by the packet builder from `runs/*.report.json` of the same item (the role itself never reads `.arima/`) | schema-valid | Agent output, treated as data | Re-review |
 | Preview URL (reading only) | Packet | host is the configured preview host | Untrusted content | Optional spot check |
 
 **Must not be given or read:** any GitHub write token beyond what `gh pr review|comment` needs (target: none in the agent, D-37; `[BUILT]` `mayHoldGithubToken('tech-lead')` is still true, advisory until WP-111), the Notion token, secrets and key files (deny rules), `arima.yaml`, `team.yaml`, `.arima/` other than writing to `outbox/`, the developer's run transcript or notes (separation of duties, see 7).

@@ -163,7 +163,7 @@ Columns: failure; result recorded (event, ledger, exit code); state left behind;
 | Smoke test fails during rollout | stop the rollout, roll back to the previous version, exit 53, event `deploy.production` with result `rolled_back`, an INC P1 is opened, urgent mention; rollback failure is exit 54 and a page to the human |
 | Notion unreachable at deploy time | refuse (R2), exit 50, `hardstop.hit prod_deploy`, nothing deployed, digest alert |
 | Run fails twice, third failed attempt, budget cap | as spec 7.12: Blocked plus Question, ledger row, never a silent retry |
-| Output fails validation (report, template, secret scan) | run result `fail`, output discarded, counts as an attempt |
+| Output fails validation (report, template, secret scan) | run result `fail`, output discarded, counts as a run failure (not an `attempt`) |
 | Postmortem overdue | exit 60 from `check`, digest alert (red health) and a Human task to the PO; never auto-closes the INC |
 | Approval withdrawn after deploy started | the script re-reads R2 between rollout stages and halts; whether it then rolls back is OD-8 |
 | Restore test needs production data | forbidden to copy into staging or prompts (spec 11.3); isolated environment or synthetic dataset (OD-10) |

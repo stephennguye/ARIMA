@@ -6,7 +6,7 @@ Every interface between components. If code crosses a boundary in a way this fil
 
 | Item | Contract | Status |
 | --- | --- | --- |
-| IDs | Prefixes and formats exactly as spec section 2 (REQ, NFR, EP, US, TC, BUG, ADR, RISK, DEC, Q, MS, MTG, CR, INC, LES, G0 to G4, vMAJOR.MINOR.PATCH, r-YYYYMMDD-HHMM-NN). Issued only by `arima-ids next <PREFIX>` (locked counter). Never reused. | `[BUILT]` frozen |
+| IDs | Prefixes and formats exactly as spec section 2 (REQ, NFR, EP, US, TC, BUG, ADR, RISK, DEC, Q, MS, MTG, CR, INC, LES, G0 to G4, vMAJOR.MINOR.PATCH, r-YYYYMMDD-HHMM-NN). Counter-based ids (all prefixes in `ids.ts`: REQ, NFR, EP, US, TC, BUG, ADR, RISK, DEC, Q, MS, CR, INC, LES) are issued only by `arima-ids next <PREFIX>` (locked counter, `state/ids.json`). Never reused. Not counter-based: `G0`..`G4` are fixed; run ids `r-YYYYMMDD-HHMM-NN` come from the run-id issuer (`state/run-seq.json`); `MTG-YYYYMMDD-type` is composed from the meeting date and type by the engine (WP-302); release versions `vMAJOR.MINOR.PATCH` are set by the release script (WP-402). | `[BUILT]` frozen |
 | Roles | `orchestrator, ba, ux, architect, tech-lead, developer, qa, security, devops` (`ROLES` in `roles.ts`; `tech_lead` in YAML via `configKey`). Human roles `sponsor, po, legal` are not agents. | `[BUILT]` frozen |
 | Hard-stop ids | `G0 G1 G2 G3 G4 prod_deploy secrets_change budget_exceeded story_budget notion_delete prod_data_migration new_paid_service licence critical_finding kill_switch missing_credential` (`hardstops.ts`; schema enum; D-42). | `[BUILT]` frozen |
 | Profiles | `solo-lite`, `client-project`, `regulated` (`profiles/*.yaml`, `profile.schema.json`). | `[BUILT]` frozen |
@@ -24,7 +24,8 @@ Every interface between components. If code crosses a boundary in a way this fil
 | `notion-map.json` | `arima-notion map` | no | database and property ids; `notion-map.schema.json` |
 | `runs/<run_id>.json` | `arima-run-agent` | no | Run report: result, subtype, errors, `terminal_reason`, cost; secret-scanned `[BUILT]` |
 | `runs/<run_id>.report.json` | `arima-run-agent` (extracted from the agent's final message) | no | Validated agent report (section 3) `[PROPOSED]` WP-101 |
-| `state/run-seq.json` | `arima-ids`/run id issuer | no | Locked counters |
+| `state/ids.json`, `state/run-seq.json` | `arima-ids` / run id issuer | no | Locked counters |
+| `items/<id>.json` | the state machine only `[PROPOSED]` WP-106 | never | Item counters and blocked-from (section 9a) |
 | `PAUSE` | `arima-pause` only | **never** | Kill switch file; first line is the reason |
 | `run.lock` | preflight `--acquire` | never | One live run at a time; stale after `schedule.max_run_minutes + 30` |
 | `secret-allowlist.txt` | human | never | Fingerprints of reviewed false positives |
@@ -160,6 +161,14 @@ States: `Backlog, Ready, In Progress, In Review, In QA, PO Acceptance, Done, Rel
 | any before Done → Cancelled | po | reason recorded |
 
 Two counters (see section 3.3): `attempt` for review/QA rework, `run_failures` for failed runs. Conditions the code must check, in this order, for **every** transition: (1) actor allowed, (2) guard true, (3) not a hard-stop matter, (4) budget available if the target spends, (5) write the `item.status` event, (6) enqueue the Notion `Status` write with the human flag only from the engine (never from an agent outbox). The attempt counter increments only on the two rework arrows; the third increment moves the item to Blocked and raises a question.
+
+## 9a. Item data model and counters `[PROPOSED]` (WP-106)
+
+An item (story, bug, incident, change request) is the Notion row plus engine-held counters. Notion holds: id, title, `Status`, size, `Attempt`, budget and cost. The engine holds, in `.arima/items/<id>.json` (schema `item.schema.json`, versioned): `attempt` (review/QA rework, mirrors Notion `Attempt`), `run_failures` (failed runs of the current stage; reset when the stage changes), `blocked_from` (previous state), `blocked_reason`, `cost_usd_total`. Neither counter is writable by an agent. The state machine is the only writer of `Status`, `attempt` and `blocked_*`.
+
+## 9b. Reason codes `[PROPOSED]` (frozen by WP-101; one list for ledger notes, events and reports)
+
+`report_invalid`, `report_missing`, `evidence_missing`, `secret_in_output`, `protected_path`, `template_invalid`, `cap_turns`, `cap_budget`, `usage_limit`, `kill_switch`, `budget_exhausted`, `story_budget`, `credential_missing`, `notion_deferred`, `notion_conflict`, `notion_refused`, `state_not_saved`, `merge_refused_ci`, `merge_refused_qa`, `merge_refused_review`, `guard_blocked`, `unknown_kill_switch`. A run result is one of `pass fail error paused blocked`; the reason code explains `fail`, `blocked` and `paused`. New codes are added here first.
 
 ## 10. Agent file format `[BUILT]` for orchestrator, rule for the rest
 

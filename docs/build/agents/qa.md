@@ -137,7 +137,7 @@ WP-101 (report, records), WP-102 (packet; independence rule), WP-103 (report col
 - **S17:** drop `npx playwright` for a pinned local binary run through `npm run e2e`? Blocks WP-211.
 - Who commits and publishes QA's `tests/` (QA has no git)? Propose the host publish script of WP-111 handles a QA worktree. Blocks WP-211.
 - Should QA's working directory exclude product source (independence, section 3 point 4)? Owner and WP-211.
-- Contract 3.3 requires `criteria_map` and `verdict` for `qa`, but in test-write mode there is nothing to pass or fail. Propose: test-write omits `verdict`, and `criteria_map` marks a criterion `met` when a TC covers it. Needs a contract change in WP-101.
+- Contract 3.3 requires `criteria_map` and `verdict` for `qa`, but in test-write mode there is nothing to pass or fail. Propose: test-write omits `verdict`, and `criteria_map` marks a criterion `met` when a TC covers it. Resolved in `03-contracts.md` section 3.3 (G-22). Originally: needs a contract change in WP-101.
 - Id allocation: contract 3.3 and WP-104 name `Q` and `DEC` only; QA needs engine-issued `TC` and `BUG` ids. Extend WP-104.
 - `Bugs.Status` (Open, In progress, Fixed, Verified, Closed) is not in the ticket state machine (contract 9); who owns it? WP-108.
 - Failing tests before development: commit as skipped or expected-fail so CI stays green on the story branch? WP-211 and WP-113.

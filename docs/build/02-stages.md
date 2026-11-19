@@ -81,10 +81,10 @@ Delivered: repo, TypeScript tooling, bundled scripts, CI on Windows and Linux wi
 | Order | Work packages | Notes |
 | --- | --- | --- |
 | 1 | WP-201 | Owner decision recorded as an ADR |
-| 2 | WP-210 developer | Card → fixtures → stub → agent file → smoke → evals (`04-agent-build-protocol.md`) |
+| 2 | WP-210 developer | Card → fixtures → stub → agent file → smoke → evals (`04-agent-build-protocol.md`). **Bootstrap order:** QA's `test-write` mode (WP-211) comes after the developer, so the developer's fixtures, stub and evals use **hand-written test cases** that satisfy the DoR; real QA-written test cases are used from WP-215 on |
 | 3 | WP-211 qa, WP-212 tech-lead | QA writes test cases first, then tests the PR; tech-lead reviews; merge only through `arima-merge` |
 | 3 | WP-213 devops-lite | Staging deploys only; the stub deploy script **refuses production under every condition** (S10) |
-| 4 | WP-214 `/arima:setup`, WP-216 `/arima:plan` | Walking skeleton on staging; milestone of 8-12 points |
+| 4 | WP-214 `/arima:setup`, WP-216 `/arima:plan`, WP-232 `/arima:assign` | Walking skeleton on staging; milestone of 8-12 points; handing a role between agent and human |
 | 5 | WP-215 `/arima:run` (real) | Dispatcher wired to real roles; retry-once, flaky-CI rerun, three-strikes Blocked, review-queue limit |
 | 6 | WP-220 | v0.2 eval |
 
@@ -114,6 +114,7 @@ Unattended or scheduled runs are **not allowed** (D-41) until all of: the Docker
 | 2 | WP-330 gate protocol and `gate-check`, WP-331 baseline freeze | Gate approver check is the placeholder behind `checkApprover()`; the owner may reopen S1 (D-40) |
 | 3 | WP-310 ba, WP-312 architect | Requirements and design; artifacts validated against templates |
 | 3 | WP-311 ux, WP-313 security | Prototype only for ux; security uses a verifier agent that tries to disprove each critical finding |
+| 3 | WP-314 security per-PR scan triage | After WP-313 |
 | 4 | WP-320 phase playbooks, WP-340 RTM | `/arima:discover`, `/arima:design`: cost-and-plan prompt before fan-out, one-unit pilot, sequential fallback |
 | 5 | WP-350 | v0.3 eval |
 
@@ -130,7 +131,7 @@ Unattended or scheduled runs are **not allowed** (D-41) until all of: the Docker
 
 **Goal:** a release, a simulated incident and a change request complete on the eval project.
 
-Packages: WP-401 Phase 5 (RC tag, regression, performance, accessibility, dynamic scan, UAT scripts, go/no-go, G3); WP-402 Release (`/arima:release`, production deploy script that proceeds only on the human's approval on the release page; production-data-migration flag; S10 real path); WP-403 Hypercare, G4, incidents, change requests, recurring jobs, retro and lessons; WP-404 the remaining hard stops (new paid service, licence, critical finding); WP-405 optional OpenTelemetry and the Q-21 decision; WP-410 v0.4 eval.
+Packages: WP-401 Phase 5 (RC tag, regression, performance, accessibility, dynamic scan, UAT scripts, go/no-go, G3); WP-402 Release (`/arima:release`, production deploy script that proceeds only on the human's approval on the release page; production-data-migration flag; S10 real path); WP-403 Hypercare, G4, incidents, change requests, recurring jobs, retro and lessons; WP-404 the remaining hard stops (new paid service, licence, critical finding); WP-405 optional OpenTelemetry and the Q-21 decision (owner decision; may be deferred past v0.4 without blocking WP-410); WP-410 v0.4 eval.
 
 **Conditions:** IF the deploy target is production THEN the deploy script requires the human approval on the release page and refuses otherwise, with no flag to override; IF a critical security finding is open without a human-accepted risk record THEN merge and release are blocked; IF a P1/P2 incident is open THEN it outranks every other work item in the plan of the day.
 

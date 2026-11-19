@@ -115,7 +115,7 @@ Allow-list = `allowedTools('ba')` `[BUILT]`: Read, Glob, Grep, `Write(./docs/spe
 | Instruction found in brief or answer | Quoted in a note, ignored, flagged in `summary` | `pass` | unchanged | Orchestrator, digest |
 | Scope beyond baseline | Proposes a CR (outbox create `change_requests`), no edits | `pass` | unchanged | Sponsor or PO |
 | Report invalid or missing | No `arima-report` block, schema error | `fail`, `report_invalid` | Retry once | Orchestrator |
-| Document fails template validation | Validator lists the missing section | `fail`, attempt + 1 | unchanged | Orchestrator |
+| Document fails template validation | Validator lists the missing section | `fail`, `run_failures` + 1 | unchanged | Orchestrator |
 | Outbox entry rejected (secret, human-only property) | `rejected/` result file | `pass`, rejection logged | unchanged | Orchestrator, event `notion.refused` |
 | Turn or budget cap hit | CLI error result | `blocked` | Blocked + cost question | Digest |
 | Usage limit | CLI paused | `paused` | unchanged | Next run resumes |

@@ -115,7 +115,7 @@ Honest limit (D-36, D-37): until the Docker sandbox exists, the local layers are
 | Audit write fails | Never block the session (audit hooks fail open); log to stderr | `hook-cli.ts` |
 | Guard cannot decide inside a project | Block (exit 2) | ADR-0005 |
 | Agent run errors | Retry once; second failure → item Blocked + question | spec 7.12 |
-| Output fails validation | Run result `fail`; output discarded; rework reason `other`; counts as an attempt | `03-contracts.md` |
+| Output fails validation | Run result `fail`; output discarded; counts as a **run failure** (retry once, second failure Blocks the item), never as a review/QA `attempt` | `03-contracts.md` |
 | Run hits budget or turn cap | Result `blocked`; item Blocked with cost-so-far question | spec 7.12 |
 | Notion transient error | Reads retry (twice); writes never retried blindly; entry deferred to the next push | `throttle.ts`, `port.ts` |
 | Notion permanent refusal (4xx) | Entry rejected with the reason; others continue | `outbox.ts` |

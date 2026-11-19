@@ -189,3 +189,22 @@ describe('feature specs', () => {
     }
   });
 });
+
+describe('stage plan covers the register', () => {
+  it('every package from stage 1 on is named in 02-stages.md', () => {
+    const stages = read('02-stages.md');
+    for (const p of pkgs.filter((x) => x.stage >= 1))
+      expect(stages, `${p.id} missing from 02-stages.md`).toContain(p.id);
+  });
+  it('every stage-2 agent package waits for the owner stack decision (WP-201)', () => {
+    for (const id of ['WP-210', 'WP-211', 'WP-212', 'WP-213'])
+      expect((byId.get(id) as Pkg).deps, id).toContain('WP-201');
+  });
+  it('no acceptance criterion is a bare "recorded", "published" or "accepted"', () => {
+    for (const p of pkgs)
+      for (const a of p.acceptance)
+        expect(a.trim(), `${p.id}: "${a}"`).not.toMatch(
+          /^(ADR accepted|published, reproducible|timed external run)$/,
+        );
+  });
+});
