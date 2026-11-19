@@ -4,7 +4,7 @@ Nov 17, 2026 · @Stephen
 
 ## 0. Document control
 
-This spec is the single source of truth for how ARIMA behaves; the Claude Code build package is generated from it. Version 0.4 is a draft: 42 decisions are recorded, and the 3 remaining questions in section 16 each have a working default.
+This spec is the single source of truth for how ARIMA behaves; the Claude Code build package is generated from it. Version 0.4 is a draft: 49 decisions are recorded, and the 3 remaining questions in section 16 each have a working default.
 
 | Version | Date | Change |
 | --- | --- | --- |
@@ -1154,7 +1154,7 @@ The repo is public under the Apache License 2.0 (D-26), with a `LICENSE` and `NO
 
 ## 16. Open questions and decision log
 
-3 questions are open, each with a working default; 42 decisions are made. Each answered question becomes a decision and updates the sections it names.
+3 questions are open, each with a working default; 49 decisions are made. Each answered question becomes a decision and updates the sections it names.
 
 ### 16.1 Open questions
 
@@ -1188,6 +1188,13 @@ The repo is public under the Apache License 2.0 (D-26), with a `LICENSE` and `NO
 
 | ID | Decision | Date | By |
 | --- | --- | --- | --- |
+| D-49 | No agent role holds any GitHub credential: the host reads PRs and CI into the run packet, posts agents' comments as comment reviews, and does all pushing, merging and tagging | 2026-11-19 | You (principle) |
+| D-48 | No AI attribution anywhere: no `Co-Authored-By` trailer naming Claude and no "Generated with Claude" line in any commit, PR, comment or document, in this repo or in any app repo ARIMA touches | 2026-11-19 | You |
+| D-47 | Hosting is local: staging and production are Docker Compose projects on the owner's machine, CI is GitHub Actions, DevOps works only with GitHub, Git, GitHub Actions and Docker (K3s/K8s later); deploys are local scripts and production only through the approval-gated script | 2026-11-19 | You |
+| D-46 | `/arima:run` covers Phase 4 and operations only; Phases 0 to 3 and Phase 5 run through their playbook commands | 2026-11-19 | You |
+| D-45 | A baseline is frozen when its gate is approved (not before opening the gate) | 2026-11-19 | You |
+| D-44 | The tech-lead approves ADRs and sets their status; the architect drafts them as Proposed | 2026-11-19 | You |
+| D-43 | The owner steers by commands, answers critical-blocker questions and reviews results; agents collaborate without asking permission and decide non-critical matters themselves (assume-and-log); a critical blocker is a hard stop, a missing credential or account, money or a paid service, a legal or privacy matter, an irreversible or production action, or an unresolved contradiction | 2026-11-19 | You |
 | D-42 | The hard stops are one fixed canonical list of ids in code (gates, prod_deploy, secrets_change, budget_exceeded, story_budget, notion_delete, prod_data_migration, new_paid_service, licence, critical_finding, kill_switch, missing_credential); `autonomy.hard_stops` is documentation only and the validator warns when it differs (answers S2) | 2026-11-18 | You |
 | D-41 | No unattended runs for now: attended runs are made stable first; scheduled runs and seat terms (S15) wait | 2026-11-18 | You |
 | D-40 | Gate approver identity (S1) uses a placeholder at first so plugin development is not blocked; the real mechanism comes later | 2026-11-18 | You |

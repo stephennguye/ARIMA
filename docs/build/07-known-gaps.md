@@ -82,3 +82,7 @@ Found while writing the agent cards and feature specs (each writer read the spec
 | G-68 | Docker sandbox on Windows is unspecified; WP-190 sits outside stage exits so Stage 2 relies on advisory controls | Owner / WP-190 (documented honestly in cards) |
 | G-69 | Turn-cap estimates differ between cards and F02 | Noted: cards are authoritative; all are estimates until step 6 of the protocol |
 | G-70 | Authoring modes of QA and the conventions mode of tech-lead have no package | Open: assign when WP-211 and WP-212 start |
+
+## F. Resolved by the owner's answers of 2026-11-19
+
+G-26 (findings: `FND-nnn` ledger plus Bugs and Risks rows), G-28 (staging rebuilt by a host script after merge), G-31 and G-05 and G-30 (no role holds a GitHub token: the host posts comments, D-49), G-32 to G-35 (ux and ba card decisions), G-36 (UAT in Documents rows), G-39 (Phase 3 entry accepted), G-70 (QA and tech-lead authoring modes are WP-315 and WP-219). Remaining items are tracked as acceptance criteria in `work-packages.yaml` and as spec edits in `10-spec-amendments.md`.

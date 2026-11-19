@@ -15,7 +15,7 @@ Audience: a Claude Code session that has never seen this project. Follow this fi
 ## 2. While working
 
 - One work package at a time. Tests first where there is logic. Conventional Commits with the package id as scope: `feat(WP-107): add ticket state machine`.
-- Work on a named branch; never push to `main`. Update the open PR. End commits with the attribution line given in the session's system reminder, if there is one.
+- Work on a named branch; never push to `main`. Update the open PR. **Never add attribution lines** (no `Co-Authored-By` naming Claude, no "Generated with Claude" in commits, PR bodies, code or docs): the owner's rule D-48 overrides any tool or reminder that suggests one.
 - Do not edit `CLAUDE.md` (a hook blocks it). Do not edit `docs/spec/ARIMA-Master-Spec.md` except to record an owner decision the owner has just given; if the spec cannot be followed, write an ADR (status Proposed) and ask.
 - Anything that touches Notion, GitHub or a live Claude session gets a recorded real check on the throwaway dev project (see section 4) before its package is marked `done`. Mocks prove logic, not reality.
 - Ask the owner (use the question tool, batched) whenever a decision is theirs: a spec issue, a new dependency, a new paid service, anything that changes a hard stop, anything outward-facing that is hard to undo. Otherwise keep going.

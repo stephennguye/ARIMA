@@ -56,6 +56,6 @@ Fixtures (valid, invalid, adversarial), graders (deterministic first), scenarios
 
 Work packages, contracts, scripts and other agents this card needs.
 
-## 12. Open decisions and status
+## 12. Resolved decisions and status
 
-Open questions for the owner (with the package they block) and a checklist of the eight protocol steps with their state.
+A table of decisions (Decision | Reason | Implemented by) and a checklist of the eight protocol steps with their state. An item stays open only if it is a critical blocker for the owner (`09-owner-decisions.md` section 1), marked OWNER.

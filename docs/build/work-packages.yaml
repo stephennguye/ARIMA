@@ -165,6 +165,19 @@ packages:
     acceptance:
       - owner approval recorded in spec issues file
       - tag created only after owner confirms
+  - id: WP-013
+    stage: 0
+    track: owner
+    status: owner
+    owner_input: Approve the spec amendments listed in docs/build/10-spec-amendments.md (spec text may only change with the owner's approval)
+    title: Reconcile the master spec text with the owner decisions D-43 to D-49
+    deps:
+      - WP-012
+    spec:
+      - "16.2"
+    acceptance:
+      - every item of docs/build/10-spec-amendments.md is applied to the spec or rejected in writing
+      - build-docs test still passes after the edits
   - id: WP-101
     stage: 1
     track: contracts
@@ -183,6 +196,10 @@ packages:
       - every schema has valid and invalid fixtures
       - events.ts, event.schema.json and 03-contracts.md list the same types
       - exit-code registry test reads 03-contracts.md
+      - init preflight needs no GitHub token and exits 7 when state is not saved
+      - the question record has addressed_to and hard_stop; the report has records[]; the kind list of 03-contracts is the schema enum
+      - new reason codes and events of 03-contracts are in the schemas
+      - the skeleton kind is exempt from criteria_map
     tests:
       - contracts.test.ts
   - id: WP-102
@@ -199,6 +216,8 @@ packages:
       - packet missing a heading is rejected
       - an instruction inside an untrusted block never appears outside a fence
       - QA packet never lists developer notes
+      - the packet allow-lists the hosts WebFetch may reach and the local origins Playwright may open
+      - the packet inlines PR diff, CI results and prior findings so no role needs gh or a token
     tests:
       - packet.test.ts
   - id: WP-103
@@ -236,6 +255,9 @@ packages:
       - init passes the Status opt-in only for entries it created (G-02)
       - role write pattern limited to top-level outbox files (G-07)
       - secret allow-list honoured by outbox and init (G-09)
+      - per-role Notion database allow-list enforced at push (reason database_not_allowed)
+      - ba and ux cannot write Priority; developer and QA propose records through the report, the engine enqueues them
+      - one secret allow-list function used by state push, outbox and init
     tests:
       - outbox-agents.test.ts
   - id: WP-105
@@ -268,6 +290,7 @@ packages:
     acceptance:
       - DoR fails for each missing element with the element named
       - the DoR and DoD page is rendered from the profile (spec 6.2 step 3)
+      - item types spike and tech-task have DoR variants; screens for UI stories are checked from design/screens files
     tests:
       - item.test.ts
   - id: WP-107
@@ -328,6 +351,7 @@ packages:
     acceptance:
       - tested on real temp repos on both OS
       - cleanup after crash
+      - sparse-checkout worktree from a path list (used for QA)
     tests:
       - worktree.test.ts
   - id: WP-111
@@ -345,6 +369,11 @@ packages:
       - role env contains no GitHub token and roles.ts drops push and gh pr create (G-05)
       - push to default branch refused
       - dev project real PR opened
+      - no role has a GitHub token or any gh command; githubTokenScope is none for every role
+      - arima-publish comment posts findings and verdicts as COMMENT reviews, never approvals
+      - non-GitHub remotes are refused unless github.allow_unchecked_remote is true
+      - QA tests under tests/** are committed on the story branch by the publish step
+      - a live GitHub check on the dev repo is part of done
     tests:
       - publish.test.ts
   - id: WP-112
@@ -375,6 +404,7 @@ packages:
       - "10.2"
     acceptance:
       - chore/docs/arima-state exempt but carry run or task id
+      - commit hook, PR validator and CI reject any AI attribution line (D-48)
     tests:
       - commit-hook.test.ts
   - id: WP-120
@@ -404,6 +434,12 @@ packages:
       - status uses the shared three-source kill-switch function (G-04)
       - missing credential recorded as hardstop.hit (G-11)
       - exit 4 for nothing to do (G-24)
+      - TURN_CAPS table is the single source of turn caps (develop S30 M50 L80; cards quote it)
+      - refuses to start Phase 4 until arima-setup check is green (exit 5); /arima:run covers Phase 4 and operations only (D-46)
+      - "autonomy.mode: autonomous no confirmation, assisted one daily plan confirmation, gated per-unit confirmation"
+      - "kill switch mid-run: the guard blocks every tool call once PAUSE exists and the wrapper polls the three sources every 30 s"
+      - after merge.done the host rebuilds staging (arima-env up staging)
+      - the agent file of the orchestrator matches allowedTools and no longer claims init or pause
     tests:
       - dispatch.test.ts
   - id: WP-121
@@ -434,6 +470,7 @@ packages:
       - lists capped at ten
       - health rules applied
       - uses digest template
+      - Reviewed by and Minutes spent are human-only; digest is on demand until Gate U
     tests:
       - digest.test.ts
   - id: WP-131
@@ -470,6 +507,7 @@ packages:
       - an assume-and-log decision creates a DEC record with a veto box in the digest
       - a hard-stop matter is never assumed (test tries)
       - at most 10 questions per digest, highest impact first
+      - "consult routing: a question with addressed_to a role is answered by that role before reaching the owner; only critical blockers (09 section 1) reach the owner"
     tests:
       - questions.test.ts
   - id: WP-140
@@ -519,6 +557,7 @@ packages:
       - scenarios E-S1 to E-S4 run in npm run eval
       - real-agent evals live under evals/agents with their own config and npm run eval:agents, excluded from CI (G-52)
       - harness owns the runner; WP-121 owns the E-S1 stub scenario (G-51)
+      - real-agent evals live in evals/agents/<role>/*.real.eval.ts; the automated judge has a $5 cap
     tests:
       - evals/**
   - id: WP-132
@@ -567,6 +606,7 @@ packages:
       - git commit works inside the container despite the linked-worktree .git pointer (G-14)
       - no push credential or Notion token inside
       - preflight refuses if Docker not running
+      - "clone mode: a per-run local clone instead of a mounted worktree (amends ADR-0006); egress through an allow-list proxy; no Docker socket in any role container"
     tests:
       - sandbox.test.ts
       - live check
@@ -582,6 +622,8 @@ packages:
     acceptance:
       - two real smoke runs (isolated and not) are recorded in docs/process/reviews with token counts
       - the chosen setting is the default in run-agent.ts and a test asserts the flag set
+      - a scrub script for recorded Claude result fixtures
+      - onFailure behaviour of the guard hook verified in the smoke run
     tests:
       - real smoke
   - id: WP-195
@@ -595,20 +637,20 @@ packages:
       - "15.3"
     acceptance:
       - previous-version fixtures load
+      - schema_version is an optional field on ledger rows, events, outbox entries and run reports, with migration
     tests:
       - migration.test.ts
   - id: WP-201
     stage: 2
     track: owner
-    status: owner
-    owner_input: Choose one stack and one staging host for the sample project (S11, Q-04); record as ADR
-    title: Stack and staging host decision
+    status: done
+    title: "Stack and local hosting decision (ADR-0007: reference stack, local Docker Compose environments)"
     deps: []
     spec:
       - "15.3"
     acceptance:
-      - docs/adr/ADR-NNNN names exactly one stack and one staging host, status Accepted
-      - the sample-project fixture builds with that stack in CI
+      - docs/adr/ADR-0007 names exactly one stack and one hosting model and is Accepted
+      - the sample-project fixture builds with that stack in CI (checked in WP-214)
   - id: WP-210
     stage: 2
     track: agent
@@ -631,6 +673,9 @@ packages:
       - eval scenarios pass at the thresholds in the card (the only true failure test)
       - an eval run where a criterion is claimed met without evidence is rejected by the grader
       - no secret, CI or hook edit possible in the forbidden-action battery
+      - push, gh and the GitHub token are removed from the developer role
+      - tests/e2e/** is not writable by the developer
+      - "the developer never runs Docker: the host provides a throwaway test-<unit> Compose project and ARIMA_TEST_DATABASE_URL"
     tests:
       - evals/developer
   - id: WP-211
@@ -649,6 +694,10 @@ packages:
       - never reads developer notes
       - bug filed with evidence
       - severity is proposed by the engine from the bug record and may be changed by the PO (spec 7.7); story rework vs standalone BUG is decided by the rule in the spec
+      - no role has npx; Playwright is a pinned dev dependency run through npm run e2e
+      - QA reads are path-scoped (tests, api, design, package files) and src, .arima, docs and .github are denied
+      - QA proposes TC and BUG records in the report; the engine enqueues them; Bugs.Status is engine-owned
+      - "severity: QA proposes, the engine lowers S1 or S2 to S3 unless the failure reproduced in two runs"
     tests:
       - evals/qa
   - id: WP-212
@@ -667,6 +716,9 @@ packages:
       - findings tagged and evidenced
       - cannot push or merge
       - gh pr review limited to comment, no approve (G-31)
+      - the tech-lead gets a scoped write grant on docs/architecture/adr/** and docs/engineering/conventions.md; an ADR run may change only Status, Decided by and the reason
+      - the review is findings plus verdict in the report; the host posts a COMMENT review; a PR with an attribution line is a major finding
+      - allowedTools takes the work-unit kind as a parameter
     tests:
       - evals/tech-lead
   - id: WP-213
@@ -683,6 +735,9 @@ packages:
     acceptance:
       - production refused under every condition
       - smoke test verified
+      - arima-env (check, status, logs, smoke, up, down for staging and preview; backup, restore-test) exists; it refuses production with exit 70
+      - devops has no Docker daemon access, no gh, no git push; CI is GitHub Actions only (ci.yml and security-weekly.yml)
+      - devops authors docs/ops/env-matrix.md in the env-plan kind
     tests:
       - evals/devops
   - id: WP-218
@@ -700,6 +755,7 @@ packages:
       - a PR in In Review gets a preview whose URL answers a smoke request before the item may move to In QA
       - the URL appears in the QA packet and in the digest next to the PR
       - a preview that does not answer keeps the item In Review and raises a question
+      - preview-<pr> projects use a free port from a configured range; max_previews default 3; teardown on merge or close
     tests:
       - preview.test.ts
       - real check on the dev project
@@ -722,6 +778,7 @@ packages:
       - an e2e skeleton exists under tests/e2e and runs in CI
       - CI runs static analysis, dependency audit and secret scan and fails on a planted finding
       - the developer skeleton kind produces a thin slice through UI, API and database deployed to staging
+      - CI checks are lint, types, tests, build, static analysis, dependency audit, secret scan, licence check, image build and smoke, e2e on an ephemeral stack, changed-line coverage
     tests:
       - evals/phase3
   - id: WP-214
@@ -889,6 +946,7 @@ packages:
     acceptance:
       - every Must requirement has a story
       - stories meet DoR
+      - no Priority written; non-critical gaps become DEC records; release docs cite only stories in the release
     tests:
       - evals/ba
   - id: WP-311
@@ -927,6 +985,9 @@ packages:
     acceptance:
       - every NFR has response and verification method
       - Phase 0 feasibility note and Phase 1 NFR duties covered
+      - the engine labels architecture-impact PRs from review.architecture_paths; the architect reviews via the packet diff
+      - OpenAPI 3.1 is validated with ajv and yaml through arima-validate, which also checks story-to-operation coverage
+      - ADRs are drafted Proposed and the tech-lead sets the status (adr-review kind)
     tests:
       - evals/architect
   - id: WP-313
@@ -946,6 +1007,9 @@ packages:
     acceptance:
       - each critical finding disproof-attempted
       - DPIA draft only for human sign-off
+      - the engine issues FND ids and keeps .arima/findings.json; Bugs rows carry a security label and Risks rows exist for critical and high findings
+      - arima-scan runs secret scan, static analysis, image scan and a baseline dynamic scan against staging or a preview only
+      - a critical finding has a verifier unit (fresh session, finding-only packet) before it can raise critical_finding
     tests:
       - evals/security
   - id: WP-315
@@ -1007,6 +1071,8 @@ packages:
     acceptance:
       - asks once before fan-out
       - one-unit pilot first
+      - the fan-out cost prompt is a DEC at or below 25 percent of remaining budget and a blocking question above it
+      - includes the adr-review step
     tests:
       - evals/playbooks
   - id: WP-330
@@ -1032,11 +1098,13 @@ packages:
     title: Baseline freeze to docs/spec/baseline-Gx and silent-edit refusal
     deps:
       - WP-330
+      - WP-112
     spec:
       - "3.3"
       - "7.9"
     acceptance:
       - edit after freeze needs a CR
+      - the pre-gate snapshot is saved when a gate opens; the baseline is frozen on approval (D-45)
     tests:
       - baseline.test.ts
   - id: WP-336
@@ -1138,6 +1206,7 @@ packages:
       - G3 criteria checked by script
       - runbook and rollback plan exist (devops runbook mode) before G3 opens
       - daily defect triage and cross-browser testing are part of the stabilization loop (spec 6.5 steps 2 and 5)
+      - /arima:stabilize runs Phase 5; arima-release rc tags the release candidate after the rc-freeze verdict
     tests:
       - evals/phase5
   - id: WP-402
@@ -1155,6 +1224,9 @@ packages:
     acceptance:
       - production refused without approval, no override flag
       - the ba author kind produces the user guide and FAQ from approved stories (spec 6.6 step 4)
+      - production deploys only through arima-release deploy <version>, with the approval read live from Notion and bound to version and RC commit, no override flag, health-gated replacement with automatic rollback
+      - the version tag carries the SBOM; rollback is run by the human only
+      - a pre-deploy backup of the production volumes is taken
     tests:
       - deploy.test.ts
   - id: WP-403
@@ -1178,6 +1250,8 @@ packages:
       - hypercare refuses fewer than 7 days (G-41)
       - DORA metrics computed from release and incident events
       - retro meeting held through the meeting engine (the inputs and overrides plumbing are WP-217)
+      - hypercare refuses fewer than 7 days; availability comes from probes recorded each hypercare day and counts host-on periods
+      - deprecation check and tech-debt review are monthly recurring jobs; the restore test uses a staging backup
     tests:
       - evals/ops
   - id: WP-404
@@ -1192,6 +1266,8 @@ packages:
     acceptance:
       - each has a test that tries to break it
       - Risks.Status Accepted is human-only; Releases has a data-migration approval property (G-27)
+      - licence.allowed is a config key; migration paths come from stacks/default-web/stack.yaml
+      - Risks.Status Accepted, Accepted by and Accepted on are human-only; Releases has a Data migration checkbox and a human-only approval
     tests:
       - hardstops-v04.test.ts
   - id: WP-405
@@ -1279,6 +1355,7 @@ packages:
       - WP-012
       - WP-230
       - WP-405
+      - WP-013
     spec:
       - "15.3"
     acceptance:

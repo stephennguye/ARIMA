@@ -79,7 +79,8 @@ describe('work-packages.yaml', () => {
   it('every stage-0 package is done or waits for the owner, and a later-stage package is not done', () => {
     for (const p of pkgs.filter((x) => x.stage === 0))
       expect(['done', 'owner'], p.id).toContain(p.status);
-    for (const p of pkgs.filter((x) => x.stage >= 1)) expect(p.status, p.id).not.toBe('done');
+    for (const p of pkgs.filter((x) => x.stage >= 1 && x.track !== 'owner'))
+      expect(p.status, p.id).not.toBe('done');
   });
 
   it('spec references point at real spec sections', () => {
@@ -161,7 +162,7 @@ describe('agent cards', () => {
     'Budget and cost',
     'Test and eval plan',
     'Dependencies',
-    'Open decisions and status',
+    'Resolved decisions and status',
   ];
   it.each([...ROLES])('%s has a card with the twelve headings, in order', (role) => {
     const file = path.join(BUILD, 'agents', `${role}.md`);

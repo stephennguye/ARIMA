@@ -32,8 +32,10 @@ When two documents disagree, the higher one wins. A lower document that contradi
 | `agents/*.md` | One **card** per agent: capabilities, inputs and input handling, outputs, tools, conditions, failure handling, evals | Before touching that agent |
 | `features/*.md` | One spec per command and engine feature: arguments, preconditions, inputs, outputs, exit codes, side effects | Before touching that feature |
 | `05-verification.md` | Test pyramid, evals, judge checkpoints, definition of done per component type | Before declaring anything done |
+| `09-owner-decisions.md` | The owner's binding answers and working principles (how the owner steers, what counts as a critical blocker, local Docker hosting, ADR approval, no AI attribution) | Before any card or feature decision |
 | `06-decisions-risks.md` | Index of decisions, ADRs, spec issues (with status) and the risk register | When a choice seems open |
 | `08-target-structure-and-workflow.md` | Folder structure before and after cleanup; diagrams of the whole workflow, one story, and the ticket states | To see the big picture |
+| `10-spec-amendments.md` | The master-spec edits the owner decisions require, awaiting approval (WP-013) | Before editing the spec |
 | `07-known-gaps.md` | Contradictions and defects found while writing the cards, each with its disposition | Before trusting a card on a point it flags |
 | `artifact-map.yaml` | Every one of the 58 artifacts mapped to the work packages that produce it, its owner, approver, master and validator | When asking "who builds this document?" |
 | `work-packages.yaml` | The task register: ids, dependencies, acceptance, tests, status. Checked by a test | When choosing the next task |

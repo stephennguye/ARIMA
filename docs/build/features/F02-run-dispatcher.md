@@ -1,20 +1,20 @@
 # F02 Run dispatcher and `/arima:run`
 
-Tags: `[BUILT]` exists with tests, `[SPEC]` required by the spec, not built, `[PROPOSED]` introduced here and frozen by the named package. Spec section numbers refer to `docs/spec/ARIMA-Master-Spec.md`. Values marked ESTIMATE are not in the spec; each has an open decision in section 12.
+Tags: `[BUILT]` exists with tests, `[SPEC]` required by the spec, not built, `[PROPOSED]` introduced here and frozen by the named package. Spec section numbers refer to `docs/spec/ARIMA-Master-Spec.md`. Values marked ESTIMATE are not in the spec; each is decided in section 12 (resolved decisions) and stays an estimate until the card measurements (protocol step 6) replace it.
 
 ## 1. Purpose and spec refs
 
-The dispatcher is the deterministic program behind the daily run (spec 7.2, 14): it performs the ten steps in fixed order, decides in code which work units exist today, builds one run packet per unit, starts one headless run per unit through `arima-run-agent`, validates what comes back, and leaves one ledger row per run. Judgment stays in the role agents; ordering, limits, retries and state changes stay in tested code (`01-architecture.md` section 2). Spec refs: 7.1 (state machine, sizes), 7.2 (daily run), 7.12 (failure handling), 10.3 (review queue limit, D-21), 11.1 (hard stops), 13.5 (budget enforcement), 14 (`/arima:run`), 4.4 and D-41 (attended first). Packages: WP-120 (dispatcher, `--dry-run`, `--only`), WP-109 (queue rules), WP-215 (real roles, retry rules). Status: `[SPEC]`; its building blocks are `[BUILT]` (preflight, kill switch, lock, budget, ledger, events, `runAgent`).
+The dispatcher is the deterministic program behind the daily run (spec 7.2, 14): it performs the ten steps in fixed order, decides in code which work units exist today, builds one run packet per unit, starts one headless run per unit through `arima-run-agent`, validates what comes back, and leaves one ledger row per run. Judgment stays in the role agents; ordering, limits, retries and state changes stay in tested code (`01-architecture.md` section 2). Spec refs: 7.1 (state machine, sizes), 7.2 (daily run), 7.12 (failure handling), 10.3 (review queue limit, D-21), 11.1 (hard stops), 13.5 (budget enforcement), 14 (`/arima:run`), 4.4 and D-41 (attended first). Packages: WP-120 (dispatcher, `--dry-run`, `--only`), WP-109 (queue rules), WP-215 (real roles, retry rules). Status: `[SPEC]`; its building blocks are `[BUILT]` (preflight, kill switch, lock, budget, ledger, events, `runAgent`). **Scope (D-46):** `/arima:run` covers Phase 4 (build) and operations (hypercare days, incidents, change-request stories, recurring jobs) only. Phases 0 to 3 run through their playbook commands (`/arima:init`, `/arima:discover`, `/arima:design`, `/arima:setup`), Phase 5 through `/arima:stabilize`, Phase 6 through `/arima:release` (F06, F07).
 
 ## 2. Command or entry point and arguments
 
 | Entry | Form | Status |
 | --- | --- | --- |
-| Skill | `/arima:run [--dry-run] [--only <item>]` (spec 14); `disable-model-invocation: true`; `allowed-tools` lists the exact `arima-dispatch` path | `[SPEC]` WP-120 |
+| Skill | `/arima:run [--dry-run] [--only <item>]` (spec 14; in `assisted` or `gated` mode the skill shows the plan and asks, then passes `--yes-plan <hash>`); `disable-model-invocation: true`; `allowed-tools` lists the exact `arima-dispatch` path | `[SPEC]` WP-120 |
 | Script | `arima-dispatch --project <dir> [--dry-run] [--only <ID>]` (`scripts/dist/arima-dispatch.mjs`, bundled) | `[SPEC]` WP-120 |
 | Scheduler | Only ever calls `/arima:run` (spec 14); **not allowed** until Gate U (D-41, `02-stages.md` section 5) | `[SPEC]` WP-230 |
 
-Arguments: `--dry-run` runs steps 1 to 4 and prints the plan; `--only <ID>` limits step 4 to the next work unit of one item (US-, BUG-, INC-, CR-, MS- ids, spec section 2). Both may combine. Unknown flags: exit 2. An item id that fails the id format of `ids.schema.json`: exit 2.
+Arguments: `--yes-plan <plan hash>` (required when `autonomy.mode` is `assisted` or `gated`, else exit 2; ignored in `autonomous`); `--dry-run` runs steps 1 to 4 and prints the plan; `--only <ID>` limits step 4 to the next work unit of one item (US-, BUG-, INC-, CR-, MS- ids, spec section 2). Both may combine. Unknown flags: exit 2. An item id that fails the id format of `ids.schema.json`: exit 2.
 
 ## 3. Preconditions (IF/THEN)
 
@@ -25,7 +25,8 @@ Arguments: `--dry-run` runs steps 1 to 4 and prints the plan; `--only <ID>` limi
 | Another live `run.lock` | Refuse, exit 11; a lock older than `max_run_minutes + 30` is replaced | `runlock.ts`; `preflight.test.ts` `[BUILT]` |
 | Project or daily budget at or over cap | Refuse, exit 13 | `budget.ts`; `preflight.test.ts` `[BUILT]` |
 | Required env var missing (Notion token, machine token, `ANTHROPIC_API_KEY` if `runtime.auth: api_key`) | Refuse, exit 14 (names only are reported) | `preflight.ts` `[BUILT]` |
-| Profile not set or `autonomy.mode` not `autonomous` | `[SPEC]` silent on what `assisted`/`gated` change; ESTIMATE: treat `assisted` as "dry-run only, human confirms each unit" (open decision O-1) | NOT ENFORCED YET (WP-120) |
+| `autonomy.mode` is `assisted` or `gated` | `assisted`: the daily plan is confirmed once (`--yes-plan`); `gated`: each work unit is confirmed before it starts. `autonomous` (default): no confirmation (RD-F02-1) | NOT ENFORCED YET (WP-120) |
+| Current phase is not Phase 4 or operations (D-46): a required gate (G2, or G1 for solo-lite) is not Approved, or the Phase 3 exit checklist (`arima-setup check`, F07) is not green, or the release candidate is in Phase 5 | Refuse with exit 5, reason `phase_refused`, naming the command to run (`/arima:setup`, `/arima:stabilize`, `/arima:release`). Ranks 1 and 2 of the plan (incident, broken `main`) still run whenever the phase is Phase 4 or operations | NOT ENFORCED YET (WP-120; `dispatch.test.ts`) |
 | Run started by a scheduler before Gate U | Refuse; there is no scheduler until WP-230 (D-41) | NOT ENFORCED YET (WP-230) |
 
 ## 4. Inputs and input handling (validation, trust)
@@ -33,7 +34,7 @@ Arguments: `--dry-run` runs steps 1 to 4 and prints the plan; `--only <ID>` limi
 | Input | Source | Handling |
 | --- | --- | --- |
 | Config and team | `arima.yaml`, `team.yaml` | Schema-validated by `validateProject`; trusted after validation `[BUILT]` |
-| Board, gates, questions, answers, vetoes, priorities, CRs | `.arima/mirror/*.json` after `arima-notion pull` | **Untrusted data.** Read as values only; text fields are quoted into `untrusted` blocks of a run packet, never into instruction headings (`03-contracts.md` 3.2). A mirror older than the pull of this run is refused (stale mirror, exit 14 PROPOSED) |
+| Board, gates, questions, answers, vetoes, priorities, CRs | `.arima/mirror/*.json` after `arima-notion pull` | **Untrusted data.** Read as values only; text fields are quoted into `untrusted` blocks of a run packet, never into instruction headings (`03-contracts.md` 3.2). If the pull of this run failed, the run is **degraded** (RD-F02-7): the older mirror is used only to finish in-flight items (ranks 1 to 5); no new story starts, no gate opens, no human input is applied, and the digest says so. There is no refusal exit for a stale mirror |
 | CI, PR and alert status | GitHub, monitoring (spec 7.2 step 2) | Data. Pulled only through host scripts that hold the token; agents never receive it (D-37) |
 | Ledger, events | `.arima/ledger.jsonl`, `events.jsonl` | Written only by scripts; read through `readLedger`/`readEvents` (validated) `[BUILT]` |
 | Agent report | `runs/<run_id>.report.json` | Validated against `agent-report.schema.json` (WP-101/103) before any state change; invalid = run `fail`, reason `report_invalid` `[PROPOSED]` |
@@ -44,11 +45,11 @@ Arguments: `--dry-run` runs steps 1 to 4 and prints the plan; `--only <ID>` limi
 
 Code versus model: every step is code except the work performed inside a dispatched run (step 5) and the prose of meetings and digests' judgment sections. No step asks a model to count, order or decide a state transition.
 
-1. **Preflight** (code `[BUILT]`): `runPreflight` with `acquireFor` = a new run id (`r-YYYYMMDD-HHMM-NN`). Stops with exit 10 to 14 as in section 3. Dry-run: checks run, lock **not** acquired (PROPOSED, WP-120).
-2. **Sync in** (code): `arima-notion pull` into the mirror; GitHub status for open PRs, CI, `main` and staging health. Notion or GitHub unreachable: continue on local state, outbox retried next run; but no readable kill-switch source at all means paused (spec 7.12, D-39). Stops: none beyond that.
+1. **Preflight and phase check** (code `[BUILT]` and WP-120): `runPreflight` with `acquireFor` = a new run id (`r-YYYYMMDD-HHMM-NN`). Stops with exit 10 to 14 as in section 3. Then the **phase check** (D-46): derive the phase from the Gates mirror (`PHASE_AFTER_GATE`) and run `arima-setup check`; **STOP exit 5** outside Phase 4 and operations. Until WP-330 exists the check reads the Gates mirror directly; for a profile with no G2 (solo-lite) or a throwaway eval project with no gate rows, a green `arima-setup check` is the entry and the run writes one DEC "entered Phase 4 on the setup checklist" (G-39, RD-F02-8). Dry-run: checks run, lock **not** acquired (PROPOSED, WP-120).
+2. **Sync in** (code): `arima-notion pull` into the mirror; GitHub status for open PRs, CI, `main` and staging health. Notion or GitHub unreachable: continue on local state, outbox retried next run; but no readable kill-switch source at all means paused (spec 7.12, D-39). Stops: none beyond that (a failed pull makes the run degraded, section 4).
 3. **Apply human inputs** (code, WP-140): approvals advance gates (via `checkApprover()`, F04); answers unblock items; vetoes create an undo task and send the story back one step; priority changes reorder; new CRs enter triage. Every transition goes through the state machine (WP-107): actor, guard, hard stop, budget, `item.status` event, engine-owned `Status` write (WP-108). Mirror diffs are compared by property value, not timestamp (spec 3.3).
-4. **Plan the day** (pure code, WP-109): produce an ordered list of work-unit descriptors (`03-contracts.md` 3.1) using the rule table below. Output is deterministic for a given mirror, ledger and clock. Stops: empty plan, then steps 6 to 10 still run, exit 3 only when the plan is empty **and** something blocks it (all items Blocked, queue full, budget).
-5. **Dispatch runs** (code starts, model works): for each unit, in plan order up to parallelism: build the descriptor, render the packet (`arima-packet`, WP-102), create the worktree (WP-110), call `runAgent`. `runAgent` re-checks kill switch and budget before every spawn (`assertMayDispatch`, `hardstop.hit`, exit 12/13) `[BUILT]` and writes exactly one ledger row plus `run.start`/`run.end` (or `run.paused`) `[BUILT]`. Then the report collector validates the report (WP-103); the orchestrator applies the outbox and the state transition. A usage-limit result (exit 75) stops dispatch for the rest of the run: no further units, steps 8 to 10 still run (spec 4.4).
+4. **Plan the day** (pure code, WP-109): produce an ordered list of work-unit descriptors (`03-contracts.md` 3.1) using the rule table below. Output is deterministic for a given mirror, ledger and clock. Stops: empty plan, then steps 6 to 10 still run, and the exit code is 4 only when the plan is empty **and** something blocks it (all items Blocked, queue full, budget); 4 is never used for a run that dispatched anything.
+5. **Dispatch runs** (code starts, model works): for each unit, in plan order up to parallelism: build the descriptor, render the packet (`arima-packet`, WP-102), create the worktree (WP-110), call `runAgent`. `runAgent` re-checks kill switch and budget before every spawn (`assertMayDispatch`, `hardstop.hit`, exit 12/13) `[BUILT]` and writes exactly one ledger row plus `run.start`/`run.end` (or `run.paused`) `[BUILT]`. Then the report collector validates the report (WP-103); the orchestrator applies the outbox and the state transition. A usage-limit result (exit 75) stops dispatch for the rest of the run: no further units, steps 8 to 10 still run (spec 4.4). While a child runs, the wrapper polls the three kill-switch sources every 30 seconds and kills the process tree when the switch turns on (result `paused`, reason `kill_switch`, ledger row written); the guard also blocks every tool call once `.arima/PAUSE` exists (RD-F02-9, F09). Staging is rebuilt from `main` by the host deploy script after each `arima-merge` (D-47, F08); previews are created by the host when a PR reaches In Review (WP-218).
 6. **Hold due meetings** (WP-302, F04): standup is generated from state; other meetings only when their trigger holds.
 7. **Check gates** (WP-330, F04): if a phase's exit criteria are met, build the evidence pack and open the gate. Mechanical checks are scripts.
 8. **Handle hard stops** (code): record `hardstop.hit`, pause dependent items (Blocked + question), continue independent work. A hard-stop id must be one of the canonical ids (`hardstops.ts`, D-42).
@@ -68,7 +69,7 @@ Code versus model: every step is code except the work performed inside a dispatc
 | 7 | Recurring jobs due today | per job table spec 7.10 | Cadence due and not run in the period |
 | 8 | Documentation and tech-debt items | author/develop | Remaining budget and parallelism |
 
-Ties within a rank: PO priority, then size S before L, then oldest first (ESTIMATE, O-2). Parallelism: at most `min(parallelism.max_developer_agents, team developer.count)` developer runs (spec 4.2). WIP limit: spec 7.1 names it but gives no number (ESTIMATE: equal to developer count, O-3).
+Ties within a rank: PO priority, then size S before L, then oldest first (RD-F02-2). Parallelism: at most `min(parallelism.max_developer_agents, team developer.count)` developer runs (spec 4.2). WIP limit: equal to the developer count, at least 1 (RD-F02-3). Ranks 7 and 8 and the hypercare units of operations follow the same dispatch path; recurring-job ownership is in F06 (RD-F06-9).
 
 ## 6. Outputs and side effects
 
@@ -89,11 +90,12 @@ Registry (`03-contracts.md` section 8): `arima-dispatch` 0 ok, 4 nothing to do, 
 | Code | Meaning | Status |
 | --- | --- | --- |
 | 0 | Run completed (units may have failed individually; see digest) or dry-run printed | `[SPEC]` |
-| 2 | Usage error | `[SPEC]` |
+| 1 | Run completed but sync out or state push failed (outbox kept) | `[PROPOSED]` WP-120 |
+| 2 | Usage error (unknown flag, bad item id, `--yes-plan` missing in `assisted` or `gated`) | `[SPEC]` |
 | 4 | Plan empty because everything is blocked, queue full or no Ready work | `[SPEC]` reserved |
 | 10, 11, 12, 13, 14 | Config, locked, kill switch, budget, environment (as `PREFLIGHT_EXIT`) | `[BUILT]` in preflight |
+| 5 | Phase refusal (D-46): not Phase 4 or operations; names the command to run | `[PROPOSED]` WP-120, added to `03-contracts.md` section 8 |
 | 75 | Usage limit reached mid-run; later units skipped | `[PROPOSED]` (mirrors `arima-run-agent`) |
-| 1 | Run completed but sync out or state push failed (outbox kept) | `[PROPOSED]` WP-120 |
 
 Note: code 3 means "blocked by a turn or budget cap" in `arima-run-agent`; `arima-dispatch` uses 4 for "nothing to do" so the two never clash (resolved, `07-known-gaps.md` G-24).
 
@@ -103,9 +105,9 @@ Note: code 3 means "blocked by a turn or budget cap" in `arima-run-agent`; `arim
 | --- | --- | --- |
 | Story not Ready (DoR unmet) | Never assigned | `queue.test.ts` (WP-109), `item.test.ts` (WP-106); NOT ENFORCED YET |
 | `review.max_prs_awaiting_human` (default 5) PRs await approval | No new story starts (rank 6 skipped); ranks 3, 4, 5, 8 continue (spec 10.3, D-21) | `queue.test.ts`; NOT ENFORCED YET |
-| Run errors out (non-zero, no valid report, not a cap or pause) | Retry once with the same packet and `attempt` unchanged; second failure: item Blocked, question raised (spec 7.12) | `report-collector.test.ts` (WP-103), `dispatch.test.ts`; NOT ENFORCED YET |
+| Run errors out (non-zero, no valid report, not a cap or pause) | Counts as a **run failure**: `run_failures + 1`, `attempt` unchanged (`03-contracts.md` 3.3, 9a). First failure: retry once with the same packet in a fresh worktree, budget `min(per_run_cap, remaining story budget)` after the spent cost (RD-F02-6); second failure: item Blocked, question raised (spec 7.12). `run_failures` resets when the state of the item changes | `report-collector.test.ts` (WP-103), `dispatch.test.ts`; NOT ENFORCED YET |
 | CI red on a PR or `main` | Re-run CI once; repeated failure: file a BUG on the test (spec 7.12) | `dispatch.test.ts` (WP-215); NOT ENFORCED YET |
-| Review or QA fails | Item back to In Progress, `attempt + 1`, `is_rework: true`, reason `failed_review`/`failed_qa` | `state-machine.test.ts` (WP-107) |
+| Review or QA fails | Item back to In Progress, `attempt + 1` (the only increments of `attempt`), `is_rework: true`, reason `failed_review`/`failed_qa` | `state-machine.test.ts` (WP-107) |
 | Third failed review or QA attempt | Item Blocked, question raised, escalated in digest | `state-machine.test.ts` |
 | Run hits budget or turn cap (`error_max_turns`, `error_max_budget_usd`) | Result `blocked`; item Blocked with cost so far and options; no retry | `run-agent.test.ts` (outcome mapping `[BUILT]`), `dispatch.test.ts` |
 | Story budget used up (`story_budget`) | No new run for the item; Blocked with cost and options; `hardstop.hit` | `story-budget.test.ts` (WP-105) |
@@ -118,6 +120,30 @@ Note: code 3 means "blocked by a turn or budget cap" in `arima-run-agent`; `arim
 | Unattended invocation | Not supported (D-41) | Gate U |
 
 Attended-first (D-41): until Gate U every real run is started by the human, who is present; there is no scheduler, no wake timer and no catch-up logic in WP-120. Profile differences: solo-lite enforces only G1 and G3 (spec 4.3) so step 7 checks only those; code review uses one reviewer agent (client-project: against tech-lead rules; regulated: two), a count the plan uses to emit one or two review units.
+
+### Turn caps per work-unit kind (authoritative, RD-F02-4)
+
+One table, constant `TURN_CAPS` in the dispatcher work-unit module (WP-120). Every agent card quotes this table and does not keep its own numbers; a card step 6 measurement changes the constant, never the card. Estimates until measured. A kind with no entry is refused at planning (exit 2). `dispatch.test.ts` asserts that every `kind` of `03-contracts.md` 3.1 has an entry. `max_turns` is passed to `arima-run-agent`; hitting it gives result `blocked`, reason `cap_turns`.
+
+| Kind (role) | S | M | L | Notes |
+| --- | --- | --- | --- | --- |
+| `develop` (developer) | 30 | 50 | 80 | story size from the Stories row |
+| `hotfix`, `fix` (developer) | 50 | 50 | 50 | incident or broken `main` |
+| `walking-skeleton` (developer) | 80 | 80 | 80 | one unit, Phase 3 |
+| `test-write` (qa) | 20 | 30 | 40 | |
+| `qa`, `regression`, `perf-test`, `a11y-test` (qa) | 40 | 40 | 40 | |
+| `e2e-skeleton` (qa) | 40 | 40 | 40 | Phase 3 |
+| `review` (tech-lead) | 20 | 30 | 40 | by PR size |
+| `adr-review`, `conventions` (tech-lead) | 25 | 25 | 25 | |
+| `design-qa` (ux) | 25 | 25 | 25 | |
+| `author` (ba, ux, architect, security, devops, qa authoring) | 40 | 40 | 40 | one artifact per unit |
+| `security-scan` (security) | 30 | 30 | 30 | `scan-triage` 25 |
+| `deploy-staging` (devops) | 25 | 25 | 25 | diagnosis of a failed rebuild |
+| `triage` (devops) | 30 | 30 | 30 | incident triage and mitigation proposal |
+| `meeting` participant | 20 | 20 | 20 | per round |
+| `gate-pack` recommendation (orchestrator) | 25 | 25 | 25 | |
+| `retro` (orchestrator) | 30 | 30 | 30 | |
+| `digest` | none | none | none | code only, no model |
 
 ## 9. Failure handling
 
@@ -145,23 +171,30 @@ To write:
 | `state-machine.test.ts` (WP-107) | Third-strike Blocked; every illegal edge refused |
 | `story-budget.test.ts` (WP-105) | Cap formula; `hardstop.hit story_budget` |
 | `evals/stage1/E-S1` (WP-121) | Five stories Backlog to Done with stub agents; invalid stub output fails the run |
-| `evals/run` (WP-215) | Failure-loop scenarios with real agents; one capped live run on the dev project (`D:\GitHub\arima-dev`) before `done` |
+| `dispatch.test.ts` phase cases (WP-120) | Exit 5 before the Phase 3 checklist is green and in Phase 5; allowed after; `--only` does not bypass it; the turn-cap table has an entry for every kind |
+| `evals/agents/run` (WP-215) | Failure-loop scenarios with real agents; one capped live run on the dev project (`D:\GitHub\arima-dev`) before `done` |
 
 ## 11. Dependencies
 
-WP-120 depends on WP-102, 103, 104, 109, 110. **Gap:** step 3 needs WP-140 (apply human inputs) and `Status` writes need WP-108, neither is a listed dependency of WP-120 (contradiction C-2). WP-109 depends on WP-107, 105. WP-215 depends on WP-120, 210, 211, 212. Also used: WP-101 (contracts), WP-111/112 (publish, merge), WP-130 (digest, step 10), WP-330/302 (steps 6, 7). Blocking owner decision for Stage 2: WP-201 (stack and staging host).
+WP-120 depends on WP-102, 103, 104, 108, 109, 110, 140, 141, 131, 160, 191 (the missing dependencies of steps 3 and 9 are closed in `work-packages.yaml`, G-50). WP-109 depends on WP-107, 105. WP-215 depends on WP-120, 210, 211, 212. Also used: WP-101 (contracts), WP-111/112 (publish, merge), WP-130 (digest, step 10), WP-330/302 (steps 6, 7). Blocking owner decision for Stage 2: WP-201 (stack and staging host).
 
-## 12. Status and open decisions
+## 12. Status and resolved decisions
 
-Status: `[SPEC]` for the dispatcher, queue and retry rules; `[BUILT]` for the guards it calls.
+Status: `[SPEC]` for the dispatcher, queue and retry rules; `[BUILT]` for the guards it calls. Decided under `09-owner-decisions.md`:
 
-| ID | Open decision | ESTIMATE / default |
+| Decision | Reason | Implemented by |
 | --- | --- | --- |
-| O-1 | What `autonomy.mode: assisted` and `gated` change for `/arima:run` (spec 4.1 defines the key, not the effect) | `assisted` = dry-run plus confirm per unit |
-| O-2 | Tie-break inside a rank | PO priority, then size, then age |
-| O-3 | WIP limit number (spec 7.1 names it) | = developer count; start with 1 (R-04) |
-| O-4 | Turn cap per run (spec 13.5 requires one, gives no value; `runAgent` needs `maxTurns`) | S 30, M 50, L 80 turns |
-| O-5 | Does `--only` bypass rank order and review-queue limit? | Bypass order only; every guard still applies |
-| O-6 | Retry-once: same packet and same budget, or fresh worktree? | Fresh worktree, same packet, budget = remaining cap |
+| RD-F02-1: `autonomy.mode`: `autonomous` (default) = no confirmation; `assisted` = the daily plan is confirmed once (`--yes-plan <hash>`); `gated` = each unit is confirmed | Spec 4.1 defines the key without an effect; the owner opts in to supervision, the default is steering only (09 section 1) | WP-120 (`dispatch.test.ts`) |
+| RD-F02-2: tie-break inside a rank: PO priority, then size S before L, then oldest | Deterministic, favours quick wins and fairness | WP-109 (`queue.test.ts`) |
+| RD-F02-3: WIP limit = developer count (at least 1; the default team starts with 1) | Spec 7.1 gives no number; matches parallelism | WP-109 |
+| RD-F02-4: turn caps per kind come from the single table in section 8; develop is S 30, M 50, L 80 | One authoritative table; spec 13.5 requires a cap and gives no value | WP-120 (`TURN_CAPS`); cards quote it |
+| RD-F02-5: `--only` bypasses only the rank order; every guard (DoR, review-queue limit, budget, phase check, state machine) still applies | An explicit choice is not a licence to skip safety | WP-120 |
+| RD-F02-6: retry once = same packet, fresh worktree, budget `min(per_run_cap, remaining story budget)`; counts `run_failures`, not `attempt`; second failure = Blocked + question | A dirty worktree can repeat the failure; two counters per `03-contracts.md` 3.3 and 9a (G-25, G-60) | WP-103, WP-215 |
+| RD-F02-7: Notion or GitHub unreachable = degraded run (finish in-flight work, no new story, no gate, no human input applied; the digest says so); the stale-mirror exit 14 is dropped | Spec 7.12 says continue on local state; refusing would stall the whole day | WP-120 |
+| RD-F02-8: until the gate code exists, the phase check reads the Gates mirror; solo-lite and the v0.2 eval project enter Phase 4 on a green `arima-setup check` plus one logged DEC | Resolves G-39 without asking the owner; the owner started the command | WP-120, WP-214 |
+| RD-F02-9: kill switch mid-run: the guard blocks every tool call once `.arima/PAUSE` exists, and the wrapper polls the three sources every 30 s and kills the tree (result `paused`, reason `kill_switch`) | Spec 11.1 "exits immediately" must be true in practice (G-04, F09) | WP-120 (wrapper poll), WP-103 (result mapping); guard check in `hooks.ts` |
+| RD-F02-10: exit 5 = phase refusal (D-46); exit 4 = nothing to do, only when the plan is empty and something blocks it; exit 3 is never returned by `arima-dispatch` | Closes the exit 3 versus 4 wording in step 4 | WP-120; `03-contracts.md` section 8 |
+| RD-F02-11: dispatch always passes the budget as `min(per_run_cap, remaining story budget)` and refuses to start rather than trust the cap after spend (C-4) | Spec 13.5 allows overshoot after spend is added | WP-105, WP-120 |
+| RD-F02-12: `/arima:run` never dispatches Phase 5 or Phase 6 work; Phase 5 is `/arima:stabilize`, Phase 6 is `/arima:release` | D-46 | WP-120, WP-401, WP-402 |
 
-Resolved since writing (see `07-known-gaps.md` G-24, G-25, G-50): C-1, C-2 and C-3 below are fixed in the contracts and work packages. Contradictions found: C-1 exit code 3 has two meanings across scripts (`03-contracts.md` section 8). C-2 WP-120 omits WP-140/108 though spec 7.2 steps 3 and 9 need them. C-3 spec 7.12 says second failure blocks the item, spec 7.1 says third failed review/QA attempt blocks it: they are different counters (run errors versus rework attempts); the dispatcher must keep both, and `03-contracts.md` section 9 mentions only the second. C-4 `03-contracts.md` section 3.1 says `budget_usd <= min(per_run_cap, remaining story budget)` while spec 13.5 says caps may overshoot after spend is added; the dispatcher refuses to start rather than trusting the cap.
+Contradictions C-1 (exit 3 versus 4), C-2 (WP-120 dependencies) and C-3 (two counters) are resolved above and in the contracts (G-24, G-25, G-50). No item is left open; no critical blocker remains for this feature.

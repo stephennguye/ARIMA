@@ -21,6 +21,13 @@ The full decision log is spec section 16.2; the full spec-issue text is `docs/pr
 | D-40 | Gate approver identity is a placeholder first | `checkApprover()` single seam (WP-330) |
 | D-41 | No unattended runs for now; attended runs first | Gate U before the scheduler (WP-230) |
 | D-42 | Hard-stop ids are one canonical list in code | `hardstops.ts` is the registry |
+| D-43 | The owner steers by commands, answers critical-blocker questions only, reviews results; agents collaborate without permission and assume-and-log | `09-owner-decisions.md` |
+| D-44 | The tech-lead approves ADRs | WP-212, WP-312 |
+| D-45 | Baseline frozen on approval | WP-331 |
+| D-46 | `/arima:run` covers Phase 4 and operations only | WP-120 |
+| D-47 | Local Docker hosting; GitHub, Actions, Git, Docker only | WP-213, WP-218, WP-402, ADR-0007 |
+| D-48 | No AI attribution anywhere | WP-113 |
+| D-49 | No agent role holds a GitHub credential; the host posts, pushes, merges, tags | WP-111 |
 
 ## 2. ADRs
 
@@ -48,16 +55,16 @@ New ADRs this plan will need: ticket-state-machine ownership of `Status` (WP-108
 | S7, S8 | Stale wording | S7 **done**; S8 partly (counts) | docs |
 | S9 | ID-in-commit rule collisions | **Accepted** | WP-113 |
 | S10 | Phase 3 exit needs a deploy script | **Accepted**: stub deploy script in v0.2, refuses production | WP-213, WP-402 |
-| S11 | `stacks/` vs D-12 | **Accepted**: owner picks one stack + host for the sample project | WP-201 (owner) |
+| S11 | `stacks/` vs D-12 | **Resolved**: ADR-0007 reference stack and local Docker | WP-201 (done) |
 | S12 | Public Portfolio page vs client confidentiality | **Accepted**: off by default | no portal in Stage 1-3 (D-35) |
 | S13 | Polymorphic items | **Accepted** (ADR-0004) | none |
 | S14 | Solo-lite charter | **Accepted**: brief and budget plan still written | profile checks |
 | S15 | Seat terms for unattended use | **Open**: no unattended runs for now (D-41) | Gate U |
 | S16 | Agents never hold push credentials | **Accepted** (D-37) | WP-111 |
-| S17 | QA role has `npx playwright` | **Open** | WP-211 decides (pinned local binary) |
+| S17 | QA role has `npx playwright` | **Resolved**: no role has npx; Playwright is a pinned dev dependency run via `npm run e2e` | WP-211 |
 | S18 | Dispatch when the kill switch cannot be read | **Accepted**, built (D-39) | none |
 
-## 3b. Open design questions found by the concept review (decide before the stage that needs them)
+## 3b. Design questions found by the concept review: all resolved on 2026-11-19 (see `09-owner-decisions.md`; table kept for the reasoning)
 
 | Question | Needed by | Proposal |
 | --- | --- | --- |

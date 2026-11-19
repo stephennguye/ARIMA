@@ -52,4 +52,4 @@ Steps 1 to 4 need no model call. Step 5 needs none. Steps 6 and 7 are the only o
 9. Budget and cost
 10. Test and eval plan (fixtures, graders, scenarios, thresholds)
 11. Dependencies (work packages, contracts, other agents)
-12. Open decisions and status
+12. Resolved decisions and status (a table of Decision, Reason, Implemented by; an item stays open only if it is a critical blocker for the owner, marked OWNER)

@@ -1,26 +1,30 @@
 # Agent card: orchestrator
 
-> Status: stub (v0 agent file and three skills are `[BUILT]`; the daily run is `[SPEC]`, planned). Work packages: WP-008 (done), then WP-120 (dispatcher), WP-109, WP-130, WP-140, WP-215, WP-301, WP-302, WP-330, WP-403. Spec: 5.1, 5.2, 6.4 steps 1, 8, 9, 7.2 to 7.6, 7.11, 7.12, 11.1, 11.2, 12, 13.5. Contracts: `03-contracts.md` sections 2, 3 (packet, report, records), 4, 5, 6, 7, 8, 9. This card adds the split between code and model judgment, which the spec does not make.
+> Status: stub (v0 agent file and three skills are `[BUILT]`; the daily run is `[SPEC]`, planned); all open decisions resolved (section 12, under `09-owner-decisions.md`). Work packages: WP-008 (done), then WP-120 (dispatcher), WP-109, WP-130, WP-140, WP-215, WP-301, WP-302, WP-330, WP-403. Spec: 5.1, 5.2, 6.4 steps 1, 8, 9, 7.2 to 7.6, 7.11, 7.12, 11.1, 11.2, 12, 13.5. Contracts: `03-contracts.md` sections 2, 3 (packet, report, records), 4, 5, 6, 7, 8, 9. This card adds the split between code and model judgment, which the spec does not make.
 
 ## 1. Identity and purpose
 
-Project manager and scrum master (spec 5.1, 5.2): it keeps plan, state, budget and humans in sync, and is the only role that holds the Notion token (spec 11.3; `mayHoldNotionToken`). Architecturally it is the **engine's host session**: the daily run is mostly scripts that dispatch role agents; the model is used only where a sentence, a ranking or a judgment is needed. *Good* means: every transition goes through the state machine, nothing is spent after a cap, every human edit is kept, and the digest is true to the ledger.
+Project manager and scrum master (spec 5.1, 5.2): it keeps plan, state, budget and humans in sync, and is the only role that holds the Notion token (spec 11.3; `mayHoldNotionToken`). Architecturally it has **two faces**: the **host** (the dispatcher and its scripts, run in the human's session by a command, holding the Notion token, dispatching role agents by script) and the **judgment sub-runs** (short model calls for a sentence or a judgment, with a narrow role list and no token). The model is used only where a sentence, a ranking or a judgment is needed. It works for the owner as a steering aide: the owner triggers commands, answers critical-blocker questions and reviews results (09 section 1). *Good* means: every transition goes through the state machine, nothing is spent after a cap, every human edit is kept, and the digest is true to the ledger.
 
 ## 2. Triggers and preconditions
 
 | Trigger (command or `kind`) | Preconditions (IF ... THEN run) | Hand-off in | Hand-off out | Status |
 | --- | --- | --- | --- | --- |
-| `/arima:init` | brief and config valid; token env set; preflight exits 0 (10-14 otherwise stop) | human brief | Notion pages, ledger row, state pushed | `[BUILT]` |
+| `/arima:init` (human-run script; Phase 0 playbook to G0, WP-321) | brief and config valid; token env set; preflight exits 0 (10-14 otherwise stop) | human brief | Notion pages, ledger row, state pushed; then charter, budget plan, risk register through the playbook | `[BUILT]` init; playbook WP-321 |
 | `/arima:status` | none (read only) | mirror, ledger | report to human | `[BUILT]` |
-| `/arima:pause [--resume]` | none; works while a run holds the lock | human | `PAUSE` file + Notion checkbox | `[BUILT]` |
-| `/arima:run` (daily run, spec 7.2) | preflight 0; lock acquired; kill switch readable (else counts as paused, D-39); attended only until Gate U (D-41) | schedule or human | dispatched units, digest, state commit | `[SPEC]` WP-120, WP-215 |
+| `/arima:pause [--resume]` (human-run script) | none; works while a run holds the lock | human | `PAUSE` file + Notion checkbox | `[BUILT]` |
+| `/arima:discover`, `/arima:design` (playbooks, Phases 1 and 2) | previous gate approved; cost prompt answered once | human command | dispatched role units, meetings, evidence pack | `[SPEC]` WP-320 |
+| `/arima:setup` (playbook, Phase 3) | G2 approved (or owner confirmation in solo-lite, G-39) | human command | pipeline, skeleton, Phase 3 exit checklist | `[SPEC]` WP-214 |
+| `/arima:run` (**Phase 4 build and operations only**, D-46; daily run, spec 7.2) | Phase 3 exit checklist holds (script check, else refuses); preflight 0; lock acquired; kill switch readable (else counts as paused, D-39); attended only until Gate U (D-41) | human command (schedule after Gate U) | dispatched units, digest, state commit; in operations: incidents, CRs, recurring jobs | `[SPEC]` WP-120, WP-215, WP-403 |
+| Phase 5 stabilization command | all Must stories in release scope Done or the PO calls the release | human command | regression to G3 pack | `[SPEC]` WP-401 |
+| `/arima:release` | G3 approved | human command | release record; production deploy waits for the approval on the release page | `[SPEC]` WP-402 |
 | `plan` | backlog has Ready stories | po priorities | milestone of 8-12 points (D-27) | `[SPEC]` WP-216 |
-| `digest` (judgment sub-run) | day's ledger and events closed | ledger, mirror diff | digest page | `[SPEC]` WP-130 |
+| `digest` (judgment sub-run) | day's ledger and events closed | digest input JSON built by code | digest headline and risk commentary | `[SPEC]` WP-130 |
 | `meeting` (judgment sub-run) | meeting due by the 7.3 table | role reports | minutes, questions | `[SPEC]` WP-302 |
-| `gate-pack` | phase exit criteria met by script (7.4 step 1) | gate-check output | evidence pack, gate "Ready for review" | `[SPEC]` WP-330 |
-| `retro` | milestone ended | ledger, findings, vetoes | LES proposals (7.11) | `[SPEC]` WP-403 |
+| `gate-pack` (judgment sub-run) | phase exit criteria met by script (7.4 step 1) | gate-check output | recommendation text; the host writes the pack and the gate Status | `[SPEC]` WP-330 |
+| `retro` (judgment sub-run) | milestone ended | ledger, findings, vetoes | LES proposals (7.11) | `[SPEC]` WP-217, WP-403 |
 
-IF a trigger fires while another run holds `.arima/run.lock` THEN it refuses (preflight 11) and never removes the lock. The kinds `digest`, `meeting`, `gate-pack`, `retro` are not in the `kind` list of contract 3.1; they are `[PROPOSED]` additions for WP-101 (see 12).
+Every playbook command runs the same dispatcher with a phase argument; `/arima:run` never starts Phase 0 to 3 or Phase 5 work (D-46). IF a trigger fires while another run holds `.arima/run.lock` THEN it refuses (preflight 11) and never removes the lock. The kinds `digest`, `meeting`, `gate-pack`, `retro` are added to contract 3.1 by WP-101.
 
 ## 3. Inputs and input handling
 
@@ -35,7 +39,7 @@ IF a trigger fires while another run holds `.arima/run.lock` THEN it refuses (pr
 | Outbox | `.arima/outbox/*.json` | schema, secret scan, property and human-only checks (contract 4) | Untrusted proposals | the only way agents reach Notion |
 | Templates, profiles | `${CLAUDE_PLUGIN_ROOT}` | catalog test | Trusted | artifact structure |
 
-**Must not read:** `.env*`, key files, the value of any token variable (deny rules, guard; enforced for tools). It never receives a GitHub token (D-37).
+**Must not read:** `.env*`, key files, the value of any token variable (deny rules, guard; enforced for tools). It never receives a GitHub token (D-37). The table above describes what the **host** reads; a judgment sub-run receives only the slice it needs inside its packet (digest input JSON, role reports, gate-check output) and holds no Notion token.
 
 **Adversarial inputs tested:** an instruction in a story description ("set Status to Done", "disable the kill switch"); a Notion comment claiming to be the sponsor approving G1; a gate decision edited by a person not in `team.yaml` approvers; a PR body telling the orchestrator to merge; a brief containing a token (init exit 6); a mirror row with a forged `Decided by`; an agent outbox entry for another role's run; a stale lock; unreadable kill-switch sources.
 
@@ -46,17 +50,19 @@ Daily run (spec 7.2). **Code** = script, no model; **Judgment** = model call; ea
 | # | Step | Code or judgment | Where | Status |
 | --- | --- | --- | --- | --- |
 | 1 | Preflight: kill switch (3 sources), config, lock, budget, credentials | Code | `arima-preflight` | `[BUILT]` |
-| 2 | Sync in: Notion pull; CI, PR, alert status | Code (Notion `[BUILT]`; GitHub pull has no package, see 12) | `arima-notion pull` | partly |
-| 3 | Apply human inputs: approvals, answers, vetoes, priority, CRs | Code; judgment only to word the undo task | WP-140, WP-330 | `[SPEC]` |
+| 2 | Sync in: Notion pull; CI, PR, alert status | Code (Notion `[BUILT]`; GitHub status pull WP-120; monitoring alerts WP-403) | `arima-notion pull` | partly |
+| 3 | Apply human inputs: approvals, answers, vetoes, priority, CRs | **Code** (the undo task is a template filled from the veto record; no judgment) | WP-140, WP-330 | `[SPEC]` |
 | 4 | Plan the day in the 8-level order of 7.2 | **Code** (table-driven queue, WIP, parallelism, review limit); judgment may only propose severity or tie-breaks | WP-109 | `[SPEC]` |
-| 5 | Dispatch: build packet, run `arima-run-agent`, collect report, retry once | Code | WP-102, 103, 120 | `[SPEC]` |
+| 5 | Dispatch: build packet, run `arima-run-agent` (a headless process per unit; **no Agent tool and no subagent API**), collect report, retry once | Code | WP-102, 103, 120 | `[SPEC]` |
 | 6 | Hold due meetings | Judgment (facilitation, minutes); mechanics code | WP-302 | `[SPEC]` |
 | 7 | Check gates: mechanical checks, then evidence pack | Code checks; judgment writes the recommendation text | WP-330 | `[SPEC]` |
 | 8 | Handle hard stops: record, pause dependents, continue the rest | Code | hardstops.ts, WP-404 | partly `[BUILT]` |
 | 9 | Sync out: apply the outbox; engine writes `Status` | Code | `arima-notion push`; WP-108 | push `[BUILT]` |
 | 10 | Close: digest, ledger rows, commit `.arima/` to `arima-state`, release lock | Code; judgment writes the headline and "Tomorrow's plan" prose | `arima-state push`; WP-130 | state `[BUILT]` |
 
-Pure code (never delegate to the model): ids (`arima-ids`), transitions and guards (WP-107), budget checks (WP-105), queue order, merge conditions (WP-112), approver check, health colour (12.1 rules), list caps (10 per section), question batching by `topic`, ledger and cost roll-up, mirror/outbox sync, state push. Model judgment (bounded, sub-run with a cap): digest headline and prose, meeting minutes, evidence-pack recommendation, proposed bug severity (7.7, PO may change), human-task wording, retro lesson drafts, explaining a hard stop in plain words.
+Pure code (never delegate to the model): ids (`arima-ids`), transitions and guards (WP-107), budget checks (WP-105), queue order and "Tomorrow's plan" (a rendering of the queue), merge conditions (WP-112), approver check, health colour (12.1 rules), list caps (10 per section), question ranking and batching by `topic`, the undo task text, the Phase 3 exit check, gate mechanical checks and the gate `Ready for review` write, ledger and cost roll-up, mirror/outbox sync, state push, every id, event and ledger row, every Notion write. Model judgment (bounded, sub-run with a cap and no token): digest headline and risk commentary, meeting minutes, evidence-pack recommendation text, proposed severity for regressions and production defects (7.7, PO may change; QA proposes its own), human-task wording, retro lesson drafts, explaining a hard stop in plain words. Any number a judgment run writes is checked against the ledger by a verifier before the digest is published.
+
+**Digest content (spec 12.1, built by code from state, WP-130):** eight sections in order. "Awaiting you" lists only what needs the owner: PRs awaiting approval, gates, milestone reviews, production approvals, CR decisions, and **critical-blocker questions** (09 section 1); ordinary agent questions are settled by consult or assume-and-log and appear under "Decisions made" with a veto box. Questions are grouped by `topic`, at most 10 per digest, ranked by impact (hard stop first, then items blocked, then age); the rest are linked.
 
 Stop-and-ask rules: IF a hard stop appears THEN record `hardstop.hit`, create a question, continue independent work. IF unsure whether something is a hard stop THEN treat it as one (agent file). IF an outbox push reports a conflict THEN the human value wins and the item is flagged in the digest.
 
@@ -75,7 +81,7 @@ Stop-and-ask rules: IF a hard stop appears THEN record `hardstop.hit`, create a 
 
 **Agent report (contract 3.3), for judgment sub-runs `[PROPOSED]`:** fills `status`, `summary`, `artifacts`, `outbox_entries`, `questions`, `decisions`, `assumptions`; `verdict` only for a gate-recommendation run; never `criteria_map`. The orchestrator host session itself (init, status, pause, the code steps) ends with a script exit code and a ledger row, not a report.
 
-**Notion properties it may propose through the outbox** (names from `schema.ts`; relations by ID text where ADR-0004 applies):
+**Notion properties the orchestrator writes** (names from `schema.ts`; relations by ID text where ADR-0004 applies). The **host** writes them (enqueue and push, with the engine flag where `Status` is involved); a judgment sub-run only proposes text properties through its report or top-level outbox files:
 
 | Database | Properties it may set | Never |
 | --- | --- | --- |
@@ -83,7 +89,7 @@ Stop-and-ask rules: IF a hard stop appears THEN record `hardstop.hit`, create a 
 | Milestones | Name, Status, Start, End, Budget USD | none |
 | Digests | Summary, Shipped, Awaiting you, Spend today, Month to date | `Reviewed by` (human) |
 | Cost log | Date, Role, Phase, Runs, token counts, Cost USD, Agent minutes, Rework, Item | none |
-| Gates | Phase, Conditions, Comments, `Status` = `Ready for review` or `Not ready` only | Approvers, Decided by, `Approved`, `Approved with conditions`, `Rejected` |
+| Gates | Phase, Conditions, Comments, `Status` = `Ready for review` or `Not ready` only, written by the host gate code (WP-330) with the engine flag, never from an agent outbox | Approvers, Decided by, `Approved`, `Approved with conditions`, `Rejected` |
 | Meetings, Decisions, Risks, Human tasks, Lessons | all non-human fields | Decisions `Veto`, `Veto reason` |
 | Questions | Question, Asked by, Options, Recommendation, Blocking, Default, Expires, Item, Status = Open/Expired/Withdrawn | `Answer`, `Answered by` |
 | Releases, Change Requests, Incidents, Documents | non-human fields | Releases `Prod deploy approval`, `Prod deploy approver`; CRs `Decision`, `Approver` |
@@ -92,13 +98,18 @@ Every write also carries the audit property `Last written by run`, filled by enq
 
 ## 6. Tools and permissions
 
-Allow-list = `allowedTools('orchestrator')` `[BUILT]`: Read, Glob, Grep; Write and Edit under `./.arima/**` and `./docs/spec/**`; read-only git; read-only `gh` (pr view/list/diff/checks, run list/view); `node` on `arima-config`, `arima-preflight`, `arima-ids`, `arima-notion`, `arima-state`, `arima-status`; WebFetch. **Not granted by design:** `arima-pause`, `arima-init` (skills run them in the human's session), any merge, any push, any Notion MCP (denied `mcp__*notion*`, ADR-0003), `npm`. **To add by their packages:** `arima-run-agent`/`arima-dispatch` (WP-120), `arima-merge` and `arima-publish` are host scripts, not role tools (WP-111, WP-112).
+There are two contexts, and the table of permissions differs.
+
+1. **Host (the dispatcher and the human-run skills).** Scripts run in the human's session or by the dispatcher process: `arima-dispatch`, `arima-run-agent`, `arima-packet`, `arima-notion`, `arima-state`, `arima-ids`, `arima-preflight`, `arima-gate`, `arima-status`; `arima-init` and `arima-pause` are **human-run scripts**, started only by their skills and never available to a model run (so the agent file no longer claims them). Skills list their exact script paths in `allowed-tools`. `arima-merge`, `arima-publish` and the deploy scripts are host scripts, not role tools (WP-111, WP-112, WP-402). The Notion token lives only in this context.
+2. **Judgment sub-run** = `allowedTools('orchestrator')` after WP-103/WP-120: `Read`, `Glob`, `Grep`; `Write` and `Edit` on top-level `./.arima/outbox/*.json` and on `./docs/spec/**` (charter, budget plan, risk register, minutes; baseline folders are protected by WP-331). **Removed:** `Write`/`Edit(./.arima/**)`, git and `gh` (the packet carries CI and PR status), every `arima-*` script (the host runs them), `WebFetch`. No Notion token in its environment. Not granted ever: any merge, push, Notion MCP (ADR-0003), `npm`, `npx`.
+
+The agent file front matter `tools` lists the same tool families as `allowedTools('orchestrator')` (Read, Write, Edit, Glob, Grep); `agents.test.ts` asserts equality of the families, and the body lists the exact path scopes, which a test compares with `roles.ts` (WP-120).
 
 | Forbidden action | Control | Enforced? |
 | --- | --- | --- |
-| Write product code | no Write outside `.arima/`, `docs/spec/` | Enforced for file tools; advisory via scripts (R-01) |
+| Write product code | no Write outside outbox and `docs/spec/` | Enforced for file tools; advisory via scripts (R-01), and a judgment sub-run has no script |
 | Edit `PAUSE`, `run.lock` | deny rules | Enforced for file tools |
-| Edit `events.jsonl`, `ledger.jsonl`, `mirror/` by hand | none: `Write(./.arima/**)` covers them | **Not enforced**; guard rule or narrower allow-list proposed under WP-104 |
+| Edit `events.jsonl`, `ledger.jsonl`, `mirror/` by hand | the role list no longer covers `.arima/**` except the outbox; the guard protects them for every role | Enforced after WP-103 (G-06) |
 | Approve a gate or write a human-only field | outbox refuses human-only properties and values | Enforced `[BUILT]` |
 | Merge or push | role list has none; guard blocks; one merge script | Enforced; credential removal WP-111 |
 | Delete in Notion | no tool, no op | Enforced `[BUILT]` |
@@ -127,11 +138,13 @@ Allow-list = `allowedTools('orchestrator')` `[BUILT]`: Read, Glob, Grep; Write a
 | Sub-run hits cap | CLI error result | `blocked` | none | digest |
 | Usage limit | CLI paused | `paused` (exit 75) | unchanged | next run resumes |
 | Missing credential | env check | hard stop `missing_credential` | affected items Blocked | responsible human |
-| Lock stale (over `max_run_minutes` + 30) | preflight sees old lock | event; human decides | unchanged | human |
+| Lock stale (over `max_run_minutes` + 30) | preflight sees old lock | event; the status command prints the exact release command for the owner to run (a command, not a question) | unchanged | human via status |
+
+**Escalation rule (09 section 1):** the orchestrator asks the owner only for a critical blocker: a hard stop, a missing credential or account, money or a paid service, a legal or privacy matter, an irreversible or production action, or two requirements that contradict and could not be reconciled after one consult round. Everything else is a consult between roles or an assume-and-log DEC shown in the digest with a veto box. Repeated failure of one run is Blocked plus a consult, not an owner question, unless it falls in the list above.
 
 ## 9. Budget and cost
 
-Orchestrator overhead is logged as `role: orchestrator`, `item: none` (spec 13.2). The code steps cost nothing in model tokens. Judgment sub-runs: **estimate** $0.10 to $0.40 per daily run (digest, minutes, gate text), turn cap 30 per sub-run, run cap `min(per_run_cap, remaining daily cap)`; the measured cost floor of one headless run is $0.15 to $0.25 (R-04). Meetings carry their own cap (7.3). Measured values go in the results table after protocol step 6.
+Orchestrator overhead is logged as `role: orchestrator`, `item: none` (spec 13.2). The code steps cost nothing in model tokens. Judgment sub-runs: **adopted default** $0.10 to $0.40 per daily run (digest, minutes, gate text), turn cap 30 per sub-run (tuned from the ledger, WP-131), run cap `min(per_run_cap, remaining daily cap)`; the measured cost floor of one headless run is $0.15 to $0.25 (R-04). Meetings carry their own cap (7.3). Measured values go in the results table after protocol step 6.
 
 ## 10. Test and eval plan
 
@@ -143,15 +156,30 @@ Orchestrator overhead is logged as `role: orchestrator`, `item: none` (spec 13.2
 
 ## 11. Dependencies
 
-Built: WP-003, 004, 005, 006, 007, 008. Needed: WP-101 (contracts), WP-102, WP-103, WP-104, WP-105, WP-106, WP-107, WP-108, WP-109, WP-110, WP-111, WP-112, WP-120, WP-121, WP-130, WP-131, WP-140, WP-150, WP-160; later WP-301, WP-302, WP-330, WP-331, WP-403, WP-404. Skills today: `init`, `status`, `pause`. Spec 11.2 item "Run builds and tests: orchestrator" has no tool today (no `npm`).
+Built: WP-003, 004, 005, 006, 007, 008. Needed: WP-101 (contracts), WP-102, WP-103, WP-104, WP-105, WP-106, WP-107, WP-108, WP-109, WP-110, WP-111, WP-112, WP-120, WP-121, WP-130, WP-131, WP-140, WP-150, WP-160; later WP-301, WP-302, WP-330, WP-331, WP-403, WP-404. Skills today: `init`, `status`, `pause`. Spec 11.2 item "Run builds and tests: orchestrator" is dropped (CI runs builds and tests; status comes from `gh`, see 12). Also WP-216, WP-217, WP-214, WP-320, WP-321, WP-336, WP-401, WP-402.
 
-## 12. Open decisions and status
+## 12. Resolved decisions and status
 
-- Spec 5.2 lists "subagent dispatch" as an orchestrator tool; the architecture dispatches by script (`arima-run-agent`). Owner to confirm the spec wording changes (like S4) or an Agent tool is added. Blocks WP-120.
-- Spec 11.2 gives the orchestrator "run builds and tests"; `roles.ts` grants none. Confirm it is not needed (CI status comes from `gh`).
-- The agent file says it is triggered by init and pause; `roles.ts` withholds those scripts from the role. Reconcile the agent file (WP-120) so it says the skills run them.
-- No package owns step 2's GitHub and monitoring pull; propose it under WP-120 (monitoring alerts under WP-403).
-- Add kinds `digest`, `meeting`, `gate-pack`, `retro` to contract 3.1 (WP-101).
-- Gate Status `Ready for review` is not human-only; confirm the orchestrator may write it.
-- Judgment cap and cost above are estimates; measure at step 6.
+**Open items for the owner: none.** The decisions below were made by the team under `09-owner-decisions.md` section 1.
+
+### Resolved decisions
+
+| Decision | Reason | Implemented by |
+| --- | --- | --- |
+| **Dispatch is by script, not an Agent tool:** `arima-dispatch` builds the packet and starts one headless `arima-run-agent` process per unit; the orchestrator model has no subagent tool. Spec 5.2 "subagent dispatch" is reworded as "dispatch of headless role runs by script" (spec issue, like S4) | Scripted dispatch gives caps, ledger rows, report validation and the kill switch; a model-driven Agent tool would bypass them | WP-120 (dispatcher; writes the spec issue and an ADR); WP-103 (collector) |
+| **Pure code versus judgment:** code does ids, transitions, queue order, "Tomorrow's plan", undo-task text, health colour, caps, question ranking and batching, gate mechanical checks and the gate Status write, cost roll-up, every Notion write. Judgment is limited to digest headline and risk commentary, meeting minutes, gate recommendation text, retro lesson drafts, severity for regressions and production defects, hard-stop wording; numbers written by judgment are verified against the ledger | Anything checkable should be a script; the model is for words (section 4) | WP-130 (digest builder and verifier), WP-109 (queue), WP-302, WP-330, WP-217 |
+| **Write scope narrowed:** a judgment sub-run can write only top-level outbox files and `docs/spec/**`, not `.arima/**`; events, ledger, mirror and counters are written by scripts only | Closes G-06; the guard alone protected these | WP-103 (`roles.ts` change and test) |
+| **The model sub-run holds no Notion token or `arima-*` script;** the host (dispatcher) holds the token and runs `arima-notion`, `arima-state`, `arima-ids`, `arima-gate` | A model session with the token and a free shell is an injection target; the work is code anyway | WP-120 (env allow-list by context), WP-103; contract 7 and spec 11.3 wording clarified: "the orchestrator" means the host |
+| **Agent file front matter equals `allowedTools`:** same tool families in `tools`, exact path scopes in the body, checked by test; `WebFetch` removed from the orchestrator | Least privilege; contract 10 requires the match (G-08) | WP-120 (agent file rewrite, `agents.test.ts`, `roles.ts`) |
+| **`init` and `pause` stay human-run scripts**, started by their skills; the agent file says so | A model must never hold the kill switch or the init script (`roles.ts`) | WP-120 (agent file); existing skills |
+| **Spec 11.2 "run builds and tests" for the orchestrator is dropped** | CI runs builds and tests; CI and PR status come from the host's `gh` reads and arrive in the packet | WP-120 (spec issue); WP-120 (GitHub status pull) |
+| **D-46:** `/arima:run` covers Phase 4 and operations only, and refuses to start until the Phase 3 exit checklist holds (script check); Phases 0 to 3 and 5 run through their playbooks: `/arima:init` to G0, `/arima:discover`, `/arima:design`, `/arima:setup`, and the Phase 5 command; the playbooks reuse the same dispatcher | One command per phase keeps each approval point explicit for the owner | WP-120 (phase argument and exit check), WP-321, WP-320, WP-214, WP-401, WP-215 |
+| **Step 2 GitHub status pull** is part of the dispatcher; monitoring alerts are pulled by the operations package | No package owned it | WP-120 (GitHub); WP-403 (alerts) |
+| **New kinds `digest`, `meeting`, `gate-pack`, `retro`** are added to contract 3.1 | Judgment sub-runs need a descriptor | WP-101 |
+| **Gate `Ready for review` and `Not ready`** are written by the host gate code with the engine flag, never by an agent outbox; the decision fields stay human-only | Keeps `Status` under one owner (WP-108) | WP-330 |
+| **Digest:** eight sections of spec 12.1 built by code; "Awaiting you" holds only PRs, gates, milestone reviews, production approvals, CR decisions and critical-blocker questions; other agent questions are consults or DEC records with a veto box; questions batched by `topic`, at most 10, hard stop first | The owner reviews and steers; routine matters must not reach them | WP-130, WP-141 |
+| **Escalation only for critical blockers** (09 section 1); repeated run failure is Blocked plus a consult | The owner does not supervise routine work | WP-141 (consult routing), WP-120 |
+| **Stale lock:** the status command prints the release command for the owner to run; no automatic removal | Removing a live lock could start two runs | WP-120 (status output); WP-160 |
+| **Judgment cap (30 turns, $0.10 to $0.40 a day)** is an adopted default, tuned from the ledger | A default is needed to dispatch | WP-131 |
+
 - Protocol checklist: [x] 5 agent file v0 (init, status, pause) · [ ] 1 card review · [ ] 2 fixtures · [ ] 3 envelope tests · [ ] 4 stub · [ ] 6 real smoke · [ ] 7 evals · [ ] 8 judge and flip.

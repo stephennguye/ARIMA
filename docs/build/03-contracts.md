@@ -24,6 +24,9 @@ Every interface between components. If code crosses a boundary in a way this fil
 | `notion-map.json` | `arima-notion map` | no | database and property ids; `notion-map.schema.json` |
 | `runs/<run_id>.json` | `arima-run-agent` | no | Run report: result, subtype, errors, `terminal_reason`, cost; secret-scanned `[BUILT]` |
 | `runs/<run_id>.report.json` | `arima-run-agent` (extracted from the agent's final message) | no | Validated agent report (section 3) `[PROPOSED]` WP-101 |
+| `state/inbox-cursor.json` | the inbox library | never | Last mirror state applied (WP-140) |
+| `findings.json` | the engine `[PROPOSED]` WP-313 | never | Ledger of `FND-nnn` security findings with fingerprint and status |
+| `evidence/<run_id>/` | the report collector `[PROPOSED]` WP-103 | read by the packet builder only | Copied bug evidence and design-QA screenshots |
 | `state/ids.json`, `state/run-seq.json` | `arima-ids` / run id issuer | no | Locked counters |
 | `items/<id>.json` | the state machine only `[PROPOSED]` WP-106 | never | Item counters and blocked-from (section 9a) |
 | `PAUSE` | `arima-pause` only | **never** | Kill switch file; first line is the reason |
@@ -41,7 +44,7 @@ These two documents are the whole conversation between the orchestrator and a ro
 unit_id, role, item (US-/BUG-/INC-/CR-/MS-/G.. or "none"), kind, phase, attempt (>=1),
 rework_reason?, budget_usd (<= min(per_run_cap, remaining story budget)), max_turns,
 worktree?, branch?, inputs[] (paths and item ids), profile
-kind = develop | review | qa | test-write | design-qa | author | security-scan | deploy-staging | digest | meeting | gate-pack | retro | regression | perf-test | a11y-test | ...   (list [PROPOSED]; extended by the card that needs a kind)
+kind = develop | skeleton | review | adr-review | conventions | rc-freeze | deprecation-check | debt-review | qa | test-write | e2e-skeleton | regression | perf-test | a11y-test | design-qa | author | release-docs | env-plan | preview-diagnose | security-scan | scan-triage | verify-finding | screen | deploy-staging | hotfix | fix | triage | runbook | uat-script | digest | meeting | gate-pack | retro   (list [PROPOSED]; each kind has its own owner package and its own section in the agent file; add a kind here before using it)
 ```
 
 The dispatcher builds it; the packet builder renders it; the ledger row is derived from it.
@@ -77,7 +80,8 @@ The agent ends its final message with exactly one fenced block whose info string
   "findings": [ ],
   "questions": [ ],
   "decisions": [ ],
-  "assumptions": [{ "text": "...", "basis": "..." }]
+  "assumptions": [{ "text": "...", "basis": "..." }],
+  "records": [ ]
 }
 ```
 
@@ -94,7 +98,7 @@ Rules (each becomes a validator check):
 
 | Record | Fields (required in bold) | Spec |
 | --- | --- | --- |
-| **Question** | **question**, **options** (each with `label`, `recommendation: true/false`), **blocking** (yes/no), **default** (what happens if unanswered; absent on hard-stop matters), `expires`, `item`, `topic` (for batching) | 7.5 |
+| **Question** | `addressed_to` (a role for a consult; absent means the owner), `hard_stop` (set when the matter is one of the 16 hard-stop ids), **question**, **options** (each with `label`, `recommendation: true/false`), **blocking** (yes/no), **default** (what happens if unanswered; absent on hard-stop matters), `expires`, `item`, `topic` (for batching) | 7.5 |
 | **Finding** | **severity** (review: `blocker/major/minor/nit`; security: `critical/high/medium/low`; bug: `S1..S4`), **location** (`file:line` or artifact id), **claim**, **evidence**, **recommendation**, `item`, `refutation` (what the verifier tried) | 5.6, 5.9, 7.7 |
 | **Decision** | **summary**, **options considered**, **chosen**, **reversible**, **rationale**, `item` | 7.5, principle 8 |
 | **Assumption** | **text**, **basis** (the evidence it rests on) | principle 8 |
@@ -114,7 +118,7 @@ Applied by `arima-notion push` in `created_at` order. Per entry, in this order: 
 
 ## 5. Events `[BUILT]` frozen
 
-Types: `run.start run.end run.paused preflight.fail killswitch.on killswitch.off id.issued notion.pull notion.push notion.conflict notion.refused item.status gate.opened gate.decided question.raised question.answered decision.made decision.vetoed tool.used tool.blocked state.push state.pull budget.alert hardstop.hit agent.stop`. Shape: `{ ts, type, actor, run_id?, item?, data? }`. Actor is the role, `system`, `human`, or `unknown` (a headless run whose role variable was lost is **never** `human`). `[PROPOSED]` additions, each with schema and test in WP-101: `report.accepted`, `report.rejected`, `unit.dispatched`, `unit.retried`, `merge.done`, `merge.refused`, `deploy.staging`, `meeting.held`, `digest.published`.
+Types: `run.start run.end run.paused preflight.fail killswitch.on killswitch.off id.issued notion.pull notion.push notion.conflict notion.refused item.status gate.opened gate.decided question.raised question.answered decision.made decision.vetoed tool.used tool.blocked state.push state.pull budget.alert hardstop.hit agent.stop`. Shape: `{ ts, type, actor, run_id?, item?, data? }`. Actor is the role, `system`, `human`, or `unknown` (a headless run whose role variable was lost is **never** `human`). `[PROPOSED]` additions, each with schema and test in WP-101: `report.accepted`, `report.rejected`, `unit.dispatched`, `unit.retried`, `merge.done`, `merge.refused`, `pr.published`, `deploy.staging`, `deploy.preview`, `deploy.production`, `deploy.rollback`, `probe.recorded`, `meeting.held`, `digest.published`, `phase.step_done`, `phase.pilot_failed`, `team.changed`, `release.rc_tagged`, `incident.opened`, `incident.closed`, `cr.decided`, `lesson.applied`.
 
 ## 6. Ledger row `[BUILT]` frozen
 
@@ -122,7 +126,7 @@ Types: `run.start run.end run.paused preflight.fail killswitch.on killswitch.off
 
 ## 7. Process environment for a role run `[BUILT]`
 
-Allow-listed only: `PATH` and system variables, `HOME`/profile, locale, proxies, Claude seat variables; plus `ARIMA_PROJECT_DIR`, `ARIMA_RUN_ID`, `ARIMA_ROLE`, `ARIMA_ITEM`; the Notion token only for the orchestrator; the GitHub token only for roles allowed to hold it (by D-37 only the host push script, once WP-111 lands). `ANTHROPIC_*` only when `runtime.auth: api_key`. Anything else is dropped.
+**No role holds a GitHub token (D-49).** The host reads PRs, CI and review threads and puts them in the packet, and posts each role's comments from its validated report. Anything below that mentions a GitHub token for a role is superseded by this rule until WP-111 lands. In the same way "the orchestrator holds the Notion token" means the **host process** (the dispatcher and scripts), not a model session. Allow-listed only: `PATH` and system variables, `HOME`/profile, locale, proxies, Claude seat variables; plus `ARIMA_PROJECT_DIR`, `ARIMA_RUN_ID`, `ARIMA_ROLE`, `ARIMA_ITEM`; the Notion token only for the orchestrator; the GitHub token only for roles allowed to hold it (by D-37 only the host push script, once WP-111 lands). `ANTHROPIC_*` only when `runtime.auth: api_key`. Anything else is dropped.
 
 ## 8. Exit-code registry `[BUILT]` (add new codes here in the same change)
 
@@ -131,14 +135,29 @@ Allow-listed only: `PATH` and system variables, `HOME`/profile, locale, proxies,
 | `arima-config` | 0 valid, 1 invalid, 2 usage |
 | `arima-preflight` | 0 ok, 2 usage, 10 config, 11 run locked, 12 kill switch, 13 budget, 14 environment |
 | `arima-run-agent` | 0 pass, 1 failed/error, 2 usage or config, 3 blocked (turn or budget cap), 12 kill switch, 13 budget used up, 75 paused (usage limit) |
-| `arima-init` | 0 ok, 2 usage, 3 brief gaps, 4 map failed, 5 push failed, 6 brief contains a secret; 10-14 as preflight |
+| `arima-init` | 0 ok, 2 usage, 3 brief gaps, 4 map failed, 5 push failed, 6 brief contains a secret, 7 state not saved; 10-14 as preflight (init needs no GitHub token) |
 | `arima-pause` | 0 ok (and state saved), 1 not saved or Notion not cleared, 2 usage |
 | `arima-state` | 0 ok, 1 failure (including refused push), 2 usage |
 | `arima-notion` | 0 ok, 1 verification failed / Notion error / entries rejected, in conflict or deferred, 2 usage |
 | `arima-hook` | 0 allow, 2 block, 1 usage |
 | `arima-status` | 0 ok, 1 other error, 2 usage, 10 invalid config |
 
-New scripts in the plan reserve: `arima-packet` 0/2/20 (packet invalid), `arima-dispatch` (the daily run) 0 ok, 4 nothing to do, 12/13/14 as preflight (code 3 stays "blocked by a cap" as in `arima-run-agent`), `arima-merge` 0 merged, 30 refused (CI/QA/review missing), `arima-gate` 0, 40 criteria unmet. Final values are fixed in the package that builds each.
+Planned scripts reserve these codes (final values are fixed by the package that builds each; the table is the plan, not yet code):
+
+| Planned script | Codes |
+| --- | --- |
+| `arima-packet` | 0, 2, 20 packet invalid |
+| `arima-dispatch` (the daily run; Phase 4 and operations) | 0, 1, 2, 4 nothing to do, 5 phase refusal (Phase 3 exit not green), 10-14 as preflight, 75 paused (never 3) |
+| `arima-notion` additions | 11 run lock held after waiting 60 s, 12 paused (push) |
+| `arima-publish` | 0, 2, 12, 14, 31, 32 |
+| `arima-merge` | 0 merged, 2, 12, 30 refused (CI, QA or review missing), 32 |
+| `arima-worktree` | 0, 1, 2 |
+| `arima-gate` | 0, 2, 40 to 43 criteria unmet, 10-14 |
+| `arima-meeting` | 0, 2, 3, 10-14 |
+| `arima-digest`, `arima-cost` | 0, 1, 2, 10, 11 |
+| `arima-env` (local Docker, staging and preview only) | 0, 2, 12, 14 Docker not running, 70 refused (production or unknown environment), 71 smoke failed and previous image restored, 72 capacity limit |
+| `arima-release` (RC tag, version tag with SBOM, production deploy, rollback; human-run) | 0, 2, 12, 14, 40, 50 to 54 |
+| `arima-phase`, `arima-plan`, `arima-assign`, `arima-hypercare`, `arima-incident`, `arima-cr`, `arima-lessons`, `arima-judge` | fixed by WP-320, WP-216, WP-232, WP-403, WP-336, WP-217, WP-150 |
 
 ## 9. Ticket state machine `[SPEC]` 7.1, built by WP-107 (table-driven, exhaustively tested)
 
@@ -155,7 +174,7 @@ States: `Backlog, Ready, In Progress, In Review, In QA, PO Acceptance, Done, Rel
 | In QA → PO Acceptance | merge script (after human PR approval) | all test cases passed; design QA passed for UI; human approval present |
 | PO Acceptance → Done | orchestrator | auto on QA pass (D-16) |
 | PO Acceptance → In Progress | po or sponsor | vetoed at milestone review; BUG with reason |
-| Done → Released | devops | in a production release |
+| Done → Released | engine, on a recorded `deploy.production` success | in a production release |
 | any open → Blocked | any agent via orchestrator | blocking question, missing dependency/credential, budget exhausted, **third failed attempt** |
 | Blocked → previous | orchestrator | cause resolved |
 | any before Done → Cancelled | po | reason recorded |
@@ -168,7 +187,7 @@ An item (story, bug, incident, change request) is the Notion row plus engine-hel
 
 ## 9b. Reason codes `[PROPOSED]` (frozen by WP-101; one list for ledger notes, events and reports)
 
-`report_invalid`, `report_missing`, `evidence_missing`, `secret_in_output`, `protected_path`, `template_invalid`, `cap_turns`, `cap_budget`, `usage_limit`, `kill_switch`, `budget_exhausted`, `story_budget`, `credential_missing`, `notion_deferred`, `notion_conflict`, `notion_refused`, `state_not_saved`, `merge_refused_ci`, `merge_refused_qa`, `merge_refused_review`, `guard_blocked`, `unknown_kill_switch`. A run result is one of `pass fail error paused blocked`; the reason code explains `fail`, `blocked` and `paused`. New codes are added here first.
+`report_invalid`, `report_missing`, `evidence_missing`, `secret_in_output`, `protected_path`, `template_invalid`, `cap_turns`, `cap_budget`, `usage_limit`, `kill_switch`, `budget_exhausted`, `story_budget`, `credential_missing`, `notion_deferred`, `notion_conflict`, `notion_refused`, `state_not_saved`, `merge_refused_ci`, `merge_refused_qa`, `merge_refused_review`, `guard_blocked`, `unknown_kill_switch`, `database_not_allowed`, `phase_refused`, `remote_unchecked`. A run result is one of `pass fail error paused blocked`; the reason code explains `fail`, `blocked` and `paused`. New codes are added here first.
 
 ## 10. Agent file format `[BUILT]` for orchestrator, rule for the rest
 

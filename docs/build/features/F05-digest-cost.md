@@ -1,6 +1,6 @@
 # F05 Daily digest and cost roll-up
 
-Tags: `[BUILT]` exists with tests, `[SPEC]` required by the spec, not built, `[PROPOSED]` introduced here. Spec numbers refer to `docs/spec/ARIMA-Master-Spec.md`. ESTIMATE marks a value the spec does not give; each has an open decision in section 12.
+Tags: `[BUILT]` exists with tests, `[SPEC]` required by the spec, not built, `[PROPOSED]` introduced here. Spec numbers refer to `docs/spec/ARIMA-Master-Spec.md`. ESTIMATE marks a value the spec does not give; each is decided in section 12 (resolved decisions).
 
 ## 1. Purpose and spec refs
 
@@ -39,7 +39,7 @@ Tags: `[BUILT]` exists with tests, `[SPEC]` required by the spec, not built, `[P
 | Mirror | `stories`, `gates`, `questions`, `decisions`, `incidents`, `change_requests`, `milestones` | **Untrusted text.** Titles and question text appear in the page as quoted data after secret scan; ids are links only |
 | Config | `budget.*`, `schedule.digest_ready_by`, `schedule.timezone`, `team.yaml` SLA | Validated |
 | Bills, human minutes (spec 13.1) | Manual or imported; Digests `Minutes spent` | Optional; absent means "not recorded", never zero |
-| Clock | injected `now` | Local date uses `schedule.timezone` (ESTIMATE: `budgetStatus` today uses the process local date, O-6) |
+| Clock | injected `now` | Local date uses `schedule.timezone` (RD-F05-6: `schedule.timezone`; `budgetStatus` is changed to take it, WP-131) |
 
 Ledger quirk to honour: in a resumed session the CLI cost is cumulative; the stored `cost_usd` is already the difference (`buildLedgerRow`, spec 13.6) `[BUILT]`. Cost code must sum `cost_usd` as stored and never recompute from tokens.
 
@@ -53,11 +53,11 @@ Ledger quirk to honour: in a resumed session the CLI cost is cumulative; the sto
 4. Compute health with the rules in 8 (code).
 5. Render with `templates/digest.md` (headings are the template's; the renderer fails on an unfilled or unused placeholder, `templates.ts` `[BUILT]`, `templates.test.ts`).
 6. Secret-scan the page text; any hit aborts the push and prints the finding (`lib/secrets.ts` `[BUILT]`).
-7. Enqueue an outbox entry (role orchestrator, `database: digests`, properties Date, Summary, Shipped, Awaiting you, Spend today, Month to date; `content_markdown` = page body); event `digest.published` `[PROPOSED]`. Human-only fields (Reviewed by, Minutes spent) are never written by ARIMA; note `Reviewed by` is not marked human-only in `notion/schema.ts` today (O-7).
+7. Enqueue an outbox entry (role orchestrator, `database: digests`, properties Date, Summary, Shipped, Awaiting you, Spend today, Month to date; `content_markdown` = page body); event `digest.published` `[PROPOSED]`. Human-only fields (Reviewed by, Minutes spent) are never written by ARIMA; `Reviewed by` and `Minutes spent` become human-only in the next template bump (RD-F05-7, WP-130).
 
 | Section (spec 12.1 order) | Content and source | Order and cap |
 | --- | --- | --- |
-| 1 Headline | One sentence: phase (`PHASE_AFTER_GATE`, as `status.ts`), milestone points done/total, health colour. Templated sentence; **no model** (ESTIMATE, O-1) | 1 line |
+| 1 Headline | One sentence: phase (`PHASE_AFTER_GATE`, as `status.ts`), milestone points done/total, health colour. Templated sentence; **no model** (RD-F05-1) | 1 line |
 | 2 Awaiting you | Gates Ready for review, blocking questions, production approvals, CRs, PRs awaiting approval with QA result and preview link; each with a link and wait time | gates, production approvals, blocking questions, PRs, CRs; longest wait first; 10 |
 | 3 Shipped | Stories to PO Acceptance/Done/Released and fixes in window, with PR or release links | newest first; 10 |
 | 4 Decisions made | Decisions rows since last digest with their Veto checkbox | newest first; 10 |
@@ -73,9 +73,9 @@ Lists longer than 10 end with "and N more" plus a link to the Notion view (spec 
 1. Read ledger; filter by date, milestone, phase.
 2. Group by item, role, phase (and day, model tier). Sums of `cost_usd`, `num_turns`, tokens, `duration_ms`; counts of runs; rework cost = sum where `is_rework`.
 3. Per-story cost = sum of rows with that `item`; **must equal the ledger sum** (acceptance of WP-131). Orchestrator rows (`item: none`) are reported as overhead, not allocated.
-4. Estimate accuracy = actual / `budget_usd` story budget by complexity S/M/L (spec 13.4); the budget per size is 1, 3, 6 est. USD (spec 7.1). Reported per size with n; below n = 3 flagged "too few" (ESTIMATE, O-3). Note: ledger `budget_usd` is the run cap, not the story budget; the story budget comes from the Stories row (O-4).
-5. Other spec 13.4 metrics the first version computes from the ledger alone: rework share, cache efficiency (cache_read / (input + cache_read + cache_creation)), turns per run, run failure rate, first-pass QA rate (QA rows with attempt 1 and result pass over QA rows attempt 1). DORA, lead/cycle/queue times and flow efficiency (spec 13.3) need status events (WP-108) and are `[SPEC]` for a later slice (O-5).
-6. Cost log rows: one per (date, role, phase, item): properties Date, Role, Phase, Runs, tokens, Cost USD, Agent minutes (sum duration / 60000), Rework (rework cost), Item (text id per ADR-0004), Milestone. Created via outbox; title key `date|role|phase|item` makes a re-sync an `update`, not a duplicate (ESTIMATE, O-8).
+4. Estimate accuracy = actual / `budget_usd` story budget by complexity S/M/L (spec 13.4); the budget per size is 1, 3, 6 est. USD (spec 7.1). Reported per size with n; below n = 3 flagged "too few" (RD-F05-3). Note: ledger `budget_usd` is the run cap, not the story budget; the story budget comes from the Stories row (RD-F05-4).
+5. Other spec 13.4 metrics the first version computes from the ledger alone: rework share, cache efficiency (cache_read / (input + cache_read + cache_creation)), turns per run, run failure rate, first-pass QA rate (QA rows with attempt 1 and result pass over QA rows attempt 1). DORA, lead/cycle/queue times and flow efficiency (spec 13.3) need status events (WP-108) and are built by WP-132 (RD-F05-5).
+6. Cost log rows: one per (date, role, phase, item): properties Date, Role, Phase, Runs, tokens, Cost USD, Agent minutes (sum duration / 60000), Rework (rework cost), Item (text id per ADR-0004), Milestone. Created via outbox; title key `date|role|phase|item` makes a re-sync an `update`, not a duplicate (RD-F05-8).
 7. Print (human) or JSON (`--json`); the table states "estimated USD, consumption not spend on a seat plan" (spec 13.6).
 
 ## 6. Outputs and side effects
@@ -83,16 +83,16 @@ Lists longer than 10 end with "and N more" plus a link to the Notion view (spec 
 | Output | Where | Notes |
 | --- | --- | --- |
 | Digest page | Notion Digests (outbox) | Page name = date; update in place on rebuild |
-| Digest local copy | `.arima/digests/YYYY-MM-DD.md` (ESTIMATE, O-9) | Included in the state-branch commit; durable beyond Notion Free page history (D-28 spirit) |
+| Digest local copy | `.arima/digests/YYYY-MM-DD.md` (RD-F05-9) | Included in the state-branch commit; durable beyond Notion Free page history (D-28 spirit) |
 | Cost log rows | Notion Cost log (outbox) | Daily aggregates (spec 13) |
 | Console | `/arima:cost` table; `/arima:digest` path and health | Ends on one next command |
 | Events | `digest.published` `[PROPOSED]`; `budget.alert` `[BUILT]` | Budget alerts come from preflight today |
-| Notifications | Health red: an @mention on the Urgent page (spec 12.3, D-23); no email | `[SPEC]`, WP-130 |
+| Notifications | Health red: an @mention on the Urgent page (spec 12.3, D-23); no email, no other channel | `[SPEC]`, WP-130, WP-142 |
 | Ledger/mirror | Never modified by these features | read-only test |
 
 ## 7. Exit codes
 
-Registry (`03-contracts.md` section 8) has no entry for `arima-digest` or `arima-cost`. PROPOSED, to be added in the same change as WP-130/131:
+Registry (`03-contracts.md` section 8) has no entry for `arima-digest` or `arima-cost` yet; WP-130 and WP-131 add the rows below in the same change that builds each script (RD-F05-11):
 
 | Script | Code | Meaning |
 | --- | --- | --- |
@@ -113,17 +113,17 @@ Registry (`03-contracts.md` section 8) has no entry for `arima-digest` or `arima
 | Else any budget at or over 80% of cap; or a blocker older than 24 h | amber | `digest.test.ts` |
 | Else (within budget, no blocker older than 24 h) | green | `digest.test.ts` |
 
-"Hard stop waiting" means a gate, production approval, secrets or paid-service question awaiting a human (spec 11.1 table); PR approvals are not hard stops there and count as ordinary Awaiting you items (O-10). "Blocker age" = now minus the last `item.status` event to Blocked (fallback: mirror last edit, rounded to the minute).
+"Hard stop waiting" means a gate, production approval, secrets or paid-service question awaiting a human (spec 11.1 table); PR approvals are not hard stops there and count as ordinary Awaiting you items (RD-F05-10). "Blocker age" = now minus the last `item.status` event to Blocked (fallback: mirror last edit, rounded to the minute).
 
 | IF | THEN | Test |
 | --- | --- | --- |
 | Any list over 10 items | Show 10 by impact, "and N more", link | `digest.test.ts` |
 | Spend crosses 50/80/100% of project or day (default thresholds) | `budget.alert` event once (project once; daily once per day) | `preflight.test.ts` `[BUILT]` |
-| Story above 3 times the median cost for its size; or milestone rework share above 30% | Alert (spec 13.5 item 4) | `cost.test.ts`; NOT ENFORCED YET (only project/day alerts exist in `budget.ts`) |
+| Story above 3 times the median cost for its size; or milestone rework share above 30% | Alert (spec 13.5 item 4) | `cost.test.ts`; NOT ENFORCED YET (only project/day alerts exist in `budget.ts`; built by WP-131, G-12) |
 | Story budget exhausted | `hardstop.hit story_budget`, item Blocked (F02) | `story-budget.test.ts` (WP-105) |
-| Spec says Digest "ready by `schedule.digest_ready_by`" and the run is attended | Digest is written at step 10 of whichever run happens; "ready by" is only guaranteed after Gate U with a scheduler | none; documented |
+| Spec says Digest "ready by `schedule.digest_ready_by`" and the run is attended | The digest is on demand until Gate U (no scheduler, D-41): it is written at step 10 of every run and by `/arima:digest`; "ready by" is guaranteed only after WP-230. The skill and the README say so; `digest_ready_by` is ignored until a scheduler exists (RD-F05-12) | `digest.test.ts` (the page states the build time) |
 | Rebuild for a past date | Uses ledger rows of that date only; mirror data is current, so Awaiting you is flagged "as of rebuild time" | `digest.test.ts` |
-| Rework share | Defined as `sum(cost where is_rework) / sum(cost)` for the period (ESTIMATE, O-2) | `cost.test.ts` |
+| Rework share | Defined as `sum(cost where is_rework) / sum(cost)` for the period (RD-F05-2) | `cost.test.ts` |
 | Human wait hours | Sum over items of time in PO Acceptance, Blocked-on-question and gates (spec 13.3), from `item.status` events; missing events yield "not available" | `cost.test.ts`; NOT ENFORCED YET (WP-108) |
 | Profile | Same digest for all profiles; regulated and client-project add the evidence pack link per open gate | `digest.test.ts` |
 
@@ -158,21 +158,24 @@ Live check: one real push to the dev Notion workspace of a digest and a Cost log
 
 WP-130 depends on WP-003 `[BUILT]` and WP-120 (dispatcher, step 10). WP-131 depends on WP-003 and WP-105 (story budget). Digest content needs: WP-108 (status events, wait times), WP-140 (inbox), WP-301/330 (questions, gates), WP-112 (PR approval state), WP-109 (tomorrow's plan). Until those land the digest renders the sections it can and marks others "not available yet". Also WP-101 (events `digest.published`), WP-160 (lock).
 
-## 12. Status and open decisions
+## 12. Status and resolved decisions
 
-Status: budget status, ledger, alerts at 50/80/100, `status.ts` summary `[BUILT]`; digest and cost roll-up `[SPEC]`.
+Status: budget status, ledger, alerts at 50/80/100, `status.ts` summary `[BUILT]`; digest and cost roll-up `[SPEC]`. Decided under `09-owner-decisions.md`:
 
-| ID | Open decision | ESTIMATE / default |
+| Decision | Reason | Implemented by |
 | --- | --- | --- |
-| O-1 | Headline and Summary written by code template vs a model | Code template; model only for an optional "notes" field later |
-| O-2 | Rework share by cost or by run count | By cost; show run count in the table |
-| O-3 | Minimum sample for estimate accuracy | n >= 3 per size |
-| O-4 | Where story budget lives (Stories `Budget USD`) vs ledger `budget_usd` (run cap) | Stories row; ledger unchanged (frozen) |
-| O-5 | DORA and time measures: time measures are built in WP-132 (Stage 1); the five DORA metrics report "not yet measurable" until release and incident events exist (WP-402, WP-403). Resolved; see `work-packages.yaml`. |
-| O-6 | Day boundary timezone: `schedule.timezone` vs process local time (`budgetStatus` callers use local time) | `schedule.timezone` |
-| O-7 | Make Digests `Reviewed by` and `Minutes spent` human-only | Yes, schema change needs `template_schema_version` bump |
-| O-8 | Cost log row key | `date|role|phase|item` as title |
-| O-9 | Local digest copy path | `.arima/digests/` |
-| O-10 | Which waits count as "hard stop" for red | Gates, production approval, secrets, paid service, critical finding |
+| RD-F05-1: Headline and Summary are written by a code template, never by a model | A model must not count or phrase numbers (architecture section 2) | WP-130 |
+| RD-F05-2: rework share = cost of `is_rework` rows over total cost; the run count is shown beside it | Cost is what the owner cares about | WP-131 (`cost.test.ts`) |
+| RD-F05-3: estimate accuracy needs n >= 3 per size, else "too few" | Avoids false precision | WP-131 |
+| RD-F05-4: the story budget lives on the Stories row (`Budget USD`); the ledger `budget_usd` stays the run cap | The ledger contract is frozen | WP-105, WP-131 |
+| RD-F05-5: time measures and rework metrics are built in WP-132 (Stage 1); the five DORA metrics report "not yet measurable" until release and incident events exist (WP-402, WP-403) | Matches `work-packages.yaml` | WP-132 |
+| RD-F05-6: the day boundary uses `schedule.timezone` | One clock for the digest, the daily cap and the owner | WP-131 (`budgetStatus` takes the zone) |
+| RD-F05-7: Digests `Reviewed by` and `Minutes spent` become human-only (template version bump; `map --migrate` adds, never changes existing properties) | An agent must not mark the digest as reviewed | WP-130 |
+| RD-F05-8: Cost log row key is `date\|role\|phase\|item` as the title, so a re-sync updates | No duplicates | WP-131 |
+| RD-F05-9: local digest copy at `.arima/digests/YYYY-MM-DD.md`, included in the state commit | Durable beyond Notion Free page history | WP-130 |
+| RD-F05-10: "hard stop waiting" for red health = gates, production approval, secrets, paid service, critical finding; PR approvals are ordinary items | Spec 11.1 table | WP-130 |
+| RD-F05-11: exit codes `arima-digest` 0, 1, 2, 10, 11 and `arima-cost` 0, 1, 2, 10, 11 as in section 7, added to the registry by the packages | One registry | WP-130, WP-131; `03-contracts.md` section 8 |
+| RD-F05-12: digest timing without a scheduler: on demand until Gate U, written at step 10 of every run and by `/arima:digest`; the page says when it was built | D-41; resolves C-6 and G-40 | WP-130 |
+| RD-F05-13: month-to-date is shown next to lifetime spend versus `project_cap`; spec 12.1 is amended (C-1). Run health "retried" counts `unit.retried` events (C-2). `status.ts` counts `fail` and `error` as failed and `blocked` separately (C-3). The 3x-median and 30% rework alerts are built in `budget.ts` (C-4). Cost log keeps the `Item` text per ADR-0004 and spec 9.1 is amended (C-5) | Each was a spec or code mismatch with an obvious owner | WP-101 (event), WP-130, WP-131 (G-12) |
 
-Contradictions found: C-1 spec 12.1 and the digest template show "month to date vs project budget", but `project_cap` is a whole-project cap (4.1 `budget.project_cap`, `budgetStatus.projectSpent` is lifetime), so month-to-date has no cap of its own; this card shows month to date next to lifetime spend vs cap. C-2 spec 12.1 "Run health: retried" has no field: the ledger records attempts only on rework, so a retry-once needs the proposed `unit.retried` event (WP-101). C-3 `status.ts` counts `failed` as `result === 'error'` only, while `RunResult` also has `fail` and `blocked`; the digest counts `fail` and `error` as failed, so the two summaries disagree until `status.ts` is aligned. C-4 spec 13.5 item 4 alerts (3 times median, 30% rework) are not in `budget.ts`, which has only the threshold alerts. C-5 spec 9.1 gives Cost log a relation to Story or Bug, while the built schema uses an `Item` text (ADR-0004); consistent with the ADR, not with 9.1. C-6 spec 12.1 says the digest is "ready by `digest_ready_by`", which presumes a scheduler that D-41 forbids until Gate U.
+No item is left open; no critical blocker remains for this feature.
