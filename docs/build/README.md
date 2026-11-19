@@ -28,6 +28,7 @@ When two documents disagree, the higher one wins. A lower document that contradi
 | `features/*.md` | One spec per command and engine feature: arguments, preconditions, inputs, outputs, exit codes, side effects | Before touching that feature |
 | `05-verification.md` | Test pyramid, evals, judge checkpoints, definition of done per component type | Before declaring anything done |
 | `06-decisions-risks.md` | Index of decisions, ADRs, spec issues (with status) and the risk register | When a choice seems open |
+| `08-target-structure-and-workflow.md` | Folder structure before and after cleanup; diagrams of the whole workflow, one story, and the ticket states | To see the big picture |
 | `07-known-gaps.md` | Contradictions and defects found while writing the cards, each with its disposition | Before trusting a card on a point it flags |
 | `work-packages.yaml` | The task register: ids, dependencies, acceptance, tests, status. Checked by a test | When choosing the next task |
 
