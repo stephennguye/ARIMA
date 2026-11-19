@@ -8,7 +8,7 @@ import { readCounters } from '../src/ids.js';
 import type { Role } from '../src/ledger.js';
 import { Throttle } from '../src/lib/throttle.js';
 import { scanSecrets } from '../src/lib/secrets.js';
-import { allocateId, allocatedTo } from '../src/notion/allocations.js';
+import { allocateId, allocatedTo, registerEngineEntry } from '../src/notion/allocations.js';
 import { bootstrapTemplate } from '../src/notion/build.js';
 import { mapWorkspace } from '../src/notion/mapper.js';
 import { enqueue, outboxDir, pushOutbox } from '../src/notion/outbox.js';
@@ -333,6 +333,7 @@ describe('Status writes: init may only opt in for the entries it created (G-02)'
   it('a stale agent entry carrying Status is refused while init-made entries are allowed', async () => {
     const { dir, port, map, fake } = await setup('orchestrator');
     const id = await allocateId(dir, 'US', RUN);
+    await registerEngineEntry(dir, 'init-r-1-01'); // init registers what it enqueues
     enqueue(
       dir,
       entry({
@@ -354,7 +355,7 @@ describe('Status writes: init may only opt in for the entries it created (G-02)'
     );
     const r = await pushOutbox(dir, port, map, { allowStatusWrites: { idPrefix: 'init-' } });
     expect(r.applied).toEqual(['init-r-1-01']);
-    expect(r.rejected[0]?.reason).toMatch(/"Status".*cannot be written from the outbox/);
+    expect(r.rejected[0]?.reason).toMatch(/"Status".*except by the engine/);
     expect(fake.rowByTitle('Stories', id)).toBeUndefined();
   });
 

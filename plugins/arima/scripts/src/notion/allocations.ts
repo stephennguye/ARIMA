@@ -56,3 +56,30 @@ export async function allocateId(
 
 export const titleProperty = (db: DbKey): string =>
   dbByKey(db).props.find((p) => p.type === 'title')?.name as string;
+
+export const engineEntriesFile = (projectDir: string): string =>
+  path.join(projectDir, '.arima', 'state', 'engine-entries.json');
+
+function readEngineEntries(projectDir: string): string[] {
+  const file = engineEntriesFile(projectDir);
+  if (!existsSync(file)) return [];
+  return JSON.parse(readFileSync(file, 'utf8')) as string[];
+}
+
+/**
+ * Marks an outbox entry id as made by the engine itself (init, the state machine). Push lets only
+ * such entries write `Status`: a file name that merely starts with `init-` or `st-` proves
+ * nothing, because an agent may write any top-level outbox file, but it cannot write `.arima/state/`.
+ */
+export async function registerEngineEntry(projectDir: string, id: string): Promise<void> {
+  const file = engineEntriesFile(projectDir);
+  mkdirSync(path.dirname(file), { recursive: true });
+  await withFileLock(`${file}.lock`, () => {
+    const all = readEngineEntries(projectDir);
+    if (!all.includes(id)) all.push(id);
+    writeFileAtomic(file, `${JSON.stringify(all, null, 2)}\n`);
+  });
+}
+
+export const isEngineEntry = (projectDir: string, id: string): boolean =>
+  readEngineEntries(projectDir).includes(id);

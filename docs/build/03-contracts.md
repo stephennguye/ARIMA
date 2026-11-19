@@ -28,6 +28,7 @@ Every interface between components. If code crosses a boundary in a way this fil
 | `findings.json` | the engine `[PROPOSED]` WP-313 | never | Ledger of `FND-nnn` security findings with fingerprint and status |
 | `evidence/<run_id>/` | the report collector `[PROPOSED]` WP-103 | read by the packet builder only | Copied bug evidence and design-QA screenshots |
 | `state/ids.json`, `state/run-seq.json` | `arima-ids` / run id issuer | no | Locked counters |
+| `state/engine-entries.json` | `registerEngineEntry` (init, the state machine) | no | Outbox entry ids made by the engine; only these may carry `Status` at push (WP-108) |
 | `state/allocations.json` | `allocateId` (`notion/allocations.ts`) | no | Issued id -> run id. Push accepts a created id-titled row only if its id was issued to the entry's run (WP-104) |
 | `items/<id>.json` | the state machine only `[BUILT]` WP-106 | never | Item counters and blocked-from (section 9a); `[BUILT]` WP-106 |
 | `PAUSE` | `arima-pause` only | **never** | Kill switch file; first line is the reason |
@@ -202,4 +203,4 @@ Front matter: `name`, `description` (trigger style; "not for direct invocation" 
 
 ## 12. Notion contract `[BUILT]` frozen by `template_schema_version`
 
-19 databases (spec 9.1), created by `bootstrap`, verified by `map`, never created by agents. Human-only properties and values (gate decisions, approvers, vetoes) are refused on any agent path. `Status` writes require the human flag until the ticket state machine owns them (WP-107, WP-108). Retire by status, never delete. Real-API facts: timestamps round to the minute; formulas over select rollups are text; no page duplication; views creatable.
+19 databases (spec 9.1), created by `bootstrap`, verified by `map`, never created by agents. Human-only properties and values (gate decisions, approvers, vetoes) are refused on any agent path. `Status` is written only by the engine (`moveItem`, WP-108) and init through registered engine entries, or by a human with `--allow-status-writes`. Retire by status, never delete. Real-API facts: timestamps round to the minute; formulas over select rollups are text; no page duplication; views creatable.

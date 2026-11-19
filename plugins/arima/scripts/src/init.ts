@@ -8,6 +8,7 @@ import { ensureNotionSwitch } from './killswitch.js';
 import { GATE_CRITERIA, GATE_PHASE } from './gates.js';
 import { findSecrets, loadSecretAllowlist } from './lib/secrets.js';
 import { appendLedgerRow, buildLedgerRow } from './ledger.js';
+import { registerEngineEntry } from './notion/allocations.js';
 import { mapAndWrite } from './notion/map-file.js';
 import { findRow, pullMirror, readMirror } from './notion/mirror.js';
 import { enqueue, pushOutbox } from './notion/outbox.js';
@@ -271,12 +272,15 @@ export async function runInit(o: InitOptions): Promise<InitResult> {
 
     const date = now.toISOString().slice(0, 10);
     let n = 0;
+    const pendingRegistrations: Promise<void>[] = [];
     const entry = (
       e: Pick<OutboxEntry, 'op' | 'database' | 'properties' | 'content_markdown'>,
     ): void => {
       n += 1;
+      const id = `init-${runId}-${String(n).padStart(2, '0')}`;
+      pendingRegistrations.push(registerEngineEntry(o.projectDir, id));
       enqueue(o.projectDir, {
-        id: `init-${runId}-${String(n).padStart(2, '0')}`,
+        id,
         created_at: new Date(now.getTime() + n).toISOString(),
         run_id: runId,
         role: 'orchestrator',
@@ -336,6 +340,7 @@ export async function runInit(o: InitOptions): Promise<InitResult> {
       result.created.push(`${gate} gate page`);
     }
 
+    await Promise.all(pendingRegistrations);
     // 6. apply
     const report = await pushOutbox(o.projectDir, o.port, map, {
       now,

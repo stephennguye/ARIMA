@@ -19999,6 +19999,13 @@ function allocatedTo(projectDir, id) {
   return readAllocations(projectDir)[id];
 }
 var titleProperty = (db) => dbByKey(db).props.find((p) => p.type === "title")?.name;
+var engineEntriesFile = (projectDir) => path8.join(projectDir, ".arima", "state", "engine-entries.json");
+function readEngineEntries(projectDir) {
+  const file = engineEntriesFile(projectDir);
+  if (!existsSync5(file)) return [];
+  return JSON.parse(readFileSync5(file, "utf8"));
+}
+var isEngineEntry = (projectDir, id) => readEngineEntries(projectDir).includes(id);
 
 // plugins/arima/scripts/src/notion/outbox.ts
 var outboxDir = (projectDir) => path9.join(projectDir, ".arima", "outbox");
@@ -20147,7 +20154,7 @@ async function pushOutbox(projectDir, port, map, opts = {}) {
   function mayWriteStatus(entry) {
     const a = opts.allowStatusWrites;
     if (a === true) return true;
-    return typeof a === "object" && entry.id.startsWith(a.idPrefix);
+    return typeof a === "object" && entry.id.startsWith(a.idPrefix) && isEngineEntry(projectDir, entry.id);
   }
   async function applyEntry(entry) {
     const db = map.databases[entry.database];
@@ -20218,7 +20225,7 @@ async function pushOutbox(projectDir, port, map, opts = {}) {
         return {
           kind: "rejected",
           refused: true,
-          reason: `"Status" on ${db.title} cannot be written from the outbox until the ticket state machine exists (pass --allow-status-writes, which only a human may do)`
+          reason: `"Status" on ${db.title} cannot be written from the outbox except by the engine (the state machine) or init; pass --allow-status-writes, which only a human may do`
         };
       }
       if (def.human_only === true) {

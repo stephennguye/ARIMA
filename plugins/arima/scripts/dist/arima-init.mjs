@@ -19313,9 +19313,9 @@ function readLedger(projectDir) {
   return readJsonl(ledgerFile(projectDir), "ledger");
 }
 
-// plugins/arima/scripts/src/notion/map-file.ts
-import { mkdirSync as mkdirSync5 } from "node:fs";
-import path12 from "node:path";
+// plugins/arima/scripts/src/notion/allocations.ts
+import { existsSync as existsSync6, mkdirSync as mkdirSync4, readFileSync as readFileSync7 } from "node:fs";
+import path11 from "node:path";
 
 // plugins/arima/scripts/src/lib/atomic-file.ts
 import { mkdirSync as mkdirSync3, renameSync, unlinkSync as unlinkSync2, writeFileSync as writeFileSync2 } from "node:fs";
@@ -19343,56 +19343,24 @@ function writeFileAtomic(file, content) {
   }
 }
 
-// plugins/arima/scripts/src/notion/props.ts
-var options = (names) => (names ?? []).map((name) => ({ name }));
-function toApiProperty(p) {
-  switch (p.type) {
-    case "title":
-      return { title: {} };
-    case "rich_text":
-      return { rich_text: {} };
-    case "number":
-      return { number: { format: "number" } };
-    case "select":
-      return { select: { options: options(p.options) } };
-    case "multi_select":
-      return { multi_select: { options: options(p.options) } };
-    case "date":
-      return { date: {} };
-    case "people":
-      return { people: {} };
-    case "checkbox":
-      return { checkbox: {} };
-    case "url":
-      return { url: {} };
-    case "files":
-      return { files: {} };
-    case "formula":
-      return { formula: { expression: p.formula ?? "" } };
-    case "rollup":
-      if (p.rollup === void 0) throw new Error(`rollup ${p.name} has no definition`);
-      return {
-        rollup: {
-          relation_property_name: p.rollup.relation,
-          rollup_property_name: p.rollup.property,
-          function: p.rollup.fn
-        }
-      };
-    case "relation":
-      throw new Error(`relation ${p.name} needs a target data source id; use toApiRelation`);
-  }
-}
-function toApiRelation(targetDataSourceId, reverseName) {
-  return {
-    relation: {
-      data_source_id: targetDataSourceId,
-      dual_property: { synced_property_name: reverseName }
-    }
-  };
-}
-function isPlain(p) {
-  return p.type !== "relation" && p.type !== "formula" && p.type !== "rollup";
-}
+// plugins/arima/scripts/src/ids.ts
+var ID_WIDTHS = {
+  REQ: 3,
+  NFR: 3,
+  EP: 2,
+  US: 3,
+  TC: 4,
+  BUG: 3,
+  ADR: 4,
+  RISK: 3,
+  DEC: 4,
+  Q: 3,
+  MS: 2,
+  CR: 3,
+  INC: 3,
+  LES: 3
+};
+var ID_PREFIXES = Object.keys(ID_WIDTHS);
 
 // plugins/arima/scripts/src/notion/schema.ts
 var TEMPLATE_SCHEMA_VERSION = 1;
@@ -19860,6 +19828,104 @@ var RETIRE_STATUS = {
 };
 var NON_UNIQUE_TITLES = /* @__PURE__ */ new Set(["cost_log"]);
 
+// plugins/arima/scripts/src/notion/allocations.ts
+var ID_PREFIX_BY_DB = {
+  requirements: "REQ",
+  epics: "EP",
+  stories: "US",
+  test_cases: "TC",
+  bugs: "BUG",
+  milestones: "MS",
+  decisions: "DEC",
+  questions: "Q",
+  change_requests: "CR",
+  incidents: "INC",
+  risks: "RISK",
+  lessons: "LES"
+};
+var allocationsFile = (projectDir) => path11.join(projectDir, ".arima", "state", "allocations.json");
+function readAllocations(projectDir) {
+  const file = allocationsFile(projectDir);
+  if (!existsSync6(file)) return {};
+  return JSON.parse(readFileSync7(file, "utf8"));
+}
+function allocatedTo(projectDir, id) {
+  return readAllocations(projectDir)[id];
+}
+var titleProperty = (db) => dbByKey(db).props.find((p) => p.type === "title")?.name;
+var engineEntriesFile = (projectDir) => path11.join(projectDir, ".arima", "state", "engine-entries.json");
+function readEngineEntries(projectDir) {
+  const file = engineEntriesFile(projectDir);
+  if (!existsSync6(file)) return [];
+  return JSON.parse(readFileSync7(file, "utf8"));
+}
+async function registerEngineEntry(projectDir, id) {
+  const file = engineEntriesFile(projectDir);
+  mkdirSync4(path11.dirname(file), { recursive: true });
+  await withFileLock(`${file}.lock`, () => {
+    const all = readEngineEntries(projectDir);
+    if (!all.includes(id)) all.push(id);
+    writeFileAtomic(file, `${JSON.stringify(all, null, 2)}
+`);
+  });
+}
+var isEngineEntry = (projectDir, id) => readEngineEntries(projectDir).includes(id);
+
+// plugins/arima/scripts/src/notion/map-file.ts
+import { mkdirSync as mkdirSync6 } from "node:fs";
+import path13 from "node:path";
+
+// plugins/arima/scripts/src/notion/props.ts
+var options = (names) => (names ?? []).map((name) => ({ name }));
+function toApiProperty(p) {
+  switch (p.type) {
+    case "title":
+      return { title: {} };
+    case "rich_text":
+      return { rich_text: {} };
+    case "number":
+      return { number: { format: "number" } };
+    case "select":
+      return { select: { options: options(p.options) } };
+    case "multi_select":
+      return { multi_select: { options: options(p.options) } };
+    case "date":
+      return { date: {} };
+    case "people":
+      return { people: {} };
+    case "checkbox":
+      return { checkbox: {} };
+    case "url":
+      return { url: {} };
+    case "files":
+      return { files: {} };
+    case "formula":
+      return { formula: { expression: p.formula ?? "" } };
+    case "rollup":
+      if (p.rollup === void 0) throw new Error(`rollup ${p.name} has no definition`);
+      return {
+        rollup: {
+          relation_property_name: p.rollup.relation,
+          rollup_property_name: p.rollup.property,
+          function: p.rollup.fn
+        }
+      };
+    case "relation":
+      throw new Error(`relation ${p.name} needs a target data source id; use toApiRelation`);
+  }
+}
+function toApiRelation(targetDataSourceId, reverseName) {
+  return {
+    relation: {
+      data_source_id: targetDataSourceId,
+      dual_property: { synced_property_name: reverseName }
+    }
+  };
+}
+function isPlain(p) {
+  return p.type !== "relation" && p.type !== "formula" && p.type !== "rollup";
+}
+
 // plugins/arima/scripts/src/notion/build.ts
 var VERSION_MARKER = "ARIMA template schema_version:";
 var errText = (e) => e instanceof Error ? e.message : String(e);
@@ -20114,8 +20180,8 @@ function buildMap(rootPageId, specs, found, propsByKey, now) {
 }
 
 // plugins/arima/scripts/src/notion/mirror.ts
-import { existsSync as existsSync6, mkdirSync as mkdirSync4, readFileSync as readFileSync7 } from "node:fs";
-import path11 from "node:path";
+import { existsSync as existsSync7, mkdirSync as mkdirSync5, readFileSync as readFileSync8 } from "node:fs";
+import path12 from "node:path";
 
 // plugins/arima/scripts/src/notion/values.ts
 var CHUNK = 2e3;
@@ -20249,9 +20315,9 @@ function markdownToBlocks(markdown) {
 }
 
 // plugins/arima/scripts/src/notion/mirror.ts
-var mirrorDir = (projectDir) => path11.join(projectDir, ".arima", "mirror");
-var mirrorFile = (projectDir, db) => path11.join(mirrorDir(projectDir), `${db}.json`);
-var notionMapFile = (projectDir) => path11.join(projectDir, ".arima", "notion-map.json");
+var mirrorDir = (projectDir) => path12.join(projectDir, ".arima", "mirror");
+var mirrorFile = (projectDir, db) => path12.join(mirrorDir(projectDir), `${db}.json`);
+var notionMapFile = (projectDir) => path12.join(projectDir, ".arima", "notion-map.json");
 function toMirrorRow(raw) {
   const properties = {};
   let id = "";
@@ -20263,11 +20329,11 @@ function toMirrorRow(raw) {
 }
 function readMirror(projectDir, db) {
   const file = mirrorFile(projectDir, db);
-  if (!existsSync6(file)) return void 0;
-  return JSON.parse(readFileSync7(file, "utf8"));
+  if (!existsSync7(file)) return void 0;
+  return JSON.parse(readFileSync8(file, "utf8"));
 }
 function writeMirror(projectDir, m) {
-  mkdirSync4(mirrorDir(projectDir), { recursive: true });
+  mkdirSync5(mirrorDir(projectDir), { recursive: true });
   writeFileAtomic(mirrorFile(projectDir, m.database), `${JSON.stringify(m, null, 2)}
 `);
 }
@@ -20307,7 +20373,7 @@ async function mapAndWrite(projectDir, port, rootPageId, opts = {}) {
     );
   }
   const file = notionMapFile(projectDir);
-  mkdirSync5(path12.dirname(file), { recursive: true });
+  mkdirSync6(path13.dirname(file), { recursive: true });
   writeFileAtomic(file, `${JSON.stringify(result.map, null, 2)}
 `);
   return { result, file };
@@ -20391,55 +20457,6 @@ var OUTBOX_FORBIDDEN_PROPERTIES = {
   ba: ["Priority"],
   ux: ["Priority"]
 };
-
-// plugins/arima/scripts/src/notion/allocations.ts
-import { existsSync as existsSync7, mkdirSync as mkdirSync6, readFileSync as readFileSync8 } from "node:fs";
-import path13 from "node:path";
-
-// plugins/arima/scripts/src/ids.ts
-var ID_WIDTHS = {
-  REQ: 3,
-  NFR: 3,
-  EP: 2,
-  US: 3,
-  TC: 4,
-  BUG: 3,
-  ADR: 4,
-  RISK: 3,
-  DEC: 4,
-  Q: 3,
-  MS: 2,
-  CR: 3,
-  INC: 3,
-  LES: 3
-};
-var ID_PREFIXES = Object.keys(ID_WIDTHS);
-
-// plugins/arima/scripts/src/notion/allocations.ts
-var ID_PREFIX_BY_DB = {
-  requirements: "REQ",
-  epics: "EP",
-  stories: "US",
-  test_cases: "TC",
-  bugs: "BUG",
-  milestones: "MS",
-  decisions: "DEC",
-  questions: "Q",
-  change_requests: "CR",
-  incidents: "INC",
-  risks: "RISK",
-  lessons: "LES"
-};
-var allocationsFile = (projectDir) => path13.join(projectDir, ".arima", "state", "allocations.json");
-function readAllocations(projectDir) {
-  const file = allocationsFile(projectDir);
-  if (!existsSync7(file)) return {};
-  return JSON.parse(readFileSync8(file, "utf8"));
-}
-function allocatedTo(projectDir, id) {
-  return readAllocations(projectDir)[id];
-}
-var titleProperty = (db) => dbByKey(db).props.find((p) => p.type === "title")?.name;
 
 // plugins/arima/scripts/src/notion/outbox.ts
 var outboxDir = (projectDir) => path14.join(projectDir, ".arima", "outbox");
@@ -20628,7 +20645,7 @@ async function pushOutbox(projectDir, port, map, opts = {}) {
   function mayWriteStatus(entry) {
     const a = opts.allowStatusWrites;
     if (a === true) return true;
-    return typeof a === "object" && entry.id.startsWith(a.idPrefix);
+    return typeof a === "object" && entry.id.startsWith(a.idPrefix) && isEngineEntry(projectDir, entry.id);
   }
   async function applyEntry(entry) {
     const db = map.databases[entry.database];
@@ -20699,7 +20716,7 @@ async function pushOutbox(projectDir, port, map, opts = {}) {
         return {
           kind: "rejected",
           refused: true,
-          reason: `"Status" on ${db.title} cannot be written from the outbox until the ticket state machine exists (pass --allow-status-writes, which only a human may do)`
+          reason: `"Status" on ${db.title} cannot be written from the outbox except by the engine (the state machine) or init; pass --allow-status-writes, which only a human may do`
         };
       }
       if (def.human_only === true) {
@@ -21568,10 +21585,13 @@ async function runInit(o) {
     }).join(", ");
     const date2 = now.toISOString().slice(0, 10);
     let n = 0;
+    const pendingRegistrations = [];
     const entry = (e) => {
       n += 1;
+      const id = `init-${runId}-${String(n).padStart(2, "0")}`;
+      pendingRegistrations.push(registerEngineEntry(o.projectDir, id));
       enqueue(o.projectDir, {
-        id: `init-${runId}-${String(n).padStart(2, "0")}`,
+        id,
         created_at: new Date(now.getTime() + n).toISOString(),
         run_id: runId,
         role: "orchestrator",
@@ -21627,6 +21647,7 @@ async function runInit(o) {
       });
       result.created.push(`${gate} gate page`);
     }
+    await Promise.all(pendingRegistrations);
     const report = await pushOutbox(o.projectDir, o.port, map, {
       now,
       allowStatusWrites: { idPrefix: "init-" }

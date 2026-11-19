@@ -18692,6 +18692,25 @@ function readLedger(projectDir) {
   return readJsonl(ledgerFile(projectDir), "ledger");
 }
 
+// plugins/arima/scripts/src/ids.ts
+var ID_WIDTHS = {
+  REQ: 3,
+  NFR: 3,
+  EP: 2,
+  US: 3,
+  TC: 4,
+  BUG: 3,
+  ADR: 4,
+  RISK: 3,
+  DEC: 4,
+  Q: 3,
+  MS: 2,
+  CR: 3,
+  INC: 3,
+  LES: 3
+};
+var ID_PREFIXES = Object.keys(ID_WIDTHS);
+
 // plugins/arima/scripts/src/notion/schema.ts
 var ROLE_OPTIONS = [
   "orchestrator",
@@ -19147,25 +19166,6 @@ var GH_READ = [
   ...bash("gh run view")
 ];
 var NPM_TEST = [...bash("npm test"), ...bash("npm run"), ...bash("npm ci")];
-
-// plugins/arima/scripts/src/ids.ts
-var ID_WIDTHS = {
-  REQ: 3,
-  NFR: 3,
-  EP: 2,
-  US: 3,
-  TC: 4,
-  BUG: 3,
-  ADR: 4,
-  RISK: 3,
-  DEC: 4,
-  Q: 3,
-  MS: 2,
-  CR: 3,
-  INC: 3,
-  LES: 3
-};
-var ID_PREFIXES = Object.keys(ID_WIDTHS);
 
 // plugins/arima/scripts/src/budget.ts
 var round = (n) => Math.round(n * 1e6) / 1e6;

@@ -14,7 +14,7 @@ import type { Role } from '../ledger.js';
 import { writeFileAtomic } from '../lib/atomic-file.js';
 import { describeError, getValidator } from '../lib/schema.js';
 import { findSecrets, loadSecretAllowlist } from '../lib/secrets.js';
-import { ID_PREFIX_BY_DB, allocatedTo, titleProperty } from './allocations.js';
+import { ID_PREFIX_BY_DB, allocatedTo, isEngineEntry, titleProperty } from './allocations.js';
 import { findRow, pullMirror, readMirror, toMirrorRow, writeMirror } from './mirror.js';
 import type { MirrorFile, MirrorRow } from './mirror.js';
 import type { MapDatabase, NotionMap } from './mapper.js';
@@ -326,7 +326,11 @@ export async function pushOutbox(
   function mayWriteStatus(entry: OutboxEntry): boolean {
     const a = opts.allowStatusWrites;
     if (a === true) return true;
-    return typeof a === 'object' && entry.id.startsWith(a.idPrefix);
+    return (
+      typeof a === 'object' &&
+      entry.id.startsWith(a.idPrefix) &&
+      isEngineEntry(projectDir, entry.id)
+    );
   }
 
   async function applyEntry(entry: OutboxEntry): Promise<Settled> {
@@ -408,7 +412,7 @@ export async function pushOutbox(
         return {
           kind: 'rejected',
           refused: true,
-          reason: `"Status" on ${db.title} cannot be written from the outbox until the ticket state machine exists (pass --allow-status-writes, which only a human may do)`,
+          reason: `"Status" on ${db.title} cannot be written from the outbox except by the engine (the state machine) or init; pass --allow-status-writes, which only a human may do`,
         };
       }
       if (def.human_only === true) {
