@@ -2,6 +2,7 @@ import path from 'node:path';
 import { parseArgs } from 'node:util';
 import { validateProject } from '../config.js';
 import {
+  filterRows,
   costAlerts,
   estimateAccuracy,
   metrics,
@@ -14,7 +15,8 @@ import {
   usd,
 } from '../cost.js';
 import type { Filter, Totals } from '../cost.js';
-import { appendEvent } from '../events.js';
+import { appendEvent, readEvents } from '../events.js';
+import { delivery, describeDelivery } from '../metrics.js';
 import { readLedger } from '../ledger.js';
 import { issueRunId } from '../runid.js';
 import type { Io } from './config-cli.js';
@@ -138,6 +140,12 @@ export async function runCostCli(argv: string[], io: Io): Promise<number> {
     const acc = estimateAccuracy(rows, stories);
     const alerts = costAlerts(rows, stories);
     const tco = totalCostOfOwnership(rows, readManualCosts(projectDir), filter);
+    const deliv = delivery({
+      events: readEvents(projectDir),
+      rows: filterRows(rows, filter),
+      projectCap: budget.project_cap,
+      humanHours: tco.humanHours,
+    });
 
     if (v['json'] === true) {
       const obj = (mp: Map<string | number, Totals>): Record<string, unknown> =>
@@ -167,6 +175,7 @@ export async function runCostCli(argv: string[], io: Io): Promise<number> {
           estimate_accuracy: acc,
           alerts: alerts.map((a) => a.detail),
           tco,
+          delivery: { ...deliv, items: undefined },
         })}\n`,
       );
       return COST_EXIT.ok;
@@ -198,6 +207,7 @@ export async function runCostCli(argv: string[], io: Io): Promise<number> {
       '',
       `Total cost of ownership: agents ${tco.agents.toFixed(2)} + infrastructure ${tco.infrastructure.toFixed(2)} + human ${tco.humanHours}h = ${tco.humanCost.toFixed(2)}${tco.rateMissing ? ' (no hourly rate in .arima/manual-costs.json)' : ''} = ${tco.total.toFixed(2)}`,
     );
+    L.push('', ...describeDelivery(deliv));
     if (alerts.length > 0) L.push('', 'Alerts', ...alerts.map((a) => `  ${a.detail}`));
     io.out(`${L.join('\n')}\n`);
     return COST_EXIT.ok;

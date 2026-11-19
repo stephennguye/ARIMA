@@ -1544,7 +1544,7 @@ var require_dataType = __commonJS({
     exports.coerceAndCheckDataType = coerceAndCheckDataType;
     var COERCIBLE = /* @__PURE__ */ new Set(["string", "number", "integer", "boolean", "null"]);
     function coerceToTypes(types, coerceTypes) {
-      return coerceTypes ? types.filter((t2) => COERCIBLE.has(t2) || coerceTypes === "array" && t2 === "array") : [];
+      return coerceTypes ? types.filter((t3) => COERCIBLE.has(t3) || coerceTypes === "array" && t3 === "array") : [];
     }
     function coerceData(it, types, coerceTo) {
       const { gen, data, opts } = it;
@@ -1554,9 +1554,9 @@ var require_dataType = __commonJS({
         gen.if((0, codegen_1._)`${dataType} == 'object' && Array.isArray(${data}) && ${data}.length == 1`, () => gen.assign(data, (0, codegen_1._)`${data}[0]`).assign(dataType, (0, codegen_1._)`typeof ${data}`).if(checkDataTypes(types, data, opts.strictNumbers), () => gen.assign(coerced, data)));
       }
       gen.if((0, codegen_1._)`${coerced} !== undefined`);
-      for (const t2 of coerceTo) {
-        if (COERCIBLE.has(t2) || t2 === "array" && opts.coerceTypes === "array") {
-          coerceSpecificType(t2);
+      for (const t3 of coerceTo) {
+        if (COERCIBLE.has(t3) || t3 === "array" && opts.coerceTypes === "array") {
+          coerceSpecificType(t3);
         }
       }
       gen.else();
@@ -1566,8 +1566,8 @@ var require_dataType = __commonJS({
         gen.assign(data, coerced);
         assignParentData(it, coerced);
       });
-      function coerceSpecificType(t2) {
-        switch (t2) {
+      function coerceSpecificType(t3) {
+        switch (t3) {
           case "string":
             gen.elseIf((0, codegen_1._)`${dataType} == "number" || ${dataType} == "boolean"`).assign(coerced, (0, codegen_1._)`"" + ${data}`).elseIf((0, codegen_1._)`${data} === null`).assign(coerced, (0, codegen_1._)`""`);
             return;
@@ -1639,8 +1639,8 @@ var require_dataType = __commonJS({
       }
       if (types.number)
         delete types.integer;
-      for (const t2 in types)
-        cond = (0, codegen_1.and)(cond, checkDataType(t2, data, strictNums, correct));
+      for (const t3 in types)
+        cond = (0, codegen_1.and)(cond, checkDataType(t3, data, strictNums, correct));
       return cond;
     }
     exports.checkDataTypes = checkDataTypes;
@@ -2555,9 +2555,9 @@ var require_validate = __commonJS({
         it.dataTypes = types;
         return;
       }
-      types.forEach((t2) => {
-        if (!includesType(it.dataTypes, t2)) {
-          strictTypesError(it, `type "${t2}" not allowed by context "${it.dataTypes.join(",")}"`);
+      types.forEach((t3) => {
+        if (!includesType(it.dataTypes, t3)) {
+          strictTypesError(it, `type "${t3}" not allowed by context "${it.dataTypes.join(",")}"`);
         }
       });
       narrowSchemaTypes(it, types);
@@ -2573,7 +2573,7 @@ var require_validate = __commonJS({
         const rule = rules[keyword];
         if (typeof rule == "object" && (0, applicability_1.shouldUseRule)(it.schema, rule)) {
           const { type } = rule.definition;
-          if (type.length && !type.some((t2) => hasApplicableType(ts, t2))) {
+          if (type.length && !type.some((t3) => hasApplicableType(ts, t3))) {
             strictTypesError(it, `missing type "${type.join(",")}" for keyword "${keyword}"`);
           }
         }
@@ -2582,15 +2582,15 @@ var require_validate = __commonJS({
     function hasApplicableType(schTs, kwdT) {
       return schTs.includes(kwdT) || kwdT === "number" && schTs.includes("integer");
     }
-    function includesType(ts, t2) {
-      return ts.includes(t2) || t2 === "integer" && ts.includes("number");
+    function includesType(ts, t3) {
+      return ts.includes(t3) || t3 === "integer" && ts.includes("number");
     }
     function narrowSchemaTypes(it, withTypes) {
       const ts = [];
-      for (const t2 of it.dataTypes) {
-        if (includesType(withTypes, t2))
-          ts.push(t2);
-        else if (withTypes.includes("integer") && t2 === "number")
+      for (const t3 of it.dataTypes) {
+        if (includesType(withTypes, t3))
+          ts.push(t3);
+        else if (withTypes.includes("integer") && t3 === "number")
           ts.push("integer");
       }
       it.dataTypes = ts;
@@ -4654,7 +4654,7 @@ var require_core = __commonJS({
           type: (0, dataType_1.getJSONTypes)(def.type),
           schemaType: (0, dataType_1.getJSONTypes)(def.schemaType)
         };
-        (0, util_1.eachItem)(keyword, definition.type.length === 0 ? (k) => addRule.call(this, k, definition) : (k) => definition.type.forEach((t2) => addRule.call(this, k, definition, t2)));
+        (0, util_1.eachItem)(keyword, definition.type.length === 0 ? (k) => addRule.call(this, k, definition) : (k) => definition.type.forEach((t3) => addRule.call(this, k, definition, t3)));
         return this;
       }
       getKeyword(keyword) {
@@ -4853,7 +4853,7 @@ var require_core = __commonJS({
       if (dataType && post)
         throw new Error('keyword with "post" flag cannot have "type"');
       const { RULES } = this;
-      let ruleGroup = post ? RULES.post : RULES.rules.find(({ type: t2 }) => t2 === dataType);
+      let ruleGroup = post ? RULES.post : RULES.rules.find(({ type: t3 }) => t3 === dataType);
       if (!ruleGroup) {
         ruleGroup = { type: dataType, rules: [] };
         RULES.rules.push(ruleGroup);
@@ -5401,7 +5401,7 @@ var require_uniqueItems = __commonJS({
           gen.if((0, codegen_1._)`${i} > 1`, () => (canOptimize() ? loopN : loopN2)(i, j));
         }
         function canOptimize() {
-          return itemTypes.length > 0 && !itemTypes.some((t2) => t2 === "object" || t2 === "array");
+          return itemTypes.length > 0 && !itemTypes.some((t3) => t3 === "object" || t3 === "array");
         }
         function loopN(i, j) {
           const item = gen.name("item");
@@ -7636,23 +7636,23 @@ var require_formats = __commonJS({
       if (!(s1 && s2))
         return void 0;
       const t1 = (/* @__PURE__ */ new Date("2020-01-01T" + s1)).valueOf();
-      const t2 = (/* @__PURE__ */ new Date("2020-01-01T" + s2)).valueOf();
-      if (!(t1 && t2))
+      const t22 = (/* @__PURE__ */ new Date("2020-01-01T" + s2)).valueOf();
+      if (!(t1 && t22))
         return void 0;
-      return t1 - t2;
+      return t1 - t22;
     }
-    function compareIsoTime(t1, t2) {
-      if (!(t1 && t2))
+    function compareIsoTime(t1, t22) {
+      if (!(t1 && t22))
         return void 0;
       const a1 = TIME.exec(t1);
-      const a2 = TIME.exec(t2);
+      const a2 = TIME.exec(t22);
       if (!(a1 && a2))
         return void 0;
       t1 = a1[1] + a1[2] + a1[3];
-      t2 = a2[1] + a2[2] + a2[3];
-      if (t1 > t2)
+      t22 = a2[1] + a2[2] + a2[3];
+      if (t1 > t22)
         return 1;
-      if (t1 < t2)
+      if (t1 < t22)
         return -1;
       return 0;
     }
@@ -7677,11 +7677,11 @@ var require_formats = __commonJS({
       if (!(dt1 && dt2))
         return void 0;
       const [d1, t1] = dt1.split(DATE_TIME_SEPARATOR);
-      const [d2, t2] = dt2.split(DATE_TIME_SEPARATOR);
+      const [d2, t22] = dt2.split(DATE_TIME_SEPARATOR);
       const res = compareDate(d1, d2);
       if (res === void 0)
         return void 0;
-      return res || compareTime(t1, t2);
+      return res || compareTime(t1, t22);
     }
     var NOT_URI_FRAGMENT = /\/|:/;
     var URI = /^(?:[a-z][a-z0-9+\-.]*:)(?:\/?\/(?:(?:[a-z0-9\-._~!$&'()*+,;=:]|%[0-9a-f]{2})*@)?(?:\[(?:(?:(?:(?:[0-9a-f]{1,4}:){6}|::(?:[0-9a-f]{1,4}:){5}|(?:[0-9a-f]{1,4})?::(?:[0-9a-f]{1,4}:){4}|(?:(?:[0-9a-f]{1,4}:){0,1}[0-9a-f]{1,4})?::(?:[0-9a-f]{1,4}:){3}|(?:(?:[0-9a-f]{1,4}:){0,2}[0-9a-f]{1,4})?::(?:[0-9a-f]{1,4}:){2}|(?:(?:[0-9a-f]{1,4}:){0,3}[0-9a-f]{1,4})?::[0-9a-f]{1,4}:|(?:(?:[0-9a-f]{1,4}:){0,4}[0-9a-f]{1,4})?::)(?:[0-9a-f]{1,4}:[0-9a-f]{1,4}|(?:(?:25[0-5]|2[0-4]\d|[01]?\d\d?)\.){3}(?:25[0-5]|2[0-4]\d|[01]?\d\d?))|(?:(?:[0-9a-f]{1,4}:){0,5}[0-9a-f]{1,4})?::[0-9a-f]{1,4}|(?:(?:[0-9a-f]{1,4}:){0,6}[0-9a-f]{1,4})?::)|[Vv][0-9a-f]+\.[a-z0-9\-._~!$&'()*+,;=:]+)\]|(?:(?:25[0-5]|2[0-4]\d|[01]?\d\d?)\.){3}(?:25[0-5]|2[0-4]\d|[01]?\d\d?)|(?:[a-z0-9\-._~!$&'()*+,;=]|%[0-9a-f]{2})*)(?::\d*)?(?:\/(?:[a-z0-9\-._~!$&'()*+,;=:@]|%[0-9a-f]{2})*)*|\/(?:(?:[a-z0-9\-._~!$&'()*+,;=:@]|%[0-9a-f]{2})+(?:\/(?:[a-z0-9\-._~!$&'()*+,;=:@]|%[0-9a-f]{2})*)*)?|(?:[a-z0-9\-._~!$&'()*+,;=:@]|%[0-9a-f]{2})+(?:\/(?:[a-z0-9\-._~!$&'()*+,;=:@]|%[0-9a-f]{2})*)*)(?:\?(?:[a-z0-9\-._~!$&'()*+,;=:@/?]|%[0-9a-f]{2})*)?(?:#(?:[a-z0-9\-._~!$&'()*+,;=:@/?]|%[0-9a-f]{2})*)?$/i;
@@ -8816,13 +8816,13 @@ var require_createNode = __commonJS({
     var defaultTagPrefix = "tag:yaml.org,2002:";
     function findTagObject(value, tagName, tags) {
       if (tagName) {
-        const match = tags.filter((t2) => t2.tag === tagName);
-        const tagObj = match.find((t2) => !t2.format) ?? match[0];
+        const match = tags.filter((t3) => t3.tag === tagName);
+        const tagObj = match.find((t3) => !t3.format) ?? match[0];
         if (!tagObj)
           throw new Error(`Tag ${tagName} not found`);
         return tagObj;
       }
-      return tags.find((t2) => t2.identify?.(value) && !t2.format);
+      return tags.find((t3) => t3.identify?.(value) && !t3.format);
     }
     function createNode(value, tagName, ctx) {
       if (identity.isDocument(value))
@@ -9449,10 +9449,10 @@ ${indent}`);
       let res = _stringify(type);
       if (res === null) {
         const { defaultKeyType, defaultStringType } = ctx.options;
-        const t2 = implicitKey && defaultKeyType || defaultStringType;
-        res = _stringify(t2);
+        const t3 = implicitKey && defaultKeyType || defaultStringType;
+        res = _stringify(t3);
         if (res === null)
-          throw new Error(`Unsupported default string type ${t2}`);
+          throw new Error(`Unsupported default string type ${t3}`);
       }
       return res;
     }
@@ -9512,24 +9512,24 @@ var require_stringify = __commonJS({
     }
     function getTagObject(tags, item) {
       if (item.tag) {
-        const match = tags.filter((t2) => t2.tag === item.tag);
+        const match = tags.filter((t3) => t3.tag === item.tag);
         if (match.length > 0)
-          return match.find((t2) => t2.format === item.format) ?? match[0];
+          return match.find((t3) => t3.format === item.format) ?? match[0];
       }
       let tagObj = void 0;
       let obj;
       if (identity.isScalar(item)) {
         obj = item.value;
-        let match = tags.filter((t2) => t2.identify?.(obj));
+        let match = tags.filter((t3) => t3.identify?.(obj));
         if (match.length > 1) {
-          const testMatch = match.filter((t2) => t2.test);
+          const testMatch = match.filter((t3) => t3.test);
           if (testMatch.length > 0)
             match = testMatch;
         }
-        tagObj = match.find((t2) => t2.format === item.format) ?? match.find((t2) => !t2.format);
+        tagObj = match.find((t3) => t3.format === item.format) ?? match.find((t3) => !t3.format);
       } else {
         obj = item;
-        tagObj = tags.find((t2) => t2.nodeClass && obj instanceof t2.nodeClass);
+        tagObj = tags.find((t3) => t3.nodeClass && obj instanceof t3.nodeClass);
       }
       if (!tagObj) {
         const name = obj?.constructor?.name ?? (obj === null ? "null" : typeof obj);
@@ -12458,7 +12458,7 @@ var require_compose_collection = __commonJS({
       if (!tagToken || !tagName || tagName === "!" || tagName === YAMLMap.YAMLMap.tagName && expType === "map" || tagName === YAMLSeq.YAMLSeq.tagName && expType === "seq") {
         return resolveCollection(CN, ctx, token, onError, tagName);
       }
-      let tag = ctx.schema.tags.find((t2) => t2.tag === tagName && t2.collection === expType);
+      let tag = ctx.schema.tags.find((t3) => t3.tag === tagName && t3.collection === expType);
       if (!tag) {
         const kt = ctx.schema.knownTags[tagName];
         if (kt?.collection === expType) {
@@ -15859,8 +15859,8 @@ function scan(text2) {
   const out = [];
   const seen = /* @__PURE__ */ new Set();
   for (const p of PATTERNS) {
-    for (const t2 of text2 === unescaped ? [text2] : [text2, unescaped]) {
-      for (const m of t2.matchAll(new RegExp(p.re.source, p.re.flags))) {
+    for (const t3 of text2 === unescaped ? [text2] : [text2, unescaped]) {
+      for (const m of t3.matchAll(new RegExp(p.re.source, p.re.flags))) {
         const groups = m.slice(1).map((x) => x ?? "");
         if (p.accept && !p.accept(m[0], groups)) continue;
         const f = fingerprint(m[0]);
@@ -16570,28 +16570,28 @@ var zero = () => ({
   rework_runs: 0,
   failed_runs: 0
 });
-function add(t2, r) {
-  t2.runs += 1;
-  t2.cost_micro += micro(r.cost_usd);
-  t2.turns += r.num_turns;
-  t2.input += r.tokens.input;
-  t2.output += r.tokens.output;
-  t2.cache_read += r.tokens.cache_read;
-  t2.cache_creation += r.tokens.cache_creation;
-  t2.duration_ms += r.duration_ms;
+function add(t3, r) {
+  t3.runs += 1;
+  t3.cost_micro += micro(r.cost_usd);
+  t3.turns += r.num_turns;
+  t3.input += r.tokens.input;
+  t3.output += r.tokens.output;
+  t3.cache_read += r.tokens.cache_read;
+  t3.cache_creation += r.tokens.cache_creation;
+  t3.duration_ms += r.duration_ms;
   if (r.is_rework) {
-    t2.rework_micro += micro(r.cost_usd);
-    t2.rework_runs += 1;
+    t3.rework_micro += micro(r.cost_usd);
+    t3.rework_runs += 1;
   }
-  if (r.result === "fail" || r.result === "error") t2.failed_runs += 1;
+  if (r.result === "fail" || r.result === "error") t3.failed_runs += 1;
 }
 var filterRows = (rows, f) => rows.filter(
   (r) => (f.from === void 0 || r.date >= f.from) && (f.to === void 0 || r.date <= f.to) && (f.milestone === void 0 || r.milestone === f.milestone) && (f.phase === void 0 || r.phase === f.phase) && (f.item === void 0 || r.item === f.item) && (f.role === void 0 || r.role === f.role)
 );
 var bump = (m, k, r) => {
-  let t2 = m.get(k);
-  if (t2 === void 0) m.set(k, t2 = zero());
-  add(t2, r);
+  let t3 = m.get(k);
+  if (t3 === void 0) m.set(k, t3 = zero());
+  add(t3, r);
 };
 function rollup(rows, filter = {}) {
   const out = {
@@ -16618,15 +16618,15 @@ function rollup(rows, filter = {}) {
 }
 function metrics(rows, filter = {}) {
   const r = filterRows(rows, filter);
-  const t2 = rollup(rows, filter).total;
+  const t3 = rollup(rows, filter).total;
   const qa = r.filter((x) => x.role === "qa" && x.attempt === 1 && x.item !== "none");
   const passed = qa.filter((x) => x.result === "pass").length;
-  const denom = t2.input + t2.cache_read + t2.cache_creation;
+  const denom = t3.input + t3.cache_read + t3.cache_creation;
   return {
-    reworkShare: t2.cost_micro > 0 ? t2.rework_micro / t2.cost_micro : void 0,
-    cacheEfficiency: denom > 0 ? t2.cache_read / denom : void 0,
-    turnsPerRun: t2.runs > 0 ? t2.turns / t2.runs : void 0,
-    runFailureRate: t2.runs > 0 ? t2.failed_runs / t2.runs : void 0,
+    reworkShare: t3.cost_micro > 0 ? t3.rework_micro / t3.cost_micro : void 0,
+    cacheEfficiency: denom > 0 ? t3.cache_read / denom : void 0,
+    turnsPerRun: t3.runs > 0 ? t3.turns / t3.runs : void 0,
+    runFailureRate: t3.runs > 0 ? t3.failed_runs / t3.runs : void 0,
     firstPassQa: { passed, of: qa.length, rate: qa.length > 0 ? passed / qa.length : void 0 }
   };
 }
@@ -16686,9 +16686,9 @@ function costAlerts(rows, stories) {
           detail: `${m.id} cost ${m.cost.toFixed(2)}, more than ${STORY_MEDIAN_FACTOR}x the median ${med.toFixed(2)} of size ${size} stories`
         });
   }
-  for (const [ms, t2] of r.byMilestone) {
-    if (t2.runs < MIN_RUNS_FOR_REWORK_ALERT || t2.cost_micro === 0) continue;
-    const share = t2.rework_micro / t2.cost_micro;
+  for (const [ms, t3] of r.byMilestone) {
+    if (t3.runs < MIN_RUNS_FOR_REWORK_ALERT || t3.cost_micro === 0) continue;
+    const share = t3.rework_micro / t3.cost_micro;
     if (share > REWORK_SHARE_LIMIT)
       out.push({
         kind: "rework_share",
@@ -16838,6 +16838,192 @@ async function syncCostLog(o) {
   return res;
 }
 
+// plugins/arima/scripts/src/metrics.ts
+var t2 = (ts) => Date.parse(ts);
+function itemTimes(events, rows, now) {
+  const byItem = /* @__PURE__ */ new Map();
+  const created = /* @__PURE__ */ new Map();
+  const push = (id, e) => void byItem.set(id, [...byItem.get(id) ?? [], e]);
+  for (const e of [...events].sort((a, b) => a.ts.localeCompare(b.ts))) {
+    if (e.type === "id.issued" && e.item !== void 0 && !created.has(e.item))
+      created.set(e.item, t2(e.ts));
+    if (e.type === "item.status" && e.item !== void 0 && typeof e.data?.["to"] === "string")
+      push(e.item, e);
+  }
+  const touch = /* @__PURE__ */ new Map();
+  for (const r of rows)
+    if (r.item !== "none") touch.set(r.item, (touch.get(r.item) ?? 0) + r.duration_ms);
+  const out = [];
+  for (const item of /* @__PURE__ */ new Set([...byItem.keys(), ...created.keys(), ...touch.keys()])) {
+    const evs = byItem.get(item) ?? [];
+    const stays = evs.map((e, i) => ({
+      status: e.data?.["to"],
+      from: t2(e.ts),
+      to: i + 1 < evs.length ? t2(evs[i + 1].ts) : now.getTime(),
+      ...typeof e.data?.["reason"] === "string" ? { reason: e.data["reason"] } : {}
+    }));
+    const createdAt = created.get(item) ?? (evs[0] ? t2(evs[0].ts) : void 0);
+    const released = stays.find((s) => s.status === "Released");
+    const firstProgress = stays.find((s) => s.status === "In Progress");
+    const firstDone = stays.find(
+      (s) => s.status === "Done" && (firstProgress === void 0 || s.from >= firstProgress.from)
+    );
+    const sum = (pred) => stays.filter(pred).reduce((a, s) => a + Math.max(0, s.to - s.from), 0);
+    const leadMs = createdAt !== void 0 && released !== void 0 ? released.from - createdAt : void 0;
+    const touchMs = touch.get(item) ?? 0;
+    const last = stays.at(-1);
+    out.push({
+      item,
+      ...createdAt !== void 0 ? { createdAt: new Date(createdAt).toISOString() } : {},
+      ...released ? { releasedAt: new Date(released.from).toISOString() } : {},
+      ...leadMs !== void 0 ? { leadMs } : {},
+      ...firstProgress && firstDone ? { cycleMs: firstDone.from - firstProgress.from } : {},
+      touchMs,
+      queueMs: sum((s) => s.status === "Ready"),
+      humanWaitMs: sum(
+        (s) => s.status === "PO Acceptance" || s.status === "Blocked" && /^Q-\d+/.test(s.reason ?? "")
+      ),
+      ...leadMs !== void 0 && leadMs > 0 ? { flowEfficiency: touchMs / leadMs } : {},
+      closed: last?.status === "Released" || last?.status === "Cancelled",
+      ...last ? { status: last.status } : {}
+    });
+  }
+  return out.sort((a, b) => a.item.localeCompare(b.item));
+}
+function gateWaitMs(events, now) {
+  const open = /* @__PURE__ */ new Map();
+  let total = 0;
+  for (const e of [...events].sort((a, b) => a.ts.localeCompare(b.ts))) {
+    const gate = typeof e.data?.["gate"] === "string" ? e.data["gate"] : void 0;
+    if (gate === void 0) continue;
+    if (e.type === "gate.opened" && !open.has(gate)) open.set(gate, t2(e.ts));
+    if (e.type === "gate.decided" && open.has(gate)) {
+      total += t2(e.ts) - open.get(gate);
+      open.delete(gate);
+    }
+  }
+  for (const from of open.values()) total += Math.max(0, now.getTime() - from);
+  return total;
+}
+function agentVersusWall(rows) {
+  const spans = rows.filter((r) => r.started_at !== void 0).map((r) => ({
+    from: t2(r.started_at),
+    to: t2(r.started_at) + r.duration_ms
+  }));
+  const agentMs = rows.reduce((a, r) => a + r.duration_ms, 0);
+  const merged = spans.sort((a, b) => a.from - b.from).reduce((acc, s) => {
+    const last = acc.at(-1);
+    if (last && s.from <= last.to) last.to = Math.max(last.to, s.to);
+    else acc.push({ ...s });
+    return acc;
+  }, []);
+  const wallMs = merged.reduce((a, s) => a + (s.to - s.from), 0);
+  return { agentMs, wallMs, parallelism: wallMs > 0 ? agentMs / wallMs : void 0 };
+}
+function stat(xs) {
+  if (xs.length === 0) return { n: 0, median: void 0, mean: void 0 };
+  const s = [...xs].sort((a, b) => a - b);
+  const h = Math.floor(s.length / 2);
+  return {
+    n: s.length,
+    median: s.length % 2 ? s[h] : (s[h - 1] + s[h]) / 2,
+    mean: s.reduce((a, b) => a + b, 0) / s.length
+  };
+}
+function dora(events) {
+  const deploys = events.filter((e) => e.type === "deploy.production");
+  if (deploys.length === 0)
+    return { measurable: false, reason: "no production deployment has been recorded yet" };
+  const ok = deploys.filter((e) => e.data?.["ok"] !== false);
+  const first = Math.min(...deploys.map((e) => t2(e.ts)));
+  const last = Math.max(...deploys.map((e) => t2(e.ts)));
+  const weeks = Math.max(1, (last - first) / (7 * 864e5));
+  const merges = /* @__PURE__ */ new Map();
+  for (const e of events) if (e.type === "merge.done" && e.item) merges.set(e.item, t2(e.ts));
+  const leads = [];
+  for (const d of ok)
+    for (const item of Array.isArray(d.data?.["items"]) ? d.data["items"] : [])
+      if (merges.has(item)) leads.push(t2(d.ts) - merges.get(item));
+  const rolled = new Set(
+    events.filter((e) => e.type === "deploy.rollback").map((e) => String(e.data?.["version"] ?? ""))
+  );
+  const incidentVersions = new Set(
+    events.filter((e) => e.type === "incident.opened").map((e) => String(e.data?.["version"] ?? "")).filter(Boolean)
+  );
+  const failed = deploys.filter(
+    (d) => d.data?.["ok"] === false || rolled.has(String(d.data?.["version"] ?? "")) || incidentVersions.has(String(d.data?.["version"] ?? ""))
+  ).length;
+  const opened = /* @__PURE__ */ new Map();
+  const recov = [];
+  for (const e of [...events].sort((a, b) => a.ts.localeCompare(b.ts))) {
+    if (e.type === "incident.opened" && e.item) opened.set(e.item, t2(e.ts));
+    if (e.type === "incident.closed" && e.item && opened.has(e.item))
+      recov.push(t2(e.ts) - opened.get(e.item));
+  }
+  return {
+    measurable: true,
+    deployments: deploys.length,
+    deploymentFrequencyPerWeek: ok.length / weeks,
+    changeLeadTimeMs: stat(leads).median,
+    changeFailureRate: failed / deploys.length,
+    failedDeploymentRecoveryMs: stat(recov).median,
+    deploymentReworkRate: deploys.filter((d) => d.data?.["hotfix"] === true).length / deploys.length
+  };
+}
+function delivery(o) {
+  const now = o.now ?? /* @__PURE__ */ new Date();
+  const items = itemTimes(o.events, o.rows, now);
+  const stories = items.filter((i) => /^US-/.test(i.item));
+  const accepted = new Set(
+    o.events.filter(
+      (e) => e.type === "item.status" && (e.data?.["to"] === "Done" || e.data?.["to"] === "Released") && e.item !== void 0
+    ).map((e) => e.item)
+  );
+  const cost = (id) => Math.round(o.rows.filter((r) => r.item === id).reduce((a, r) => a + r.cost_usd * 1e6, 0)) / 1e6;
+  const acceptedStories = [...accepted].filter((id) => /^US-/.test(id));
+  const spent = Math.round(o.rows.reduce((a, r) => a + r.cost_usd * 1e6, 0)) / 1e6;
+  return {
+    items,
+    lead: stat(items.flatMap((i) => i.leadMs !== void 0 ? [i.leadMs] : [])),
+    cycle: stat(items.flatMap((i) => i.cycleMs !== void 0 ? [i.cycleMs] : [])),
+    touch: stat(stories.filter((i) => i.touchMs > 0).map((i) => i.touchMs)),
+    queue: stat(stories.filter((i) => i.queueMs > 0).map((i) => i.queueMs)),
+    humanWait: stat(stories.filter((i) => i.humanWaitMs > 0).map((i) => i.humanWaitMs)),
+    flowEfficiency: stat(
+      items.flatMap((i) => i.flowEfficiency !== void 0 ? [i.flowEfficiency] : [])
+    ),
+    gateWaitMs: gateWaitMs(o.events, now),
+    agentVsWall: agentVersusWall(o.rows),
+    costPerAcceptedStory: {
+      stories: acceptedStories.length,
+      costUsd: acceptedStories.length > 0 ? Math.round(
+        acceptedStories.reduce((a, id) => a + cost(id), 0) / acceptedStories.length * 1e6
+      ) / 1e6 : void 0
+    },
+    budgetBurn: o.projectCap !== void 0 && o.projectCap > 0 ? spent / o.projectCap : void 0,
+    humanMinutes: Math.round((o.humanHours ?? 0) * 60),
+    dora: dora(o.events)
+  };
+}
+var hours = (ms) => ms === void 0 ? "n/a" : `${(ms / 36e5).toFixed(1)}h`;
+function describeDelivery(d) {
+  const line = (name, s) => `  ${name.padEnd(16)} ${s.n === 0 ? "n/a" : `median ${hours(s.median)}, mean ${hours(s.mean)} (n=${s.n})`}`;
+  return [
+    "Delivery",
+    line("Lead time", d.lead),
+    line("Cycle time", d.cycle),
+    line("Touch time", d.touch),
+    line("Queue time", d.queue),
+    line("Human wait", d.humanWait),
+    `  ${"Flow efficiency".padEnd(16)} ${d.flowEfficiency.n === 0 ? "n/a" : `${((d.flowEfficiency.median ?? 0) * 100).toFixed(0)}% median (n=${d.flowEfficiency.n})`}`,
+    `  ${"Gate wait".padEnd(16)} ${hours(d.gateWaitMs)}`,
+    `  ${"Agent vs wall".padEnd(16)} ${hours(d.agentVsWall.agentMs)} of agent time in ${hours(d.agentVsWall.wallMs)} of wall time${d.agentVsWall.parallelism ? ` (${d.agentVsWall.parallelism.toFixed(1)}x parallel)` : ""}`,
+    `  ${"Cost / accepted".padEnd(16)} ${d.costPerAcceptedStory.costUsd === void 0 ? "n/a" : `$${d.costPerAcceptedStory.costUsd.toFixed(2)} over ${d.costPerAcceptedStory.stories} stories`}`,
+    `  ${"Budget burn".padEnd(16)} ${d.budgetBurn === void 0 ? "n/a" : `${(d.budgetBurn * 100).toFixed(0)}% of the project cap`}`,
+    `  ${"DORA".padEnd(16)} ${d.dora.measurable ? `${d.dora.deployments} deployments, ${d.dora.deploymentFrequencyPerWeek.toFixed(1)}/week, change failure ${(d.dora.changeFailureRate * 100).toFixed(0)}%, rework ${(d.dora.deploymentReworkRate * 100).toFixed(0)}%, lead ${hours(d.dora.changeLeadTimeMs)}, recovery ${hours(d.dora.failedDeploymentRecoveryMs)}` : `not yet measurable (${d.dora.reason})`}`
+  ];
+}
+
 // plugins/arima/scripts/src/runid.ts
 import { existsSync as existsSync9, mkdirSync as mkdirSync6, readFileSync as readFileSync10 } from "node:fs";
 import path14 from "node:path";
@@ -16875,7 +17061,7 @@ function table(title, rows) {
     "",
     title,
     ...sorted.map(
-      ([k, t2]) => `  ${String(k).padEnd(12)} ${money(t2.cost_micro).padStart(10)}  ${String(t2.runs).padStart(4)} runs  rework ${money(t2.rework_micro)}`
+      ([k, t3]) => `  ${String(k).padEnd(12)} ${money(t3.cost_micro).padStart(10)}  ${String(t3.runs).padStart(4)} runs  rework ${money(t3.rework_micro)}`
     )
   ];
 }
@@ -16972,16 +17158,22 @@ ${fresh.map((a) => `alert: ${a.detail}
     const acc = estimateAccuracy(rows, stories);
     const alerts = costAlerts(rows, stories);
     const tco = totalCostOfOwnership(rows, readManualCosts(projectDir), filter);
+    const deliv = delivery({
+      events: readEvents(projectDir),
+      rows: filterRows(rows, filter),
+      projectCap: budget.project_cap,
+      humanHours: tco.humanHours
+    });
     if (v["json"] === true) {
       const obj = (mp) => Object.fromEntries(
-        [...mp].map(([k, t2]) => [
+        [...mp].map(([k, t3]) => [
           String(k),
           {
-            runs: t2.runs,
-            cost_usd: usd(t2.cost_micro),
-            rework_usd: usd(t2.rework_micro),
-            turns: t2.turns,
-            duration_ms: t2.duration_ms
+            runs: t3.runs,
+            cost_usd: usd(t3.cost_micro),
+            rework_usd: usd(t3.rework_micro),
+            turns: t3.turns,
+            duration_ms: t3.duration_ms
           }
         ])
       );
@@ -16998,7 +17190,8 @@ ${fresh.map((a) => `alert: ${a.detail}
           metrics: m,
           estimate_accuracy: acc,
           alerts: alerts.map((a) => a.detail),
-          tco
+          tco,
+          delivery: { ...deliv, items: void 0 }
         })}
 `
       );
@@ -17030,6 +17223,7 @@ ${fresh.map((a) => `alert: ${a.detail}
       "",
       `Total cost of ownership: agents ${tco.agents.toFixed(2)} + infrastructure ${tco.infrastructure.toFixed(2)} + human ${tco.humanHours}h = ${tco.humanCost.toFixed(2)}${tco.rateMissing ? " (no hourly rate in .arima/manual-costs.json)" : ""} = ${tco.total.toFixed(2)}`
     );
+    L.push("", ...describeDelivery(deliv));
     if (alerts.length > 0) L.push("", "Alerts", ...alerts.map((a) => `  ${a.detail}`));
     io.out(`${L.join("\n")}
 `);

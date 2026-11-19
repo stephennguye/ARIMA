@@ -1,5 +1,6 @@
 import { existsSync, mkdirSync, readFileSync } from 'node:fs';
 import path from 'node:path';
+import { appendEvent } from '../events.js';
 import { nextId } from '../ids.js';
 import type { IdPrefix } from '../ids.js';
 import { writeFileAtomic } from '../lib/atomic-file.js';
@@ -44,6 +45,14 @@ export async function allocateId(
   runId: string,
 ): Promise<string> {
   const id = await nextId(projectDir, prefix);
+  // The moment an id is issued is when the item is created: lead time starts here (spec 13.3).
+  await appendEvent(projectDir, {
+    type: 'id.issued',
+    actor: 'system',
+    run_id: runId,
+    ...(/^(US|BUG|INC|CR)-/.test(id) ? { item: id } : {}),
+    data: { id },
+  });
   const file = allocationsFile(projectDir);
   mkdirSync(path.dirname(file), { recursive: true });
   await withFileLock(`${file}.lock`, () => {

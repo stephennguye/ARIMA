@@ -462,6 +462,9 @@ describe('arima-cost', () => {
       'Rework share 38%',
       'Estimate accuracy',
       'Total cost of ownership',
+      'Delivery',
+      'Lead time',
+      'not yet measurable',
     ])
       expect(all.out).toContain(h);
     const item = await run(['--by', 'item'], dir);

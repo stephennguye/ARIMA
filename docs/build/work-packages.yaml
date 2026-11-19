@@ -561,7 +561,7 @@ packages:
   - id: WP-132
     stage: 1
     track: skill
-    status: ready
+    status: done
     title: "Delivery metrics from the ledger and events: lead, cycle, touch, queue, human wait, flow efficiency, rework share, first-pass QA, estimate accuracy; DORA"
     deps:
       - WP-003
