@@ -26886,7 +26886,10 @@ async function runDispatch(o) {
       });
   };
   try {
-    let attemptOf2 = function(item) {
+    let mirrorStatusOf2 = function(item) {
+      const v = findRow(readMirror(o.projectDir, "stories"), item)?.properties["Status"];
+      return typeof v === "string" ? v : void 0;
+    }, attemptOf2 = function(item) {
       return mirrorAttempt(o.projectDir, item);
     }, readAttempt2 = function(item) {
       return attemptOf2(item);
@@ -26963,7 +26966,7 @@ async function runDispatch(o) {
       const e = readEvents(o.projectDir).filter((x) => x.type === "pr.published" && x.item === item).at(-1);
       return typeof e?.data?.["pr"] === "number" ? e.data["pr"] : void 0;
     };
-    var attemptOf = attemptOf2, readAttempt = readAttempt2, lastDevelopReport = lastDevelopReport2, titleOf = titleOf2, storyBranchOf = storyBranchOf2, packetFor = packetFor2, prNumber = prNumber2;
+    var mirrorStatusOf = mirrorStatusOf2, attemptOf = attemptOf2, readAttempt = readAttempt2, lastDevelopReport = lastDevelopReport2, titleOf = titleOf2, storyBranchOf = storyBranchOf2, packetFor = packetFor2, prNumber = prNumber2;
     const setup = d.setupCheck?.() ?? {
       green: true,
       detail: "arima-setup is not built yet; the Phase 3 checklist was not checked"
@@ -27101,6 +27104,26 @@ async function runDispatch(o) {
         `the plan changed since it was confirmed (now ${res.planHash}); show it again and confirm`
       );
     const policy = cfg.autonomy.question_policy;
+    for (const sk of plan.skipped.filter((x) => x.reason === "story budget used up")) {
+      if (!/^US-\d+$/.test(sk.item) || mirrorStatusOf2(sk.item) === "Blocked") continue;
+      await appendEvent(o.projectDir, {
+        type: "hardstop.hit",
+        actor: "system",
+        run_id: runId,
+        item: sk.item,
+        data: { stop: "story_budget", message: `${sk.item} has used its story budget` }
+      });
+      await blockWithQuestion(
+        {
+          kind: "develop",
+          role: "orchestrator",
+          item: sk.item,
+          why: "story budget used up"
+        },
+        `${sk.item} has used its story budget (see the cost so far in the digest). Options: raise its Budget USD, split the story, or cancel it.`,
+        "story_budget"
+      );
+    }
     let stop = false;
     for (const unit of plan.units) {
       if (stop) break;
@@ -27244,8 +27267,13 @@ async function runDispatch(o) {
       return handleOutcome(unit, outcome, branch);
     }
     async function autoAccept() {
+      const last = /* @__PURE__ */ new Map();
+      for (const e of readEvents(o.projectDir))
+        if (e.type === "item.status" && e.item !== void 0)
+          last.set(e.item, String(e.data?.["to"]));
       for (const row of readMirror(o.projectDir, "stories")?.rows ?? []) {
         if (!/^US-\d+$/.test(row.id) || row.properties["Status"] !== "PO Acceptance") continue;
+        if ((last.get(row.id) ?? "PO Acceptance") !== "PO Acceptance") continue;
         await moveItem({
           projectDir: o.projectDir,
           item: row.id,
@@ -27314,6 +27342,13 @@ async function runDispatch(o) {
         await blockWithQuestion(
           unit,
           `${unit.kind} of ${unit.item} failed twice (${out.reason ?? out.subtype}). Options: retry later, change the approach, or cancel the item.`
+        );
+        return { ...base, blocked: true };
+      }
+      if (out.result === "blocked" && unit.item !== "none") {
+        await blockWithQuestion(
+          unit,
+          `${unit.kind} of ${unit.item} stopped at its cap (${out.reason ?? out.subtype}). Options: raise the cap, split the story, or cancel the item.`
         );
         return { ...base, blocked: true };
       }
@@ -27430,6 +27465,10 @@ async function runDispatch(o) {
         });
       }
     }
+    async function raiseDueQuestion(unit, moved) {
+      if (!moved.ok || moved.applied.question === void 0) return;
+      await blockWithQuestion(unit, moved.applied.question.summary);
+    }
     async function afterReview(unit, verdict) {
       const budget = unitBudget(
         o.projectDir,
@@ -27457,29 +27496,35 @@ async function runDispatch(o) {
           }
         });
       else if (verdict === "changes_requested")
-        await moveItem({
-          projectDir: o.projectDir,
-          item: unit.item,
-          to: "In Progress",
-          actor: "tech-lead",
-          runId,
-          now,
-          facts: { guards: { changes_requested: true }, budget_available: budget }
-        });
+        await raiseDueQuestion(
+          unit,
+          await moveItem({
+            projectDir: o.projectDir,
+            item: unit.item,
+            to: "In Progress",
+            actor: "tech-lead",
+            runId,
+            now,
+            facts: { guards: { changes_requested: true }, budget_available: budget }
+          })
+        );
     }
     async function afterQaFail(unit, report) {
       const bugs = (report.records ?? []).some(
         (r) => r.database === "bugs"
       );
-      await moveItem({
-        projectDir: o.projectDir,
-        item: unit.item,
-        to: "In Progress",
-        actor: "qa",
-        runId,
-        now,
-        facts: { guards: { test_failed: true, bug_linked: bugs }, budget_available: true }
-      });
+      await raiseDueQuestion(
+        unit,
+        await moveItem({
+          projectDir: o.projectDir,
+          item: unit.item,
+          to: "In Progress",
+          actor: "qa",
+          runId,
+          now,
+          facts: { guards: { test_failed: true, bug_linked: bugs }, budget_available: true }
+        })
+      );
     }
     const merges = [];
     if (!stop && d.token !== void 0) {

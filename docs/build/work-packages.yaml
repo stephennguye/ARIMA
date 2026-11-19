@@ -545,7 +545,7 @@ packages:
   - id: WP-150
     stage: 1
     track: eval
-    status: planned
+    status: done
     title: "Eval harness: scenario runner, deterministic graders, judge automation, fixture project"
     deps:
       - WP-121

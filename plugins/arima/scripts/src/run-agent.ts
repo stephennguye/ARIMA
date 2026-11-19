@@ -228,6 +228,14 @@ const PASS_THROUGH = new Set(
 );
 const PASS_THROUGH_PREFIXES = ['lc_', 'claude_', 'otel_'];
 
+/** The environment a child may inherit: the allow-list only (no Notion, GitHub or cloud token). */
+export function allowListEnv(base: NodeJS.ProcessEnv): NodeJS.ProcessEnv {
+  const env: NodeJS.ProcessEnv = {};
+  for (const [name, value] of Object.entries(base))
+    if (value !== undefined && isPassThrough(name)) env[name] = value;
+  return env;
+}
+
 function isPassThrough(name: string): boolean {
   const n = name.toLowerCase();
   return PASS_THROUGH.has(n) || PASS_THROUGH_PREFIXES.some((p) => n.startsWith(p));
@@ -332,7 +340,7 @@ export function buildClaudeArgs(
   return args;
 }
 
-interface Spawned {
+export interface Spawned {
   code: number | null;
   stdout: string;
   stderr: string;
@@ -342,7 +350,7 @@ interface Spawned {
   spawnError?: string;
 }
 
-function runProcess(
+export function runProcess(
   bin: string,
   args: string[],
   opts: {

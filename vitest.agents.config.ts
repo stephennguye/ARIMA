@@ -4,7 +4,7 @@ import { defineConfig } from 'vitest/config';
 // Run by hand:  npm run eval:agents
 export default defineConfig({
   test: {
-    include: ['evals/agents/**/*.eval.ts'],
+    include: ['evals/agents/**/*.real.eval.ts'],
     exclude: ['**/node_modules/**', '.claude/**', 'tmp/**'],
     environment: 'node',
     testTimeout: 600_000,

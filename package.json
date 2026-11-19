@@ -22,7 +22,8 @@
     "prepare": "node scripts/setup-hooks.mjs",
     "eval": "vitest run --config vitest.evals.config.ts",
     "test:live": "vitest run --config vitest.live.config.ts",
-    "eval:agents": "vitest run --config vitest.agents.config.ts"
+    "eval:agents": "vitest run --config vitest.agents.config.ts",
+    "judge": "node plugins/arima/scripts/dist/arima-judge.mjs"
   },
   "devDependencies": {
     "@emnapi/core": "2.0.0-beta.2",

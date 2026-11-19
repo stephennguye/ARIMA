@@ -5,7 +5,13 @@ import { execFileSync } from 'node:child_process';
 import { mkdirSync, mkdtempSync, readFileSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
-import type { DispatchDeps, DispatchOptions, GithubFacts } from '../../plugins/arima/scripts/src/dispatch.js';
+import { runDispatch } from '../../plugins/arima/scripts/src/dispatch.js';
+import type {
+  DispatchDeps,
+  DispatchOptions,
+  DispatchResult,
+  GithubFacts,
+} from '../../plugins/arima/scripts/src/dispatch.js';
 import { appendEvent } from '../../plugins/arima/scripts/src/events.js';
 import { moveItem } from '../../plugins/arima/scripts/src/item-status.js';
 import { Throttle } from '../../plugins/arima/scripts/src/lib/throttle.js';
@@ -51,6 +57,10 @@ export interface World {
   prs: Map<string, number>;
   /** PRs a scripted human has approved (by number). */
   approved: Set<number>;
+  /** While true the scripted human does not approve any PR. */
+  humanAway: boolean;
+  /** What the fake CI says about every PR. */
+  ci: { state: 'green' | 'red' };
   deps: (over?: Partial<DispatchDeps>) => DispatchDeps;
   opts: (over?: Partial<DispatchOptions>) => DispatchOptions;
   pull: () => Promise<unknown>;
@@ -136,6 +146,7 @@ export async function world(o: { stories?: number } = {}): Promise<World> {
   const calls: string[][] = [];
   const prs = new Map<string, number>();
   const approved = new Set<number>();
+  const ci: { state: 'green' | 'red' } = { state: 'green' };
   const headOf = (branch: string): string => {
     try {
       return git(remote, 'rev-parse', `refs/heads/${branch}`);
@@ -172,7 +183,14 @@ export async function world(o: { stories?: number } = {}): Promise<World> {
           reviews: approved.has(n)
             ? [{ author: { login: 'your-handle' }, state: 'APPROVED', commit: { oid }, submittedAt: '2026-11-19T10:00:00Z' }]
             : [],
-          statusCheckRollup: [{ __typename: 'CheckRun', name: 'ci', status: 'COMPLETED', conclusion: 'SUCCESS' }],
+          statusCheckRollup: [
+            {
+              __typename: 'CheckRun',
+              name: 'ci',
+              status: 'COMPLETED',
+              conclusion: ci.state === 'green' ? 'SUCCESS' : 'FAILURE',
+            },
+          ],
         }),
       );
     }
@@ -195,6 +213,8 @@ export async function world(o: { stories?: number } = {}): Promise<World> {
     calls,
     prs,
     approved,
+    ci,
+    humanAway: false,
     pull,
     push,
     status: (id) => String(readMirror(dir, 'stories')?.rows.find((r) => r.id === id)?.properties['Status'] ?? '?'),
@@ -253,4 +273,27 @@ export function stubRoles(w: World): void {
       criteria_map: [{ criterion: 'AC-1', status: 'met', evidence: ['TC-0001'] }],
     }),
   );
+}
+
+export const DAY = 86_400_000;
+export const BASE = Date.parse('2026-11-19T09:00:00Z');
+
+/** One day of the loop: a dispatch on day n, a pull, then the scripted human approves the PR of every story in QA. */
+export async function day(w: World, n: number, over: Partial<DispatchDeps> = {}): Promise<DispatchResult> {
+  const r = await runDispatch(w.opts({ deps: w.deps({ now: new Date(BASE + n * DAY), ...over }) }));
+  await w.pull();
+  if (!w.humanAway)
+    for (const id of w.stories)
+      if (w.status(id) === 'In QA') {
+        const pr = [...w.prs.entries()].find(([branch]) => branch.includes(id))?.[1];
+        if (pr !== undefined) w.approved.add(pr);
+      }
+  return r;
+}
+
+/** G2 approved by the human: the Phase 3 exit, so /arima:run may start (D-46). */
+export async function approveG2(w: World): Promise<void> {
+  const g2 = w.fake.rowByTitle('Gates', 'G2')!;
+  w.fake.humanEdit(g2.id, { Status: { select: { name: 'Approved' } } });
+  await w.pull();
 }

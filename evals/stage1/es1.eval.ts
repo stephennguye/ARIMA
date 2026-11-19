@@ -15,31 +15,10 @@ import { readMirror } from '../../plugins/arima/scripts/src/notion/mirror.js';
 import { enqueue, pushOutbox } from '../../plugins/arima/scripts/src/notion/outbox.js';
 import { readNotionMap } from '../../plugins/arima/scripts/src/notion/mirror.js';
 import { itemSpent } from '../../plugins/arima/scripts/src/story-budget.js';
-import { TRANSITIONS } from '../../plugins/arima/scripts/src/state-machine.js';
-import { git, readyAll, reportText, stubRoles, world } from './support.js';
-import type { World } from './support.js';
+import { DAY, BASE, approveG2, day, git, readyAll, reportText, stubRoles, world } from './support.js';
+import { ledgerRows, noDuplicateRows, stateTrace } from '../lib/graders.js';
 
 const ROOT = path.resolve(import.meta.dirname, '../..');
-const DAY = 86_400_000;
-const BASE = Date.parse('2026-11-19T09:00:00Z');
-
-/** One day of the loop: a dispatch, then the scripted human (approves the PR of every story in QA). */
-async function day(w: World, n: number): Promise<DispatchResult> {
-  const r = await runDispatch(w.opts({ deps: w.deps({ now: new Date(BASE + n * DAY) }) }));
-  await w.pull();
-  for (const id of w.stories)
-    if (w.status(id) === 'In QA') {
-      const pr = [...w.prs.entries()].find(([branch]) => branch.includes(id))?.[1];
-      if (pr !== undefined) w.approved.add(pr);
-    }
-  return r;
-}
-
-const approveG2 = async (w: World): Promise<void> => {
-  const g2 = w.fake.rowByTitle('Gates', 'G2')!;
-  w.fake.humanEdit(g2.id, { Status: { select: { name: 'Approved' } } });
-  await w.pull();
-};
 
 describe('E-S1: five stories Backlog to Done with stub agents', () => {
   it('walks every story along legal edges only, with the ledger, cost, outbox, git and idempotence graders', async () => {
@@ -62,22 +41,17 @@ describe('E-S1: five stories Backlog to Done with stub agents', () => {
 
     // ---- state trace: every story Done, along the legal path, every edge legal for its actor
     for (const id of w.stories) expect(w.status(id), id).toBe('Done');
-    const edges = readEvents(w.dir).filter((e) => e.type === 'item.status');
-    for (const id of w.stories) {
-      const mine = edges.filter((e) => e.item === id);
-      expect(mine.map((e) => e.data?.['to']), id).toEqual(['Ready', 'In Progress', 'In Review', 'In QA', 'PO Acceptance', 'Done']);
-      for (const e of mine) {
-        const row = TRANSITIONS.find((t) => t.from === e.data?.['from'] && t.to === e.data?.['to']);
-        expect(row, `${id} ${String(e.data?.['from'])} -> ${String(e.data?.['to'])}`).toBeDefined();
-        expect(row?.actors as readonly string[], `${id} actor ${e.actor}`).toContain(e.actor);
-      }
-    }
+    const events = readEvents(w.dir);
+    for (const id of w.stories)
+      expect(
+        stateTrace(events, id, ['Ready', 'In Progress', 'In Review', 'In QA', 'PO Acceptance', 'Done']),
+        id,
+      ).toEqual([]);
 
     // ---- ledger: one row per run, per-story cost equals the ledger sum and the Cost log in Notion
     const ledger = readLedger(w.dir);
     const dispatched = results.flatMap((r) => r.dispatched).filter((d) => d.result !== 'skipped');
-    expect(ledger).toHaveLength(dispatched.length);
-    expect(new Set(ledger.map((r) => r.run_id)).size).toBe(ledger.length);
+    expect(ledgerRows(ledger, dispatched.length)).toEqual([]);
     const roles = ledger.map((r) => r.role);
     for (const role of ['developer', 'tech-lead', 'qa']) expect(roles.filter((x) => x === role)).toHaveLength(5);
     await w.push();
@@ -137,15 +111,18 @@ describe('E-S1: five stories Backlog to Done with stub agents', () => {
     expect(readEvents(w.dir).filter((e) => e.type === 'digest.published').length).toBeGreaterThanOrEqual(5);
 
     // ---- idempotence: another dispatch changes nothing (no unit, no new row, no new PR)
-    const storiesBefore = readMirror(w.dir, 'stories')?.rows.length;
-    const costBefore = readMirror(w.dir, 'cost_log')?.rows.length;
+    const counts = (): Record<string, number> => ({
+      stories: readMirror(w.dir, 'stories')?.rows.length ?? 0,
+      cost_log: readMirror(w.dir, 'cost_log')?.rows.length ?? 0,
+      digests: readMirror(w.dir, 'digests')?.rows.length ?? 0,
+    });
+    const before = counts();
     const prCalls = w.calls.filter((c) => c[1] === 'create').length;
     const ledgerBefore = readLedger(w.dir).length;
-    const again = await runDispatch(w.opts({ deps: w.deps({ now: new Date(BASE + (days + 1) * DAY) }) }));
+    const again = await runDispatch(w.opts({ deps: w.deps({ now: new Date(BASE + days * DAY) }) }));
     expect(again.dispatched.filter((d) => d.result !== 'skipped')).toEqual([]);
     await w.pull();
-    expect(readMirror(w.dir, 'stories')?.rows.length).toBe(storiesBefore);
-    expect(readMirror(w.dir, 'cost_log')?.rows.length).toBe(costBefore);
+    expect(noDuplicateRows(before, counts())).toEqual([]);
     expect(w.calls.filter((c) => c[1] === 'create')).toHaveLength(prCalls);
     expect(readLedger(w.dir)).toHaveLength(ledgerBefore);
     expect(existsSync(path.join(w.dir, '.arima', 'run.lock'))).toBe(false);

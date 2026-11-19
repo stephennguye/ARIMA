@@ -468,6 +468,30 @@ export async function runDispatch(o: DispatchOptions): Promise<DispatchResult> {
 
     // ---- 5. Dispatch runs -----------------------------------------------------------------------------
     const policy = cfg.autonomy.question_policy;
+
+    // A story whose budget is used up is skipped by the planner; the human must hear about it once: a
+    // story_budget hard stop and a blocking question (spec 11.1, 13.5), never a silent stall.
+    for (const sk of plan.skipped.filter((x) => x.reason === 'story budget used up')) {
+      if (!/^US-\d+$/.test(sk.item) || mirrorStatusOf(sk.item) === 'Blocked') continue;
+      await appendEvent(o.projectDir, {
+        type: 'hardstop.hit',
+        actor: 'system',
+        run_id: runId,
+        item: sk.item,
+        data: { stop: 'story_budget', message: `${sk.item} has used its story budget` },
+      });
+      await blockWithQuestion(
+        {
+          kind: 'develop',
+          role: 'orchestrator',
+          item: sk.item,
+          why: 'story budget used up',
+        } as PlannedUnit,
+        `${sk.item} has used its story budget (see the cost so far in the digest). Options: raise its Budget USD, split the story, or cancel it.`,
+        'story_budget',
+      );
+    }
+
     let stop = false;
     for (const unit of plan.units) {
       if (stop) break;
@@ -626,6 +650,10 @@ export async function runDispatch(o: DispatchOptions): Promise<DispatchResult> {
       return handleOutcome(unit, outcome, branch);
     }
 
+    function mirrorStatusOf(item: string): string | undefined {
+      const v = findRow(readMirror(o.projectDir, 'stories'), item)?.properties['Status'];
+      return typeof v === 'string' ? v : undefined;
+    }
     function attemptOf(item: string): number {
       return mirrorAttempt(o.projectDir, item);
     }
@@ -657,8 +685,15 @@ export async function runDispatch(o: DispatchOptions): Promise<DispatchResult> {
      * last run wins (it sends the story back from PO Acceptance, spec 7.1).
      */
     async function autoAccept(): Promise<void> {
+      // The mirror lags behind the engine's own queued writes (a veto applied a moment ago in step 3 has
+      // not reached Notion yet): what the engine last decided decides.
+      const last = new Map<string, string>();
+      for (const e of readEvents(o.projectDir))
+        if (e.type === 'item.status' && e.item !== undefined)
+          last.set(e.item, String(e.data?.['to']));
       for (const row of readMirror(o.projectDir, 'stories')?.rows ?? []) {
         if (!/^US-\d+$/.test(row.id) || row.properties['Status'] !== 'PO Acceptance') continue;
+        if ((last.get(row.id) ?? 'PO Acceptance') !== 'PO Acceptance') continue;
         await moveItem({
           projectDir: o.projectDir,
           item: row.id,
@@ -812,6 +847,13 @@ export async function runDispatch(o: DispatchOptions): Promise<DispatchResult> {
         );
         return { ...base, blocked: true };
       }
+      if (out.result === 'blocked' && unit.item !== 'none') {
+        await blockWithQuestion(
+          unit,
+          `${unit.kind} of ${unit.item} stopped at its cap (${out.reason ?? out.subtype}). Options: raise the cap, split the story, or cancel the item.`,
+        );
+        return { ...base, blocked: true };
+      }
       const report: AgentReport | undefined = out.report;
       if (report === undefined) return base;
 
@@ -951,6 +993,15 @@ export async function runDispatch(o: DispatchOptions): Promise<DispatchResult> {
       }
     }
 
+    /** The third failed review or QA attempt redirects to Blocked; the state machine says a question is due (WP-107, WP-141). */
+    async function raiseDueQuestion(
+      unit: PlannedUnit,
+      moved: Awaited<ReturnType<typeof moveItem>>,
+    ): Promise<void> {
+      if (!moved.ok || moved.applied.question === undefined) return;
+      await blockWithQuestion(unit, moved.applied.question.summary);
+    }
+
     async function afterReview(unit: PlannedUnit, verdict: string): Promise<void> {
       const budget = unitBudget(
         o.projectDir,
@@ -978,30 +1029,36 @@ export async function runDispatch(o: DispatchOptions): Promise<DispatchResult> {
           },
         });
       else if (verdict === 'changes_requested')
-        await moveItem({
-          projectDir: o.projectDir,
-          item: unit.item,
-          to: 'In Progress',
-          actor: 'tech-lead',
-          runId,
-          now,
-          facts: { guards: { changes_requested: true }, budget_available: budget },
-        });
+        await raiseDueQuestion(
+          unit,
+          await moveItem({
+            projectDir: o.projectDir,
+            item: unit.item,
+            to: 'In Progress',
+            actor: 'tech-lead',
+            runId,
+            now,
+            facts: { guards: { changes_requested: true }, budget_available: budget },
+          }),
+        );
     }
 
     async function afterQaFail(unit: PlannedUnit, report: AgentReport): Promise<void> {
       const bugs = (report.records ?? []).some(
         (r) => (r as { database?: string }).database === 'bugs',
       );
-      await moveItem({
-        projectDir: o.projectDir,
-        item: unit.item,
-        to: 'In Progress',
-        actor: 'qa',
-        runId,
-        now,
-        facts: { guards: { test_failed: true, bug_linked: bugs }, budget_available: true },
-      });
+      await raiseDueQuestion(
+        unit,
+        await moveItem({
+          projectDir: o.projectDir,
+          item: unit.item,
+          to: 'In Progress',
+          actor: 'qa',
+          runId,
+          now,
+          facts: { guards: { test_failed: true, bug_linked: bugs }, budget_available: true },
+        }),
+      );
     }
 
     // Merge what is ready: a refusal is normal (the human has not approved yet).

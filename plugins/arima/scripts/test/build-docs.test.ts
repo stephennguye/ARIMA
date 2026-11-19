@@ -265,3 +265,29 @@ describe('nothing is orphaned', () => {
       expect(c3.has(p.id), `${p.id} is not needed by the stage 3 evals`).toBe(true);
   });
 });
+
+describe('saved judge reviews (F10 5.5, WP-150)', () => {
+  const dir = path.join(REPO_ROOT, 'docs', 'process', 'reviews');
+  const generated = readdirSync(dir)
+    .filter((f) => f.endsWith('.md'))
+    .map((f) => ({ f, text: readFileSync(path.join(dir, f), 'utf8') }))
+    .filter((x) => x.text.includes('Produced by `arima-judge`'));
+
+  it('every blocker and major row of an arima-judge review has a response', () => {
+    for (const { f, text } of generated) {
+      const rows = [...text.matchAll(/^\| \d+ \| (blocker|major) \|(.*)\|\s*$/gm)];
+      for (const r of rows) {
+        const cells = (r[2] as string).split('|');
+        const response = (cells[cells.length - 1] ?? '').trim();
+        expect(response, `${f}: a ${r[1] as string} finding has no response`).not.toBe('');
+      }
+    }
+  });
+
+  it('the check itself fails on an unanswered row', () => {
+    const open = '| 1 | blocker | the guard is not wired | |';
+    const m = /^\| \d+ \| (blocker|major) \|(.*)\|\s*$/m.exec(open);
+    expect(m).not.toBeNull();
+    expect(((m?.[2] ?? '').split('|').at(-1) ?? '').trim()).toBe('');
+  });
+});
