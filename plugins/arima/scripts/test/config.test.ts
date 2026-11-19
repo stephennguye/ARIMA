@@ -151,6 +151,17 @@ describe('validateProject: cross-field rules', () => {
     expect(r.warnings[0]?.path).toBe('runtime.allow_usage_credits');
   });
 
+  it('warns that a shortened hard_stops list switches nothing off', () => {
+    const dir = project({ arima: [[', prod_data_migration, new_paid_service', '']] });
+    const r = validateProject(dir);
+    expect(r.ok).toBe(true);
+    const w = r.warnings.find((x) => x.path === 'autonomy.hard_stops');
+    expect(w?.message).toContain('prod_data_migration');
+    expect(w?.message).toContain('new_paid_service');
+    expect(w?.message).toContain('cannot be disabled');
+    expect(validateProject(EXAMPLES).warnings).toEqual([]);
+  });
+
   it('skips cross-field rules when a file fails the schema', () => {
     const dir = project({
       arima: [['profile: client-project', 'profile: nope']],

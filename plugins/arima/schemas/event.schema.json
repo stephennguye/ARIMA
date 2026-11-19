@@ -7,6 +7,7 @@
   "additionalProperties": false,
   "required": ["ts", "type", "actor"],
   "properties": {
+    "schema_version": { "const": 1, "description": "Optional; absent means 1 (written before the field existed). A larger number is refused by the reader (WP-195)." },
     "ts": { "type": "string", "format": "date-time" },
     "type": {
       "enum": [
@@ -18,7 +19,13 @@
         "question.raised", "question.answered", "decision.made", "decision.vetoed",
         "tool.used", "tool.blocked",
         "state.push", "state.pull",
-        "budget.alert", "hardstop.hit", "agent.stop"
+        "budget.alert", "hardstop.hit", "agent.stop",
+        "report.accepted", "report.rejected", "unit.dispatched", "unit.retried",
+        "merge.done", "merge.refused", "pr.published",
+        "deploy.staging", "deploy.preview", "deploy.production", "deploy.rollback",
+        "probe.recorded", "meeting.held", "digest.published",
+        "phase.step_done", "phase.pilot_failed", "team.changed",
+        "release.rc_tagged", "incident.opened", "incident.closed", "cr.decided", "lesson.applied"
       ]
     },
     "actor": { "type": "string", "description": "Role name, \"human:<person>\" or \"system\"" },

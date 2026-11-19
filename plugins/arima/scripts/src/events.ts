@@ -26,9 +26,33 @@ export type EventType =
   | 'state.pull'
   | 'budget.alert'
   | 'hardstop.hit'
-  | 'agent.stop';
+  | 'agent.stop'
+  | 'report.accepted'
+  | 'report.rejected'
+  | 'unit.dispatched'
+  | 'unit.retried'
+  | 'merge.done'
+  | 'merge.refused'
+  | 'pr.published'
+  | 'deploy.staging'
+  | 'deploy.preview'
+  | 'deploy.production'
+  | 'deploy.rollback'
+  | 'probe.recorded'
+  | 'meeting.held'
+  | 'digest.published'
+  | 'phase.step_done'
+  | 'phase.pilot_failed'
+  | 'team.changed'
+  | 'release.rc_tagged'
+  | 'incident.opened'
+  | 'incident.closed'
+  | 'cr.decided'
+  | 'lesson.applied';
 
 export interface ArimaEvent {
+  /** Absent on events written before the field existed; means 1 (WP-195). */
+  schema_version?: 1;
   ts: string;
   type: EventType;
   actor: string;

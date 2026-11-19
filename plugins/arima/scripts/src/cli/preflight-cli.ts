@@ -7,7 +7,7 @@ import { PREFLIGHT_EXIT, runPreflight } from '../preflight.js';
 import { releaseRunLock } from '../runlock.js';
 import type { Io } from './config-cli.js';
 
-export const USAGE = `Usage: arima-preflight [check] [--project <dir>] [--acquire <run-id>] [--skip-notion] [--json]
+export const USAGE = `Usage: arima-preflight [check] [--project <dir>] [--acquire <run-id>] [--skip-notion] [--no-github] [--json]
        arima-preflight release --run-id <run-id> [--project <dir>]
 Exit codes: 0 ok, 2 usage, 10 config invalid, 11 run lock held, 12 kill switch on, 13 budget exhausted, 14 env var missing`;
 
@@ -31,6 +31,7 @@ export async function runPreflightCli(
     acquire?: string;
     'skip-notion'?: boolean;
     json?: boolean;
+    'no-github'?: boolean;
     'run-id'?: string;
   };
   try {
@@ -43,6 +44,7 @@ export async function runPreflightCli(
         'run-id': { type: 'string' },
         'skip-notion': { type: 'boolean' },
         json: { type: 'boolean' },
+        'no-github': { type: 'boolean' },
       },
     }).values;
   } catch (e) {
@@ -76,6 +78,7 @@ export async function runPreflightCli(
     projectDir,
     env,
     notion,
+    needs: { github: values['no-github'] !== true },
     ...(values.acquire !== undefined ? { acquireFor: values.acquire } : {}),
   });
 

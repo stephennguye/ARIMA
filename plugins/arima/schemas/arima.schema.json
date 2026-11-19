@@ -47,7 +47,7 @@
           "type": "array",
           "uniqueItems": true,
           "items": {
-            "enum": ["G0", "G1", "G2", "G3", "G4", "prod_deploy", "secrets_change", "budget_exceeded", "notion_delete", "prod_data_migration", "new_paid_service"]
+            "enum": ["G0", "G1", "G2", "G3", "G4", "prod_deploy", "secrets_change", "budget_exceeded", "story_budget", "notion_delete", "prod_data_migration", "new_paid_service", "licence", "critical_finding", "kill_switch", "missing_credential"]
           },
           "allOf": [
             { "contains": { "const": "prod_deploy" } },
@@ -147,6 +147,8 @@
         "repo": { "type": "string", "pattern": "^[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+$" },
         "default_branch": { "type": "string" },
         "state_branch": { "type": "string" },
+        "allow_unchecked_remote": { "type": "boolean", "default": false, "description": "Let the publish script push to a remote that is not a github.com repository (ARIMA cannot check what it is). Leave false unless you know the remote." },
+        "allow_public_state": { "type": "boolean", "default": false, "description": "Allow pushing the state branch (Notion mirror, ledger) to a PUBLIC GitHub repo. Leave false for client work." },
         "machine_account": { "type": "string", "description": "GitHub login that opens agent PRs (D-30)" },
         "machine_token_env": { "type": "string", "pattern": "^[A-Z][A-Z0-9_]*$" }
       }
@@ -174,7 +176,8 @@
         "shell": { "enum": ["wsl2", "native"] },
         "scheduler": { "enum": ["windows-task-scheduler", "cron", "github-actions"] },
         "auth": { "enum": ["seat", "api_key"] },
-        "allow_usage_credits": { "type": "boolean" }
+        "allow_usage_credits": { "type": "boolean" },
+        "isolate_user_settings": { "type": "boolean", "default": true, "description": "Run roles with only the project settings: the user's own settings, plugins, MCP servers and slash commands are not loaded (WP-191). Leave true unless a smoke run shows a reason." }
       }
     },
     "telemetry": {

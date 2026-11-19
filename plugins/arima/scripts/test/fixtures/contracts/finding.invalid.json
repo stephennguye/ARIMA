@@ -1,0 +1,27 @@
+[
+  {
+    "name": "unknown severity",
+    "error": "severity",
+    "value": { "severity": "catastrophic", "location": "a.ts:1", "claim": "c", "evidence": "e", "recommendation": "r" }
+  },
+  {
+    "name": "no evidence",
+    "error": "evidence",
+    "value": { "severity": "minor", "location": "a.ts:1", "claim": "c", "recommendation": "r" }
+  },
+  {
+    "name": "no location",
+    "error": "location",
+    "value": { "severity": "minor", "claim": "c", "evidence": "e", "recommendation": "r" }
+  },
+  {
+    "name": "empty claim",
+    "error": "claim",
+    "value": { "severity": "nit", "location": "a.ts:1", "claim": "", "evidence": "e", "recommendation": "r" }
+  },
+  {
+    "name": "agent chose an id",
+    "error": "id",
+    "value": { "id": "BUG-001", "severity": "S1", "location": "a.ts:1", "claim": "c", "evidence": "e", "recommendation": "r" }
+  }
+]

@@ -70,15 +70,14 @@ describe('secret files (spec §11.3)', () => {
       '/x/.arima/ledger.jsonl',
       '.arima/events.jsonl',
       '.arima/notion-map.json',
+      '.arima/PAUSE',
+      '.arima/run.lock',
+      '.arima/state/ids.json',
+      '.arima/runs/r-1.json',
     ]) {
       expect(isProtectedStatePath(p), p).toBe(true);
     }
-    for (const p of [
-      '.arima/outbox/a.json',
-      '.arima/state/ids.json',
-      'src/ledger.ts',
-      'docs/events.jsonl.md',
-    ]) {
+    for (const p of ['.arima/outbox/a.json', 'src/ledger.ts', 'docs/events.jsonl.md']) {
       expect(isProtectedStatePath(p), p).toBe(false);
     }
   });
@@ -387,8 +386,9 @@ describe('hooks/hooks.json', () => {
     >;
   };
 
-  it('wraps events in a top-level "hooks" key and covers the four events', () => {
+  it('wraps events in a top-level "hooks" key and covers the five events', () => {
     expect(Object.keys(json.hooks).sort()).toEqual([
+      'PermissionDenied',
       'PostToolUse',
       'PreToolUse',
       'Stop',
@@ -402,7 +402,7 @@ describe('hooks/hooks.json', () => {
         for (const h of g.hooks) {
           expect(h.type).toBe('command');
           expect(h.command, event).toMatch(
-            /^node "\$\{CLAUDE_PLUGIN_ROOT\}\/scripts\/dist\/arima-hook\.mjs" (pre-tool-use|post-tool-use|stop|subagent-stop)$/,
+            /^(node "\$\{CLAUDE_PLUGIN_ROOT\}\/scripts\/dist\/arima-hook\.mjs" (post-tool-use|permission-denied|stop|subagent-stop)|sh "\$\{CLAUDE_PLUGIN_ROOT\}\/hooks\/guard\.sh" pre-tool-use)$/,
           );
           expect(h.timeout).toBeGreaterThan(0);
         }
@@ -414,5 +414,41 @@ describe('hooks/hooks.json', () => {
   it('guards every tool before it runs, and audits only state-changing tools after', () => {
     expect(json.hooks['PreToolUse']?.[0]?.matcher).toBe('*');
     expect(json.hooks['PostToolUse']?.[0]?.matcher).toBe('Write|Edit|MultiEdit|NotebookEdit|Bash');
+  });
+});
+
+describe('permission-denied hook and latency (S0.9)', () => {
+  it('records a permission-rule refusal as a tool.blocked event', async () => {
+    const dir = project();
+    await handleHook(
+      'permission-denied',
+      { tool_name: 'Read', tool_input: { file_path: '.env' }, cwd: dir },
+      {},
+    );
+    const ev = readEvents(dir).find((e) => e.type === 'tool.blocked');
+    expect(ev?.data).toMatchObject({ rule: 'permission-rule' });
+  });
+});
+
+describe('guard latency budget (S0.9)', () => {
+  it('the bundled guard decides in well under a second (median of 5, budget 1000 ms)', () => {
+    const dir = project();
+    const bundle = path.join(PLUGIN_ROOT, 'scripts', 'dist', 'arima-hook.mjs');
+    const ms: number[] = [];
+    for (let i = 0; i < 5; i++) {
+      const t = Date.now();
+      const r = spawnSync(process.execPath, [bundle, 'pre-tool-use'], {
+        input: JSON.stringify({
+          tool_name: 'Read',
+          tool_input: { file_path: 'README.md' },
+          cwd: dir,
+        }),
+        encoding: 'utf8',
+      });
+      expect(r.status).toBe(0);
+      ms.push(Date.now() - t);
+    }
+    ms.sort((a, b) => a - b);
+    expect(ms[2]).toBeLessThan(1000);
   });
 });

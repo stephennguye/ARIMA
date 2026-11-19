@@ -1,4 +1,5 @@
 {
+  "description": "ARIMA safety guard (blocks secret-file access, merges and pushes to the default branch, Notion deletes, writes to protected state) and audit log. Active only inside ARIMA projects (a folder with arima.yaml).",
   "hooks": {
     "PreToolUse": [
       {
@@ -6,8 +7,9 @@
         "hooks": [
           {
             "type": "command",
-            "command": "node \"${CLAUDE_PLUGIN_ROOT}/scripts/dist/arima-hook.mjs\" pre-tool-use",
-            "timeout": 10
+            "command": "sh \"${CLAUDE_PLUGIN_ROOT}/hooks/guard.sh\" pre-tool-use",
+            "timeout": 10,
+            "onFailure": "block"
           }
         ]
       }
@@ -19,6 +21,17 @@
           {
             "type": "command",
             "command": "node \"${CLAUDE_PLUGIN_ROOT}/scripts/dist/arima-hook.mjs\" post-tool-use",
+            "timeout": 10
+          }
+        ]
+      }
+    ],
+    "PermissionDenied": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"${CLAUDE_PLUGIN_ROOT}/scripts/dist/arima-hook.mjs\" permission-denied",
             "timeout": 10
           }
         ]

@@ -2,20 +2,31 @@ import { existsSync, mkdirSync, readFileSync, readdirSync, writeFileSync } from 
 import path from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { runNotionCli } from '../src/cli/notion-cli.js';
-import { readEvents } from '../src/events.js';
+import { appendEvent, readEvents } from '../src/events.js';
 import { Throttle, withBackoff } from '../src/lib/throttle.js';
 import { bootstrapTemplate } from '../src/notion/build.js';
 import { mapWorkspace } from '../src/notion/mapper.js';
 import { findRow, mirrorFile, pullMirror, readMirror } from '../src/notion/mirror.js';
 import type { MirrorFile } from '../src/notion/mirror.js';
+import { allocateId } from '../src/notion/allocations.js';
 import { enqueue, outboxDir, pushOutbox } from '../src/notion/outbox.js';
+import type { PushReport } from '../src/notion/outbox.js';
 import type { OutboxEntry } from '../src/notion/outbox.js';
 import { createNotionPort } from '../src/notion/port.js';
 import { markdownToBlocks } from '../src/notion/values.js';
 import { FakeNotion } from './fake-notion.js';
 import { tempDir } from './helpers.js';
 
+/** Pushes hand-made entries: no run binding or id issuance (those are WP-104's own tests). */
+const pushHandMade = (
+  dir: Parameters<typeof pushOutbox>[0],
+  port: Parameters<typeof pushOutbox>[1],
+  map: Parameters<typeof pushOutbox>[2],
+  opts: Parameters<typeof pushOutbox>[3] = {},
+): Promise<PushReport> => pushOutbox(dir, port, map, { bindRuns: false, ...opts });
+
 const RUN = 'r-20261118-0200-01';
+const ALLOW = { allowStatusWrites: true };
 let seq = 0;
 
 async function setup() {
@@ -26,6 +37,8 @@ async function setup() {
   const dir = tempDir('arima-outbox-');
   mkdirSync(path.join(dir, '.arima'), { recursive: true });
   writeFileSync(path.join(dir, '.arima', 'notion-map.json'), JSON.stringify(map));
+  // The CLI binds entries to runs ARIMA started (WP-104).
+  await appendEvent(dir, { type: 'run.start', actor: 'orchestrator', run_id: RUN });
   return { fake, port, map, dir };
 }
 
@@ -35,7 +48,7 @@ const entry = (over: Partial<OutboxEntry> & Pick<OutboxEntry, 'op' | 'database'>
     id: `ob-${String(seq).padStart(4, '0')}`,
     created_at: `2026-11-18T00:00:${String(seq % 60).padStart(2, '0')}.000Z`,
     run_id: RUN,
-    role: 'ba',
+    role: 'orchestrator',
     ...over,
   };
 };
@@ -166,7 +179,7 @@ describe('outbox: create / update / append', () => {
       properties: { ID: 'US-001', Title: 'Checkout summary', Complexity: 'M', Priority: 1 },
     });
     enqueue(dir, e);
-    const report = await pushOutbox(dir, port, map);
+    const report = await pushHandMade(dir, port, map);
     expect(report).toMatchObject({ applied: [e.id], rejected: [], conflicts: [], deferred: [] });
 
     const row = fake.rowByTitle('Stories', 'US-001')!;
@@ -193,7 +206,7 @@ describe('outbox: create / update / append', () => {
         content_markdown: '# Charter\n\n- scope\n- budget',
       }),
     );
-    await pushOutbox(dir, port, map);
+    await pushHandMade(dir, port, map, ALLOW);
     const row = fake.rowByTitle('Documents', 'Charter')!;
     expect((fake.pages.get(row.id) ?? []).map((b) => b.type)).toEqual([
       'heading_1',
@@ -208,7 +221,7 @@ describe('outbox: create / update / append', () => {
       dir,
       entry({ op: 'create', database: 'stories', properties: { ID: 'US-001', Title: 'a' } }),
     );
-    await pushOutbox(dir, port, map);
+    await pushHandMade(dir, port, map);
     enqueue(
       dir,
       entry({
@@ -218,7 +231,7 @@ describe('outbox: create / update / append', () => {
         properties: { ID: 'US-001', Title: 'b' },
       }),
     );
-    const dup = await pushOutbox(dir, port, map);
+    const dup = await pushHandMade(dir, port, map);
     expect(dup.rejected[0]?.reason).toMatch(/already has a row "US-001"/);
 
     const same = entry({
@@ -227,7 +240,7 @@ describe('outbox: create / update / append', () => {
       properties: { ID: 'US-001', Title: 'a' },
     });
     enqueue(dir, same);
-    expect((await pushOutbox(dir, port, map)).applied).toEqual([same.id]);
+    expect((await pushHandMade(dir, port, map)).applied).toEqual([same.id]);
     expect(
       [...fake.rows.values()].filter((r) => r.dsId === map.databases['stories']!.data_source_id),
     ).toHaveLength(1);
@@ -239,7 +252,7 @@ describe('outbox: create / update / append', () => {
       dir,
       entry({ op: 'create', database: 'stories', properties: { ID: 'US-001', Title: 'a' } }),
     );
-    await pushOutbox(dir, port, map);
+    await pushHandMade(dir, port, map);
     const upd = entry({
       op: 'update',
       database: 'stories',
@@ -248,7 +261,7 @@ describe('outbox: create / update / append', () => {
       properties: { Status: 'Ready', Attempt: 1 },
     });
     enqueue(dir, upd);
-    expect((await pushOutbox(dir, port, map)).applied).toEqual([upd.id]);
+    expect((await pushHandMade(dir, port, map, ALLOW)).applied).toEqual([upd.id]);
     const row = fake.rowByTitle('Stories', 'US-001')!;
     expect(row.properties['Status']).toMatchObject({ select: { name: 'Ready' } });
     expect(fake.text(row, 'Last written by run')).toBe('r-20261118-0400-03');
@@ -268,7 +281,7 @@ describe('outbox: create / update / append', () => {
         properties: { ID: 'US-001', Title: 's', Requirements: ['REQ-001'] },
       }),
     );
-    const r = await pushOutbox(dir, port, map);
+    const r = await pushHandMade(dir, port, map);
     expect(r.applied).toHaveLength(2);
     const req = fake.rowByTitle('Requirements', 'REQ-001')!;
     expect(fake.rowByTitle('Stories', 'US-001')!.properties['Requirements']).toMatchObject({
@@ -283,7 +296,7 @@ describe('outbox: create / update / append', () => {
         properties: { ID: 'US-002', Title: 's2', Requirements: ['REQ-404'] },
       }),
     );
-    expect((await pushOutbox(dir, port, map)).rejected[0]?.reason).toMatch(
+    expect((await pushHandMade(dir, port, map)).rejected[0]?.reason).toMatch(
       /REQ-404.*does not exist/,
     );
   });
@@ -291,7 +304,7 @@ describe('outbox: create / update / append', () => {
   it('appends Markdown content to an existing page', async () => {
     const { fake, port, map, dir } = await setup();
     enqueue(dir, entry({ op: 'create', database: 'documents', properties: { Title: 'PRD' } }));
-    await pushOutbox(dir, port, map);
+    await pushHandMade(dir, port, map);
     enqueue(
       dir,
       entry({
@@ -301,7 +314,7 @@ describe('outbox: create / update / append', () => {
         content_markdown: '## Section\n\ntext',
       }),
     );
-    expect((await pushOutbox(dir, port, map)).applied).toHaveLength(1);
+    expect((await pushHandMade(dir, port, map)).applied).toHaveLength(1);
     const row = fake.rowByTitle('Documents', 'PRD')!;
     expect((fake.pages.get(row.id) ?? []).map((b) => b.type)).toEqual(['heading_2', 'paragraph']);
   });
@@ -323,7 +336,7 @@ describe('outbox: create / update / append', () => {
     });
     enqueue(dir, late);
     enqueue(dir, early);
-    const r = await pushOutbox(dir, port, map);
+    const r = await pushHandMade(dir, port, map);
     expect(r.applied).toEqual([early.id, late.id]);
     expect(fake.rowByTitle('Stories', 'US-001')!.properties['Attempt']).toMatchObject({
       number: 2,
@@ -350,7 +363,7 @@ describe('outbox: refusals (spec §9.3)', () => {
       properties: { ID: 'Q-001', Answer: 'yes' },
     });
     for (const e of [e1, e2, e3]) enqueue(dir, e);
-    const r = await pushOutbox(dir, port, map);
+    const r = await pushHandMade(dir, port, map);
     expect(r.applied).toEqual([]);
     expect(r.rejected.map((x) => x.id).sort()).toEqual([e1.id, e2.id, e3.id].sort());
     expect(r.rejected[0]?.reason).toMatch(/human-only/);
@@ -373,7 +386,7 @@ describe('outbox: refusals (spec §9.3)', () => {
     });
     enqueue(dir, bad);
     enqueue(dir, ok);
-    const r = await pushOutbox(dir, port, map);
+    const r = await pushHandMade(dir, port, map, ALLOW);
     expect(r.rejected.map((x) => x.id)).toEqual([bad.id]);
     expect(r.applied).toEqual([ok.id]);
     expect(fake.rowByTitle('Gates', 'G1')).toBeUndefined();
@@ -399,7 +412,7 @@ describe('outbox: refusals (spec §9.3)', () => {
         properties: { ID: 'REQ-1', Coverage: 'Covered' },
       }),
     );
-    const r = await pushOutbox(dir, port, map);
+    const r = await pushHandMade(dir, port, map);
     expect(r.rejected.map((x) => x.reason)).toEqual([
       expect.stringContaining('unknown property "Nope"'),
       expect.stringContaining('stamped by ARIMA'),
@@ -417,7 +430,7 @@ describe('outbox: refusals (spec §9.3)', () => {
         id: 'x',
         created_at: '2026-11-18T00:00:00Z',
         run_id: RUN,
-        role: 'ba',
+        role: 'orchestrator',
         op: 'delete',
         database: 'stories',
       }),
@@ -428,12 +441,12 @@ describe('outbox: refusals (spec §9.3)', () => {
         id: 'y',
         created_at: '2026-11-18T00:00:00Z',
         run_id: RUN,
-        role: 'ba',
+        role: 'orchestrator',
         op: 'update',
         database: 'stories',
       }),
     );
-    const r = await pushOutbox(dir, port, map);
+    const r = await pushHandMade(dir, port, map);
     expect(r.rejected).toHaveLength(3);
     expect(r.rejected[1]?.reason).toMatch(/invalid outbox entry/);
     expect(r.rejected[2]?.reason).toMatch(/item_id/);
@@ -462,11 +475,11 @@ describe('outbox: refusals (spec §9.3)', () => {
       dir,
       entry({ op: 'create', database: 'test_cases', properties: { ID: 'TC-0001', Title: 't' } }),
     );
-    await pushOutbox(dir, port, map);
+    await pushHandMade(dir, port, map, ALLOW);
     enqueue(dir, entry({ op: 'retire', database: 'stories', item_id: 'US-001' }));
     enqueue(dir, entry({ op: 'retire', database: 'requirements', item_id: 'REQ-001' }));
     enqueue(dir, entry({ op: 'retire', database: 'test_cases', item_id: 'TC-0001' }));
-    const r = await pushOutbox(dir, port, map);
+    const r = await pushHandMade(dir, port, map);
     expect(r.applied).toHaveLength(2);
     expect(r.rejected[0]?.reason).toMatch(/no retired status/);
     expect(fake.rowByTitle('Stories', 'US-001')!.properties['Status']).toMatchObject({
@@ -477,7 +490,7 @@ describe('outbox: refusals (spec §9.3)', () => {
     });
     expect(fake.rows.size).toBe(3); // nothing removed
     enqueue(dir, entry({ op: 'retire', database: 'stories', item_id: 'US-001' }));
-    expect((await pushOutbox(dir, port, map)).applied).toHaveLength(1); // already retired: no-op
+    expect((await pushHandMade(dir, port, map)).applied).toHaveLength(1); // already retired: no-op
   });
 });
 
@@ -492,7 +505,7 @@ describe('outbox: human edits win (spec §3.3)', () => {
         properties: { ID: 'US-001', Title: 'original', Priority: 1 },
       }),
     );
-    await pushOutbox(dir, port, map);
+    await pushHandMade(dir, port, map);
     const row = fake.rowByTitle('Stories', 'US-001')!;
     const seenByAgent = row.last_edited_time;
 
@@ -508,7 +521,7 @@ describe('outbox: human edits win (spec §3.3)', () => {
       properties: { Title: 'agent rewrite' },
     });
     enqueue(dir, e);
-    const r = await pushOutbox(dir, port, map);
+    const r = await pushHandMade(dir, port, map);
     expect(r.conflicts).toEqual([e.id]);
     expect(r.applied).toEqual([]);
     expect(fake.text(row, 'Title')).toBe('edited by a human');
@@ -525,7 +538,7 @@ describe('outbox: human edits win (spec §3.3)', () => {
       dir,
       entry({ op: 'create', database: 'stories', properties: { ID: 'US-001', Title: 'x' } }),
     );
-    await pushOutbox(dir, port, map); // mirror now reflects our own write
+    await pushHandMade(dir, port, map); // mirror now reflects our own write
     fake.humanEdit(fake.rowByTitle('Stories', 'US-001')!.id, { Attempt: { number: 7 } });
     const e = entry({
       op: 'update',
@@ -534,7 +547,7 @@ describe('outbox: human edits win (spec §3.3)', () => {
       properties: { Attempt: 1 },
     });
     enqueue(dir, e);
-    expect((await pushOutbox(dir, port, map)).conflicts).toEqual([e.id]);
+    expect((await pushHandMade(dir, port, map)).conflicts).toEqual([e.id]);
     expect(fake.rowByTitle('Stories', 'US-001')!.properties['Attempt']).toMatchObject({
       number: 7,
     });
@@ -546,7 +559,7 @@ describe('outbox: human edits win (spec §3.3)', () => {
       dir,
       entry({ op: 'create', database: 'stories', properties: { ID: 'US-001', Title: 'x' } }),
     );
-    await pushOutbox(dir, port, map);
+    await pushHandMade(dir, port, map);
     const base = fake.rowByTitle('Stories', 'US-001')!.last_edited_time;
     const a = entry({
       op: 'update',
@@ -564,7 +577,7 @@ describe('outbox: human edits win (spec §3.3)', () => {
     });
     enqueue(dir, a);
     enqueue(dir, b);
-    const r = await pushOutbox(dir, port, map);
+    const r = await pushHandMade(dir, port, map);
     expect(r.applied).toEqual([a.id, b.id]);
     expect(r.conflicts).toEqual([]);
   });
@@ -586,12 +599,12 @@ describe('outbox: when Notion misbehaves (spec §7.12)', () => {
     enqueue(dir, a);
     enqueue(dir, b);
     fake.failNext = { op: 'pages.create', status: 503, message: 'service unavailable' };
-    const first = await pushOutbox(dir, port, map);
+    const first = await pushHandMade(dir, port, map);
     expect(first.deferred).toEqual([a.id]);
     expect(first.applied).toEqual([]);
     expect(pending(dir).sort()).toEqual([`${a.id}.json`, `${b.id}.json`].sort());
 
-    const second = await pushOutbox(dir, port, map);
+    const second = await pushHandMade(dir, port, map);
     expect(second.applied).toEqual([a.id, b.id]);
     expect(pending(dir)).toEqual([]);
   });
@@ -611,7 +624,7 @@ describe('outbox: when Notion misbehaves (spec §7.12)', () => {
     enqueue(dir, a);
     enqueue(dir, b);
     fake.failNext = { op: 'pages.create', status: 400, message: 'validation_error' };
-    const r = await pushOutbox(dir, port, map);
+    const r = await pushHandMade(dir, port, map);
     expect(r.rejected[0]).toMatchObject({ id: a.id });
     expect(r.rejected[0]?.reason).toMatch(/Notion refused/);
     expect(r.applied).toEqual([b.id]);
@@ -626,7 +639,7 @@ describe('outbox: when Notion misbehaves (spec §7.12)', () => {
     });
     enqueue(dir, a);
     fake.failNext = { op: 'dataSources.query', message: 'ENOTFOUND api.notion.com' };
-    const r = await pushOutbox(dir, port, map);
+    const r = await pushHandMade(dir, port, map);
     expect(r.deferred).toEqual([a.id]);
     expect(pending(dir)).toEqual([`${a.id}.json`]);
     expect(fake.rows.size).toBe(0);
@@ -635,7 +648,7 @@ describe('outbox: when Notion misbehaves (spec §7.12)', () => {
   it('an empty outbox makes no Notion calls', async () => {
     const { fake, port, map, dir } = await setup();
     const before = fake.calls.length;
-    const r = await pushOutbox(dir, port, map);
+    const r = await pushHandMade(dir, port, map);
     expect(r).toEqual({ applied: [], rejected: [], conflicts: [], deferred: [] });
     expect(fake.calls.length).toBe(before);
   });
@@ -660,6 +673,7 @@ describe('arima-notion pull / push CLI', () => {
 
   it('pull mirrors and push applies, with exit codes', async () => {
     const { fake, dir } = await setup();
+    await allocateId(dir, 'US', RUN); // US-001, issued to this run (an agent cannot pick its own)
     const pull = await run(['pull', '--project', dir], dir, fake);
     expect(pull.code).toBe(0);
     expect(pull.out).toContain('mirrored 19 databases');
@@ -699,4 +713,344 @@ describe('arima-notion pull / push CLI', () => {
       'ntn_',
     );
   });
+});
+
+describe('outbox: Status writes need an explicit human opt-in (judge #2)', () => {
+  it('refuses an entry that sets Status by default, writing nothing and recording a refusal', async () => {
+    const { fake, port, map, dir } = await setup();
+    const e = entry({
+      op: 'create',
+      database: 'stories',
+      properties: { ID: 'US-001', Title: 'a', Status: 'Done' },
+    });
+    enqueue(dir, e);
+    const r = await pushHandMade(dir, port, map);
+    expect(r.applied).toEqual([]);
+    expect(r.rejected[0]).toMatchObject({ id: e.id });
+    expect(r.rejected[0]?.reason).toMatch(/Status.*state machine/);
+    expect(fake.rowByTitle('Stories', 'US-001')).toBeUndefined();
+    expect(events(dir, 'notion.refused')).toHaveLength(1);
+  });
+
+  it('refuses a Status update on an existing row, even from the orchestrator role', async () => {
+    const { fake, port, map, dir } = await setup();
+    enqueue(
+      dir,
+      entry({ op: 'create', database: 'stories', properties: { ID: 'US-001', Title: 'a' } }),
+    );
+    await pushHandMade(dir, port, map);
+    const upd = entry({
+      op: 'update',
+      database: 'stories',
+      item_id: 'US-001',
+      role: 'orchestrator',
+      properties: { Status: 'Done' },
+    });
+    enqueue(dir, upd);
+    expect((await pushHandMade(dir, port, map)).rejected.map((x) => x.id)).toEqual([upd.id]);
+    expect(fake.rowByTitle('Stories', 'US-001')!.properties['Status']).not.toMatchObject({
+      select: { name: 'Done' },
+    });
+  });
+
+  it('entries without Status are unaffected', async () => {
+    const { port, map, dir } = await setup();
+    const e = entry({
+      op: 'create',
+      database: 'stories',
+      properties: { ID: 'US-001', Title: 'a' },
+    });
+    enqueue(dir, e);
+    expect((await pushHandMade(dir, port, map)).applied).toEqual([e.id]);
+  });
+
+  it('the CLI refuses without --allow-status-writes and applies with it', async () => {
+    const { fake, dir } = await setup();
+    await allocateId(dir, 'US', RUN);
+    const run = async (argv: string[]) => {
+      let out = '';
+      const code = await runNotionCli(
+        argv,
+        { out: (s) => (out += s), err: () => undefined, cwd: dir },
+        {
+          portFactory: () =>
+            createNotionPort(fake.client, new Throttle(0), { sleep: () => Promise.resolve() }),
+          env: { ARIMA_NOTION_TOKEN: 'ntn_not_a_real_token' },
+          now: new Date('2026-11-18T01:00:00Z'),
+        },
+      );
+      return { code, out };
+    };
+    const e = entry({
+      op: 'create',
+      database: 'stories',
+      properties: { ID: 'US-001', Title: 'a', Status: 'Ready' },
+    });
+    enqueue(dir, e);
+    const refused = await run(['push', '--project', dir]);
+    expect(refused.code).toBe(1);
+    expect(refused.out).toMatch(/rejected.*Status/);
+    expect(fake.rowByTitle('Stories', 'US-001')).toBeUndefined();
+    // a rejected entry is moved out of the way; queue it again for the human-approved push
+    enqueue(dir, { ...e, id: 'ob-again-0001' });
+    const allowed = await run(['push', '--project', dir, '--allow-status-writes']);
+    expect(allowed.code).toBe(0);
+    expect(fake.rowByTitle('Stories', 'US-001')).toBeDefined();
+  });
+});
+
+describe('outbox: human edits are detected by VALUE, not by minute-rounded timestamps', () => {
+  const storyRow = async (
+    ctx: Awaited<ReturnType<typeof setup>>,
+    props: Record<string, unknown> = {},
+  ) => {
+    enqueue(
+      ctx.dir,
+      entry({
+        op: 'create',
+        database: 'stories',
+        properties: { ID: 'US-001', Title: 'original', Attempt: 1, ...props },
+      }),
+    );
+    await pushHandMade(ctx.dir, ctx.port, ctx.map);
+    return ctx.fake.rowByTitle('Stories', 'US-001')!;
+  };
+
+  it('keeps a human edit made in the SAME minute as the agent baseline (timestamps are equal)', async () => {
+    const ctx = await setup();
+    ctx.fake.sameMinute = true;
+    const row = await storyRow(ctx);
+    const seen = row.last_edited_time;
+    ctx.fake.humanEdit(row.id, { Attempt: { number: 7 } });
+    expect(row.last_edited_time).toBe(seen); // the timestamp cannot tell
+    const e = entry({
+      op: 'update',
+      database: 'stories',
+      item_id: 'US-001',
+      base_last_edited: seen,
+      properties: { Attempt: 2 },
+    });
+    enqueue(ctx.dir, e);
+    const r = await pushHandMade(ctx.dir, ctx.port, ctx.map);
+    expect(r.conflicts).toEqual([e.id]);
+    expect(row.properties['Attempt']).toMatchObject({ number: 7 });
+  });
+
+  it('a human edit to a DIFFERENT property does not block the agent, and survives it', async () => {
+    const ctx = await setup();
+    const row = await storyRow(ctx);
+    ctx.fake.humanEdit(row.id, {
+      Title: { rich_text: [{ type: 'text', text: { content: 'renamed by a human' } }] },
+    });
+    const e = entry({
+      op: 'update',
+      database: 'stories',
+      item_id: 'US-001',
+      properties: { Attempt: 2 },
+    });
+    enqueue(ctx.dir, e);
+    const r = await pushHandMade(ctx.dir, ctx.port, ctx.map);
+    expect(r.applied).toEqual([e.id]);
+    expect(row.properties['Attempt']).toMatchObject({ number: 2 });
+    expect(ctx.fake.text(row, 'Title')).toBe('renamed by a human');
+  });
+
+  it('a later timestamp with unchanged values is not a conflict (a touch, or our own earlier write)', async () => {
+    const ctx = await setup();
+    const row = await storyRow(ctx);
+    ctx.fake.humanEdit(row.id, {}); // bumps last_edited_time, changes nothing
+    const e = entry({
+      op: 'update',
+      database: 'stories',
+      item_id: 'US-001',
+      properties: { Attempt: 2 },
+    });
+    enqueue(ctx.dir, e);
+    expect((await pushHandMade(ctx.dir, ctx.port, ctx.map)).applied).toEqual([e.id]);
+  });
+
+  it('our own write in an earlier push is not mistaken for a human edit (relations included)', async () => {
+    const ctx = await setup();
+    enqueue(
+      ctx.dir,
+      entry({
+        op: 'create',
+        database: 'requirements',
+        properties: { ID: 'REQ-001', Title: 'r' },
+      }),
+    );
+    await storyRow(ctx, { Requirements: ['REQ-001'] });
+    for (const n of [2, 3]) {
+      const e = entry({
+        op: 'update',
+        database: 'stories',
+        item_id: 'US-001',
+        properties: { Attempt: n, Requirements: ['REQ-001'] },
+      });
+      enqueue(ctx.dir, e);
+      const r = await pushHandMade(ctx.dir, ctx.port, ctx.map);
+      expect(r.conflicts).toEqual([]);
+      expect(r.applied).toEqual([e.id]);
+    }
+  });
+
+  it('retire loses to a human who changed Status in the meantime', async () => {
+    const ctx = await setup();
+    const row = await storyRow(ctx);
+    ctx.fake.humanEdit(row.id, { Status: { select: { name: 'In progress' } } });
+    const e = entry({ op: 'retire', database: 'stories', item_id: 'US-001' });
+    enqueue(ctx.dir, e);
+    const r = await pushHandMade(ctx.dir, ctx.port, ctx.map, ALLOW);
+    expect(r.conflicts).toEqual([e.id]);
+    expect(row.properties['Status']).toMatchObject({ select: { name: 'In progress' } });
+  });
+
+  it('appending content never overwrites a value, so it is not a conflict', async () => {
+    const ctx = await setup();
+    const row = await storyRow(ctx);
+    ctx.fake.humanEdit(row.id, { Attempt: { number: 9 } });
+    const e = entry({
+      op: 'append_content',
+      database: 'stories',
+      item_id: 'US-001',
+      content_markdown: 'a note',
+    });
+    enqueue(ctx.dir, e);
+    expect((await pushHandMade(ctx.dir, ctx.port, ctx.map)).applied).toEqual([e.id]);
+  });
+
+  it('an agent cannot hide a human edit by claiming a late base_last_edited', async () => {
+    const ctx = await setup();
+    const row = await storyRow(ctx);
+    ctx.fake.humanEdit(row.id, { Attempt: { number: 7 } });
+    const e = entry({
+      op: 'update',
+      database: 'stories',
+      item_id: 'US-001',
+      base_last_edited: '2099-01-01T00:00:00.000Z',
+      properties: { Attempt: 2 },
+    });
+    enqueue(ctx.dir, e);
+    expect((await pushHandMade(ctx.dir, ctx.port, ctx.map)).conflicts).toEqual([e.id]);
+  });
+
+  it("the stored mirror holds Notion's own values after a push, not the agent's spelling", async () => {
+    const ctx = await setup();
+    await storyRow(ctx, { Priority: 1 });
+    const mirrored = readMirror(ctx.dir, 'stories')!.rows.find((r) => r.id === 'US-001')!;
+    expect(mirrored.properties['Attempt']).toBe(1);
+    expect(mirrored.properties['Last written by run']).toBe(RUN);
+  });
+});
+
+describe('outbox: evidence of a human edit survives a mirror refresh (judge #3)', () => {
+  it('enqueue records what the agent saw, so pull + push cannot erase a human edit', async () => {
+    const ctx = await setup();
+    enqueue(
+      ctx.dir,
+      entry({
+        op: 'create',
+        database: 'stories',
+        properties: { ID: 'US-001', Title: 'a', Attempt: 1 },
+      }),
+    );
+    await pushHandMade(ctx.dir, ctx.port, ctx.map);
+    const row = ctx.fake.rowByTitle('Stories', 'US-001')!;
+    const e = entry({
+      op: 'update',
+      database: 'stories',
+      item_id: 'US-001',
+      properties: { Attempt: 2 },
+    });
+    enqueue(ctx.dir, e); // the agent read Attempt = 1
+    ctx.fake.humanEdit(row.id, { Attempt: { number: 7 } });
+    await pullMirror(ctx.dir, ctx.port, ctx.map); // something refreshes the mirror before the push
+    const r = await pushHandMade(ctx.dir, ctx.port, ctx.map);
+    expect(r.conflicts).toEqual([e.id]);
+    expect(row.properties['Attempt']).toMatchObject({ number: 7 });
+  });
+
+  it('a retry after a lost response is applied, not reported as a human conflict', async () => {
+    const ctx = await setup();
+    enqueue(
+      ctx.dir,
+      entry({
+        op: 'create',
+        database: 'stories',
+        properties: { ID: 'US-001', Title: 'a', Attempt: 1 },
+      }),
+    );
+    await pushHandMade(ctx.dir, ctx.port, ctx.map);
+    const e = entry({
+      op: 'update',
+      database: 'stories',
+      item_id: 'US-001',
+      properties: { Attempt: 2 },
+    });
+    enqueue(ctx.dir, e);
+    // the write lands in Notion but the answer is lost: simulate by applying it, then re-queueing
+    await pushHandMade(ctx.dir, ctx.port, ctx.map);
+    enqueue(ctx.dir, { ...e, id: 'ob-retry-0001' });
+    const r = await pushHandMade(ctx.dir, ctx.port, ctx.map);
+    expect(r.conflicts).toEqual([]);
+    expect(r.applied).toEqual(['ob-retry-0001']);
+  });
+});
+
+describe('Notion reads retry transient network errors, writes never do', () => {
+  it('a read survives one dropped connection', async () => {
+    const f = new FakeNotion();
+    const port = createNotionPort(f.client, new Throttle(0), { sleep: () => Promise.resolve() });
+    const row = await port.createPage(
+      (
+        await (async () => {
+          await bootstrapTemplate(port, f.rootId);
+          return mapWorkspace(port, f.rootId);
+        })()
+      ).map!.databases['documents']!.data_source_id,
+      { Title: { title: [{ type: 'text', text: { content: 'x' } }] } },
+    );
+    let n = 0;
+    const orig = f.client.pages.retrieve;
+    f.client.pages.retrieve = (a) =>
+      ++n === 1
+        ? Promise.reject(Object.assign(new Error('fetch failed'), { code: 'ECONNRESET' }))
+        : orig(a);
+    expect((await port.getPage(row.pageId)).pageId).toBe(row.pageId);
+    expect(n).toBe(2);
+  });
+
+  it('a create is NOT retried after a connection reset', async () => {
+    const f = new FakeNotion();
+    const port = createNotionPort(f.client, new Throttle(0), { sleep: () => Promise.resolve() });
+    await bootstrapTemplate(port, f.rootId);
+    const ds = (await mapWorkspace(port, f.rootId)).map!.databases['documents']!.data_source_id;
+    let n = 0;
+    f.client.pages.create = () => {
+      n++;
+      return Promise.reject(Object.assign(new Error('fetch failed'), { code: 'ECONNRESET' }));
+    };
+    await expect(port.createPage(ds, {})).rejects.toThrow();
+    expect(n).toBe(1);
+  });
+});
+
+describe('outbox entry ids become file names, so they are restricted', () => {
+  it.each(['../evil', 'a/b', 'a\b', '..', '.hidden', '', 'x'.repeat(81), 'a b'])(
+    'rejects id %j',
+    (id) => {
+      const dir = tempDir('arima-outbox-');
+      expect(() =>
+        enqueue(
+          dir,
+          entry({
+            id,
+            op: 'create',
+            database: 'stories',
+            properties: { ID: 'US-1', Title: 't' },
+          }),
+        ),
+      ).toThrow(/Invalid outbox entry/);
+    },
+  );
 });

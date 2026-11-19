@@ -1,3 +1,4 @@
+import type { DbKey } from './notion/schema.js';
 import type { Role } from './ledger.js';
 
 export const ROLES: readonly Role[] = [
@@ -21,31 +22,59 @@ export function configKey(role: Role): string {
   return role.replace('-', '_');
 }
 
-const OUTBOX = 'Write(./.arima/outbox/**)';
+/** Top-level outbox files only (G-07); the sub-folders are written by `arima-notion push`. */
+const OUTBOX = 'Write(./.arima/outbox/*.json)';
+
+/** `Bash(cmd)` and `Bash(cmd *)`, so a command with and without arguments both match. */
+const bash = (cmd: string): string[] => [`Bash(${cmd})`, `Bash(${cmd} *)`];
+
+/** Read-only git. No push, no config, no reset: those are never granted to a role by pattern. */
+const GIT_READ = [
+  ...bash('git status'),
+  ...bash('git diff'),
+  ...bash('git log'),
+  ...bash('git show'),
+  ...bash('git rev-parse'),
+  ...bash('git ls-files'),
+  ...bash('git branch --list'),
+  ...bash('git fetch'),
+];
+
+/** Running the app's own tests. No `npx` (it downloads and runs arbitrary packages). */
+const NPM_TEST = [...bash('npm test'), ...bash('npm run'), ...bash('npm ci')];
 
 /**
  * Per-role tool allow-list for headless runs (spec §5 "Tools", §11.2 permissions matrix).
  * Rules use Claude Code permission syntax. Anything not listed is denied (dontAsk mode).
- * `scriptsGlob` is the plugin's dist directory, so a role may run ARIMA scripts and nothing else
- * through `node`.
+ * `scriptsDir` is the plugin's scripts/dist directory. A role may run only the named ARIMA scripts
+ * through `node`, never the whole directory: `arima-pause` (the kill switch) and `arima-init` are
+ * never granted to a role.
+ *
+ * Merging and pushing to the default branch are not here on purpose: they belong to one merge
+ * script (v0.2, step 1.7) and the guard hook blocks them for every agent.
  */
-export function allowedTools(role: Role, scriptsGlob: string): string[] {
+export function allowedTools(role: Role, scriptsDir: string): string[] {
   const read = ['Read', 'Glob', 'Grep'];
-  const arimaScripts = `Bash(node ${scriptsGlob}/*)`;
+  const script = (name: string): string[] => bash(`node ${scriptsDir}/${name}.mjs`);
   switch (role) {
     case 'orchestrator':
       return [
         ...read,
-        'Write(./.arima/**)',
-        'Edit(./.arima/**)',
+        // G-06: events, ledger, mirror, runs, items and findings are written by scripts only.
+        OUTBOX,
+        'Write(./.arima/overrides/**)',
+        'Edit(./.arima/overrides/**)',
         'Write(./docs/spec/**)',
         'Edit(./docs/spec/**)',
-        'Bash(git *)',
-        'Bash(gh pr view *)',
-        'Bash(gh pr list *)',
-        'Bash(gh run list *)',
-        'Bash(gh run view *)',
-        arimaScripts,
+        ...GIT_READ,
+        ...[
+          'arima-config',
+          'arima-preflight',
+          'arima-ids',
+          'arima-notion',
+          'arima-state',
+          'arima-status',
+        ].flatMap(script),
         'WebFetch',
       ];
     case 'ba':
@@ -62,7 +91,6 @@ export function allowedTools(role: Role, scriptsGlob: string): string[] {
         'Write(./design/**)',
         'Edit(./design/**)',
         OUTBOX,
-        'Bash(npx serve *)',
         'mcp__playwright__*',
         'WebFetch',
       ];
@@ -77,25 +105,18 @@ export function allowedTools(role: Role, scriptsGlob: string): string[] {
         'WebFetch',
       ];
     case 'tech-lead':
-      return [
-        ...read,
-        OUTBOX,
-        'Bash(git *)',
-        'Bash(gh pr *)',
-        'Bash(npm *)',
-        'Bash(npx *)',
-        'WebFetch',
-      ];
+      return [...read, OUTBOX, ...GIT_READ, ...NPM_TEST, 'WebFetch'];
     case 'developer':
       return [
         ...read,
         'Edit',
         'Write',
-        'Bash(git *)',
-        'Bash(gh pr create *)',
-        'Bash(gh pr view *)',
-        'Bash(npm *)',
-        'Bash(npx *)',
+        ...GIT_READ,
+        ...bash('git add'),
+        ...bash('git commit'),
+        ...bash('git switch'),
+        ...bash('git checkout'),
+        ...NPM_TEST,
         'WebFetch',
       ];
     case 'qa':
@@ -104,12 +125,12 @@ export function allowedTools(role: Role, scriptsGlob: string): string[] {
         'Write(./tests/**)',
         'Edit(./tests/**)',
         OUTBOX,
-        'Bash(npm *)',
-        'Bash(npx *)',
+        ...NPM_TEST,
+        ...bash('npx playwright'),
         'mcp__playwright__*',
       ];
     case 'security':
-      return [...read, OUTBOX, 'Bash(git *)', 'Bash(npm audit *)', 'Bash(npx *)', 'WebFetch'];
+      return [...read, OUTBOX, ...GIT_READ, ...bash('npm audit'), 'WebFetch'];
     case 'devops':
       return [
         ...read,
@@ -119,19 +140,22 @@ export function allowedTools(role: Role, scriptsGlob: string): string[] {
         'Edit(./.github/**)',
         'Write(./docs/ops/**)',
         'Edit(./docs/ops/**)',
-        'Bash(git *)',
-        'Bash(gh *)',
+        ...GIT_READ,
+        ...bash('git add'),
+        ...bash('git commit'),
         'WebFetch',
       ];
   }
 }
 
 /**
- * Denied for every role. No Notion MCP at all (ADR-0003: Notion goes through ARIMA scripts), and
- * no reading or writing secret-bearing files (spec §11.3; the T-13 hook is the second layer).
+ * Denied for the role even if an allow rule would match. No Notion MCP at all (ADR-0003), no
+ * secret-bearing files (spec §11.3), no editing of the files that decide who may approve or what
+ * the hooks do, and none of the GitHub commands that merge, publish or change settings. The guard
+ * hook repeats these as a second layer because rule matching is only as good as its patterns.
  */
-export function deniedTools(): string[] {
-  return [
+export function deniedTools(role?: Role): string[] {
+  const out = [
     'mcp__*notion*',
     'Read(./.env)',
     'Read(./.env.*)',
@@ -139,15 +163,91 @@ export function deniedTools(): string[] {
     'Read(**/*.key)',
     'Edit(./.env*)',
     'Write(./.env*)',
+    'Edit(./arima.yaml)',
+    'Write(./arima.yaml)',
+    'Edit(./team.yaml)',
+    'Write(./team.yaml)',
+    'Edit(./.claude/**)',
+    'Write(./.claude/**)',
+    'Edit(./.githooks/**)',
+    'Write(./.githooks/**)',
+    'Edit(./.arima/PAUSE)',
+    'Write(./.arima/PAUSE)',
+    'Edit(./.arima/run.lock)',
+    'Write(./.arima/run.lock)',
+    // D-49: no role pushes or runs gh. The host publish script pushes, opens PRs and posts comments.
+    ...bash('git push'),
+    ...bash('gh'),
+    ...bash('gh pr merge'),
+    ...bash('gh api'),
+    ...bash('gh workflow run'),
+    ...bash('gh release'),
+    ...bash('gh secret'),
+    ...bash('gh repo'),
+    ...bash('gh auth'),
   ];
+  if (role !== 'devops') out.push('Edit(./.github/**)', 'Write(./.github/**)');
+  return out;
 }
 
-/** Roles that may hold the machine-account GitHub token (spec §10.3, §11.3). */
+/**
+ * No role holds a GitHub token (D-49, G-05): the host reads pull requests, CI and review threads
+ * into the run packet and posts each role's comments, and only the host publish and merge scripts
+ * push, open PRs and merge. The scope of a role's GitHub credential is therefore always `none`.
+ */
+export const githubTokenScope = (): 'none' => 'none';
+
+/** Roles that may hold a GitHub token: none (see `githubTokenScope`). */
 export function mayHoldGithubToken(role: Role): boolean {
-  return role === 'developer' || role === 'tech-lead' || role === 'devops';
+  void role;
+  return githubTokenScope() !== 'none';
 }
 
 /** Only the orchestrator talks to Notion (spec principle 6, D-07). */
 export function mayHoldNotionToken(role: Role): boolean {
   return role === 'orchestrator';
 }
+
+/**
+ * Databases a role may write through the outbox (RD-F03-2, 09 section 1: tools match the whole job,
+ * no more). Enforced at push; a violation is rejected with reason `database_not_allowed`. The
+ * orchestrator may write every database (human-only fields stay refused). Never for a non-
+ * orchestrator role: gates, digests, cost_log, milestones (releases only for devops).
+ */
+export const OUTBOX_DATABASES: Record<Role, readonly DbKey[]> = {
+  orchestrator: [
+    'gates',
+    'requirements',
+    'epics',
+    'stories',
+    'test_cases',
+    'bugs',
+    'milestones',
+    'documents',
+    'decisions',
+    'questions',
+    'meetings',
+    'digests',
+    'releases',
+    'incidents',
+    'change_requests',
+    'risks',
+    'lessons',
+    'cost_log',
+    'human_tasks',
+  ],
+  ba: ['requirements', 'epics', 'stories', 'documents', 'risks', 'questions', 'decisions'],
+  ux: ['documents', 'stories', 'questions', 'decisions'],
+  architect: ['documents', 'requirements', 'risks', 'questions', 'decisions'],
+  'tech-lead': ['documents', 'risks', 'questions', 'decisions'],
+  developer: ['stories', 'bugs', 'questions', 'decisions'],
+  qa: ['test_cases', 'bugs', 'documents', 'questions', 'decisions'],
+  security: ['risks', 'documents', 'questions', 'decisions'],
+  devops: ['documents', 'releases', 'incidents', 'risks', 'human_tasks', 'questions', 'decisions'],
+};
+
+/** Properties a role may not write even in a database it may write (priority is the PO's call). */
+export const OUTBOX_FORBIDDEN_PROPERTIES: Partial<Record<Role, readonly string[]>> = {
+  ba: ['Priority'],
+  ux: ['Priority'],
+};

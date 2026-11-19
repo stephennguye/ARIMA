@@ -12,3 +12,5 @@ plugins/arima/profiles
 *.md
 *.yaml
 *.json
+.claude
+tmp

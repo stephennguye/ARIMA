@@ -1,0 +1,27 @@
+[
+  {
+    "name": "unknown kind",
+    "error": "kind",
+    "value": { "unit_id": "u", "role": "developer", "item": "US-112", "kind": "daydream", "phase": 4, "attempt": 1, "budget_usd": 3, "max_turns": 60, "inputs": [], "profile": "solo-lite" }
+  },
+  {
+    "name": "attempt zero",
+    "error": "attempt",
+    "value": { "unit_id": "u", "role": "developer", "item": "US-112", "kind": "develop", "phase": 4, "attempt": 0, "budget_usd": 3, "max_turns": 60, "inputs": [], "profile": "solo-lite" }
+  },
+  {
+    "name": "missing budget",
+    "error": "budget_usd",
+    "value": { "unit_id": "u", "role": "developer", "item": "US-112", "kind": "develop", "phase": 4, "attempt": 1, "max_turns": 60, "inputs": [], "profile": "solo-lite" }
+  },
+  {
+    "name": "bad item id",
+    "error": "item",
+    "value": { "unit_id": "u", "role": "developer", "item": "story 112", "kind": "develop", "phase": 4, "attempt": 1, "budget_usd": 3, "max_turns": 60, "inputs": [], "profile": "solo-lite" }
+  },
+  {
+    "name": "unknown profile",
+    "error": "profile",
+    "value": { "unit_id": "u", "role": "developer", "item": "US-112", "kind": "develop", "phase": 4, "attempt": 1, "budget_usd": 3, "max_turns": 60, "inputs": [], "profile": "enterprise" }
+  }
+]

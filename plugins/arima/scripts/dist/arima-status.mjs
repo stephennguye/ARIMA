@@ -18304,6 +18304,29 @@ import { parseArgs } from "node:util";
 
 // plugins/arima/scripts/src/config.ts
 import { existsSync as existsSync2 } from "node:fs";
+
+// plugins/arima/scripts/src/hardstops.ts
+var HARD_STOPS = [
+  "G0",
+  "G1",
+  "G2",
+  "G3",
+  "G4",
+  "prod_deploy",
+  "secrets_change",
+  "budget_exceeded",
+  "story_budget",
+  "notion_delete",
+  "prod_data_migration",
+  "new_paid_service",
+  "licence",
+  "critical_finding",
+  "kill_switch",
+  "missing_credential"
+];
+var isHardStop = (id) => HARD_STOPS.includes(id);
+
+// plugins/arima/scripts/src/config.ts
 import path4 from "node:path";
 
 // plugins/arima/scripts/src/lib/paths.ts
@@ -18325,18 +18348,28 @@ function pluginRoot() {
 // plugins/arima/scripts/src/lib/schema.ts
 var import__ = __toESM(require__(), 1);
 var import_ajv_formats = __toESM(require_dist2(), 1);
-import { readFileSync } from "node:fs";
+import { readFileSync, readdirSync } from "node:fs";
 import path2 from "node:path";
 var cache = /* @__PURE__ */ new Map();
+var instances = /* @__PURE__ */ new Map();
+function ajvFor(root) {
+  const hit = instances.get(root);
+  if (hit) return hit;
+  const ajv = new import__.Ajv2020({ allErrors: true, strict: true });
+  (0, import_ajv_formats.default)(ajv);
+  const dir = path2.join(root, "schemas");
+  for (const f of readdirSync(dir).filter((n) => n.endsWith(".schema.json"))) {
+    ajv.addSchema(JSON.parse(readFileSync(path2.join(dir, f), "utf8")), f);
+  }
+  instances.set(root, ajv);
+  return ajv;
+}
 function getValidator(name, root = pluginRoot()) {
   const key = `${root}::${name}`;
   const hit = cache.get(key);
   if (hit) return hit;
-  const file = path2.join(root, "schemas", `${name}.schema.json`);
-  const schema = JSON.parse(readFileSync(file, "utf8"));
-  const ajv = new import__.Ajv2020({ allErrors: true, strict: true });
-  (0, import_ajv_formats.default)(ajv);
-  const validate = ajv.compile(schema);
+  const validate = ajvFor(root).getSchema(`${name}.schema.json`);
+  if (!validate) throw new Error(`schema not found: schemas/${name}.schema.json`);
   cache.set(key, validate);
   return validate;
 }
@@ -18402,7 +18435,7 @@ var YamlSource = class {
 
 // plugins/arima/scripts/src/profiles.ts
 var import_yaml2 = __toESM(require_dist(), 1);
-import { readdirSync, readFileSync as readFileSync3 } from "node:fs";
+import { readdirSync as readdirSync2, readFileSync as readFileSync3 } from "node:fs";
 import path3 from "node:path";
 var PROFILE_NAMES = ["solo-lite", "client-project", "regulated"];
 function profilesDir(root = pluginRoot()) {
@@ -18578,11 +18611,66 @@ function validateProject(projectDir, root = pluginRoot()) {
       message: "usage credits are enabled: set a spend cap and note it in the digest configuration (Q-22); budgets are estimates, not money spent"
     });
   }
+  const listed = new Set(
+    arima.autonomy.hard_stops
+  );
+  const missing = REQUIRED_HARD_STOPS.filter((s) => !listed.has(s));
+  const unknown = [...listed].filter((s) => !isHardStop(s));
+  if (unknown.length > 0) {
+    warnings.push({
+      severity: "warning",
+      file: aSrc.file,
+      line: aSrc.lineOf("/autonomy/hard_stops"),
+      path: "autonomy.hard_stops",
+      message: `unknown hard stop ids: ${unknown.join(", ")}. The ids are fixed in code (see src/hardstops.ts); a typo here protects nothing`
+    });
+  }
+  if (missing.length > 0) {
+    warnings.push({
+      severity: "warning",
+      file: aSrc.file,
+      line: aSrc.lineOf("/autonomy/hard_stops"),
+      path: "autonomy.hard_stops",
+      message: `hard stops missing from this list: ${missing.join(", ")}. ARIMA enforces them anyway (they cannot be disabled by configuration, spec \xA711.1); keep the list complete so it matches what is enforced`
+    });
+  }
   return { ok: errors.length === 0, errors, warnings, arima, team };
 }
+var REQUIRED_HARD_STOPS = HARD_STOPS;
 
 // plugins/arima/scripts/src/lib/jsonl.ts
 import { appendFileSync, existsSync as existsSync3, mkdirSync, readFileSync as readFileSync4 } from "node:fs";
+
+// plugins/arima/scripts/src/lib/migrate.ts
+var CURRENT_SCHEMA_VERSION = 1;
+var VERSIONED = ["ledger", "event", "outbox"];
+var STEPS = {};
+var SchemaVersionError = class extends Error {
+};
+function versionOf(record) {
+  const v = record?.schema_version;
+  return v === void 0 ? 1 : typeof v === "number" ? v : Number.NaN;
+}
+function migrateRecord(schema, record) {
+  if (!VERSIONED.includes(schema) || record === null || typeof record !== "object") return record;
+  let v = versionOf(record);
+  if (!Number.isInteger(v) || v < 1)
+    throw new SchemaVersionError(`invalid schema_version in a ${schema} record`);
+  if (v > CURRENT_SCHEMA_VERSION)
+    throw new SchemaVersionError(
+      `a ${schema} record has schema_version ${v}, newer than this ARIMA understands (${CURRENT_SCHEMA_VERSION}); upgrade the plugin`
+    );
+  let out = record;
+  while (v < CURRENT_SCHEMA_VERSION) {
+    const step = STEPS[v];
+    if (step === void 0) throw new SchemaVersionError(`no migration from ${schema} v${v}`);
+    out = step(out);
+    v += 1;
+  }
+  return out;
+}
+
+// plugins/arima/scripts/src/lib/jsonl.ts
 function readJsonl(file, schema) {
   if (!existsSync3(file)) return [];
   const validate = getValidator(schema);
@@ -18596,6 +18684,11 @@ function readJsonl(file, schema) {
     } catch (e) {
       throw new Error(`${file}:${i + 1}: not valid JSON`, { cause: e });
     }
+    try {
+      parsed = migrateRecord(schema, parsed);
+    } catch (e) {
+      throw new Error(`${file}:${i + 1}: ${e.message}`, { cause: e });
+    }
     if (!validate(parsed)) {
       throw new Error(
         `${file}:${i + 1}: invalid ${schema} record: ${(validate.errors ?? []).map(describeError).join("; ")}`
@@ -18604,6 +18697,17 @@ function readJsonl(file, schema) {
     out.push(parsed);
   });
   return out;
+}
+
+// plugins/arima/scripts/src/killswitch.ts
+import path5 from "node:path";
+
+// plugins/arima/scripts/src/notion/port.ts
+var import_client = __toESM(require_src(), 1);
+
+// plugins/arima/scripts/src/killswitch.ts
+function pauseFile(projectDir) {
+  return path5.join(projectDir, ".arima", "PAUSE");
 }
 
 // plugins/arima/scripts/src/gates.ts
@@ -18616,13 +18720,32 @@ var PHASE_AFTER_GATE = {
 };
 
 // plugins/arima/scripts/src/ledger.ts
-import path5 from "node:path";
+import path6 from "node:path";
 function ledgerFile(projectDir) {
-  return path5.join(projectDir, ".arima", "ledger.jsonl");
+  return path6.join(projectDir, ".arima", "ledger.jsonl");
 }
 function readLedger(projectDir) {
   return readJsonl(ledgerFile(projectDir), "ledger");
 }
+
+// plugins/arima/scripts/src/ids.ts
+var ID_WIDTHS = {
+  REQ: 3,
+  NFR: 3,
+  EP: 2,
+  US: 3,
+  TC: 4,
+  BUG: 3,
+  ADR: 4,
+  RISK: 3,
+  DEC: 4,
+  Q: 3,
+  MS: 2,
+  CR: 3,
+  INC: 3,
+  LES: 3
+};
+var ID_PREFIXES = Object.keys(ID_WIDTHS);
 
 // plugins/arima/scripts/src/notion/schema.ts
 var ROLE_OPTIONS = [
@@ -18709,7 +18832,7 @@ var DATABASES = [
       {
         name: "Coverage",
         type: "formula",
-        formula: 'if(prop("Test results").some(current == "Pass"), "Covered", "Not covered")'
+        formula: 'if(contains(prop("Test results"), "Pass"), "Covered", "Not covered")'
       },
       rel("Stories", "stories", "Requirements"),
       rel("Test Cases", "test_cases", "Requirements"),
@@ -19049,14 +19172,28 @@ var DATABASES = [
 
 // plugins/arima/scripts/src/notion/mirror.ts
 import { existsSync as existsSync4, mkdirSync as mkdirSync2, readFileSync as readFileSync5 } from "node:fs";
-import path6 from "node:path";
-var mirrorDir = (projectDir) => path6.join(projectDir, ".arima", "mirror");
-var mirrorFile = (projectDir, db) => path6.join(mirrorDir(projectDir), `${db}.json`);
+import path7 from "node:path";
+var mirrorDir = (projectDir) => path7.join(projectDir, ".arima", "mirror");
+var mirrorFile = (projectDir, db) => path7.join(mirrorDir(projectDir), `${db}.json`);
 function readMirror(projectDir, db) {
   const file = mirrorFile(projectDir, db);
   if (!existsSync4(file)) return void 0;
   return JSON.parse(readFileSync5(file, "utf8"));
 }
+
+// plugins/arima/scripts/src/roles.ts
+var bash = (cmd) => [`Bash(${cmd})`, `Bash(${cmd} *)`];
+var GIT_READ = [
+  ...bash("git status"),
+  ...bash("git diff"),
+  ...bash("git log"),
+  ...bash("git show"),
+  ...bash("git rev-parse"),
+  ...bash("git ls-files"),
+  ...bash("git branch --list"),
+  ...bash("git fetch")
+];
+var NPM_TEST = [...bash("npm test"), ...bash("npm run"), ...bash("npm ci")];
 
 // plugins/arima/scripts/src/budget.ts
 var round = (n) => Math.round(n * 1e6) / 1e6;
@@ -19077,16 +19214,8 @@ function budgetStatus(projectDir, limits, today) {
   };
 }
 
-// plugins/arima/scripts/src/killswitch.ts
-import path7 from "node:path";
-
-// plugins/arima/scripts/src/notion/port.ts
-var import_client = __toESM(require_src(), 1);
-
-// plugins/arima/scripts/src/killswitch.ts
-function pauseFile(projectDir) {
-  return path7.join(projectDir, ".arima", "PAUSE");
-}
+// plugins/arima/scripts/src/state.ts
+var MAX_SCAN_BYTES = 64 * 1024 * 1024;
 
 // plugins/arima/scripts/src/preflight.ts
 var PREFLIGHT_EXIT = {
@@ -19105,9 +19234,6 @@ var CODE = {
   budget: PREFLIGHT_EXIT.budget,
   env: PREFLIGHT_EXIT.env
 };
-
-// plugins/arima/scripts/src/state.ts
-var MAX_SCAN_BYTES = 5 * 1024 * 1024;
 
 // plugins/arima/scripts/src/status.ts
 import path8 from "node:path";

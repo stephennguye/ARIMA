@@ -7,7 +7,8 @@
   "additionalProperties": false,
   "required": ["run_id", "date", "project", "phase", "item", "role", "attempt", "is_rework", "subtype", "num_turns", "duration_ms", "tokens", "cost_usd", "budget_usd", "result"],
   "properties": {
-    "run_id": { "type": "string", "pattern": "^r-[0-9]{8}-[0-9]{4}-[0-9]{2,}$" },
+    "schema_version": { "const": 1, "description": "Optional; absent means 1 (written before the field existed). A larger number is refused by the reader (WP-195)." },
+    "run_id":{ "type": "string", "pattern": "^r-[0-9]{8}-[0-9]{4}-[0-9]{2,}$" },
     "session_id": { "type": "string" },
     "date": { "type": "string", "format": "date" },
     "started_at": { "type": "string", "format": "date-time" },
@@ -38,6 +39,16 @@
     "cost_usd": { "type": "number", "minimum": 0, "description": "Estimated; on a seat this is consumption, not spend (§13.6). For resumed sessions, the difference from the previous result." },
     "budget_usd": { "type": "number", "minimum": 0 },
     "ci_minutes": { "type": "number", "minimum": 0 },
-    "result": { "enum": ["pass", "fail", "error", "paused", "blocked"] }
+    "result": { "enum": ["pass", "fail", "error", "paused", "blocked"] },
+    "reason": {
+      "enum": [
+        "report_invalid", "report_missing", "evidence_missing", "secret_in_output", "protected_path",
+        "template_invalid", "cap_turns", "cap_budget", "usage_limit", "kill_switch", "budget_exhausted",
+        "story_budget", "credential_missing", "notion_deferred", "notion_conflict", "notion_refused",
+        "state_not_saved", "merge_refused_ci", "merge_refused_qa", "merge_refused_review", "guard_blocked",
+        "unknown_kill_switch", "database_not_allowed", "phase_refused", "remote_unchecked"
+      ],
+      "description": "Reason code (03-contracts 9b) explaining a fail, blocked or paused result"
+    }
   }
 }

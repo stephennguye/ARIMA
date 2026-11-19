@@ -12,7 +12,7 @@ This takes you from nothing to a working `/arima:status` on a new project. It as
 | Claude Code | current | `claude --version` |
 | A Notion account | Free plan is enough for one project | |
 
-ARIMA runs on **Windows (PowerShell or Git Bash), macOS and Linux**. WSL 2 also works and is what the spec recommends once scheduled runs arrive in v0.2, because Claude Code's sandboxed command execution is supported there. Nothing in v0.1 needs WSL.
+ARIMA runs on **Windows (PowerShell or Git Bash), macOS and Linux**. Native Windows is fine for interactive use. **Unattended scheduled runs should use WSL 2 or Linux** (spec issue S6, decision D-36): Claude Code's sandboxed command execution is supported there and not on native Windows, and without a sandbox the local safety layers are advisory for the developer and QA roles. Nothing in v0.1 needs WSL.
 
 Sign in to Claude Code once, interactively (`claude`). ARIMA's headless runs draw on that account's usage limits; they never use an API key unless you configure one (`runtime.auth` in `arima.yaml`).
 
@@ -102,6 +102,8 @@ Run the scripts directly to see exact messages. Preflight and init share these e
 | 3 | The brief has gaps | Fill the sections the message lists (write "None" where there is nothing) |
 | 4 | The Notion workspace does not match the template | `arima-notion map --migrate` adds missing properties; anything else you must fix in Notion |
 | 5 | Some Notion writes did not apply | Run `/arima:init` again; it finishes what is missing |
+| 6 | The brief looks like it contains a secret (a token, key or password) | Remove it from the brief and keep credentials out of it; it would be published to Notion |
+| 7 | The work is done but the state branch was not saved (or the push was refused) | Fix the cause the message gives (for example make the repository private), then run `arima-state push`; ARIMA does not treat the state as saved until you do |
 | 10 | `arima.yaml` or `team.yaml` is invalid | The message gives `file:line`; `arima-config validate` re-checks |
 | 11 | Another run holds `.arima/run.lock` | Wait for it; a lock from a crashed run is replaced automatically after `max_run_minutes` plus 30 |
 | 12 | The kill switch is on | `/arima:pause --resume`; also untick "Pause ARIMA" on the Notion root page |

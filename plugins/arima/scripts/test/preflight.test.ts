@@ -107,15 +107,20 @@ describe('preflight: all conditions', () => {
     expect(r.exitCode).toBe(PREFLIGHT_EXIT.killSwitch);
   });
 
-  it('Notion unreachable: the PAUSE file decides; absent file passes with a warning', async () => {
+  it('Notion unreachable and the state branch unreadable: counts as paused (owner decision S18); a readable state branch saying not paused lets it run', async () => {
     const dir = project();
     const n = new FakeNotion();
     n.fail = true;
-    const ok = await pre(dir, { notion: n });
+    const blind = await pre(dir, { notion: n, statePause: () => Promise.resolve(undefined) });
+    expect(blind.exitCode).toBe(PREFLIGHT_EXIT.killSwitch);
+    expect(blind.checks.find((c) => c.check === 'kill_switch')?.detail).toMatch(/cannot confirm/);
+    const ok = await pre(dir, { notion: n, statePause: () => Promise.resolve(false) });
     expect(ok.ok).toBe(true);
     expect(ok.checks.find((c) => c.check === 'kill_switch')?.warning).toMatch(/unreachable/);
     setPauseFile(dir, true);
-    expect((await pre(dir, { notion: n })).exitCode).toBe(PREFLIGHT_EXIT.killSwitch);
+    expect((await pre(dir, { notion: n, statePause: () => Promise.resolve(false) })).exitCode).toBe(
+      PREFLIGHT_EXIT.killSwitch,
+    );
   });
 
   it('kill switch is checked even when the config is invalid (the file needs no config)', async () => {
@@ -311,11 +316,12 @@ describe('kill switch helpers', () => {
     expect(n.todos).toEqual([{ id: 'b1', text: PAUSE_TODO_TEXT, checked: true }]);
   });
 
-  it('reports a missing switch without pausing', async () => {
+  it('treats a missing switch as paused (fail closed): a deleted switch must not mean running', async () => {
     const n = new FakeNotion();
     n.todos = [];
     const s = await checkKillSwitch(tempDir(), { port: n, rootPageId: 'root' });
-    expect(s).toMatchObject({ on: false, notion: 'missing' });
+    expect(s).toMatchObject({ on: true, notion: 'missing' });
+    expect(s.detail).toContain('recreate');
   });
 });
 

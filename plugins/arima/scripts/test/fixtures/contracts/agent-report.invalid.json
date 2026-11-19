@@ -1,0 +1,117 @@
+[
+  {
+    "name": "criterion met without evidence",
+    "error": "evidence",
+    "evidenceMissing": true,
+    "ctx": { "role": "developer", "kind": "develop" },
+    "value": {
+      "schema_version": 1, "run_id": "r-20261117-0603-07", "role": "developer", "item": "US-112", "status": "done", "summary": "x",
+      "criteria_map": [{ "criterion": "AC-1", "status": "met", "evidence": [] }]
+    }
+  },
+  {
+    "name": "developer develop without criteria_map",
+    "error": "criteria_map: required",
+    "ctx": { "role": "developer", "kind": "develop" },
+    "value": { "schema_version": 1, "run_id": "r-20261117-0603-07", "role": "developer", "item": "US-112", "status": "done", "summary": "x" }
+  },
+  {
+    "name": "criteria_map on a kind that has no criteria",
+    "error": "criteria_map: not allowed",
+    "ctx": { "role": "ba", "kind": "author" },
+    "value": {
+      "schema_version": 1, "run_id": "r-20261117-0603-07", "role": "ba", "item": "none", "status": "done", "summary": "x",
+      "criteria_map": [{ "criterion": "AC-1", "status": "unmet", "evidence": [] }]
+    }
+  },
+  {
+    "name": "review without a verdict",
+    "error": "verdict: required",
+    "ctx": { "role": "tech-lead", "kind": "review" },
+    "value": { "schema_version": 1, "run_id": "r-20261117-0603-07", "role": "tech-lead", "item": "US-112", "status": "done", "summary": "x" }
+  },
+  {
+    "name": "verdict on a kind that produces none",
+    "error": "verdict: not allowed",
+    "ctx": { "role": "devops", "kind": "deploy-staging" },
+    "value": {
+      "schema_version": 1, "run_id": "r-20261117-0603-07", "role": "devops", "item": "none", "status": "done", "summary": "x",
+      "verdict": { "result": "pass", "reasons": ["ok"] }
+    }
+  },
+  {
+    "name": "qa verdict uses a review result",
+    "error": "verdict.result",
+    "ctx": { "role": "qa", "kind": "qa" },
+    "value": {
+      "schema_version": 1, "run_id": "r-20261117-0603-07", "role": "qa", "item": "US-112", "status": "done", "summary": "x",
+      "verdict": { "result": "approve", "reasons": ["ok"] },
+      "criteria_map": [{ "criterion": "AC-1", "status": "met", "evidence": ["TC-0231"] }]
+    }
+  },
+  {
+    "name": "needs_input without a question",
+    "error": "questions",
+    "ctx": { "role": "ba", "kind": "author" },
+    "value": { "schema_version": 1, "run_id": "r-20261117-0603-07", "role": "ba", "item": "none", "status": "needs_input", "summary": "x" }
+  },
+  {
+    "name": "blocked without a question",
+    "error": "questions",
+    "ctx": { "role": "ba", "kind": "author" },
+    "value": { "schema_version": 1, "run_id": "r-20261117-0603-07", "role": "ba", "item": "none", "status": "blocked", "summary": "x" }
+  },
+  {
+    "name": "done while a blocking question is open",
+    "error": "status: done",
+    "ctx": { "role": "ba", "kind": "author" },
+    "value": {
+      "schema_version": 1, "run_id": "r-20261117-0603-07", "role": "ba", "item": "none", "status": "done", "summary": "x",
+      "questions": [{ "question": "Q?", "options": [{ "label": "A", "recommendation": true }], "blocking": true }]
+    }
+  },
+  {
+    "name": "role does not match the unit",
+    "error": "role:",
+    "ctx": { "role": "developer", "kind": "skeleton" },
+    "value": { "schema_version": 1, "run_id": "r-20261117-0603-07", "role": "qa", "item": "none", "status": "done", "summary": "x" }
+  },
+  {
+    "name": "review finding uses a security severity",
+    "error": "severity",
+    "ctx": { "role": "tech-lead", "kind": "review" },
+    "value": {
+      "schema_version": 1, "run_id": "r-20261117-0603-07", "role": "tech-lead", "item": "US-112", "status": "done", "summary": "x",
+      "verdict": { "result": "approve", "reasons": ["ok"] },
+      "findings": [{ "severity": "high", "location": "a.ts:1", "claim": "c", "evidence": "e", "recommendation": "r" }]
+    }
+  },
+  {
+    "name": "summary too long",
+    "error": "summary",
+    "ctx": { "role": "ba", "kind": "author" },
+    "value": { "schema_version": 1, "run_id": "r-20261117-0603-07", "role": "ba", "item": "none", "status": "done", "summary": "__LONG__" }
+  },
+  {
+    "name": "wrong schema version",
+    "error": "schema_version",
+    "ctx": { "role": "ba", "kind": "author" },
+    "value": { "schema_version": 2, "run_id": "r-20261117-0603-07", "role": "ba", "item": "none", "status": "done", "summary": "x" }
+  },
+  {
+    "name": "nested finding is malformed",
+    "error": "evidence",
+    "ctx": { "role": "tech-lead", "kind": "review" },
+    "value": {
+      "schema_version": 1, "run_id": "r-20261117-0603-07", "role": "tech-lead", "item": "US-112", "status": "done", "summary": "x",
+      "verdict": { "result": "approve", "reasons": ["ok"] },
+      "findings": [{ "severity": "minor", "location": "a.ts:1", "claim": "c", "recommendation": "r" }]
+    }
+  },
+  {
+    "name": "unknown top-level field",
+    "error": "unknown property",
+    "ctx": { "role": "ba", "kind": "author" },
+    "value": { "schema_version": 1, "run_id": "r-20261117-0603-07", "role": "ba", "item": "none", "status": "done", "summary": "x", "free_text": "hello" }
+  }
+]

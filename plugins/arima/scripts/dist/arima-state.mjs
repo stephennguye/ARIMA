@@ -112,17 +112,17 @@ var require_visit = __commonJS({
     visit.BREAK = BREAK;
     visit.SKIP = SKIP;
     visit.REMOVE = REMOVE;
-    function visit_(key, node, visitor, path7) {
-      const ctrl = callVisitor(key, node, visitor, path7);
+    function visit_(key, node, visitor, path9) {
+      const ctrl = callVisitor(key, node, visitor, path9);
       if (identity.isNode(ctrl) || identity.isPair(ctrl)) {
-        replaceNode(key, path7, ctrl);
-        return visit_(key, ctrl, visitor, path7);
+        replaceNode(key, path9, ctrl);
+        return visit_(key, ctrl, visitor, path9);
       }
       if (typeof ctrl !== "symbol") {
         if (identity.isCollection(node)) {
-          path7 = Object.freeze(path7.concat(node));
+          path9 = Object.freeze(path9.concat(node));
           for (let i = 0; i < node.items.length; ++i) {
-            const ci = visit_(i, node.items[i], visitor, path7);
+            const ci = visit_(i, node.items[i], visitor, path9);
             if (typeof ci === "number")
               i = ci - 1;
             else if (ci === BREAK)
@@ -133,13 +133,13 @@ var require_visit = __commonJS({
             }
           }
         } else if (identity.isPair(node)) {
-          path7 = Object.freeze(path7.concat(node));
-          const ck = visit_("key", node.key, visitor, path7);
+          path9 = Object.freeze(path9.concat(node));
+          const ck = visit_("key", node.key, visitor, path9);
           if (ck === BREAK)
             return BREAK;
           else if (ck === REMOVE)
             node.key = null;
-          const cv = visit_("value", node.value, visitor, path7);
+          const cv = visit_("value", node.value, visitor, path9);
           if (cv === BREAK)
             return BREAK;
           else if (cv === REMOVE)
@@ -160,17 +160,17 @@ var require_visit = __commonJS({
     visitAsync.BREAK = BREAK;
     visitAsync.SKIP = SKIP;
     visitAsync.REMOVE = REMOVE;
-    async function visitAsync_(key, node, visitor, path7) {
-      const ctrl = await callVisitor(key, node, visitor, path7);
+    async function visitAsync_(key, node, visitor, path9) {
+      const ctrl = await callVisitor(key, node, visitor, path9);
       if (identity.isNode(ctrl) || identity.isPair(ctrl)) {
-        replaceNode(key, path7, ctrl);
-        return visitAsync_(key, ctrl, visitor, path7);
+        replaceNode(key, path9, ctrl);
+        return visitAsync_(key, ctrl, visitor, path9);
       }
       if (typeof ctrl !== "symbol") {
         if (identity.isCollection(node)) {
-          path7 = Object.freeze(path7.concat(node));
+          path9 = Object.freeze(path9.concat(node));
           for (let i = 0; i < node.items.length; ++i) {
-            const ci = await visitAsync_(i, node.items[i], visitor, path7);
+            const ci = await visitAsync_(i, node.items[i], visitor, path9);
             if (typeof ci === "number")
               i = ci - 1;
             else if (ci === BREAK)
@@ -181,13 +181,13 @@ var require_visit = __commonJS({
             }
           }
         } else if (identity.isPair(node)) {
-          path7 = Object.freeze(path7.concat(node));
-          const ck = await visitAsync_("key", node.key, visitor, path7);
+          path9 = Object.freeze(path9.concat(node));
+          const ck = await visitAsync_("key", node.key, visitor, path9);
           if (ck === BREAK)
             return BREAK;
           else if (ck === REMOVE)
             node.key = null;
-          const cv = await visitAsync_("value", node.value, visitor, path7);
+          const cv = await visitAsync_("value", node.value, visitor, path9);
           if (cv === BREAK)
             return BREAK;
           else if (cv === REMOVE)
@@ -214,23 +214,23 @@ var require_visit = __commonJS({
       }
       return visitor;
     }
-    function callVisitor(key, node, visitor, path7) {
+    function callVisitor(key, node, visitor, path9) {
       if (typeof visitor === "function")
-        return visitor(key, node, path7);
+        return visitor(key, node, path9);
       if (identity.isMap(node))
-        return visitor.Map?.(key, node, path7);
+        return visitor.Map?.(key, node, path9);
       if (identity.isSeq(node))
-        return visitor.Seq?.(key, node, path7);
+        return visitor.Seq?.(key, node, path9);
       if (identity.isPair(node))
-        return visitor.Pair?.(key, node, path7);
+        return visitor.Pair?.(key, node, path9);
       if (identity.isScalar(node))
-        return visitor.Scalar?.(key, node, path7);
+        return visitor.Scalar?.(key, node, path9);
       if (identity.isAlias(node))
-        return visitor.Alias?.(key, node, path7);
+        return visitor.Alias?.(key, node, path9);
       return void 0;
     }
-    function replaceNode(key, path7, node) {
-      const parent = path7[path7.length - 1];
+    function replaceNode(key, path9, node) {
+      const parent = path9[path9.length - 1];
       if (identity.isCollection(parent)) {
         parent.items[key] = node;
       } else if (identity.isPair(parent)) {
@@ -842,10 +842,10 @@ var require_Collection = __commonJS({
     var createNode = require_createNode();
     var identity = require_identity();
     var Node = require_Node();
-    function collectionFromPath(schema, path7, value) {
+    function collectionFromPath(schema, path9, value) {
       let v = value;
-      for (let i = path7.length - 1; i >= 0; --i) {
-        const k = path7[i];
+      for (let i = path9.length - 1; i >= 0; --i) {
+        const k = path9[i];
         if (typeof k === "number" && Number.isInteger(k) && k >= 0) {
           const a = [];
           a[k] = v;
@@ -864,7 +864,7 @@ var require_Collection = __commonJS({
         sourceObjects: /* @__PURE__ */ new Map()
       });
     }
-    var isEmptyPath = (path7) => path7 == null || typeof path7 === "object" && !!path7[Symbol.iterator]().next().done;
+    var isEmptyPath = (path9) => path9 == null || typeof path9 === "object" && !!path9[Symbol.iterator]().next().done;
     var Collection = class extends Node.NodeBase {
       constructor(type, schema) {
         super(type);
@@ -894,11 +894,11 @@ var require_Collection = __commonJS({
        * be a Pair instance or a `{ key, value }` object, which may not have a key
        * that already exists in the map.
        */
-      addIn(path7, value) {
-        if (isEmptyPath(path7))
+      addIn(path9, value) {
+        if (isEmptyPath(path9))
           this.add(value);
         else {
-          const [key, ...rest] = path7;
+          const [key, ...rest] = path9;
           const node = this.get(key, true);
           if (identity.isCollection(node))
             node.addIn(rest, value);
@@ -912,8 +912,8 @@ var require_Collection = __commonJS({
        * Removes a value from the collection.
        * @returns `true` if the item was found and removed.
        */
-      deleteIn(path7) {
-        const [key, ...rest] = path7;
+      deleteIn(path9) {
+        const [key, ...rest] = path9;
         if (rest.length === 0)
           return this.delete(key);
         const node = this.get(key, true);
@@ -927,8 +927,8 @@ var require_Collection = __commonJS({
        * scalar values from their surrounding node; to disable set `keepScalar` to
        * `true` (collections are always returned intact).
        */
-      getIn(path7, keepScalar) {
-        const [key, ...rest] = path7;
+      getIn(path9, keepScalar) {
+        const [key, ...rest] = path9;
         const node = this.get(key, true);
         if (rest.length === 0)
           return !keepScalar && identity.isScalar(node) ? node.value : node;
@@ -946,8 +946,8 @@ var require_Collection = __commonJS({
       /**
        * Checks if the collection includes a value with the key `key`.
        */
-      hasIn(path7) {
-        const [key, ...rest] = path7;
+      hasIn(path9) {
+        const [key, ...rest] = path9;
         if (rest.length === 0)
           return this.has(key);
         const node = this.get(key, true);
@@ -957,8 +957,8 @@ var require_Collection = __commonJS({
        * Sets a value in this collection. For `!!set`, `value` needs to be a
        * boolean to add/remove the item from the set.
        */
-      setIn(path7, value) {
-        const [key, ...rest] = path7;
+      setIn(path9, value) {
+        const [key, ...rest] = path9;
         if (rest.length === 0) {
           this.set(key, value);
         } else {
@@ -3473,9 +3473,9 @@ var require_Document = __commonJS({
           this.contents.add(value);
       }
       /** Adds a value to the document. */
-      addIn(path7, value) {
+      addIn(path9, value) {
         if (assertCollection(this.contents))
-          this.contents.addIn(path7, value);
+          this.contents.addIn(path9, value);
       }
       /**
        * Create a new `Alias` node, ensuring that the target `node` has the required anchor.
@@ -3550,14 +3550,14 @@ var require_Document = __commonJS({
        * Removes a value from the document.
        * @returns `true` if the item was found and removed.
        */
-      deleteIn(path7) {
-        if (Collection.isEmptyPath(path7)) {
+      deleteIn(path9) {
+        if (Collection.isEmptyPath(path9)) {
           if (this.contents == null)
             return false;
           this.contents = null;
           return true;
         }
-        return assertCollection(this.contents) ? this.contents.deleteIn(path7) : false;
+        return assertCollection(this.contents) ? this.contents.deleteIn(path9) : false;
       }
       /**
        * Returns item at `key`, or `undefined` if not found. By default unwraps
@@ -3572,10 +3572,10 @@ var require_Document = __commonJS({
        * scalar values from their surrounding node; to disable set `keepScalar` to
        * `true` (collections are always returned intact).
        */
-      getIn(path7, keepScalar) {
-        if (Collection.isEmptyPath(path7))
+      getIn(path9, keepScalar) {
+        if (Collection.isEmptyPath(path9))
           return !keepScalar && identity.isScalar(this.contents) ? this.contents.value : this.contents;
-        return identity.isCollection(this.contents) ? this.contents.getIn(path7, keepScalar) : void 0;
+        return identity.isCollection(this.contents) ? this.contents.getIn(path9, keepScalar) : void 0;
       }
       /**
        * Checks if the document includes a value with the key `key`.
@@ -3586,10 +3586,10 @@ var require_Document = __commonJS({
       /**
        * Checks if the document includes a value at `path`.
        */
-      hasIn(path7) {
-        if (Collection.isEmptyPath(path7))
+      hasIn(path9) {
+        if (Collection.isEmptyPath(path9))
           return this.contents !== void 0;
-        return identity.isCollection(this.contents) ? this.contents.hasIn(path7) : false;
+        return identity.isCollection(this.contents) ? this.contents.hasIn(path9) : false;
       }
       /**
        * Sets a value in this document. For `!!set`, `value` needs to be a
@@ -3606,13 +3606,13 @@ var require_Document = __commonJS({
        * Sets a value in this document. For `!!set`, `value` needs to be a
        * boolean to add/remove the item from the set.
        */
-      setIn(path7, value) {
-        if (Collection.isEmptyPath(path7)) {
+      setIn(path9, value) {
+        if (Collection.isEmptyPath(path9)) {
           this.contents = value;
         } else if (this.contents == null) {
-          this.contents = Collection.collectionFromPath(this.schema, Array.from(path7), value);
+          this.contents = Collection.collectionFromPath(this.schema, Array.from(path9), value);
         } else if (assertCollection(this.contents)) {
-          this.contents.setIn(path7, value);
+          this.contents.setIn(path9, value);
         }
       }
       /**
@@ -5573,9 +5573,9 @@ var require_cst_visit = __commonJS({
     visit.BREAK = BREAK;
     visit.SKIP = SKIP;
     visit.REMOVE = REMOVE;
-    visit.itemAtPath = (cst, path7) => {
+    visit.itemAtPath = (cst, path9) => {
       let item = cst;
-      for (const [field, index] of path7) {
+      for (const [field, index] of path9) {
         const tok = item?.[field];
         if (tok && "items" in tok) {
           item = tok.items[index];
@@ -5584,23 +5584,23 @@ var require_cst_visit = __commonJS({
       }
       return item;
     };
-    visit.parentCollection = (cst, path7) => {
-      const parent = visit.itemAtPath(cst, path7.slice(0, -1));
-      const field = path7[path7.length - 1][0];
+    visit.parentCollection = (cst, path9) => {
+      const parent = visit.itemAtPath(cst, path9.slice(0, -1));
+      const field = path9[path9.length - 1][0];
       const coll = parent?.[field];
       if (coll && "items" in coll)
         return coll;
       throw new Error("Parent collection not found");
     };
-    function _visit(path7, item, visitor) {
-      let ctrl = visitor(item, path7);
+    function _visit(path9, item, visitor) {
+      let ctrl = visitor(item, path9);
       if (typeof ctrl === "symbol")
         return ctrl;
       for (const field of ["key", "value"]) {
         const token = item[field];
         if (token && "items" in token) {
           for (let i = 0; i < token.items.length; ++i) {
-            const ci = _visit(Object.freeze(path7.concat([[field, i]])), token.items[i], visitor);
+            const ci = _visit(Object.freeze(path9.concat([[field, i]])), token.items[i], visitor);
             if (typeof ci === "number")
               i = ci - 1;
             else if (ci === BREAK)
@@ -5611,10 +5611,10 @@ var require_cst_visit = __commonJS({
             }
           }
           if (typeof ctrl === "function" && field === "key")
-            ctrl = ctrl(item, path7);
+            ctrl = ctrl(item, path9);
         }
       }
-      return typeof ctrl === "function" ? ctrl(item, path7) : ctrl;
+      return typeof ctrl === "function" ? ctrl(item, path9) : ctrl;
     }
     exports.visit = visit;
   }
@@ -7265,7 +7265,7 @@ var require_public_api = __commonJS({
       }
       return doc;
     }
-    function parse2(src, reviver, options) {
+    function parse3(src, reviver, options) {
       let _reviver = void 0;
       if (typeof reviver === "function") {
         _reviver = reviver;
@@ -7306,7 +7306,7 @@ var require_public_api = __commonJS({
         return value.toString(options);
       return new Document.Document(value, _replacer, options).toString(options);
     }
-    exports.parse = parse2;
+    exports.parse = parse3;
     exports.parseAllDocuments = parseAllDocuments;
     exports.parseDocument = parseDocument;
     exports.stringify = stringify;
@@ -10594,8 +10594,8 @@ var require_utils = __commonJS({
       }
       return ind;
     }
-    function removeDotSegments(path7) {
-      let input = path7;
+    function removeDotSegments(path9) {
+      let input = path9;
       const output = [];
       let nextSlash = -1;
       let len = 0;
@@ -10669,11 +10669,11 @@ var require_utils = __commonJS({
       }
       return output.join("");
     }
-    function removeDotSegmentsRelative(path7) {
-      if (path7 === "" || path7[0] === "/") {
-        return removeDotSegments(path7);
+    function removeDotSegmentsRelative(path9) {
+      if (path9 === "" || path9[0] === "/") {
+        return removeDotSegments(path9);
       }
-      const segments = path7.split("/");
+      const segments = path9.split("/");
       const last = segments.length - 1;
       const output = [];
       let trailingDirectory = false;
@@ -11036,8 +11036,8 @@ var require_schemes = __commonJS({
       }
       if (wsComponent.resourceName) {
         const queryIndex = wsComponent.resourceName.indexOf("?");
-        const path7 = queryIndex === -1 ? wsComponent.resourceName : wsComponent.resourceName.slice(0, queryIndex);
-        wsComponent.path = path7 && path7 !== "/" ? path7 : void 0;
+        const path9 = queryIndex === -1 ? wsComponent.resourceName : wsComponent.resourceName.slice(0, queryIndex);
+        wsComponent.path = path9 && path9 !== "/" ? path9 : void 0;
         wsComponent.query = queryIndex === -1 ? void 0 : wsComponent.resourceName.slice(queryIndex + 1);
         wsComponent.resourceName = void 0;
       }
@@ -11203,7 +11203,7 @@ var require_fast_uri = __commonJS({
         normalizeString(uri, options);
       } else if (typeof uri === "object") {
         uri = /** @type {T} */
-        parse2(serialize(uri, options), options);
+        parse3(serialize(uri, options), options);
       }
       return uri;
     }
@@ -11246,8 +11246,8 @@ var require_fast_uri = __commonJS({
     function resolveComponent(base, relative, options, skipNormalization) {
       const target = {};
       if (!skipNormalization) {
-        base = parse2(serialize(base, options), options);
-        relative = parse2(serialize(relative, options), options);
+        base = parse3(serialize(base, options), options);
+        relative = parse3(serialize(relative, options), options);
       }
       options = options || {};
       if (!options.tolerant && relative.scheme) {
@@ -11565,7 +11565,7 @@ var require_fast_uri = __commonJS({
       }
       return { parsed, malformedAuthorityOrPort, malformedPercentEncoding, malformedSchemeSpecific, malformedHost, malformedScheme };
     }
-    function parse2(uri, opts) {
+    function parse3(uri, opts) {
       return parseWithStatus(uri, opts).parsed;
     }
     function normalizeString(uri, opts) {
@@ -11602,7 +11602,7 @@ var require_fast_uri = __commonJS({
       resolveComponent,
       equal,
       serialize,
-      parse: parse2
+      parse: parse3
     };
     module.exports = fastUri;
     module.exports.default = fastUri;
@@ -15412,34 +15412,22 @@ var require_dist2 = __commonJS({
 });
 
 // plugins/arima/scripts/src/cli/state-cli.ts
-var import_yaml = __toESM(require_dist(), 1);
-import { existsSync as existsSync4, readFileSync as readFileSync4 } from "node:fs";
-import path6 from "node:path";
+var import_yaml2 = __toESM(require_dist(), 1);
+import { existsSync as existsSync7, readFileSync as readFileSync7 } from "node:fs";
+import path8 from "node:path";
 import { parseArgs } from "node:util";
 
-// plugins/arima/scripts/src/state.ts
-import { execFileSync } from "node:child_process";
-import {
-  appendFileSync as appendFileSync2,
-  cpSync,
-  existsSync as existsSync3,
-  mkdirSync as mkdirSync2,
-  mkdtempSync,
-  readFileSync as readFileSync3,
-  realpathSync,
-  readdirSync,
-  rmSync,
-  statSync as statSync2,
-  writeFileSync
-} from "node:fs";
-import { tmpdir } from "node:os";
-import path5 from "node:path";
+// plugins/arima/scripts/src/interactive.ts
+var import_yaml = __toESM(require_dist(), 1);
+import { existsSync as existsSync5, readFileSync as readFileSync5 } from "node:fs";
+import path6 from "node:path";
+import { setTimeout as delay } from "node:timers/promises";
 
 // plugins/arima/scripts/src/events.ts
 import path4 from "node:path";
 
 // plugins/arima/scripts/src/lib/jsonl.ts
-import { appendFileSync, existsSync as existsSync2, mkdirSync, readFileSync as readFileSync2 } from "node:fs";
+import { appendFileSync, existsSync as existsSync3, mkdirSync, readFileSync as readFileSync3 } from "node:fs";
 import path3 from "node:path";
 
 // plugins/arima/scripts/src/lib/filelock.ts
@@ -15487,16 +15475,78 @@ async function withFileLock(lockPath, fn, { timeoutMs = 15e3, staleMs = 3e4, ret
 }
 
 // plugins/arima/scripts/src/lib/secrets.ts
-var SECRET_PATTERNS = [
-  { name: "notion token", re: /\b(?:ntn_|secret_)[A-Za-z0-9]{20,}/ },
-  { name: "github token", re: /\bgh[pousr]_[A-Za-z0-9]{20,}/ },
-  { name: "github fine-grained token", re: /\bgithub_pat_[A-Za-z0-9_]{20,}/ },
-  { name: "anthropic key", re: /\bsk-ant-[A-Za-z0-9_-]{20,}/ },
-  { name: "aws access key", re: /\bAKIA[0-9A-Z]{16}\b/ },
-  { name: "private key block", re: /-----BEGIN [A-Z ]*PRIVATE KEY-----/ }
+import { existsSync, readFileSync } from "node:fs";
+import { createHash } from "node:crypto";
+function entropy(s) {
+  if (s.length === 0) return 0;
+  const counts = /* @__PURE__ */ new Map();
+  for (const ch of s) counts.set(ch, (counts.get(ch) ?? 0) + 1);
+  let h = 0;
+  for (const n of counts.values()) {
+    const p = n / s.length;
+    h -= p * Math.log2(p);
+  }
+  return h;
+}
+var PLACEHOLDER = /example|placeholder|your[-_]|replace|change[-_]?me|dummy|sample|redacted|xxxx|\*\*\*|<[^>]+>/i;
+var looksRandom = (s, bits) => s.length >= 16 && /[0-9]/.test(s) && /[A-Za-z]/.test(s) && entropy(s) >= bits && !PLACEHOLDER.test(s);
+var PATTERNS = [
+  { name: "notion token", re: /\b(?:ntn_|secret_)[A-Za-z0-9]{20,}/g },
+  { name: "github token", re: /\bgh[pousr]_[A-Za-z0-9]{20,}/g },
+  { name: "github fine-grained token", re: /\bgithub_pat_[A-Za-z0-9_]{20,}/g },
+  {
+    name: "anthropic key",
+    re: /\bsk-ant-([A-Za-z0-9_-]{20,})/g,
+    accept: (_m, g) => looksRandom(g[0] ?? "", 3.4)
+  },
+  { name: "aws access key", re: /\bAKIA[0-9A-Z]{16}\b/g, accept: (m) => !/EXAMPLE/.test(m) },
+  { name: "private key block", re: /-----BEGIN [A-Z ]*PRIVATE KEY-----/g },
+  { name: "slack token", re: /\bxox[abprs]-[A-Za-z0-9-]{10,}/g },
+  { name: "stripe key", re: /\b[sr]k_(?:live|test)_[A-Za-z0-9]{16,}/g },
+  { name: "google api key", re: /\bAIza[0-9A-Za-z_-]{35}\b/g },
+  {
+    name: "json web token",
+    re: /\beyJ[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}/g
+  },
+  { name: "npm token", re: /\bnpm_[A-Za-z0-9]{36}\b/g },
+  {
+    name: "bearer token",
+    re: /\bBearer\s+([A-Za-z0-9._~+/-]{24,})=*/g,
+    accept: (_m, g) => !PLACEHOLDER.test(g[0] ?? "") && entropy(g[0] ?? "") >= 3.3
+  },
+  {
+    // key = "long random-looking value" for names that usually hold credentials
+    name: "credential assignment",
+    re: /(?<![A-Za-z])(?:api[_-]?key|secret(?:[_-]?key)?|access[_-]?token|auth[_-]?token|token|passwd|password|private[_-]?key)["']?\s*[:=]\s*["']?([A-Za-z0-9/+_=.-]{20,})/gi,
+    accept: (_m, g) => looksRandom(g[0] ?? "", 3.5)
+  }
 ];
-function findSecrets(text) {
-  return SECRET_PATTERNS.filter((p) => p.re.test(text)).map((p) => p.name);
+function fingerprint(match) {
+  return `sha256:${createHash("sha256").update(match).digest("hex").slice(0, 16)}`;
+}
+function scan(text) {
+  const unescaped = text.replace(/\\[nrt]/g, " ").replace(/\\"/g, '"');
+  const out = [];
+  const seen = /* @__PURE__ */ new Set();
+  for (const p of PATTERNS) {
+    for (const t of text === unescaped ? [text] : [text, unescaped]) {
+      for (const m of t.matchAll(new RegExp(p.re.source, p.re.flags))) {
+        const groups = m.slice(1).map((x) => x ?? "");
+        if (p.accept && !p.accept(m[0], groups)) continue;
+        const f = fingerprint(m[0]);
+        if (seen.has(`${p.name}|${f}`)) continue;
+        seen.add(`${p.name}|${f}`);
+        out.push({ rule: p.name, fingerprint: f });
+      }
+    }
+  }
+  return out;
+}
+function scanSecrets(text, allowed = /* @__PURE__ */ new Set()) {
+  return scan(text).filter((f) => !allowed.has(f.fingerprint));
+}
+function findSecrets(text, allowed = /* @__PURE__ */ new Set()) {
+  return [...new Set(scanSecrets(text, allowed).map((f) => f.rule))];
 }
 function assertNoSecrets(text, where) {
   const found = findSecrets(text);
@@ -15506,15 +15556,26 @@ function assertNoSecrets(text, where) {
     );
   }
 }
+function readAllowlistFile(file) {
+  return existsSync(file) ? parseAllowlist(readFileSync(file, "utf8")) : /* @__PURE__ */ new Set();
+}
+function parseAllowlist(text) {
+  const out = /* @__PURE__ */ new Set();
+  for (const line of text.split(/\r?\n/)) {
+    const m = /^\s*(sha256:[0-9a-f]{16})\s*(?:#.*)?$/i.exec(line);
+    if (m) out.add(m[1].toLowerCase());
+  }
+  return out;
+}
 
 // plugins/arima/scripts/src/lib/schema.ts
 var import__ = __toESM(require__(), 1);
 var import_ajv_formats = __toESM(require_dist2(), 1);
-import { readFileSync } from "node:fs";
+import { readFileSync as readFileSync2, readdirSync } from "node:fs";
 import path2 from "node:path";
 
 // plugins/arima/scripts/src/lib/paths.ts
-import { existsSync } from "node:fs";
+import { existsSync as existsSync2 } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 function pluginRoot() {
@@ -15522,7 +15583,7 @@ function pluginRoot() {
   if (fromEnv) return path.resolve(fromEnv);
   let dir = path.dirname(fileURLToPath(import.meta.url));
   for (; ; ) {
-    if (existsSync(path.join(dir, ".claude-plugin", "plugin.json"))) return dir;
+    if (existsSync2(path.join(dir, ".claude-plugin", "plugin.json"))) return dir;
     const parent = path.dirname(dir);
     if (parent === dir) throw new Error("Cannot locate the ARIMA plugin root");
     dir = parent;
@@ -15531,15 +15592,25 @@ function pluginRoot() {
 
 // plugins/arima/scripts/src/lib/schema.ts
 var cache = /* @__PURE__ */ new Map();
+var instances = /* @__PURE__ */ new Map();
+function ajvFor(root) {
+  const hit = instances.get(root);
+  if (hit) return hit;
+  const ajv = new import__.Ajv2020({ allErrors: true, strict: true });
+  (0, import_ajv_formats.default)(ajv);
+  const dir = path2.join(root, "schemas");
+  for (const f of readdirSync(dir).filter((n) => n.endsWith(".schema.json"))) {
+    ajv.addSchema(JSON.parse(readFileSync2(path2.join(dir, f), "utf8")), f);
+  }
+  instances.set(root, ajv);
+  return ajv;
+}
 function getValidator(name, root = pluginRoot()) {
   const key = `${root}::${name}`;
   const hit = cache.get(key);
   if (hit) return hit;
-  const file = path2.join(root, "schemas", `${name}.schema.json`);
-  const schema = JSON.parse(readFileSync(file, "utf8"));
-  const ajv = new import__.Ajv2020({ allErrors: true, strict: true });
-  (0, import_ajv_formats.default)(ajv);
-  const validate = ajv.compile(schema);
+  const validate = ajvFor(root).getSchema(`${name}.schema.json`);
+  if (!validate) throw new Error(`schema not found: schemas/${name}.schema.json`);
   cache.set(key, validate);
   return validate;
 }
@@ -15560,9 +15631,15 @@ function describeError(e) {
   }
 }
 
+// plugins/arima/scripts/src/lib/migrate.ts
+var CURRENT_SCHEMA_VERSION = 1;
+var VERSIONED = ["ledger", "event", "outbox"];
+
 // plugins/arima/scripts/src/lib/jsonl.ts
 async function appendJsonl(file, schema, record) {
   const validate = getValidator(schema);
+  if (VERSIONED.includes(schema) && typeof record === "object" && record !== null)
+    record = { schema_version: CURRENT_SCHEMA_VERSION, ...record };
   if (!validate(record)) {
     throw new Error(
       `Invalid ${schema} record: ${(validate.errors ?? []).map(describeError).join("; ")}`
@@ -15587,13 +15664,122 @@ async function appendEvent(projectDir, event) {
   return full;
 }
 
+// plugins/arima/scripts/src/runlock.ts
+import { existsSync as existsSync4, mkdirSync as mkdirSync2, readFileSync as readFileSync4, rmSync, writeFileSync } from "node:fs";
+import { hostname } from "node:os";
+import path5 from "node:path";
+function runLockFile(projectDir) {
+  return path5.join(projectDir, ".arima", "run.lock");
+}
+function alive(pid) {
+  try {
+    process.kill(pid, 0);
+    return true;
+  } catch (e) {
+    return e.code === "EPERM";
+  }
+}
+function lockStatus(projectDir, staleAfterMs, now = Date.now()) {
+  const file = runLockFile(projectDir);
+  if (!existsSync4(file)) return { held: false, stale: false };
+  let lock;
+  try {
+    lock = JSON.parse(readFileSync4(file, "utf8"));
+  } catch {
+    return { held: false, stale: true };
+  }
+  const age = now - Date.parse(lock.started_at);
+  const sameHost = lock.host === hostname();
+  const dead = sameHost && !alive(lock.pid);
+  if (dead || !(age < staleAfterMs)) return { held: false, stale: true, lock };
+  return { held: true, stale: false, lock };
+}
+
+// plugins/arima/scripts/src/interactive.ts
+var INTERACTIVE_EXIT = { locked: 11, paused: 12 };
+var LOCK_WAIT_MS = 6e4;
+var LOCK_POLL_MS = 1e3;
+function staleMsFor(projectDir) {
+  const file = path6.join(projectDir, "arima.yaml");
+  let minutes = 240;
+  if (existsSync5(file)) {
+    try {
+      const m = (0, import_yaml.parse)(readFileSync5(file, "utf8")).schedule?.max_run_minutes;
+      if (typeof m === "number" && m > 0) minutes = m;
+    } catch {
+    }
+  }
+  return (minutes + 30) * 6e4;
+}
+async function waitForRunLock(o) {
+  const maxWait = o.maxWaitMs ?? LOCK_WAIT_MS;
+  const poll = o.pollMs ?? LOCK_POLL_MS;
+  const sleep2 = o.sleep ?? ((ms) => delay(ms));
+  const clock = o.clock ?? Date.now;
+  const start = clock();
+  const stale = staleMsFor(o.projectDir);
+  for (; ; ) {
+    const s = lockStatus(o.projectDir, stale, clock());
+    if (!s.held || o.holderRunId !== void 0 && s.lock?.run_id === o.holderRunId)
+      return { ok: true, waitedMs: clock() - start };
+    const waited = clock() - start;
+    if (waited >= maxWait) return { ok: false, waitedMs: waited, lock: s.lock };
+    await sleep2(Math.min(poll, maxWait - waited));
+  }
+}
+async function guardInteractive(o) {
+  const first = await waitForRunLock({ ...o, maxWaitMs: 0 });
+  if (!first.ok)
+    o.note?.(
+      `${o.command}: a run holds the lock (run ${first.lock?.run_id ?? "?"}); waiting up to ${Math.round((o.maxWaitMs ?? LOCK_WAIT_MS) / 1e3)} s for it to finish
+`
+    );
+  const r = first.ok ? first : await waitForRunLock(o);
+  if (!r.ok) {
+    o.err(
+      `${o.command}: a run still holds .arima/run.lock after ${Math.round(r.waitedMs / 1e3)} s (run ${r.lock?.run_id ?? "?"}, pid ${r.lock?.pid ?? "?"}). Try again when it has finished; ARIMA never removes a live lock.
+`
+    );
+    return INTERACTIVE_EXIT.locked;
+  }
+  if (o.isPaused !== void 0 && await o.isPaused()) {
+    await appendEvent(o.projectDir, {
+      type: "hardstop.hit",
+      actor: "system",
+      data: { stop: "kill_switch", message: `${o.command} refused: the kill switch is on` }
+    });
+    o.err(
+      `${o.command}: ARIMA is paused (kill switch on), so nothing is sent out. Resume with /arima:pause --resume; queued changes stay in the outbox and go out after that.
+`
+    );
+    return INTERACTIVE_EXIT.paused;
+  }
+  return void 0;
+}
+
 // plugins/arima/scripts/src/state.ts
+import { execFileSync } from "node:child_process";
+import {
+  appendFileSync as appendFileSync2,
+  cpSync,
+  existsSync as existsSync6,
+  mkdirSync as mkdirSync3,
+  mkdtempSync,
+  readFileSync as readFileSync6,
+  realpathSync,
+  readdirSync as readdirSync2,
+  rmSync as rmSync2,
+  statSync as statSync2,
+  writeFileSync as writeFileSync2
+} from "node:fs";
+import { tmpdir } from "node:os";
+import path7 from "node:path";
 var StateError = class extends Error {
 };
 var DEFAULT_BRANCH = "arima-state";
 var STATE_GITIGNORE = "*.lock\n*.tmp\nrun.lock\n";
 var STATE_GITATTRIBUTES = "* -text\n";
-var MAX_SCAN_BYTES = 5 * 1024 * 1024;
+var MAX_SCAN_BYTES = 64 * 1024 * 1024;
 function git(cwd, args, input) {
   try {
     return execFileSync("git", args, {
@@ -15627,8 +15813,8 @@ function identityArgs(cwd) {
   return has("user.name") && has("user.email") ? [] : ["-c", "user.name=ARIMA", "-c", "user.email=arima@users.noreply.github.com"];
 }
 function resolve(o) {
-  const repo = path5.resolve(o.projectDir);
-  if (!existsSync3(repo) || !gitOk(repo, ["rev-parse", "--git-dir"])) {
+  const repo = path7.resolve(o.projectDir);
+  if (!existsSync6(repo) || !gitOk(repo, ["rev-parse", "--git-dir"])) {
     throw new StateError(`${repo} is not a git repository`);
   }
   const norm = (p) => {
@@ -15646,20 +15832,20 @@ function resolve(o) {
   }
   const remote = o.remote ?? "origin";
   const hasRemote = git(repo, ["remote"]).split("\n").includes(remote);
-  return { repo, stateDir: path5.join(repo, ".arima"), branch, remote, hasRemote };
+  return { repo, stateDir: path7.join(repo, ".arima"), branch, remote, hasRemote };
 }
 function excludeArima(repo) {
   const rel = git(repo, ["rev-parse", "--git-path", "info/exclude"]);
-  const file = path5.resolve(repo, rel);
-  mkdirSync2(path5.dirname(file), { recursive: true });
-  const current = existsSync3(file) ? readFileSync3(file, "utf8") : "";
+  const file = path7.resolve(repo, rel);
+  mkdirSync3(path7.dirname(file), { recursive: true });
+  const current = existsSync6(file) ? readFileSync6(file, "utf8") : "";
   if (!current.split(/\r?\n/).includes("/.arima/")) {
     appendFileSync2(file, `${current.endsWith("\n") || current === "" ? "" : "\n"}/.arima/
 `);
   }
 }
-var isWorktree = (stateDir) => existsSync3(path5.join(stateDir, ".git"));
-var isEmptyDir = (dir) => !existsSync3(dir) || readdirSync(dir).length === 0;
+var isWorktree = (stateDir) => existsSync6(path7.join(stateDir, ".git"));
+var isEmptyDir = (dir) => !existsSync6(dir) || readdirSync2(dir).length === 0;
 function localBranchExists(r) {
   return gitOk(r.repo, ["show-ref", "--verify", "--quiet", `refs/heads/${r.branch}`]);
 }
@@ -15701,9 +15887,9 @@ function ensureWorktree(r) {
   if (!exists) createOrphanBranch(r);
   let aside;
   if (hasFiles) {
-    aside = mkdtempSync(path5.join(tmpdir(), "arima-state-"));
+    aside = mkdtempSync(path7.join(tmpdir(), "arima-state-"));
     cpSync(r.stateDir, aside, { recursive: true });
-    rmSync(r.stateDir, { recursive: true, force: true });
+    rmSync2(r.stateDir, { recursive: true, force: true });
   }
   try {
     if (!localBranchExists(r)) {
@@ -15712,16 +15898,16 @@ function ensureWorktree(r) {
     git(r.repo, ["worktree", "add", r.stateDir, r.branch]);
   } finally {
     if (aside !== void 0) {
-      mkdirSync2(r.stateDir, { recursive: true });
+      mkdirSync3(r.stateDir, { recursive: true });
       cpSync(aside, r.stateDir, { recursive: true, force: false, errorOnExist: false });
-      rmSync(aside, { recursive: true, force: true });
+      rmSync2(aside, { recursive: true, force: true });
     }
   }
 }
 function ensureStateFiles(r) {
   const write = (name, body) => {
-    const file = path5.join(r.stateDir, name);
-    if (!existsSync3(file)) writeFileSync(file, body, "utf8");
+    const file = path7.join(r.stateDir, name);
+    if (!existsSync6(file)) writeFileSync2(file, body, "utf8");
   };
   write(".gitignore", STATE_GITIGNORE);
   write(".gitattributes", STATE_GITATTRIBUTES);
@@ -15753,12 +15939,18 @@ async function pullState(o) {
 }
 function scanStaged(r) {
   const names = git(r.stateDir, ["diff", "--cached", "--name-only", "--diff-filter=AM"]).split("\n").filter(Boolean);
+  const allowed = readAllowlistFile(path7.join(r.stateDir, "secret-allowlist.txt"));
   const bad = [];
   for (const name of names) {
-    const file = path5.join(r.stateDir, name);
+    const file = path7.join(r.stateDir, name);
     try {
-      if (statSync2(file).size > MAX_SCAN_BYTES) continue;
-      if (findSecrets(readFileSync3(file, "utf8")).length > 0) bad.push(name);
+      if (statSync2(file).size > MAX_SCAN_BYTES) {
+        bad.push({ file: name, rule: "file too large to scan for secrets" });
+        continue;
+      }
+      for (const f of scanSecrets(readFileSync6(file, "utf8"), allowed)) {
+        bad.push({ file: name, rule: f.rule, fingerprint: f.fingerprint });
+      }
     } catch {
     }
   }
@@ -15780,13 +15972,18 @@ async function pushState(o) {
   git(r.stateDir, ["add", "-A"]);
   const staged = git(r.stateDir, ["diff", "--cached", "--name-only"]).split("\n").filter(Boolean);
   if (staged.length === 0) {
-    return { committed: false, pushed: false, files: 0 };
+    return { committed: false, pushed: false, files: 0, warnings: [] };
   }
   const bad = scanStaged(r);
   if (bad.length > 0) {
     git(r.stateDir, ["reset", "-q"]);
+    const lines = bad.map(
+      (p) => `  ${p.file}: ${p.rule}${p.fingerprint ? ` (${p.fingerprint})` : ""}`
+    );
     throw new StateError(
-      `refusing to commit state: ${bad.length} file(s) look like they contain a secret: ${bad.join(", ")}`
+      `refusing to commit state: ${bad.length} finding(s) that look like secrets:
+${lines.join("\n")}
+If you have reviewed a finding and it is NOT a secret, add its fingerprint on its own line to .arima/secret-allowlist.txt and run again.`
     );
   }
   git(r.stateDir, [
@@ -15798,11 +15995,23 @@ async function pushState(o) {
   ]);
   const commit = git(r.stateDir, ["rev-parse", "HEAD"]);
   let pushed = false;
+  const warnings = [];
   if (r.hasRemote) {
+    const privacy = checkRemotePrivacy(r, o);
+    if (privacy.kind === "public" && o.allowPublic !== true) {
+      throw new StateError(
+        `refusing to push state: ${privacy.slug} is a PUBLIC GitHub repository, and the state branch holds your Notion data (requirements, client names, costs). Make the repository private, or set github.allow_public_state: true in arima.yaml if you really mean it.`
+      );
+    }
+    if (privacy.kind === "unknown" && o.allowPublic !== true) {
+      throw new StateError(
+        `refusing to push state: could not check whether ${privacy.slug} is private (is the gh CLI installed and signed in, and is the remote a normal github.com repository?). The state branch holds your Notion data, so ARIMA refuses when it cannot be sure. Sign in with 'gh auth login' and run again, or set github.allow_public_state: true in arima.yaml if you accept the risk.`
+      );
+    }
     git(r.stateDir, ["push", "--set-upstream", r.remote, `${r.branch}:${r.branch}`]);
     pushed = true;
   }
-  return { committed: true, pushed, commit, files: staged.length };
+  return { committed: true, pushed, commit, files: staged.length, warnings };
 }
 function stateStatus(o) {
   const r = resolve(o);
@@ -15816,6 +16025,49 @@ function stateStatus(o) {
   }
   return { worktree: true, branch: r.branch, dirty, ahead };
 }
+var SLUG_PART = /^[A-Za-z0-9_][A-Za-z0-9._-]*$/;
+function githubSlug(url) {
+  const m = /^(?:https?:\/\/(?:[^@/]+@)?github\.com\/|git@github\.com:|ssh:\/\/git@github\.com\/)([^/\s]+)\/([^/\s]+?)(?:\.git)?\/?$/i.exec(
+    url.trim()
+  );
+  if (!m) return void 0;
+  const owner = m[1];
+  const repo = m[2];
+  if (!SLUG_PART.test(owner) || !SLUG_PART.test(repo) || repo === "." || repo === "..") {
+    return void 0;
+  }
+  return { owner, repo };
+}
+var MENTIONS_GITHUB = /(^|[/@:])github\.com[/:]/i;
+function checkRemotePrivacy(r, o) {
+  let url;
+  try {
+    url = git(r.repo, ["config", "--get", "remote." + r.remote + ".url"]);
+  } catch {
+    return { kind: "not-github" };
+  }
+  const slug = githubSlug(url);
+  if (slug === void 0) {
+    return MENTIONS_GITHUB.test(url) ? { kind: "unknown", slug: "the remote" } : { kind: "not-github" };
+  }
+  const name = `${slug.owner}/${slug.repo}`;
+  let priv;
+  if (o.isPrivate) {
+    priv = o.isPrivate(slug.owner, slug.repo);
+  } else {
+    try {
+      const out = execFileSync(
+        "gh",
+        ["repo", "view", name, "--json", "isPrivate", "--jq", ".isPrivate"],
+        { encoding: "utf8", timeout: 2e4, stdio: ["ignore", "pipe", "ignore"] }
+      ).trim();
+      priv = out === "true" ? true : out === "false" ? false : void 0;
+    } catch {
+      priv = void 0;
+    }
+  }
+  return { kind: priv === void 0 ? "unknown" : priv ? "private" : "public", slug: name };
+}
 
 // plugins/arima/scripts/src/cli/state-cli.ts
 var USAGE = `Usage: arima-state pull [--project <dir>]
@@ -15823,11 +16075,12 @@ var USAGE = `Usage: arima-state pull [--project <dir>]
        arima-state status [--project <dir>]
 Keeps .arima/ on the orphan branch from github.state_branch (default arima-state). Never touches main.`;
 function branchesFromConfig(projectDir) {
-  const file = path6.join(projectDir, "arima.yaml");
-  if (!existsSync4(file)) return {};
+  const file = path8.join(projectDir, "arima.yaml");
+  if (!existsSync7(file)) return {};
   try {
-    const doc = (0, import_yaml.parse)(readFileSync4(file, "utf8"));
+    const doc = (0, import_yaml2.parse)(readFileSync7(file, "utf8"));
     return {
+      ...doc.github?.allow_public_state === true ? { allowPublic: true } : {},
       ...doc.github?.state_branch ? { branch: doc.github.state_branch } : {},
       ...doc.github?.default_branch ? { defaultBranch: doc.github.default_branch } : {}
     };
@@ -15835,7 +16088,7 @@ function branchesFromConfig(projectDir) {
     return {};
   }
 }
-async function runStateCli(argv, io) {
+async function runStateCli(argv, io, deps = {}) {
   const [command, ...rest] = argv;
   if (command !== "pull" && command !== "push" && command !== "status") {
     io.err(`${USAGE}
@@ -15855,8 +16108,19 @@ ${USAGE}
 `);
     return 2;
   }
-  const projectDir = path6.resolve(io.cwd, values.project ?? ".");
+  const projectDir = path8.resolve(io.cwd, values.project ?? ".");
   const opts = { projectDir, ...branchesFromConfig(projectDir) };
+  if (command === "pull" || command === "push") {
+    const stop = await guardInteractive({
+      projectDir,
+      command: `arima-state ${command}`,
+      holderRunId: values["run-id"],
+      ...deps.lock ?? {},
+      err: io.err,
+      note: io.err
+    });
+    if (stop !== void 0) return stop;
+  }
   try {
     if (command === "pull") {
       const r = await pullState(opts);

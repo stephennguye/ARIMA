@@ -1,0 +1,69 @@
+# ARIMA pull request policy (D-48, S9). Repeats what .githooks/commit-msg checks locally, because a
+# local hook can be skipped and core.hooksPath is per clone. Copy to .github/workflows/arima-policy.yml.
+name: ARIMA policy
+
+on:
+  pull_request:
+    types: [opened, edited, synchronize, reopened]
+
+permissions:
+  contents: read
+
+jobs:
+  policy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: No AI attribution in the pull request or its commits (D-48)
+        env:
+          PR_TITLE: ${{ github.event.pull_request.title }}
+          PR_BODY: ${{ github.event.pull_request.body }}
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          set -eu
+          pat='co-authored-by:.*(claude|anthropic|(^|[^[:alnum:]])ai([^[:alnum:]]|$)|gpt|copilot|gemini|openai)|generated[[:space:]]+(with|by|using)[[:space:]]+\[?(claude|an?[[:space:]]+ai|chatgpt|copilot|gemini)|claude\.com/claude-code|claude\.ai/code|(written|authored|created|co-?authored)[[:space:]]+(with|by)[[:space:]]+(claude|anthropic|chatgpt|copilot|an ai)([^[:alnum:]]|$)'
+          if printf '%s\n%s\n' "$PR_TITLE" "$PR_BODY" | grep -Eiq "$pat"; then
+            echo "The pull request title or body contains AI attribution (D-48)." >&2
+            exit 1
+          fi
+          if git log --format=%B "$BASE_SHA..$HEAD_SHA" | grep -Eiq "$pat"; then
+            echo "A commit message contains AI attribution (D-48)." >&2
+            exit 1
+          fi
+      - name: The title carries the item id
+        env:
+          PR_TITLE: ${{ github.event.pull_request.title }}
+          HEAD_REF: ${{ github.event.pull_request.head.ref }}
+        run: |
+          set -eu
+          case "$HEAD_REF" in
+            feat/*|fix/*|hotfix/*|qa/*)
+              printf '%s\n' "$PR_TITLE" | grep -Eq '^(US|BUG|INC|CR)-[0-9]+: .+' || {
+                echo "The title must be '<ID>: <title>' with an item id, for example 'US-112: Cart summary'." >&2
+                exit 1
+              }
+              ;;
+          esac
+      - name: Every commit follows the commit-msg rules
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          HEAD_REF: ${{ github.event.pull_request.head.ref }}
+        run: |
+          set -eu
+          case "$HEAD_REF" in
+            feat/*|fix/*|hotfix/*|qa/*) ;;
+            *) exit 0 ;;
+          esac
+          bad=0
+          for sha in $(git rev-list --no-merges "$BASE_SHA..$HEAD_SHA"); do
+            subject=$(git log -1 --format=%s "$sha")
+            if ! printf '%s\n' "$subject" | grep -Eq '^(feat|fix|docs|chore|refactor|test|perf|build|ci|style|revert|hotfix)\((US|BUG|INC|CR)-[0-9]+\)!?: [^[:space:]]'; then
+              echo "Commit $sha: '$subject' must be 'type(ITEM-ID): summary'." >&2
+              bad=1
+            fi
+          done
+          exit $bad

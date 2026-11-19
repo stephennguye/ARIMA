@@ -20,6 +20,7 @@ interface Settings {
   tokenEnv: string;
   branch?: string;
   defaultBranch?: string;
+  allowPublic?: boolean;
 }
 
 function settingsOf(projectDir: string): Settings {
@@ -29,8 +30,9 @@ function settingsOf(projectDir: string): Settings {
   try {
     const doc = parse(readFileSync(file, 'utf8')) as {
       notion?: { root_page_id?: string; token_env?: string };
-      github?: { state_branch?: string; default_branch?: string };
+      github?: { state_branch?: string; default_branch?: string; allow_public_state?: boolean };
     };
+    if (doc.github?.allow_public_state === true) out.allowPublic = true;
     if (doc.notion?.root_page_id && !doc.notion.root_page_id.startsWith('<'))
       out.rootPageId = doc.notion.root_page_id;
     if (doc.notion?.token_env) out.tokenEnv = doc.notion.token_env;
@@ -48,7 +50,7 @@ const bad = (io: Io, usage: string, message: string): number => {
 };
 
 export const INIT_USAGE = `Usage: arima-init --brief <file> [--project <dir>] [--root <notion-page-id>] [--skip-state] [--json]
-Exit codes: 0 ok, 2 usage, 3 brief has gaps, 4 Notion workspace does not match the template, 5 Notion writes failed, 10-14 preflight failed (see arima-preflight)`;
+Exit codes: 0 ok, 2 usage, 3 brief has gaps, 4 Notion workspace does not match the template, 5 Notion writes failed, 6 brief contains a secret, 7 done but state not saved (re-run arima-state push), 10-14 preflight failed (see arima-preflight)`;
 
 /** `arima-init`: the deterministic core of /arima:init. */
 export async function runInitCli(
@@ -120,6 +122,10 @@ export async function runInitCli(
     );
     for (const c of result.created) io.out(`  + ${c}\n`);
     for (const c of result.existed) io.out(`  = ${c}\n`);
+    if (result.exitCode === INIT_EXIT.stateNotSaved)
+      io.out(
+        'The work is done but the state was NOT saved to the state branch (exit 7). Fix the cause above, then run: arima-state push\n',
+      );
     io.out('Next steps for you:\n');
     for (const n of result.nextSteps) io.out(`  - ${n}\n`);
   } else {
@@ -205,14 +211,25 @@ export async function runPauseCli(
     ...(v.reason !== undefined ? { reason: v.reason } : {}),
     notion,
     saveState: v['no-state'] !== true,
+    ...(s.allowPublic ? { allowPublic: true } : {}),
     ...(s.branch ? { branch: s.branch } : {}),
     ...(s.defaultBranch ? { defaultBranch: s.defaultBranch } : {}),
     ...(deps.now ? { now: deps.now } : {}),
   });
   for (const m of r.messages) io.out(`${m}\n`);
+  // The change is in effect on THIS machine either way; a failed state save means other machines
+  // (and a Notion outage) will not see it, which the caller must not mistake for success.
+  const unsaved = r.stateSaved === 'failed';
+  if (unsaved) {
+    io.err(
+      on
+        ? 'The pause is on here, but the state was NOT saved: other machines will not see it until it is pushed. Fix the problem above and run again.\n'
+        : 'Resumed here, but the state was NOT saved: the remote state branch may still carry PAUSE, so other machines may stay paused. Fix the problem above and run again.\n',
+    );
+  }
   if (on) {
     io.out('ARIMA is paused: the next run will stop at preflight.\n');
-    return 0;
+    return unsaved ? 1 : 0;
   }
   if (r.stillPausedInNotion) {
     io.err(
@@ -221,5 +238,5 @@ export async function runPauseCli(
     return 1;
   }
   io.out('ARIMA is resumed.\n');
-  return 0;
+  return unsaved ? 1 : 0;
 }

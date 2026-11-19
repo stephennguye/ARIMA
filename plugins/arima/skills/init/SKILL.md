@@ -32,6 +32,7 @@ Pass `--root <page id>` only if the ID is not yet in `arima.yaml`. Read the exit
 | --- | --- | --- |
 | 0 | Done | Go to step 3. |
 | 3 | The brief has gaps | The output lists them. Ask the user for the missing content (one batch), update the brief, run again. |
+| 7 | The work is done but the state branch was not saved (or the push was refused) | Say so plainly: do not claim the state is saved. Show the warning, and tell the user to fix the cause and run `node "${CLAUDE_PLUGIN_ROOT}/scripts/dist/arima-state.mjs" push`. |
 | 10 | Config invalid | Show the `file:line` errors, fix them with the user, run again. |
 | 11 | Another run holds `.arima/run.lock` | Tell the user; do not remove the lock yourself. |
 | 12 | Kill switch is on | Tell the user ARIMA is paused; they resume with `/arima:pause --resume`. |
@@ -39,6 +40,7 @@ Pass `--root <page id>` only if the ID is not yet in `arima.yaml`. Read the exit
 | 14 | An environment variable is missing | Name it (never its value) and stop. |
 | 4 | The Notion workspace does not match the template | Show the listed problems. If they are missing properties, offer `node "${CLAUDE_PLUGIN_ROOT}/scripts/dist/arima-notion.mjs" map --migrate`, and run init again. Anything else needs the user to fix the workspace. |
 | 5 | Some Notion writes did not apply | Run init again; it is safe to repeat and finishes what is missing. |
+| 6 | The brief looks like it contains a secret | Tell the user to remove it (never repeat it back), then run init again. |
 | 2 | Usage or missing token | Report what the message says. |
 
 Do not work around a failure by editing state files or skipping a check.

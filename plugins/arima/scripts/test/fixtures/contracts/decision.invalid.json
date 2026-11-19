@@ -1,0 +1,22 @@
+[
+  {
+    "name": "missing rationale",
+    "error": "rationale",
+    "value": { "summary": "s", "options_considered": ["a"], "chosen": "a", "reversible": true }
+  },
+  {
+    "name": "reversible not stated",
+    "error": "reversible",
+    "value": { "summary": "s", "options_considered": ["a"], "chosen": "a", "rationale": "r" }
+  },
+  {
+    "name": "no options considered",
+    "error": "options_considered",
+    "value": { "summary": "s", "options_considered": [], "chosen": "a", "reversible": false, "rationale": "r" }
+  },
+  {
+    "name": "agent chose an id",
+    "error": "id",
+    "value": { "id": "DEC-0001", "summary": "s", "options_considered": ["a"], "chosen": "a", "reversible": true, "rationale": "r" }
+  }
+]

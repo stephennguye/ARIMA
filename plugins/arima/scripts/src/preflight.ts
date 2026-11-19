@@ -2,6 +2,7 @@ import { appendEvent } from './events.js';
 import { budgetStatus, newBudgetAlerts, readAlertHistory } from './budget.js';
 import { validateProject } from './config.js';
 import { checkKillSwitch } from './killswitch.js';
+import { remotePauseFlag } from './state.js';
 import type { PauseSwitchPort } from './notion/port.js';
 import { acquireRunLock, lockStatus } from './runlock.js';
 
@@ -42,6 +43,12 @@ export interface PreflightOptions {
   /** Create the run lock for this run id when every check passes. */
   acquireFor?: string;
   now?: Date;
+  /** What the calling command uses. The GitHub token is required only when `github` is true (default). init, status and pause pass false (G-03). */
+  needs?: { github?: boolean };
+  /** Write `preflight.fail` and `budget.alert` events. False for a dry run, which writes nothing (default true). */
+  record?: boolean;
+  /** Reads the PAUSE file on the remote state branch; defaults to a real git fetch. */
+  statePause?: () => Promise<boolean | undefined>;
 }
 
 const CODE: Record<CheckName, number> = {
@@ -89,7 +96,21 @@ export async function runPreflight(opts: PreflightOptions): Promise<PreflightRes
   // 2. kill switch (works without a valid config: the PAUSE file needs none)
   const notionTarget =
     opts.notion && arima ? { port: opts.notion, rootPageId: arima.notion.root_page_id } : null;
-  const ks = await checkKillSwitch(opts.projectDir, notionTarget);
+  const stateBranch = arima as unknown as
+    { github?: { state_branch?: string; default_branch?: string } } | undefined;
+  const statePause =
+    opts.statePause ??
+    (() =>
+      Promise.resolve(
+        remotePauseFlag({
+          projectDir: opts.projectDir,
+          ...(stateBranch?.github?.state_branch ? { branch: stateBranch.github.state_branch } : {}),
+          ...(stateBranch?.github?.default_branch
+            ? { defaultBranch: stateBranch.github.default_branch }
+            : {}),
+        }),
+      ));
+  const ks = await checkKillSwitch(opts.projectDir, notionTarget, statePause);
   const ksCheck: CheckResult = {
     check: 'kill_switch',
     ok: !ks.on,
@@ -135,11 +156,12 @@ export async function runPreflight(opts: PreflightOptions): Promise<PreflightRes
       readAlertHistory(opts.projectDir),
       today,
     )) {
-      await appendEvent(opts.projectDir, {
-        type: 'budget.alert',
-        actor: 'system',
-        data: { scope: a.scope, threshold: a.threshold, spent: a.spent, cap: a.cap, date: today },
-      });
+      if (opts.record !== false)
+        await appendEvent(opts.projectDir, {
+          type: 'budget.alert',
+          actor: 'system',
+          data: { scope: a.scope, threshold: a.threshold, spent: a.spent, cap: a.cap, date: today },
+        });
       check.warning = `${a.scope} budget passed ${Math.round(a.threshold * 100)}%`;
     }
     checks.push(check);
@@ -148,7 +170,8 @@ export async function runPreflight(opts: PreflightOptions): Promise<PreflightRes
   // 5. required environment variables (names only; values are never read into output)
   if (arima) {
     const required = [arima.notion.token_env];
-    if (arima.github.machine_token_env) required.push(arima.github.machine_token_env);
+    if ((opts.needs?.github ?? true) && arima.github.machine_token_env)
+      required.push(arima.github.machine_token_env);
     if (arima.telemetry?.otel_enabled && arima.telemetry.endpoint_env)
       required.push(arima.telemetry.endpoint_env);
     if (arima.runtime.auth === 'api_key') required.push('ANTHROPIC_API_KEY');
@@ -165,11 +188,12 @@ export async function runPreflight(opts: PreflightOptions): Promise<PreflightRes
 
   const failed = checks.filter((c) => !c.ok);
   for (const f of failed) {
-    await appendEvent(opts.projectDir, {
-      type: 'preflight.fail',
-      actor: 'system',
-      data: { check: f.check, detail: f.detail },
-    });
+    if (opts.record !== false)
+      await appendEvent(opts.projectDir, {
+        type: 'preflight.fail',
+        actor: 'system',
+        data: { check: f.check, detail: f.detail },
+      });
   }
 
   const exitCode = failed[0] ? CODE[failed[0].check] : PREFLIGHT_EXIT.ok;
@@ -183,11 +207,12 @@ export async function runPreflight(opts: PreflightOptions): Promise<PreflightRes
         detail: 'lost the race for .arima/run.lock',
       };
       checks.push(c);
-      await appendEvent(opts.projectDir, {
-        type: 'preflight.fail',
-        actor: 'system',
-        data: { check: c.check, detail: c.detail },
-      });
+      if (opts.record !== false)
+        await appendEvent(opts.projectDir, {
+          type: 'preflight.fail',
+          actor: 'system',
+          data: { check: c.check, detail: c.detail },
+        });
       return { ok: false, exitCode: PREFLIGHT_EXIT.locked, checks, acquired };
     }
   }

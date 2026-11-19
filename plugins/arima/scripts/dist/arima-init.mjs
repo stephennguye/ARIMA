@@ -112,17 +112,17 @@ var require_visit = __commonJS({
     visit.BREAK = BREAK;
     visit.SKIP = SKIP;
     visit.REMOVE = REMOVE;
-    function visit_(key, node, visitor, path18) {
-      const ctrl = callVisitor(key, node, visitor, path18);
+    function visit_(key, node, visitor, path21) {
+      const ctrl = callVisitor(key, node, visitor, path21);
       if (identity.isNode(ctrl) || identity.isPair(ctrl)) {
-        replaceNode(key, path18, ctrl);
-        return visit_(key, ctrl, visitor, path18);
+        replaceNode(key, path21, ctrl);
+        return visit_(key, ctrl, visitor, path21);
       }
       if (typeof ctrl !== "symbol") {
         if (identity.isCollection(node)) {
-          path18 = Object.freeze(path18.concat(node));
+          path21 = Object.freeze(path21.concat(node));
           for (let i = 0; i < node.items.length; ++i) {
-            const ci = visit_(i, node.items[i], visitor, path18);
+            const ci = visit_(i, node.items[i], visitor, path21);
             if (typeof ci === "number")
               i = ci - 1;
             else if (ci === BREAK)
@@ -133,13 +133,13 @@ var require_visit = __commonJS({
             }
           }
         } else if (identity.isPair(node)) {
-          path18 = Object.freeze(path18.concat(node));
-          const ck = visit_("key", node.key, visitor, path18);
+          path21 = Object.freeze(path21.concat(node));
+          const ck = visit_("key", node.key, visitor, path21);
           if (ck === BREAK)
             return BREAK;
           else if (ck === REMOVE)
             node.key = null;
-          const cv = visit_("value", node.value, visitor, path18);
+          const cv = visit_("value", node.value, visitor, path21);
           if (cv === BREAK)
             return BREAK;
           else if (cv === REMOVE)
@@ -160,17 +160,17 @@ var require_visit = __commonJS({
     visitAsync.BREAK = BREAK;
     visitAsync.SKIP = SKIP;
     visitAsync.REMOVE = REMOVE;
-    async function visitAsync_(key, node, visitor, path18) {
-      const ctrl = await callVisitor(key, node, visitor, path18);
+    async function visitAsync_(key, node, visitor, path21) {
+      const ctrl = await callVisitor(key, node, visitor, path21);
       if (identity.isNode(ctrl) || identity.isPair(ctrl)) {
-        replaceNode(key, path18, ctrl);
-        return visitAsync_(key, ctrl, visitor, path18);
+        replaceNode(key, path21, ctrl);
+        return visitAsync_(key, ctrl, visitor, path21);
       }
       if (typeof ctrl !== "symbol") {
         if (identity.isCollection(node)) {
-          path18 = Object.freeze(path18.concat(node));
+          path21 = Object.freeze(path21.concat(node));
           for (let i = 0; i < node.items.length; ++i) {
-            const ci = await visitAsync_(i, node.items[i], visitor, path18);
+            const ci = await visitAsync_(i, node.items[i], visitor, path21);
             if (typeof ci === "number")
               i = ci - 1;
             else if (ci === BREAK)
@@ -181,13 +181,13 @@ var require_visit = __commonJS({
             }
           }
         } else if (identity.isPair(node)) {
-          path18 = Object.freeze(path18.concat(node));
-          const ck = await visitAsync_("key", node.key, visitor, path18);
+          path21 = Object.freeze(path21.concat(node));
+          const ck = await visitAsync_("key", node.key, visitor, path21);
           if (ck === BREAK)
             return BREAK;
           else if (ck === REMOVE)
             node.key = null;
-          const cv = await visitAsync_("value", node.value, visitor, path18);
+          const cv = await visitAsync_("value", node.value, visitor, path21);
           if (cv === BREAK)
             return BREAK;
           else if (cv === REMOVE)
@@ -214,23 +214,23 @@ var require_visit = __commonJS({
       }
       return visitor;
     }
-    function callVisitor(key, node, visitor, path18) {
+    function callVisitor(key, node, visitor, path21) {
       if (typeof visitor === "function")
-        return visitor(key, node, path18);
+        return visitor(key, node, path21);
       if (identity.isMap(node))
-        return visitor.Map?.(key, node, path18);
+        return visitor.Map?.(key, node, path21);
       if (identity.isSeq(node))
-        return visitor.Seq?.(key, node, path18);
+        return visitor.Seq?.(key, node, path21);
       if (identity.isPair(node))
-        return visitor.Pair?.(key, node, path18);
+        return visitor.Pair?.(key, node, path21);
       if (identity.isScalar(node))
-        return visitor.Scalar?.(key, node, path18);
+        return visitor.Scalar?.(key, node, path21);
       if (identity.isAlias(node))
-        return visitor.Alias?.(key, node, path18);
+        return visitor.Alias?.(key, node, path21);
       return void 0;
     }
-    function replaceNode(key, path18, node) {
-      const parent = path18[path18.length - 1];
+    function replaceNode(key, path21, node) {
+      const parent = path21[path21.length - 1];
       if (identity.isCollection(parent)) {
         parent.items[key] = node;
       } else if (identity.isPair(parent)) {
@@ -842,10 +842,10 @@ var require_Collection = __commonJS({
     var createNode = require_createNode();
     var identity = require_identity();
     var Node = require_Node();
-    function collectionFromPath(schema, path18, value) {
+    function collectionFromPath(schema, path21, value) {
       let v = value;
-      for (let i = path18.length - 1; i >= 0; --i) {
-        const k = path18[i];
+      for (let i = path21.length - 1; i >= 0; --i) {
+        const k = path21[i];
         if (typeof k === "number" && Number.isInteger(k) && k >= 0) {
           const a = [];
           a[k] = v;
@@ -864,7 +864,7 @@ var require_Collection = __commonJS({
         sourceObjects: /* @__PURE__ */ new Map()
       });
     }
-    var isEmptyPath = (path18) => path18 == null || typeof path18 === "object" && !!path18[Symbol.iterator]().next().done;
+    var isEmptyPath = (path21) => path21 == null || typeof path21 === "object" && !!path21[Symbol.iterator]().next().done;
     var Collection = class extends Node.NodeBase {
       constructor(type, schema) {
         super(type);
@@ -894,11 +894,11 @@ var require_Collection = __commonJS({
        * be a Pair instance or a `{ key, value }` object, which may not have a key
        * that already exists in the map.
        */
-      addIn(path18, value) {
-        if (isEmptyPath(path18))
+      addIn(path21, value) {
+        if (isEmptyPath(path21))
           this.add(value);
         else {
-          const [key, ...rest] = path18;
+          const [key, ...rest] = path21;
           const node = this.get(key, true);
           if (identity.isCollection(node))
             node.addIn(rest, value);
@@ -912,8 +912,8 @@ var require_Collection = __commonJS({
        * Removes a value from the collection.
        * @returns `true` if the item was found and removed.
        */
-      deleteIn(path18) {
-        const [key, ...rest] = path18;
+      deleteIn(path21) {
+        const [key, ...rest] = path21;
         if (rest.length === 0)
           return this.delete(key);
         const node = this.get(key, true);
@@ -927,8 +927,8 @@ var require_Collection = __commonJS({
        * scalar values from their surrounding node; to disable set `keepScalar` to
        * `true` (collections are always returned intact).
        */
-      getIn(path18, keepScalar) {
-        const [key, ...rest] = path18;
+      getIn(path21, keepScalar) {
+        const [key, ...rest] = path21;
         const node = this.get(key, true);
         if (rest.length === 0)
           return !keepScalar && identity.isScalar(node) ? node.value : node;
@@ -946,8 +946,8 @@ var require_Collection = __commonJS({
       /**
        * Checks if the collection includes a value with the key `key`.
        */
-      hasIn(path18) {
-        const [key, ...rest] = path18;
+      hasIn(path21) {
+        const [key, ...rest] = path21;
         if (rest.length === 0)
           return this.has(key);
         const node = this.get(key, true);
@@ -957,8 +957,8 @@ var require_Collection = __commonJS({
        * Sets a value in this collection. For `!!set`, `value` needs to be a
        * boolean to add/remove the item from the set.
        */
-      setIn(path18, value) {
-        const [key, ...rest] = path18;
+      setIn(path21, value) {
+        const [key, ...rest] = path21;
         if (rest.length === 0) {
           this.set(key, value);
         } else {
@@ -3473,9 +3473,9 @@ var require_Document = __commonJS({
           this.contents.add(value);
       }
       /** Adds a value to the document. */
-      addIn(path18, value) {
+      addIn(path21, value) {
         if (assertCollection(this.contents))
-          this.contents.addIn(path18, value);
+          this.contents.addIn(path21, value);
       }
       /**
        * Create a new `Alias` node, ensuring that the target `node` has the required anchor.
@@ -3550,14 +3550,14 @@ var require_Document = __commonJS({
        * Removes a value from the document.
        * @returns `true` if the item was found and removed.
        */
-      deleteIn(path18) {
-        if (Collection.isEmptyPath(path18)) {
+      deleteIn(path21) {
+        if (Collection.isEmptyPath(path21)) {
           if (this.contents == null)
             return false;
           this.contents = null;
           return true;
         }
-        return assertCollection(this.contents) ? this.contents.deleteIn(path18) : false;
+        return assertCollection(this.contents) ? this.contents.deleteIn(path21) : false;
       }
       /**
        * Returns item at `key`, or `undefined` if not found. By default unwraps
@@ -3572,10 +3572,10 @@ var require_Document = __commonJS({
        * scalar values from their surrounding node; to disable set `keepScalar` to
        * `true` (collections are always returned intact).
        */
-      getIn(path18, keepScalar) {
-        if (Collection.isEmptyPath(path18))
+      getIn(path21, keepScalar) {
+        if (Collection.isEmptyPath(path21))
           return !keepScalar && identity.isScalar(this.contents) ? this.contents.value : this.contents;
-        return identity.isCollection(this.contents) ? this.contents.getIn(path18, keepScalar) : void 0;
+        return identity.isCollection(this.contents) ? this.contents.getIn(path21, keepScalar) : void 0;
       }
       /**
        * Checks if the document includes a value with the key `key`.
@@ -3586,10 +3586,10 @@ var require_Document = __commonJS({
       /**
        * Checks if the document includes a value at `path`.
        */
-      hasIn(path18) {
-        if (Collection.isEmptyPath(path18))
+      hasIn(path21) {
+        if (Collection.isEmptyPath(path21))
           return this.contents !== void 0;
-        return identity.isCollection(this.contents) ? this.contents.hasIn(path18) : false;
+        return identity.isCollection(this.contents) ? this.contents.hasIn(path21) : false;
       }
       /**
        * Sets a value in this document. For `!!set`, `value` needs to be a
@@ -3606,13 +3606,13 @@ var require_Document = __commonJS({
        * Sets a value in this document. For `!!set`, `value` needs to be a
        * boolean to add/remove the item from the set.
        */
-      setIn(path18, value) {
-        if (Collection.isEmptyPath(path18)) {
+      setIn(path21, value) {
+        if (Collection.isEmptyPath(path21)) {
           this.contents = value;
         } else if (this.contents == null) {
-          this.contents = Collection.collectionFromPath(this.schema, Array.from(path18), value);
+          this.contents = Collection.collectionFromPath(this.schema, Array.from(path21), value);
         } else if (assertCollection(this.contents)) {
-          this.contents.setIn(path18, value);
+          this.contents.setIn(path21, value);
         }
       }
       /**
@@ -5573,9 +5573,9 @@ var require_cst_visit = __commonJS({
     visit.BREAK = BREAK;
     visit.SKIP = SKIP;
     visit.REMOVE = REMOVE;
-    visit.itemAtPath = (cst, path18) => {
+    visit.itemAtPath = (cst, path21) => {
       let item = cst;
-      for (const [field, index] of path18) {
+      for (const [field, index] of path21) {
         const tok = item?.[field];
         if (tok && "items" in tok) {
           item = tok.items[index];
@@ -5584,23 +5584,23 @@ var require_cst_visit = __commonJS({
       }
       return item;
     };
-    visit.parentCollection = (cst, path18) => {
-      const parent = visit.itemAtPath(cst, path18.slice(0, -1));
-      const field = path18[path18.length - 1][0];
+    visit.parentCollection = (cst, path21) => {
+      const parent = visit.itemAtPath(cst, path21.slice(0, -1));
+      const field = path21[path21.length - 1][0];
       const coll = parent?.[field];
       if (coll && "items" in coll)
         return coll;
       throw new Error("Parent collection not found");
     };
-    function _visit(path18, item, visitor) {
-      let ctrl = visitor(item, path18);
+    function _visit(path21, item, visitor) {
+      let ctrl = visitor(item, path21);
       if (typeof ctrl === "symbol")
         return ctrl;
       for (const field of ["key", "value"]) {
         const token = item[field];
         if (token && "items" in token) {
           for (let i = 0; i < token.items.length; ++i) {
-            const ci = _visit(Object.freeze(path18.concat([[field, i]])), token.items[i], visitor);
+            const ci = _visit(Object.freeze(path21.concat([[field, i]])), token.items[i], visitor);
             if (typeof ci === "number")
               i = ci - 1;
             else if (ci === BREAK)
@@ -5611,10 +5611,10 @@ var require_cst_visit = __commonJS({
             }
           }
           if (typeof ctrl === "function" && field === "key")
-            ctrl = ctrl(item, path18);
+            ctrl = ctrl(item, path21);
         }
       }
-      return typeof ctrl === "function" ? ctrl(item, path18) : ctrl;
+      return typeof ctrl === "function" ? ctrl(item, path21) : ctrl;
     }
     exports.visit = visit;
   }
@@ -10594,8 +10594,8 @@ var require_utils = __commonJS({
       }
       return ind;
     }
-    function removeDotSegments(path18) {
-      let input = path18;
+    function removeDotSegments(path21) {
+      let input = path21;
       const output = [];
       let nextSlash = -1;
       let len = 0;
@@ -10669,11 +10669,11 @@ var require_utils = __commonJS({
       }
       return output.join("");
     }
-    function removeDotSegmentsRelative(path18) {
-      if (path18 === "" || path18[0] === "/") {
-        return removeDotSegments(path18);
+    function removeDotSegmentsRelative(path21) {
+      if (path21 === "" || path21[0] === "/") {
+        return removeDotSegments(path21);
       }
-      const segments = path18.split("/");
+      const segments = path21.split("/");
       const last = segments.length - 1;
       const output = [];
       let trailingDirectory = false;
@@ -11036,8 +11036,8 @@ var require_schemes = __commonJS({
       }
       if (wsComponent.resourceName) {
         const queryIndex = wsComponent.resourceName.indexOf("?");
-        const path18 = queryIndex === -1 ? wsComponent.resourceName : wsComponent.resourceName.slice(0, queryIndex);
-        wsComponent.path = path18 && path18 !== "/" ? path18 : void 0;
+        const path21 = queryIndex === -1 ? wsComponent.resourceName : wsComponent.resourceName.slice(0, queryIndex);
+        wsComponent.path = path21 && path21 !== "/" ? path21 : void 0;
         wsComponent.query = queryIndex === -1 ? void 0 : wsComponent.resourceName.slice(queryIndex + 1);
         wsComponent.resourceName = void 0;
       }
@@ -16713,19 +16713,19 @@ var require_errors3 = __commonJS({
       }
     };
     exports.BrowserTokenNotAllowedError = BrowserTokenNotAllowedError;
-    function validateRequestPath(path18) {
-      if (path18.includes("..")) {
-        throw new InvalidPathParameterError(`Request path "${path18}" contains path traversal sequence ".."`);
+    function validateRequestPath(path21) {
+      if (path21.includes("..")) {
+        throw new InvalidPathParameterError(`Request path "${path21}" contains path traversal sequence ".."`);
       }
-      if (/%2e/i.test(path18)) {
+      if (/%2e/i.test(path21)) {
         let decoded;
         try {
-          decoded = decodeURIComponent(path18);
+          decoded = decodeURIComponent(path21);
         } catch {
           return;
         }
         if (decoded.includes("..")) {
-          throw new InvalidPathParameterError(`Request path "${path18}" contains encoded path traversal sequence`);
+          throw new InvalidPathParameterError(`Request path "${path21}" contains encoded path traversal sequence`);
         }
       }
     }
@@ -17409,17 +17409,17 @@ var require_Client = __commonJS({
        * Sends a request.
        */
       async request(args) {
-        const { path: path18, method, query, body, formDataParams, auth } = args;
-        (0, errors_1.validateRequestPath)(path18);
-        this.log(logging_1.LogLevel.INFO, "request start", { method, path: path18 });
-        const url2 = this.buildRequestUrl(path18, query);
+        const { path: path21, method, query, body, formDataParams, auth } = args;
+        (0, errors_1.validateRequestPath)(path21);
+        this.log(logging_1.LogLevel.INFO, "request start", { method, path: path21 });
+        const url2 = this.buildRequestUrl(path21, query);
         const bodyAsJsonString = this.serializeBody(body);
         const headers = this.buildRequestHeaders(args.headers, auth, bodyAsJsonString);
         const formData = this.buildFormData(formDataParams, headers);
         return this.executeWithRetry({
           url: url2,
           method,
-          path: path18,
+          path: path21,
           headers,
           body: bodyAsJsonString !== null && bodyAsJsonString !== void 0 ? bodyAsJsonString : formData
         }, (request) => this.executeSingleRequest(request));
@@ -17429,20 +17429,20 @@ var require_Client = __commonJS({
        */
       async *streamRequest(args, parseEvent) {
         var _a;
-        const { path: path18, method, query, body, auth } = args;
-        (0, errors_1.validateRequestPath)(path18);
-        this.log(logging_1.LogLevel.INFO, "stream request start", { method, path: path18 });
-        const url2 = this.buildRequestUrl(path18, query);
+        const { path: path21, method, query, body, auth } = args;
+        (0, errors_1.validateRequestPath)(path21);
+        this.log(logging_1.LogLevel.INFO, "stream request start", { method, path: path21 });
+        const url2 = this.buildRequestUrl(path21, query);
         const bodyAsJsonString = this.serializeBody(body);
         const headers = this.buildRequestHeaders(args.headers, auth, bodyAsJsonString);
         const response = await this.executeWithRetry({
           url: url2,
           method,
-          path: path18,
+          path: path21,
           headers,
           body: bodyAsJsonString
         }, (request) => this.executeSingleStreamRequest(request));
-        this.log(logging_1.LogLevel.INFO, "stream request opened", { method, path: path18 });
+        this.log(logging_1.LogLevel.INFO, "stream request opened", { method, path: path21 });
         if (response.body === void 0 || response.body === null) {
           for (const frame of takeSseFrames({
             content: await response.text(),
@@ -17494,8 +17494,8 @@ var require_Client = __commonJS({
       /**
        * Builds the full URL with query parameters.
        */
-      buildRequestUrl(path18, query) {
-        const url2 = new URL(`${__classPrivateFieldGet(this, _Client_prefixUrl, "f")}${path18}`);
+      buildRequestUrl(path21, query) {
+        const url2 = new URL(`${__classPrivateFieldGet(this, _Client_prefixUrl, "f")}${path21}`);
         if (query) {
           for (const [key, value] of Object.entries(query)) {
             if (value !== void 0 && value !== null) {
@@ -17582,14 +17582,14 @@ var require_Client = __commonJS({
        * Executes the request with retry logic.
        */
       async executeWithRetry(args, execute) {
-        const { url: url2, method, path: path18, headers, body } = args;
+        const { url: url2, method, path: path21, headers, body } = args;
         let attempt = 0;
         while (true) {
           try {
             return await execute({
               url: url2,
               method,
-              path: path18,
+              path: path21,
               headers,
               body
             });
@@ -17602,7 +17602,7 @@ var require_Client = __commonJS({
               const delayMs = this.calculateRetryDelay(error, attempt);
               this.log(logging_1.LogLevel.INFO, "retrying request", {
                 method,
-                path: path18,
+                path: path21,
                 attempt: attempt + 1,
                 delayMs
               });
@@ -17618,7 +17618,7 @@ var require_Client = __commonJS({
        * Executes a single HTTP request (no retry).
        */
       async executeSingleRequest(args) {
-        const { url: url2, method, path: path18, headers, body } = args;
+        const { url: url2, method, path: path21, headers, body } = args;
         const response = await errors_1.RequestTimeoutError.rejectAfterTimeout(__classPrivateFieldGet(this, _Client_fetch, "f").call(this, url2.toString(), {
           method: method.toUpperCase(),
           headers,
@@ -17632,7 +17632,7 @@ var require_Client = __commonJS({
         const responseJson = JSON.parse(responseText);
         this.log(logging_1.LogLevel.INFO, "request success", {
           method,
-          path: path18,
+          path: path21,
           ...this.extractRequestId(responseJson)
         });
         return responseJson;
@@ -18299,13 +18299,13 @@ var require_src = __commonJS({
 
 // plugins/arima/scripts/src/cli/project-cli.ts
 var import_yaml3 = __toESM(require_dist(), 1);
-import { existsSync as existsSync10, readFileSync as readFileSync12 } from "node:fs";
-import path17 from "node:path";
+import { existsSync as existsSync12, readFileSync as readFileSync15 } from "node:fs";
+import path20 from "node:path";
 import { parseArgs } from "node:util";
 
 // plugins/arima/scripts/src/init.ts
-import { readFileSync as readFileSync11 } from "node:fs";
-import path16 from "node:path";
+import { readFileSync as readFileSync14 } from "node:fs";
+import path19 from "node:path";
 
 // plugins/arima/scripts/src/brief.ts
 var BRIEF_SECTIONS = [
@@ -18356,6 +18356,29 @@ function describeGaps(c) {
 
 // plugins/arima/scripts/src/config.ts
 import { existsSync as existsSync2 } from "node:fs";
+
+// plugins/arima/scripts/src/hardstops.ts
+var HARD_STOPS = [
+  "G0",
+  "G1",
+  "G2",
+  "G3",
+  "G4",
+  "prod_deploy",
+  "secrets_change",
+  "budget_exceeded",
+  "story_budget",
+  "notion_delete",
+  "prod_data_migration",
+  "new_paid_service",
+  "licence",
+  "critical_finding",
+  "kill_switch",
+  "missing_credential"
+];
+var isHardStop = (id) => HARD_STOPS.includes(id);
+
+// plugins/arima/scripts/src/config.ts
 import path4 from "node:path";
 
 // plugins/arima/scripts/src/lib/paths.ts
@@ -18377,18 +18400,28 @@ function pluginRoot() {
 // plugins/arima/scripts/src/lib/schema.ts
 var import__ = __toESM(require__(), 1);
 var import_ajv_formats = __toESM(require_dist2(), 1);
-import { readFileSync } from "node:fs";
+import { readFileSync, readdirSync } from "node:fs";
 import path2 from "node:path";
 var cache = /* @__PURE__ */ new Map();
+var instances = /* @__PURE__ */ new Map();
+function ajvFor(root) {
+  const hit = instances.get(root);
+  if (hit) return hit;
+  const ajv = new import__.Ajv2020({ allErrors: true, strict: true });
+  (0, import_ajv_formats.default)(ajv);
+  const dir = path2.join(root, "schemas");
+  for (const f of readdirSync(dir).filter((n) => n.endsWith(".schema.json"))) {
+    ajv.addSchema(JSON.parse(readFileSync(path2.join(dir, f), "utf8")), f);
+  }
+  instances.set(root, ajv);
+  return ajv;
+}
 function getValidator(name, root = pluginRoot()) {
   const key = `${root}::${name}`;
   const hit = cache.get(key);
   if (hit) return hit;
-  const file = path2.join(root, "schemas", `${name}.schema.json`);
-  const schema = JSON.parse(readFileSync(file, "utf8"));
-  const ajv = new import__.Ajv2020({ allErrors: true, strict: true });
-  (0, import_ajv_formats.default)(ajv);
-  const validate = ajv.compile(schema);
+  const validate = ajvFor(root).getSchema(`${name}.schema.json`);
+  if (!validate) throw new Error(`schema not found: schemas/${name}.schema.json`);
   cache.set(key, validate);
   return validate;
 }
@@ -18454,7 +18487,7 @@ var YamlSource = class {
 
 // plugins/arima/scripts/src/profiles.ts
 var import_yaml2 = __toESM(require_dist(), 1);
-import { readdirSync, readFileSync as readFileSync3 } from "node:fs";
+import { readdirSync as readdirSync2, readFileSync as readFileSync3 } from "node:fs";
 import path3 from "node:path";
 var PROFILE_NAMES = ["solo-lite", "client-project", "regulated"];
 function profilesDir(root = pluginRoot()) {
@@ -18630,15 +18663,39 @@ function validateProject(projectDir, root = pluginRoot()) {
       message: "usage credits are enabled: set a spend cap and note it in the digest configuration (Q-22); budgets are estimates, not money spent"
     });
   }
+  const listed = new Set(
+    arima.autonomy.hard_stops
+  );
+  const missing = REQUIRED_HARD_STOPS.filter((s) => !listed.has(s));
+  const unknown = [...listed].filter((s) => !isHardStop(s));
+  if (unknown.length > 0) {
+    warnings.push({
+      severity: "warning",
+      file: aSrc.file,
+      line: aSrc.lineOf("/autonomy/hard_stops"),
+      path: "autonomy.hard_stops",
+      message: `unknown hard stop ids: ${unknown.join(", ")}. The ids are fixed in code (see src/hardstops.ts); a typo here protects nothing`
+    });
+  }
+  if (missing.length > 0) {
+    warnings.push({
+      severity: "warning",
+      file: aSrc.file,
+      line: aSrc.lineOf("/autonomy/hard_stops"),
+      path: "autonomy.hard_stops",
+      message: `hard stops missing from this list: ${missing.join(", ")}. ARIMA enforces them anyway (they cannot be disabled by configuration, spec \xA711.1); keep the list complete so it matches what is enforced`
+    });
+  }
   return { ok: errors.length === 0, errors, warnings, arima, team };
 }
+var REQUIRED_HARD_STOPS = HARD_STOPS;
 
 // plugins/arima/scripts/src/events.ts
-import path6 from "node:path";
+import path7 from "node:path";
 
 // plugins/arima/scripts/src/lib/jsonl.ts
-import { appendFileSync, existsSync as existsSync3, mkdirSync, readFileSync as readFileSync4 } from "node:fs";
-import path5 from "node:path";
+import { appendFileSync, existsSync as existsSync4, mkdirSync, readFileSync as readFileSync5 } from "node:fs";
+import path6 from "node:path";
 
 // plugins/arima/scripts/src/lib/filelock.ts
 import { closeSync, openSync, statSync, unlinkSync, writeSync } from "node:fs";
@@ -18685,16 +18742,79 @@ async function withFileLock(lockPath, fn, { timeoutMs = 15e3, staleMs = 3e4, ret
 }
 
 // plugins/arima/scripts/src/lib/secrets.ts
-var SECRET_PATTERNS = [
-  { name: "notion token", re: /\b(?:ntn_|secret_)[A-Za-z0-9]{20,}/ },
-  { name: "github token", re: /\bgh[pousr]_[A-Za-z0-9]{20,}/ },
-  { name: "github fine-grained token", re: /\bgithub_pat_[A-Za-z0-9_]{20,}/ },
-  { name: "anthropic key", re: /\bsk-ant-[A-Za-z0-9_-]{20,}/ },
-  { name: "aws access key", re: /\bAKIA[0-9A-Z]{16}\b/ },
-  { name: "private key block", re: /-----BEGIN [A-Z ]*PRIVATE KEY-----/ }
+import { existsSync as existsSync3, readFileSync as readFileSync4 } from "node:fs";
+import path5 from "node:path";
+import { createHash } from "node:crypto";
+function entropy(s) {
+  if (s.length === 0) return 0;
+  const counts = /* @__PURE__ */ new Map();
+  for (const ch of s) counts.set(ch, (counts.get(ch) ?? 0) + 1);
+  let h = 0;
+  for (const n of counts.values()) {
+    const p = n / s.length;
+    h -= p * Math.log2(p);
+  }
+  return h;
+}
+var PLACEHOLDER = /example|placeholder|your[-_]|replace|change[-_]?me|dummy|sample|redacted|xxxx|\*\*\*|<[^>]+>/i;
+var looksRandom = (s, bits) => s.length >= 16 && /[0-9]/.test(s) && /[A-Za-z]/.test(s) && entropy(s) >= bits && !PLACEHOLDER.test(s);
+var PATTERNS = [
+  { name: "notion token", re: /\b(?:ntn_|secret_)[A-Za-z0-9]{20,}/g },
+  { name: "github token", re: /\bgh[pousr]_[A-Za-z0-9]{20,}/g },
+  { name: "github fine-grained token", re: /\bgithub_pat_[A-Za-z0-9_]{20,}/g },
+  {
+    name: "anthropic key",
+    re: /\bsk-ant-([A-Za-z0-9_-]{20,})/g,
+    accept: (_m, g) => looksRandom(g[0] ?? "", 3.4)
+  },
+  { name: "aws access key", re: /\bAKIA[0-9A-Z]{16}\b/g, accept: (m) => !/EXAMPLE/.test(m) },
+  { name: "private key block", re: /-----BEGIN [A-Z ]*PRIVATE KEY-----/g },
+  { name: "slack token", re: /\bxox[abprs]-[A-Za-z0-9-]{10,}/g },
+  { name: "stripe key", re: /\b[sr]k_(?:live|test)_[A-Za-z0-9]{16,}/g },
+  { name: "google api key", re: /\bAIza[0-9A-Za-z_-]{35}\b/g },
+  {
+    name: "json web token",
+    re: /\beyJ[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}/g
+  },
+  { name: "npm token", re: /\bnpm_[A-Za-z0-9]{36}\b/g },
+  {
+    name: "bearer token",
+    re: /\bBearer\s+([A-Za-z0-9._~+/-]{24,})=*/g,
+    accept: (_m, g) => !PLACEHOLDER.test(g[0] ?? "") && entropy(g[0] ?? "") >= 3.3
+  },
+  {
+    // key = "long random-looking value" for names that usually hold credentials
+    name: "credential assignment",
+    re: /(?<![A-Za-z])(?:api[_-]?key|secret(?:[_-]?key)?|access[_-]?token|auth[_-]?token|token|passwd|password|private[_-]?key)["']?\s*[:=]\s*["']?([A-Za-z0-9/+_=.-]{20,})/gi,
+    accept: (_m, g) => looksRandom(g[0] ?? "", 3.5)
+  }
 ];
-function findSecrets(text2) {
-  return SECRET_PATTERNS.filter((p) => p.re.test(text2)).map((p) => p.name);
+function fingerprint(match) {
+  return `sha256:${createHash("sha256").update(match).digest("hex").slice(0, 16)}`;
+}
+function scan(text2) {
+  const unescaped = text2.replace(/\\[nrt]/g, " ").replace(/\\"/g, '"');
+  const out = [];
+  const seen = /* @__PURE__ */ new Set();
+  for (const p of PATTERNS) {
+    for (const t2 of text2 === unescaped ? [text2] : [text2, unescaped]) {
+      for (const m of t2.matchAll(new RegExp(p.re.source, p.re.flags))) {
+        const groups = m.slice(1).map((x) => x ?? "");
+        if (p.accept && !p.accept(m[0], groups)) continue;
+        const f = fingerprint(m[0]);
+        if (seen.has(`${p.name}|${f}`)) continue;
+        seen.add(`${p.name}|${f}`);
+        out.push({ rule: p.name, fingerprint: f });
+      }
+    }
+  }
+  return out;
+}
+function scanSecrets(text2, allowed = /* @__PURE__ */ new Set()) {
+  return scan(text2).filter((f) => !allowed.has(f.fingerprint));
+}
+function findSecrets(text2, allowed = /* @__PURE__ */ new Set()) {
+  return [...new Set(scanSecrets(text2, allowed).map((f) => f.rule))];
 }
 function assertNoSecrets(text2, where) {
   const found = findSecrets(text2);
@@ -18704,28 +18824,73 @@ function assertNoSecrets(text2, where) {
     );
   }
 }
+function readAllowlistFile(file) {
+  return existsSync3(file) ? parseAllowlist(readFileSync4(file, "utf8")) : /* @__PURE__ */ new Set();
+}
+function loadSecretAllowlist(projectDir) {
+  return readAllowlistFile(path5.join(projectDir, ".arima", "secret-allowlist.txt"));
+}
+function parseAllowlist(text2) {
+  const out = /* @__PURE__ */ new Set();
+  for (const line of text2.split(/\r?\n/)) {
+    const m = /^\s*(sha256:[0-9a-f]{16})\s*(?:#.*)?$/i.exec(line);
+    if (m) out.add(m[1].toLowerCase());
+  }
+  return out;
+}
+
+// plugins/arima/scripts/src/lib/migrate.ts
+var CURRENT_SCHEMA_VERSION = 1;
+var VERSIONED = ["ledger", "event", "outbox"];
+var STEPS = {};
+var SchemaVersionError = class extends Error {
+};
+function versionOf(record) {
+  const v = record?.schema_version;
+  return v === void 0 ? 1 : typeof v === "number" ? v : Number.NaN;
+}
+function migrateRecord(schema, record) {
+  if (!VERSIONED.includes(schema) || record === null || typeof record !== "object") return record;
+  let v = versionOf(record);
+  if (!Number.isInteger(v) || v < 1)
+    throw new SchemaVersionError(`invalid schema_version in a ${schema} record`);
+  if (v > CURRENT_SCHEMA_VERSION)
+    throw new SchemaVersionError(
+      `a ${schema} record has schema_version ${v}, newer than this ARIMA understands (${CURRENT_SCHEMA_VERSION}); upgrade the plugin`
+    );
+  let out = record;
+  while (v < CURRENT_SCHEMA_VERSION) {
+    const step = STEPS[v];
+    if (step === void 0) throw new SchemaVersionError(`no migration from ${schema} v${v}`);
+    out = step(out);
+    v += 1;
+  }
+  return out;
+}
 
 // plugins/arima/scripts/src/lib/jsonl.ts
 async function appendJsonl(file, schema, record) {
   const validate = getValidator(schema);
+  if (VERSIONED.includes(schema) && typeof record === "object" && record !== null)
+    record = { schema_version: CURRENT_SCHEMA_VERSION, ...record };
   if (!validate(record)) {
     throw new Error(
       `Invalid ${schema} record: ${(validate.errors ?? []).map(describeError).join("; ")}`
     );
   }
   const line = JSON.stringify(record);
-  assertNoSecrets(line, path5.basename(file));
-  mkdirSync(path5.dirname(file), { recursive: true });
+  assertNoSecrets(line, path6.basename(file));
+  mkdirSync(path6.dirname(file), { recursive: true });
   await withFileLock(`${file}.lock`, () => {
     appendFileSync(file, `${line}
 `, "utf8");
   });
 }
 function readJsonl(file, schema) {
-  if (!existsSync3(file)) return [];
+  if (!existsSync4(file)) return [];
   const validate = getValidator(schema);
   const out = [];
-  const lines = readFileSync4(file, "utf8").split("\n");
+  const lines = readFileSync5(file, "utf8").split("\n");
   lines.forEach((raw, i) => {
     if (raw.trim() === "") return;
     let parsed;
@@ -18733,6 +18898,11 @@ function readJsonl(file, schema) {
       parsed = JSON.parse(raw);
     } catch (e) {
       throw new Error(`${file}:${i + 1}: not valid JSON`, { cause: e });
+    }
+    try {
+      parsed = migrateRecord(schema, parsed);
+    } catch (e) {
+      throw new Error(`${file}:${i + 1}: ${e.message}`, { cause: e });
     }
     if (!validate(parsed)) {
       throw new Error(
@@ -18746,7 +18916,7 @@ function readJsonl(file, schema) {
 
 // plugins/arima/scripts/src/events.ts
 function eventsFile(projectDir) {
-  return path6.join(projectDir, ".arima", "events.jsonl");
+  return path7.join(projectDir, ".arima", "events.jsonl");
 }
 async function appendEvent(projectDir, event) {
   const full = { ...event, ts: event.ts ?? (/* @__PURE__ */ new Date()).toISOString() };
@@ -18755,6 +18925,333 @@ async function appendEvent(projectDir, event) {
 }
 function readEvents(projectDir) {
   return readJsonl(eventsFile(projectDir), "event");
+}
+
+// plugins/arima/scripts/src/killswitch.ts
+import { existsSync as existsSync5, mkdirSync as mkdirSync2, readFileSync as readFileSync6, rmSync, writeFileSync } from "node:fs";
+import path8 from "node:path";
+
+// plugins/arima/scripts/src/notion/port.ts
+var import_client = __toESM(require_src(), 1);
+
+// plugins/arima/scripts/src/lib/throttle.ts
+import { setTimeout as sleep2 } from "node:timers/promises";
+var Throttle = class {
+  constructor(minIntervalMs = 334, now = Date.now, wait = (ms) => sleep2(ms)) {
+    this.minIntervalMs = minIntervalMs;
+    this.now = now;
+    this.wait = wait;
+  }
+  minIntervalMs;
+  now;
+  wait;
+  next = 0;
+  async run(fn) {
+    const start = Math.max(this.now(), this.next);
+    this.next = start + this.minIntervalMs;
+    const delay = start - this.now();
+    if (delay > 0) await this.wait(delay);
+    return fn();
+  }
+};
+function isRateLimited(e) {
+  const err = e;
+  return err?.status === 429 || err?.code === "rate_limited";
+}
+function retryAfterMs(e) {
+  const headers = e?.headers;
+  if (headers === void 0 || headers === null) return void 0;
+  const raw = typeof headers.get === "function" ? headers.get("retry-after") : headers["retry-after"];
+  const seconds = Number(raw);
+  return Number.isFinite(seconds) && seconds >= 0 && raw !== null && raw !== void 0 ? seconds * 1e3 : void 0;
+}
+function isTransient(e) {
+  const err = e;
+  const code2 = String(err?.code ?? err?.cause?.code ?? "");
+  if (/^(ECONNRESET|ETIMEDOUT|ENOTFOUND|EAI_AGAIN|ECONNREFUSED|UND_ERR_.*)$/.test(code2))
+    return true;
+  if (typeof err?.status === "number" && [500, 502, 503, 504].includes(err.status)) return true;
+  if (code2 === "notionhq_client_request_timeout") return true;
+  return /fetch failed|socket hang up|network|timed out/i.test(String(err?.message ?? ""));
+}
+async function withReadRetry(fn, o = {}) {
+  const { retries = 2, baseMs = 300, sleep: wait = (ms) => sleep2(ms) } = o;
+  for (let attempt = 0; ; attempt++) {
+    try {
+      return await fn();
+    } catch (e) {
+      if (!isTransient(e) || attempt >= retries) throw e;
+      await wait(baseMs * 2 ** attempt);
+    }
+  }
+}
+async function withBackoff(fn, o = {}) {
+  const { retries = 5, baseMs = 500, maxMs = 3e4, sleep: wait = (ms) => sleep2(ms) } = o;
+  for (let attempt = 0; ; attempt++) {
+    try {
+      return await fn();
+    } catch (e) {
+      if (!isRateLimited(e) || attempt >= retries) throw e;
+      await wait(retryAfterMs(e) ?? Math.min(maxMs, baseMs * 2 ** attempt));
+    }
+  }
+}
+
+// plugins/arima/scripts/src/notion/port.ts
+var PAUSE_TODO_TEXT = "Pause ARIMA";
+var plain = (rt) => (rt ?? []).map((t2) => t2.plain_text ?? "").join("");
+function toDatabaseInfo(raw) {
+  const dataSourceId = raw.data_sources?.[0]?.id;
+  if (dataSourceId === void 0) throw new Error(`database ${raw.id} has no data source`);
+  return { id: raw.id, title: plain(raw.title), dataSourceId };
+}
+function createNotionPort(client, throttle = new Throttle(), backoff = {}) {
+  const call = (fn) => throttle.run(() => withBackoff(fn, backoff));
+  const callRead = (fn) => throttle.run(
+    () => withReadRetry(
+      () => withBackoff(fn, backoff),
+      backoff.sleep ? { sleep: async (ms) => void await backoff.sleep?.(ms) } : {}
+    )
+  );
+  const listChildren = async (pageId) => {
+    const out = [];
+    let cursor;
+    for (; ; ) {
+      const page = await callRead(
+        () => client.blocks.children.list({
+          block_id: pageId,
+          page_size: 100,
+          ...cursor !== void 0 ? { start_cursor: cursor } : {}
+        })
+      );
+      for (const raw of page.results) {
+        if (raw.id === void 0 || raw.type === void 0) continue;
+        if (raw.type === "to_do" && raw.to_do) {
+          out.push({
+            id: raw.id,
+            type: "to_do",
+            text: plain(raw.to_do.rich_text),
+            checked: raw.to_do.checked === true
+          });
+        } else if (raw.type === "paragraph") {
+          out.push({ id: raw.id, type: "paragraph", text: plain(raw.paragraph?.rich_text) });
+        } else if (raw.type === "child_database") {
+          out.push({ id: raw.id, type: "child_database", text: raw.child_database?.title ?? "" });
+        } else {
+          out.push({ id: raw.id, type: raw.type, text: "" });
+        }
+      }
+      if (!page.has_more || page.next_cursor === null) return out;
+      cursor = page.next_cursor;
+    }
+  };
+  const getDataSourceProperties = async (dataSourceId) => {
+    const raw = await callRead(
+      () => client.dataSources.retrieve({ data_source_id: dataSourceId })
+    );
+    const out = {};
+    for (const [name, p] of Object.entries(raw.properties ?? {})) {
+      const info = { id: p.id, name: p.name ?? name, type: p.type };
+      const opts = p.select?.options ?? p.multi_select?.options;
+      if (opts) info.options = opts.map((o) => o.name);
+      if (p.relation?.data_source_id) info.relationTarget = p.relation.data_source_id;
+      out[name] = info;
+    }
+    return out;
+  };
+  return {
+    listChildren,
+    async listTodoBlocks(pageId) {
+      return (await listChildren(pageId)).filter((b) => b.type === "to_do").map((b) => ({ id: b.id, text: b.text, checked: b.checked === true }));
+    },
+    async setTodoChecked(blockId, checked) {
+      await call(() => client.blocks.update({ block_id: blockId, to_do: { checked } }));
+    },
+    async appendTodo(pageId, text2, checked) {
+      const res = await call(
+        () => client.blocks.children.append({
+          block_id: pageId,
+          children: [
+            {
+              object: "block",
+              type: "to_do",
+              to_do: { rich_text: [{ type: "text", text: { content: text2 } }], checked }
+            }
+          ]
+        })
+      );
+      const id = res.results[0]?.id;
+      if (id === void 0) throw new Error("Notion did not return the created block");
+      return id;
+    },
+    async appendParagraph(pageId, text2) {
+      const res = await call(
+        () => client.blocks.children.append({
+          block_id: pageId,
+          children: [
+            {
+              object: "block",
+              type: "paragraph",
+              paragraph: { rich_text: [{ type: "text", text: { content: text2 } }] }
+            }
+          ]
+        })
+      );
+      const id = res.results[0]?.id;
+      if (id === void 0) throw new Error("Notion did not return the created block");
+      return id;
+    },
+    async createDatabase(parentPageId, title, properties) {
+      const raw = await call(
+        () => client.databases.create({
+          parent: { type: "page_id", page_id: parentPageId },
+          title: [{ type: "text", text: { content: title } }],
+          is_inline: true,
+          initial_data_source: { properties }
+        })
+      );
+      return toDatabaseInfo({ ...raw, title: raw.title ?? [{ plain_text: title }] });
+    },
+    async getDatabase(databaseId) {
+      const raw = await callRead(
+        () => client.databases.retrieve({ database_id: databaseId })
+      );
+      return toDatabaseInfo(raw);
+    },
+    getDataSourceProperties,
+    async addProperties(dataSourceId, properties) {
+      const existing = await getDataSourceProperties(dataSourceId);
+      const clash = Object.keys(properties).filter((n) => n in existing);
+      if (clash.length > 0) {
+        throw new Error(`refusing to alter existing Notion properties: ${clash.join(", ")}`);
+      }
+      await call(() => client.dataSources.update({ data_source_id: dataSourceId, properties }));
+    },
+    async queryRows(dataSourceId) {
+      const rows = [];
+      let cursor;
+      for (; ; ) {
+        const page = await callRead(
+          () => client.dataSources.query({
+            data_source_id: dataSourceId,
+            page_size: 100,
+            ...cursor !== void 0 ? { start_cursor: cursor } : {}
+          })
+        );
+        for (const raw of page.results) {
+          if (raw.object !== void 0 && raw.object !== "page") continue;
+          rows.push({
+            pageId: raw.id,
+            lastEdited: raw.last_edited_time,
+            properties: raw.properties ?? {}
+          });
+        }
+        if (!page.has_more || page.next_cursor === null) return rows;
+        cursor = page.next_cursor;
+      }
+    },
+    async getPageLastEdited(pageId) {
+      const raw = await callRead(() => client.pages.retrieve({ page_id: pageId }));
+      return raw.last_edited_time;
+    },
+    async getPage(pageId) {
+      const raw = await callRead(() => client.pages.retrieve({ page_id: pageId }));
+      return { pageId: raw.id, lastEdited: raw.last_edited_time, properties: raw.properties ?? {} };
+    },
+    async createPage(dataSourceId, properties, children) {
+      const first = children?.slice(0, 100);
+      const raw = await call(
+        () => client.pages.create({
+          parent: { type: "data_source_id", data_source_id: dataSourceId },
+          properties,
+          ...first && first.length > 0 ? { children: first } : {}
+        })
+      );
+      let lastEdited = raw.last_edited_time;
+      for (let i = 100; children && i < children.length; i += 100) {
+        const rest = children.slice(i, i + 100);
+        await call(() => client.blocks.children.append({ block_id: raw.id, children: rest }));
+      }
+      if (children && children.length > 100) lastEdited = await this.getPageLastEdited(raw.id);
+      return {
+        pageId: raw.id,
+        lastEdited,
+        ...raw.properties ? { properties: raw.properties } : {}
+      };
+    },
+    async updatePage(pageId, properties) {
+      const raw = await call(() => client.pages.update({ page_id: pageId, properties }));
+      return {
+        lastEdited: raw.last_edited_time,
+        ...raw.properties ? { properties: raw.properties } : {}
+      };
+    },
+    async appendChildren(pageId, blocks) {
+      for (let i = 0; i < blocks.length; i += 100) {
+        const chunk = blocks.slice(i, i + 100);
+        await call(() => client.blocks.children.append({ block_id: pageId, children: chunk }));
+      }
+    }
+  };
+}
+function createNotionPortFromToken(token) {
+  const client = new import_client.Client({ auth: token, retry: false });
+  return createNotionPort(client);
+}
+
+// plugins/arima/scripts/src/killswitch.ts
+function pauseFile(projectDir) {
+  return path8.join(projectDir, ".arima", "PAUSE");
+}
+async function checkKillSwitch(projectDir, notion, remotePause) {
+  const file = existsSync5(pauseFile(projectDir));
+  let remote = "unchecked";
+  let detail = "";
+  if (notion !== null) {
+    try {
+      const todos = await notion.port.listTodoBlocks(notion.rootPageId);
+      const sw = todos.find((t2) => t2.text.trim() === PAUSE_TODO_TEXT);
+      if (sw === void 0) {
+        remote = "missing";
+        detail = `the "${PAUSE_TODO_TEXT}" to-do is missing from the Notion root page, so ARIMA cannot tell whether it is paused; run /arima:pause --resume to recreate it`;
+      } else {
+        remote = sw.checked;
+      }
+    } catch (e) {
+      remote = "unreachable";
+      detail = `Notion unreachable (${e instanceof Error ? e.message : String(e)})`;
+    }
+  }
+  let stateBranch = "unchecked";
+  if (!file && remote !== true && remotePause !== void 0 && remote !== false) {
+    const r = await remotePause();
+    stateBranch = r === void 0 ? "unchecked" : r;
+  }
+  const blind = notion !== null && remote === "unreachable" && stateBranch === "unchecked";
+  const on = file || remote === true || remote === "missing" || stateBranch === true || blind;
+  if (on) {
+    const reasons = [
+      file ? "PAUSE file present" : "",
+      remote === true ? "Notion switch is on" : "",
+      remote === "missing" ? detail : "",
+      stateBranch === true ? "PAUSE file on the remote state branch" : "",
+      blind ? `${detail}; the remote state branch could not be checked either, so ARIMA cannot confirm it is not paused` : ""
+    ];
+    detail = reasons.filter(Boolean).join(" and ");
+    if (file) {
+      const first = readFileSync6(pauseFile(projectDir), "utf8").split("\n")[0] ?? "";
+      if (first.trim() !== "") detail += ` (${first.trim()})`;
+    }
+  } else if (remote === "unreachable") {
+    detail += stateBranch === false ? "; the remote state branch has no PAUSE file" : "; the remote state branch could not be checked either, so only the local PAUSE file was consulted";
+  }
+  return { on, file, notion: remote, stateBranch, detail };
+}
+async function ensureNotionSwitch(port, rootPageId) {
+  const todos = await port.listTodoBlocks(rootPageId);
+  if (todos.some((t2) => t2.text.trim() === PAUSE_TODO_TEXT)) return false;
+  await port.appendTodo(rootPageId, PAUSE_TODO_TEXT, false);
+  return true;
 }
 
 // plugins/arima/scripts/src/gates.ts
@@ -18799,9 +19296,9 @@ var GATE_CRITERIA = {
 };
 
 // plugins/arima/scripts/src/ledger.ts
-import path7 from "node:path";
+import path9 from "node:path";
 function ledgerFile(projectDir) {
-  return path7.join(projectDir, ".arima", "ledger.jsonl");
+  return path9.join(projectDir, ".arima", "ledger.jsonl");
 }
 var round6 = (n) => Math.round(n * 1e6) / 1e6;
 var int = (n) => Math.max(0, Math.round(n ?? 0));
@@ -18852,17 +19349,17 @@ function readLedger(projectDir) {
   return readJsonl(ledgerFile(projectDir), "ledger");
 }
 
-// plugins/arima/scripts/src/notion/map-file.ts
-import { mkdirSync as mkdirSync4 } from "node:fs";
-import path10 from "node:path";
+// plugins/arima/scripts/src/notion/allocations.ts
+import { existsSync as existsSync6, mkdirSync as mkdirSync4, readFileSync as readFileSync7 } from "node:fs";
+import path11 from "node:path";
 
 // plugins/arima/scripts/src/lib/atomic-file.ts
-import { mkdirSync as mkdirSync2, renameSync, unlinkSync as unlinkSync2, writeFileSync } from "node:fs";
-import path8 from "node:path";
+import { mkdirSync as mkdirSync3, renameSync, unlinkSync as unlinkSync2, writeFileSync as writeFileSync2 } from "node:fs";
+import path10 from "node:path";
 function writeFileAtomic(file, content) {
-  mkdirSync2(path8.dirname(file), { recursive: true });
+  mkdirSync3(path10.dirname(file), { recursive: true });
   const tmp = `${file}.${process.pid}.tmp`;
-  writeFileSync(tmp, content, "utf8");
+  writeFileSync2(tmp, content, "utf8");
   for (let attempt = 0; ; attempt++) {
     try {
       renameSync(tmp, file);
@@ -18882,56 +19379,24 @@ function writeFileAtomic(file, content) {
   }
 }
 
-// plugins/arima/scripts/src/notion/props.ts
-var options = (names) => (names ?? []).map((name) => ({ name }));
-function toApiProperty(p) {
-  switch (p.type) {
-    case "title":
-      return { title: {} };
-    case "rich_text":
-      return { rich_text: {} };
-    case "number":
-      return { number: { format: "number" } };
-    case "select":
-      return { select: { options: options(p.options) } };
-    case "multi_select":
-      return { multi_select: { options: options(p.options) } };
-    case "date":
-      return { date: {} };
-    case "people":
-      return { people: {} };
-    case "checkbox":
-      return { checkbox: {} };
-    case "url":
-      return { url: {} };
-    case "files":
-      return { files: {} };
-    case "formula":
-      return { formula: { expression: p.formula ?? "" } };
-    case "rollup":
-      if (p.rollup === void 0) throw new Error(`rollup ${p.name} has no definition`);
-      return {
-        rollup: {
-          relation_property_name: p.rollup.relation,
-          rollup_property_name: p.rollup.property,
-          function: p.rollup.fn
-        }
-      };
-    case "relation":
-      throw new Error(`relation ${p.name} needs a target data source id; use toApiRelation`);
-  }
-}
-function toApiRelation(targetDataSourceId, reverseName) {
-  return {
-    relation: {
-      data_source_id: targetDataSourceId,
-      dual_property: { synced_property_name: reverseName }
-    }
-  };
-}
-function isPlain(p) {
-  return p.type !== "relation" && p.type !== "formula" && p.type !== "rollup";
-}
+// plugins/arima/scripts/src/ids.ts
+var ID_WIDTHS = {
+  REQ: 3,
+  NFR: 3,
+  EP: 2,
+  US: 3,
+  TC: 4,
+  BUG: 3,
+  ADR: 4,
+  RISK: 3,
+  DEC: 4,
+  Q: 3,
+  MS: 2,
+  CR: 3,
+  INC: 3,
+  LES: 3
+};
+var ID_PREFIXES = Object.keys(ID_WIDTHS);
 
 // plugins/arima/scripts/src/notion/schema.ts
 var TEMPLATE_SCHEMA_VERSION = 1;
@@ -19020,7 +19485,7 @@ var DATABASES = [
       {
         name: "Coverage",
         type: "formula",
-        formula: 'if(prop("Test results").some(current == "Pass"), "Covered", "Not covered")'
+        formula: 'if(contains(prop("Test results"), "Pass"), "Covered", "Not covered")'
       },
       rel("Stories", "stories", "Requirements"),
       rel("Test Cases", "test_cases", "Requirements"),
@@ -19379,6 +19844,11 @@ function expandedSpec() {
   }
   return [...byKey.values()];
 }
+function dbByKey(key) {
+  const found = expandedSpec().find((d) => d.key === key);
+  if (found === void 0) throw new Error(`unknown database ${key}`);
+  return found;
+}
 var RETIRE_STATUS = {
   requirements: "Retired",
   epics: "Cancelled",
@@ -19393,6 +19863,104 @@ var RETIRE_STATUS = {
   human_tasks: "Cancelled"
 };
 var NON_UNIQUE_TITLES = /* @__PURE__ */ new Set(["cost_log"]);
+
+// plugins/arima/scripts/src/notion/allocations.ts
+var ID_PREFIX_BY_DB = {
+  requirements: "REQ",
+  epics: "EP",
+  stories: "US",
+  test_cases: "TC",
+  bugs: "BUG",
+  milestones: "MS",
+  decisions: "DEC",
+  questions: "Q",
+  change_requests: "CR",
+  incidents: "INC",
+  risks: "RISK",
+  lessons: "LES"
+};
+var allocationsFile = (projectDir) => path11.join(projectDir, ".arima", "state", "allocations.json");
+function readAllocations(projectDir) {
+  const file = allocationsFile(projectDir);
+  if (!existsSync6(file)) return {};
+  return JSON.parse(readFileSync7(file, "utf8"));
+}
+function allocatedTo(projectDir, id) {
+  return readAllocations(projectDir)[id];
+}
+var titleProperty = (db) => dbByKey(db).props.find((p) => p.type === "title")?.name;
+var engineEntriesFile = (projectDir) => path11.join(projectDir, ".arima", "state", "engine-entries.json");
+function readEngineEntries(projectDir) {
+  const file = engineEntriesFile(projectDir);
+  if (!existsSync6(file)) return [];
+  return JSON.parse(readFileSync7(file, "utf8"));
+}
+async function registerEngineEntry(projectDir, id) {
+  const file = engineEntriesFile(projectDir);
+  mkdirSync4(path11.dirname(file), { recursive: true });
+  await withFileLock(`${file}.lock`, () => {
+    const all = readEngineEntries(projectDir);
+    if (!all.includes(id)) all.push(id);
+    writeFileAtomic(file, `${JSON.stringify(all, null, 2)}
+`);
+  });
+}
+var isEngineEntry = (projectDir, id) => readEngineEntries(projectDir).includes(id);
+
+// plugins/arima/scripts/src/notion/map-file.ts
+import { mkdirSync as mkdirSync6 } from "node:fs";
+import path13 from "node:path";
+
+// plugins/arima/scripts/src/notion/props.ts
+var options = (names) => (names ?? []).map((name) => ({ name }));
+function toApiProperty(p) {
+  switch (p.type) {
+    case "title":
+      return { title: {} };
+    case "rich_text":
+      return { rich_text: {} };
+    case "number":
+      return { number: { format: "number" } };
+    case "select":
+      return { select: { options: options(p.options) } };
+    case "multi_select":
+      return { multi_select: { options: options(p.options) } };
+    case "date":
+      return { date: {} };
+    case "people":
+      return { people: {} };
+    case "checkbox":
+      return { checkbox: {} };
+    case "url":
+      return { url: {} };
+    case "files":
+      return { files: {} };
+    case "formula":
+      return { formula: { expression: p.formula ?? "" } };
+    case "rollup":
+      if (p.rollup === void 0) throw new Error(`rollup ${p.name} has no definition`);
+      return {
+        rollup: {
+          relation_property_name: p.rollup.relation,
+          rollup_property_name: p.rollup.property,
+          function: p.rollup.fn
+        }
+      };
+    case "relation":
+      throw new Error(`relation ${p.name} needs a target data source id; use toApiRelation`);
+  }
+}
+function toApiRelation(targetDataSourceId, reverseName) {
+  return {
+    relation: {
+      data_source_id: targetDataSourceId,
+      dual_property: { synced_property_name: reverseName }
+    }
+  };
+}
+function isPlain(p) {
+  return p.type !== "relation" && p.type !== "formula" && p.type !== "rollup";
+}
 
 // plugins/arima/scripts/src/notion/build.ts
 var VERSION_MARKER = "ARIMA template schema_version:";
@@ -19648,8 +20216,8 @@ function buildMap(rootPageId, specs, found, propsByKey, now) {
 }
 
 // plugins/arima/scripts/src/notion/mirror.ts
-import { existsSync as existsSync4, mkdirSync as mkdirSync3, readFileSync as readFileSync5 } from "node:fs";
-import path9 from "node:path";
+import { existsSync as existsSync7, mkdirSync as mkdirSync5, readFileSync as readFileSync8 } from "node:fs";
+import path12 from "node:path";
 
 // plugins/arima/scripts/src/notion/values.ts
 var CHUNK = 2e3;
@@ -19696,13 +20264,13 @@ function toNotionValue(type, name, value, resolveRelation) {
       throw new ValueError(`"${name}" is a ${type} property, which agents cannot write`);
   }
 }
-var plain = (rt) => Array.isArray(rt) ? rt.map((t2) => t2.plain_text ?? "").join("") : "";
+var plain2 = (rt) => Array.isArray(rt) ? rt.map((t2) => t2.plain_text ?? "").join("") : "";
 function fromNotionValue(raw) {
   switch (raw.type) {
     case "title":
-      return plain(raw["title"]);
+      return plain2(raw["title"]);
     case "rich_text":
-      return plain(raw["rich_text"]);
+      return plain2(raw["rich_text"]);
     case "number":
       return raw["number"] ?? null;
     case "select":
@@ -19783,9 +20351,9 @@ function markdownToBlocks(markdown) {
 }
 
 // plugins/arima/scripts/src/notion/mirror.ts
-var mirrorDir = (projectDir) => path9.join(projectDir, ".arima", "mirror");
-var mirrorFile = (projectDir, db) => path9.join(mirrorDir(projectDir), `${db}.json`);
-var notionMapFile = (projectDir) => path9.join(projectDir, ".arima", "notion-map.json");
+var mirrorDir = (projectDir) => path12.join(projectDir, ".arima", "mirror");
+var mirrorFile = (projectDir, db) => path12.join(mirrorDir(projectDir), `${db}.json`);
+var notionMapFile = (projectDir) => path12.join(projectDir, ".arima", "notion-map.json");
 function toMirrorRow(raw) {
   const properties = {};
   let id = "";
@@ -19797,11 +20365,11 @@ function toMirrorRow(raw) {
 }
 function readMirror(projectDir, db) {
   const file = mirrorFile(projectDir, db);
-  if (!existsSync4(file)) return void 0;
-  return JSON.parse(readFileSync5(file, "utf8"));
+  if (!existsSync7(file)) return void 0;
+  return JSON.parse(readFileSync8(file, "utf8"));
 }
 function writeMirror(projectDir, m) {
-  mkdirSync3(mirrorDir(projectDir), { recursive: true });
+  mkdirSync5(mirrorDir(projectDir), { recursive: true });
   writeFileAtomic(mirrorFile(projectDir, m.database), `${JSON.stringify(m, null, 2)}
 `);
 }
@@ -19841,7 +20409,7 @@ async function mapAndWrite(projectDir, port, rootPageId, opts = {}) {
     );
   }
   const file = notionMapFile(projectDir);
-  mkdirSync4(path10.dirname(file), { recursive: true });
+  mkdirSync6(path13.dirname(file), { recursive: true });
   writeFileAtomic(file, `${JSON.stringify(result.map, null, 2)}
 `);
   return { result, file };
@@ -19849,47 +20417,152 @@ async function mapAndWrite(projectDir, port, rootPageId, opts = {}) {
 
 // plugins/arima/scripts/src/notion/outbox.ts
 import {
-  existsSync as existsSync5,
-  mkdirSync as mkdirSync5,
-  readFileSync as readFileSync6,
-  readdirSync as readdirSync2,
+  existsSync as existsSync8,
+  mkdirSync as mkdirSync7,
+  readFileSync as readFileSync9,
+  readdirSync as readdirSync3,
   renameSync as renameSync2,
-  writeFileSync as writeFileSync2
+  writeFileSync as writeFileSync3
 } from "node:fs";
-import path11 from "node:path";
-var outboxDir = (projectDir) => path11.join(projectDir, ".arima", "outbox");
+import path14 from "node:path";
+
+// plugins/arima/scripts/src/roles.ts
+var ROLES = [
+  "orchestrator",
+  "ba",
+  "ux",
+  "architect",
+  "tech-lead",
+  "developer",
+  "qa",
+  "security",
+  "devops"
+];
+var bash = (cmd) => [`Bash(${cmd})`, `Bash(${cmd} *)`];
+var GIT_READ = [
+  ...bash("git status"),
+  ...bash("git diff"),
+  ...bash("git log"),
+  ...bash("git show"),
+  ...bash("git rev-parse"),
+  ...bash("git ls-files"),
+  ...bash("git branch --list"),
+  ...bash("git fetch")
+];
+var NPM_TEST = [...bash("npm test"), ...bash("npm run"), ...bash("npm ci")];
+var OUTBOX_DATABASES = {
+  orchestrator: [
+    "gates",
+    "requirements",
+    "epics",
+    "stories",
+    "test_cases",
+    "bugs",
+    "milestones",
+    "documents",
+    "decisions",
+    "questions",
+    "meetings",
+    "digests",
+    "releases",
+    "incidents",
+    "change_requests",
+    "risks",
+    "lessons",
+    "cost_log",
+    "human_tasks"
+  ],
+  ba: ["requirements", "epics", "stories", "documents", "risks", "questions", "decisions"],
+  ux: ["documents", "stories", "questions", "decisions"],
+  architect: ["documents", "requirements", "risks", "questions", "decisions"],
+  "tech-lead": ["documents", "risks", "questions", "decisions"],
+  developer: ["stories", "bugs", "questions", "decisions"],
+  qa: ["test_cases", "bugs", "documents", "questions", "decisions"],
+  security: ["risks", "documents", "questions", "decisions"],
+  devops: ["documents", "releases", "incidents", "risks", "human_tasks", "questions", "decisions"]
+};
+var OUTBOX_FORBIDDEN_PROPERTIES = {
+  ba: ["Priority"],
+  ux: ["Priority"]
+};
+
+// plugins/arima/scripts/src/notion/outbox.ts
+var outboxDir = (projectDir) => path14.join(projectDir, ".arima", "outbox");
+function secretsIn(entry, allowed = /* @__PURE__ */ new Set()) {
+  return findSecrets(
+    JSON.stringify({ p: entry.properties ?? {}, c: entry.content_markdown ?? "" }),
+    allowed
+  );
+}
 var UUID = /^[0-9a-f]{8}-?[0-9a-f]{4}-?[0-9a-f]{4}-?[0-9a-f]{4}-?[0-9a-f]{12}$/i;
-function enqueue(projectDir, entry) {
+function enqueue(projectDir, entry, opts = {}) {
+  const env = opts.env ?? process.env;
+  if (env["ARIMA_RUN_ID"] !== void 0 && env["ARIMA_RUN_ID"] !== entry.run_id)
+    throw new Error(
+      `entry ${entry.id} names run ${entry.run_id}, but this process is run ${env["ARIMA_RUN_ID"]}`
+    );
+  if (env["ARIMA_ROLE"] !== void 0 && env["ARIMA_ROLE"] !== entry.role)
+    throw new Error(
+      `entry ${entry.id} names role ${entry.role}, but this process runs as ${env["ARIMA_ROLE"]}`
+    );
   const validate = getValidator("outbox");
   if (!validate(entry)) {
     throw new Error(
       `Invalid outbox entry: ${(validate.errors ?? []).map(describeError).join("; ")}`
     );
   }
+  const leaked = secretsIn(entry, loadSecretAllowlist(projectDir));
+  if (leaked.length > 0) {
+    throw new Error(
+      `Refusing outbox entry ${entry.id}: it looks like it contains a secret (${leaked.join(", ")})`
+    );
+  }
+  if (entry.base_values === void 0 && (entry.op === "update" || entry.op === "retire") && entry.item_id !== void 0) {
+    const row = findRow(readMirror(projectDir, entry.database), entry.item_id);
+    if (row !== void 0) {
+      const names = entry.op === "retire" ? ["Status"] : Object.keys(entry.properties ?? {});
+      entry = {
+        ...entry,
+        base_values: Object.fromEntries(names.map((n) => [n, row.properties[n] ?? null]))
+      };
+    }
+  }
   const dir = outboxDir(projectDir);
-  mkdirSync5(dir, { recursive: true });
-  const file = path11.join(dir, `${entry.id}.json`);
-  if (existsSync5(file)) throw new Error(`outbox entry ${entry.id} already exists`);
+  mkdirSync7(dir, { recursive: true });
+  const file = path14.join(dir, `${entry.id}.json`);
+  if (existsSync8(file)) throw new Error(`outbox entry ${entry.id} already exists`);
   writeFileAtomic(file, `${JSON.stringify(entry, null, 2)}
 `);
   return file;
 }
 function listPending(projectDir, report) {
   const dir = outboxDir(projectDir);
-  if (!existsSync5(dir)) return [];
+  if (!existsSync8(dir)) return [];
   const validate = getValidator("outbox");
   const out = [];
-  for (const name of readdirSync2(dir).filter((f) => f.endsWith(".json")).sort()) {
-    const file = path11.join(dir, name);
+  for (const name of readdirSync3(dir).filter((f) => f.endsWith(".json")).sort()) {
+    const file = path14.join(dir, name);
     let data;
     try {
-      data = JSON.parse(readFileSync6(file, "utf8"));
+      data = JSON.parse(readFileSync9(file, "utf8"));
     } catch {
       settle(
         projectDir,
         file,
         name.replace(/\.json$/, ""),
         { kind: "rejected", reason: "not valid JSON" },
+        report
+      );
+      continue;
+    }
+    try {
+      data = migrateRecord("outbox", data);
+    } catch (e) {
+      settle(
+        projectDir,
+        file,
+        name.replace(/.json$/, ""),
+        { kind: "rejected", reason: e.message },
         report
       );
       continue;
@@ -19909,14 +20582,19 @@ function settle(projectDir, file, id, result, report) {
   const bucket = result.kind === "applied" ? "applied" : result.kind === "conflict" ? "conflicts" : result.kind === "rejected" ? "rejected" : void 0;
   if (result.kind === "applied") report.applied.push(id);
   else if (result.kind === "conflict") report.conflicts.push(id);
-  else if (result.kind === "rejected") report.rejected.push({ id, reason: result.reason });
+  else if (result.kind === "rejected")
+    report.rejected.push({
+      id,
+      reason: result.reason,
+      ...result.code ? { code: result.code } : {}
+    });
   else report.deferred.push(id);
   if (bucket === void 0) return;
-  const dir = path11.join(outboxDir(projectDir), bucket);
-  mkdirSync5(dir, { recursive: true });
-  renameSync2(file, path11.join(dir, `${id}.json`));
-  writeFileSync2(
-    path11.join(dir, `${id}.result.json`),
+  const dir = path14.join(outboxDir(projectDir), bucket);
+  mkdirSync7(dir, { recursive: true });
+  renameSync2(file, path14.join(dir, `${id}.json`));
+  writeFileSync3(
+    path14.join(dir, `${id}.result.json`),
     `${JSON.stringify({ ...result, at: (/* @__PURE__ */ new Date()).toISOString() }, null, 2)}
 `
   );
@@ -19925,11 +20603,12 @@ function classify(e) {
   const status = e.status;
   return typeof status === "number" && status >= 400 && status < 500 && status !== 429 ? "permanent" : "transient";
 }
-function plainOf(v) {
-  return v;
-}
 async function pushOutbox(projectDir, port, map, opts = {}) {
   const report = { applied: [], rejected: [], conflicts: [], deferred: [] };
+  const allowed = loadSecretAllowlist(projectDir);
+  const runRoles = /* @__PURE__ */ new Map();
+  for (const e of readEvents(projectDir))
+    if (e.type === "run.start" && e.run_id !== void 0) runRoles.set(e.run_id, e.actor);
   const pending = listPending(projectDir, report);
   if (pending.length === 0) return report;
   const baseline = new Map(
@@ -19947,7 +20626,9 @@ async function pushOutbox(projectDir, port, map, opts = {}) {
     });
     return report;
   }
-  const ownWrites = /* @__PURE__ */ new Map();
+  const snapshots = /* @__PURE__ */ new Map();
+  const normalised = (pageId, lastEdited, raw) => raw === void 0 ? void 0 : toMirrorRow({ pageId, lastEdited, properties: raw }).properties;
+  const sameValue = (a, b) => JSON.stringify(a ?? null) === JSON.stringify(b ?? null);
   const resolveAnywhere = (id) => {
     if (UUID.test(id)) return id;
     const hits = [];
@@ -19990,18 +20671,80 @@ async function pushOutbox(projectDir, port, map, opts = {}) {
         actor: "system",
         run_id: entry.run_id,
         ...base.item ? { item: base.item } : {},
-        data: { ...common, reason: result.reason }
+        data: {
+          ...common,
+          reason: result.reason,
+          ...result.code ? { reason_code: result.code } : {}
+        }
       });
     }
     if (result.kind === "deferred") break;
   }
   for (const m of mirrors.values()) writeMirror(projectDir, m);
   return report;
+  function mayWriteStatus(entry) {
+    const a = opts.allowStatusWrites;
+    if (a === true) return true;
+    return typeof a === "object" && entry.id.startsWith(a.idPrefix) && isEngineEntry(projectDir, entry.id);
+  }
   async function applyEntry(entry) {
     const db = map.databases[entry.database];
     if (db === void 0)
       return { kind: "rejected", reason: `database "${entry.database}" is not in notion-map.json` };
     const mirror = mirrors.get(entry.database);
+    if (!ROLES.includes(entry.role))
+      return {
+        kind: "rejected",
+        refused: true,
+        reason: `"${entry.role}" is not a role of the team`
+      };
+    const role = entry.role;
+    if (opts.bindRuns !== false) {
+      const runRole = runRoles.get(entry.run_id);
+      if (runRole === void 0)
+        return {
+          kind: "rejected",
+          refused: true,
+          reason: `run ${entry.run_id} was not started by ARIMA (no run.start event); an outbox entry must belong to a run`
+        };
+      if (runRole !== role)
+        return {
+          kind: "rejected",
+          refused: true,
+          reason: `the entry says role ${role}, but run ${entry.run_id} was started as ${runRole}`
+        };
+    }
+    if (!OUTBOX_DATABASES[role].includes(entry.database))
+      return {
+        kind: "rejected",
+        refused: true,
+        code: "database_not_allowed",
+        reason: `role ${role} may not write ${db.title} (database_not_allowed)`
+      };
+    for (const name of Object.keys(entry.properties ?? {}))
+      if (OUTBOX_FORBIDDEN_PROPERTIES[role]?.includes(name))
+        return {
+          kind: "rejected",
+          refused: true,
+          reason: `role ${role} may not write "${name}" (that decision belongs to the product owner)`
+        };
+    if (opts.bindRuns !== false && entry.op === "create" && ID_PREFIX_BY_DB[entry.database] !== void 0) {
+      const title = String((entry.properties ?? {})[titleProperty(entry.database)] ?? "");
+      if (allocatedTo(projectDir, title) !== entry.run_id)
+        return {
+          kind: "rejected",
+          refused: true,
+          reason: `"${title}" was not issued to run ${entry.run_id}: an agent cannot choose an id; propose the record in the report and the engine issues it`
+        };
+    }
+    const leaked = secretsIn(entry, allowed);
+    if (leaked.length > 0) {
+      return {
+        kind: "rejected",
+        refused: true,
+        reason: `the entry looks like it contains a secret (${leaked.join(", ")}); secrets must never be written to Notion (spec \xA711.3)`
+      };
+    }
     const props = entry.properties ?? {};
     for (const [name, value] of Object.entries(props)) {
       const def = db.properties[name];
@@ -20009,6 +20752,13 @@ async function pushOutbox(projectDir, port, map, opts = {}) {
         return { kind: "rejected", reason: `unknown property "${name}" on ${db.title}` };
       if (name === LAST_WRITTEN_BY_RUN)
         return { kind: "rejected", reason: `"${name}" is stamped by ARIMA and cannot be set` };
+      if (name === "Status" && !mayWriteStatus(entry)) {
+        return {
+          kind: "rejected",
+          refused: true,
+          reason: `"Status" on ${db.title} cannot be written from the outbox except by the engine (the state machine) or init; pass --allow-status-writes, which only a human may do`
+        };
+      }
       if (def.human_only === true) {
         return {
           kind: "rejected",
@@ -20061,12 +20811,13 @@ async function pushOutbox(projectDir, port, map, opts = {}) {
         notionProps(),
         entry.content_markdown ? markdownToBlocks(entry.content_markdown) : void 0
       );
-      ownWrites.set(created.pageId, created.lastEdited);
+      const fresh2 = normalised(created.pageId, created.lastEdited, created.properties) ?? toMirrorRow(await port.getPage(created.pageId)).properties;
+      snapshots.set(created.pageId, fresh2);
       const row2 = {
         page_id: created.pageId,
         last_edited_time: created.lastEdited,
         id: title,
-        properties: { ...props, [LAST_WRITTEN_BY_RUN]: entry.run_id }
+        properties: { ...fresh2 }
       };
       mirror.rows.push(row2);
       return { kind: "applied", pageId: created.pageId };
@@ -20085,15 +20836,39 @@ async function pushOutbox(projectDir, port, map, opts = {}) {
         return { kind: "rejected", reason: `${db.title} has no Status property` };
       if (row.properties["Status"] === status) return { kind: "applied", pageId: row.page_id };
     }
-    const basis = entry.base_last_edited ?? baseline.get(entry.database)?.rows.find((r) => r.page_id === row.page_id)?.last_edited_time;
-    const current = await port.getPageLastEdited(row.page_id);
-    if (basis !== void 0 && Date.parse(current) > Date.parse(basis) && current !== ownWrites.get(row.page_id)) {
-      return { kind: "conflict", humanEditedAt: current };
+    const touched = entry.op === "update" ? Object.keys(props) : entry.op === "retire" ? ["Status"] : [];
+    if (touched.length > 0) {
+      const live = await port.getPage(row.page_id);
+      const liveProps = toMirrorRow(live).properties;
+      if (entry.op === "update" && liveProps[LAST_WRITTEN_BY_RUN] === entry.run_id) {
+        const intended = notionProps();
+        if (touched.every(
+          (n) => sameValue(
+            fromNotionValue({
+              type: db.properties[n].type,
+              ...intended[n]
+            }),
+            liveProps[n]
+          )
+        )) {
+          return { kind: "applied", pageId: row.page_id };
+        }
+      }
+      const seen = snapshots.get(row.page_id) ?? entry.base_values ?? baseline.get(entry.database)?.rows.find((r) => r.page_id === row.page_id)?.properties;
+      if (seen !== void 0) {
+        if (touched.some((n) => !sameValue(seen[n], liveProps[n]))) {
+          return { kind: "conflict", humanEditedAt: live.lastEdited };
+        }
+      } else if (
+        // No earlier copy to compare values with: fall back to the (coarse) timestamp.
+        entry.base_last_edited !== void 0 && Date.parse(live.lastEdited) > Date.parse(entry.base_last_edited)
+      ) {
+        return { kind: "conflict", humanEditedAt: live.lastEdited };
+      }
     }
     let written;
     if (entry.op === "update") {
       written = await port.updatePage(row.page_id, notionProps());
-      Object.assign(row.properties, props);
     } else if (entry.op === "append_content") {
       if (!entry.content_markdown)
         return { kind: "rejected", reason: "append_content needs content_markdown" };
@@ -20107,11 +20882,16 @@ async function pushOutbox(projectDir, port, map, opts = {}) {
         ...notionProps(),
         Status: toNotionValue(statusType, "Status", status, resolveAnywhere)
       });
-      row.properties["Status"] = plainOf(status);
     }
-    row.properties[LAST_WRITTEN_BY_RUN] = entry.run_id;
+    const fresh = normalised(row.page_id, written.lastEdited, written.properties) ?? toMirrorRow(await port.getPage(row.page_id)).properties;
+    const wrote = [...touched, LAST_WRITTEN_BY_RUN];
+    const before = snapshots.get(row.page_id) ?? baseline.get(entry.database)?.rows.find((r) => r.page_id === row.page_id)?.properties ?? {};
+    snapshots.set(row.page_id, {
+      ...before,
+      ...Object.fromEntries(wrote.map((n) => [n, fresh[n] ?? null]))
+    });
+    row.properties = { ...fresh };
     row.last_edited_time = written.lastEdited;
-    ownWrites.set(row.page_id, written.lastEdited);
     return { kind: "applied", pageId: row.page_id };
   }
 }
@@ -20158,500 +20938,20 @@ function readAlertHistory(projectDir) {
   return readEvents(projectDir).filter((e) => e.type === "budget.alert");
 }
 
-// plugins/arima/scripts/src/killswitch.ts
-import { existsSync as existsSync6, mkdirSync as mkdirSync6, readFileSync as readFileSync7, rmSync, writeFileSync as writeFileSync3 } from "node:fs";
-import path12 from "node:path";
-
-// plugins/arima/scripts/src/notion/port.ts
-var import_client = __toESM(require_src(), 1);
-
-// plugins/arima/scripts/src/lib/throttle.ts
-import { setTimeout as sleep2 } from "node:timers/promises";
-var Throttle = class {
-  constructor(minIntervalMs = 334, now = Date.now, wait = (ms) => sleep2(ms)) {
-    this.minIntervalMs = minIntervalMs;
-    this.now = now;
-    this.wait = wait;
-  }
-  minIntervalMs;
-  now;
-  wait;
-  next = 0;
-  async run(fn) {
-    const start = Math.max(this.now(), this.next);
-    this.next = start + this.minIntervalMs;
-    const delay = start - this.now();
-    if (delay > 0) await this.wait(delay);
-    return fn();
-  }
-};
-function isRateLimited(e) {
-  const err = e;
-  return err?.status === 429 || err?.code === "rate_limited";
-}
-function retryAfterMs(e) {
-  const headers = e?.headers;
-  if (headers === void 0 || headers === null) return void 0;
-  const raw = typeof headers.get === "function" ? headers.get("retry-after") : headers["retry-after"];
-  const seconds = Number(raw);
-  return Number.isFinite(seconds) && seconds >= 0 && raw !== null && raw !== void 0 ? seconds * 1e3 : void 0;
-}
-async function withBackoff(fn, o = {}) {
-  const { retries = 5, baseMs = 500, maxMs = 3e4, sleep: wait = (ms) => sleep2(ms) } = o;
-  for (let attempt = 0; ; attempt++) {
-    try {
-      return await fn();
-    } catch (e) {
-      if (!isRateLimited(e) || attempt >= retries) throw e;
-      await wait(retryAfterMs(e) ?? Math.min(maxMs, baseMs * 2 ** attempt));
-    }
-  }
-}
-
-// plugins/arima/scripts/src/notion/port.ts
-var PAUSE_TODO_TEXT = "Pause ARIMA";
-var plain2 = (rt) => (rt ?? []).map((t2) => t2.plain_text ?? "").join("");
-function toDatabaseInfo(raw) {
-  const dataSourceId = raw.data_sources?.[0]?.id;
-  if (dataSourceId === void 0) throw new Error(`database ${raw.id} has no data source`);
-  return { id: raw.id, title: plain2(raw.title), dataSourceId };
-}
-function createNotionPort(client, throttle = new Throttle(), backoff = {}) {
-  const call = (fn) => throttle.run(() => withBackoff(fn, backoff));
-  const listChildren = async (pageId) => {
-    const out = [];
-    let cursor;
-    for (; ; ) {
-      const page = await call(
-        () => client.blocks.children.list({
-          block_id: pageId,
-          page_size: 100,
-          ...cursor !== void 0 ? { start_cursor: cursor } : {}
-        })
-      );
-      for (const raw of page.results) {
-        if (raw.id === void 0 || raw.type === void 0) continue;
-        if (raw.type === "to_do" && raw.to_do) {
-          out.push({
-            id: raw.id,
-            type: "to_do",
-            text: plain2(raw.to_do.rich_text),
-            checked: raw.to_do.checked === true
-          });
-        } else if (raw.type === "paragraph") {
-          out.push({ id: raw.id, type: "paragraph", text: plain2(raw.paragraph?.rich_text) });
-        } else if (raw.type === "child_database") {
-          out.push({ id: raw.id, type: "child_database", text: raw.child_database?.title ?? "" });
-        } else {
-          out.push({ id: raw.id, type: raw.type, text: "" });
-        }
-      }
-      if (!page.has_more || page.next_cursor === null) return out;
-      cursor = page.next_cursor;
-    }
-  };
-  const getDataSourceProperties = async (dataSourceId) => {
-    const raw = await call(
-      () => client.dataSources.retrieve({ data_source_id: dataSourceId })
-    );
-    const out = {};
-    for (const [name, p] of Object.entries(raw.properties ?? {})) {
-      const info = { id: p.id, name: p.name ?? name, type: p.type };
-      const opts = p.select?.options ?? p.multi_select?.options;
-      if (opts) info.options = opts.map((o) => o.name);
-      if (p.relation?.data_source_id) info.relationTarget = p.relation.data_source_id;
-      out[name] = info;
-    }
-    return out;
-  };
-  return {
-    listChildren,
-    async listTodoBlocks(pageId) {
-      return (await listChildren(pageId)).filter((b) => b.type === "to_do").map((b) => ({ id: b.id, text: b.text, checked: b.checked === true }));
-    },
-    async setTodoChecked(blockId, checked) {
-      await call(() => client.blocks.update({ block_id: blockId, to_do: { checked } }));
-    },
-    async appendTodo(pageId, text2, checked) {
-      const res = await call(
-        () => client.blocks.children.append({
-          block_id: pageId,
-          children: [
-            {
-              object: "block",
-              type: "to_do",
-              to_do: { rich_text: [{ type: "text", text: { content: text2 } }], checked }
-            }
-          ]
-        })
-      );
-      const id = res.results[0]?.id;
-      if (id === void 0) throw new Error("Notion did not return the created block");
-      return id;
-    },
-    async appendParagraph(pageId, text2) {
-      const res = await call(
-        () => client.blocks.children.append({
-          block_id: pageId,
-          children: [
-            {
-              object: "block",
-              type: "paragraph",
-              paragraph: { rich_text: [{ type: "text", text: { content: text2 } }] }
-            }
-          ]
-        })
-      );
-      const id = res.results[0]?.id;
-      if (id === void 0) throw new Error("Notion did not return the created block");
-      return id;
-    },
-    async createDatabase(parentPageId, title, properties) {
-      const raw = await call(
-        () => client.databases.create({
-          parent: { type: "page_id", page_id: parentPageId },
-          title: [{ type: "text", text: { content: title } }],
-          is_inline: true,
-          initial_data_source: { properties }
-        })
-      );
-      return toDatabaseInfo({ ...raw, title: raw.title ?? [{ plain_text: title }] });
-    },
-    async getDatabase(databaseId) {
-      const raw = await call(
-        () => client.databases.retrieve({ database_id: databaseId })
-      );
-      return toDatabaseInfo(raw);
-    },
-    getDataSourceProperties,
-    async addProperties(dataSourceId, properties) {
-      const existing = await getDataSourceProperties(dataSourceId);
-      const clash = Object.keys(properties).filter((n) => n in existing);
-      if (clash.length > 0) {
-        throw new Error(`refusing to alter existing Notion properties: ${clash.join(", ")}`);
-      }
-      await call(() => client.dataSources.update({ data_source_id: dataSourceId, properties }));
-    },
-    async queryRows(dataSourceId) {
-      const rows = [];
-      let cursor;
-      for (; ; ) {
-        const page = await call(
-          () => client.dataSources.query({
-            data_source_id: dataSourceId,
-            page_size: 100,
-            ...cursor !== void 0 ? { start_cursor: cursor } : {}
-          })
-        );
-        for (const raw of page.results) {
-          if (raw.object !== void 0 && raw.object !== "page") continue;
-          rows.push({
-            pageId: raw.id,
-            lastEdited: raw.last_edited_time,
-            properties: raw.properties ?? {}
-          });
-        }
-        if (!page.has_more || page.next_cursor === null) return rows;
-        cursor = page.next_cursor;
-      }
-    },
-    async getPageLastEdited(pageId) {
-      const raw = await call(() => client.pages.retrieve({ page_id: pageId }));
-      return raw.last_edited_time;
-    },
-    async createPage(dataSourceId, properties, children) {
-      const first = children?.slice(0, 100);
-      const raw = await call(
-        () => client.pages.create({
-          parent: { type: "data_source_id", data_source_id: dataSourceId },
-          properties,
-          ...first && first.length > 0 ? { children: first } : {}
-        })
-      );
-      let lastEdited = raw.last_edited_time;
-      for (let i = 100; children && i < children.length; i += 100) {
-        const rest = children.slice(i, i + 100);
-        await call(() => client.blocks.children.append({ block_id: raw.id, children: rest }));
-      }
-      if (children && children.length > 100) lastEdited = await this.getPageLastEdited(raw.id);
-      return { pageId: raw.id, lastEdited };
-    },
-    async updatePage(pageId, properties) {
-      const raw = await call(() => client.pages.update({ page_id: pageId, properties }));
-      return { lastEdited: raw.last_edited_time };
-    },
-    async appendChildren(pageId, blocks) {
-      for (let i = 0; i < blocks.length; i += 100) {
-        const chunk = blocks.slice(i, i + 100);
-        await call(() => client.blocks.children.append({ block_id: pageId, children: chunk }));
-      }
-    }
-  };
-}
-function createNotionPortFromToken(token) {
-  const client = new import_client.Client({ auth: token, retry: false });
-  return createNotionPort(client);
-}
-
-// plugins/arima/scripts/src/killswitch.ts
-function pauseFile(projectDir) {
-  return path12.join(projectDir, ".arima", "PAUSE");
-}
-async function checkKillSwitch(projectDir, notion) {
-  const file = existsSync6(pauseFile(projectDir));
-  let remote = "unchecked";
-  let detail = "";
-  if (notion !== null) {
-    try {
-      const todos = await notion.port.listTodoBlocks(notion.rootPageId);
-      const sw = todos.find((t2) => t2.text.trim() === PAUSE_TODO_TEXT);
-      if (sw === void 0) {
-        remote = "missing";
-        detail = `no "${PAUSE_TODO_TEXT}" to-do found on the Notion root page`;
-      } else {
-        remote = sw.checked;
-      }
-    } catch (e) {
-      remote = "unreachable";
-      detail = `Notion unreachable (${e instanceof Error ? e.message : String(e)}); using the PAUSE file only`;
-    }
-  }
-  const on = file || remote === true;
-  if (on) {
-    const reasons = [
-      file ? "PAUSE file present" : "",
-      remote === true ? "Notion switch is on" : ""
-    ];
-    detail = reasons.filter(Boolean).join(" and ");
-    if (file) {
-      const first = readFileSync7(pauseFile(projectDir), "utf8").split("\n")[0] ?? "";
-      if (first.trim() !== "") detail += ` (${first.trim()})`;
-    }
-  }
-  return { on, file, notion: remote, detail };
-}
-
-// plugins/arima/scripts/src/runlock.ts
-import { existsSync as existsSync7, mkdirSync as mkdirSync7, readFileSync as readFileSync8, rmSync as rmSync2, writeFileSync as writeFileSync4 } from "node:fs";
-import { hostname } from "node:os";
-import path13 from "node:path";
-function runLockFile(projectDir) {
-  return path13.join(projectDir, ".arima", "run.lock");
-}
-function alive(pid) {
-  try {
-    process.kill(pid, 0);
-    return true;
-  } catch (e) {
-    return e.code === "EPERM";
-  }
-}
-function lockStatus(projectDir, staleAfterMs, now = Date.now()) {
-  const file = runLockFile(projectDir);
-  if (!existsSync7(file)) return { held: false, stale: false };
-  let lock;
-  try {
-    lock = JSON.parse(readFileSync8(file, "utf8"));
-  } catch {
-    return { held: false, stale: true };
-  }
-  const age = now - Date.parse(lock.started_at);
-  const sameHost = lock.host === hostname();
-  const dead = sameHost && !alive(lock.pid);
-  if (dead || !(age < staleAfterMs)) return { held: false, stale: true, lock };
-  return { held: true, stale: false, lock };
-}
-function acquireRunLock(projectDir, runId, staleAfterMs) {
-  const file = runLockFile(projectDir);
-  mkdirSync7(path13.dirname(file), { recursive: true });
-  const body = {
-    pid: process.pid,
-    run_id: runId,
-    host: hostname(),
-    started_at: (/* @__PURE__ */ new Date()).toISOString()
-  };
-  for (let attempt = 0; attempt < 2; attempt++) {
-    try {
-      writeFileSync4(file, `${JSON.stringify(body)}
-`, { flag: "wx" });
-      return true;
-    } catch (e) {
-      if (e.code !== "EEXIST") throw e;
-      const status = lockStatus(projectDir, staleAfterMs);
-      if (status.held) return false;
-      rmSync2(file, { force: true });
-    }
-  }
-  return false;
-}
-function releaseRunLock(projectDir, runId) {
-  const file = runLockFile(projectDir);
-  if (!existsSync7(file)) return false;
-  try {
-    const lock = JSON.parse(readFileSync8(file, "utf8"));
-    if (lock.run_id !== runId) return false;
-  } catch {
-  }
-  rmSync2(file, { force: true });
-  return true;
-}
-
-// plugins/arima/scripts/src/preflight.ts
-var PREFLIGHT_EXIT = {
-  ok: 0,
-  usage: 2,
-  config: 10,
-  locked: 11,
-  killSwitch: 12,
-  budget: 13,
-  env: 14
-};
-var CODE = {
-  config: PREFLIGHT_EXIT.config,
-  kill_switch: PREFLIGHT_EXIT.killSwitch,
-  run_lock: PREFLIGHT_EXIT.locked,
-  budget: PREFLIGHT_EXIT.budget,
-  env: PREFLIGHT_EXIT.env
-};
-var localDate = (d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
-async function runPreflight(opts) {
-  const env = opts.env ?? process.env;
-  const now = opts.now ?? /* @__PURE__ */ new Date();
-  const today = localDate(now);
-  const checks = [];
-  const cfg = validateProject(opts.projectDir);
-  checks.push({
-    check: "config",
-    ok: cfg.ok,
-    detail: cfg.ok ? "arima.yaml and team.yaml are valid" : `${cfg.errors.length} error(s): ${cfg.errors[0]?.message ?? ""}`
-  });
-  const arima = cfg.arima;
-  const notionTarget = opts.notion && arima ? { port: opts.notion, rootPageId: arima.notion.root_page_id } : null;
-  const ks = await checkKillSwitch(opts.projectDir, notionTarget);
-  const ksCheck = {
-    check: "kill_switch",
-    ok: !ks.on,
-    detail: ks.on ? `paused: ${ks.detail}` : "kill switch is off"
-  };
-  if (!ks.on && ks.detail !== "") ksCheck.warning = ks.detail;
-  if (!ks.on && ks.notion === "unchecked" && opts.notion === null) {
-    ksCheck.warning = "Notion kill switch not checked; only the PAUSE file was consulted";
-  }
-  checks.push(ksCheck);
-  const staleMs = ((arima?.schedule.max_run_minutes ?? 240) + 30) * 6e4;
-  const lock = lockStatus(opts.projectDir, staleMs, now.getTime());
-  checks.push({
-    check: "run_lock",
-    ok: !lock.held,
-    detail: lock.held ? `another run holds .arima/run.lock (run ${lock.lock?.run_id ?? "?"}, pid ${lock.lock?.pid ?? "?"})` : lock.stale ? "a stale run.lock from a dead run will be replaced" : "no other run holds the lock"
-  });
-  if (arima) {
-    const limits = {
-      projectCap: arima.budget.project_cap,
-      dailyCap: arima.budget.daily_cap,
-      alertThresholds: arima.budget.alert_thresholds
-    };
-    const status = budgetStatus(opts.projectDir, limits, today);
-    const check2 = {
-      check: "budget",
-      ok: status.ok,
-      detail: status.ok ? `project ${status.projectSpent}/${status.projectCap}, today ${status.daySpent}/${status.dailyCap} (est. USD)` : `budget exhausted: ${status.exhausted.join(" and ")} (project ${status.projectSpent}/${status.projectCap}, today ${status.daySpent}/${status.dailyCap})`
-    };
-    for (const a of newBudgetAlerts(
-      status,
-      limits.alertThresholds,
-      readAlertHistory(opts.projectDir),
-      today
-    )) {
-      await appendEvent(opts.projectDir, {
-        type: "budget.alert",
-        actor: "system",
-        data: { scope: a.scope, threshold: a.threshold, spent: a.spent, cap: a.cap, date: today }
-      });
-      check2.warning = `${a.scope} budget passed ${Math.round(a.threshold * 100)}%`;
-    }
-    checks.push(check2);
-  }
-  if (arima) {
-    const required = [arima.notion.token_env];
-    if (arima.github.machine_token_env) required.push(arima.github.machine_token_env);
-    if (arima.telemetry?.otel_enabled && arima.telemetry.endpoint_env)
-      required.push(arima.telemetry.endpoint_env);
-    if (arima.runtime.auth === "api_key") required.push("ANTHROPIC_API_KEY");
-    const missing = required.filter((n) => !env[n]);
-    checks.push({
-      check: "env",
-      ok: missing.length === 0,
-      detail: missing.length === 0 ? `all ${required.length} required variables are set` : `missing environment variable(s): ${missing.join(", ")}`
-    });
-  }
-  const failed = checks.filter((c) => !c.ok);
-  for (const f of failed) {
-    await appendEvent(opts.projectDir, {
-      type: "preflight.fail",
-      actor: "system",
-      data: { check: f.check, detail: f.detail }
-    });
-  }
-  const exitCode = failed[0] ? CODE[failed[0].check] : PREFLIGHT_EXIT.ok;
-  let acquired = false;
-  if (failed.length === 0 && opts.acquireFor !== void 0) {
-    acquired = acquireRunLock(opts.projectDir, opts.acquireFor, staleMs);
-    if (!acquired) {
-      const c = {
-        check: "run_lock",
-        ok: false,
-        detail: "lost the race for .arima/run.lock"
-      };
-      checks.push(c);
-      await appendEvent(opts.projectDir, {
-        type: "preflight.fail",
-        actor: "system",
-        data: { check: c.check, detail: c.detail }
-      });
-      return { ok: false, exitCode: PREFLIGHT_EXIT.locked, checks, acquired };
-    }
-  }
-  return { ok: failed.length === 0, exitCode, checks, acquired };
-}
-
-// plugins/arima/scripts/src/runid.ts
-import { existsSync as existsSync8, mkdirSync as mkdirSync8, readFileSync as readFileSync9 } from "node:fs";
-import path14 from "node:path";
-var pad = (n, w = 2) => String(n).padStart(w, "0");
-async function issueRunId(projectDir, now = /* @__PURE__ */ new Date()) {
-  const day = `${now.getFullYear()}${pad(now.getMonth() + 1)}${pad(now.getDate())}`;
-  const hhmm = `${pad(now.getHours())}${pad(now.getMinutes())}`;
-  const file = path14.join(projectDir, ".arima", "state", "run-seq.json");
-  mkdirSync8(path14.dirname(file), { recursive: true });
-  return withFileLock(`${file}.lock`, () => {
-    let state = { day, last: 0 };
-    if (existsSync8(file)) {
-      const parsed = JSON.parse(readFileSync9(file, "utf8"));
-      if (parsed.day === day && Number.isInteger(parsed.last))
-        state = { day, last: parsed.last };
-    }
-    state.last += 1;
-    writeFileAtomic(file, `${JSON.stringify(state)}
-`);
-    return `r-${day}-${hhmm}-${pad(state.last)}`;
-  });
-}
-
 // plugins/arima/scripts/src/state.ts
 import { execFileSync } from "node:child_process";
 import {
   appendFileSync as appendFileSync2,
   cpSync,
   existsSync as existsSync9,
-  mkdirSync as mkdirSync9,
+  mkdirSync as mkdirSync8,
   mkdtempSync,
   readFileSync as readFileSync10,
   realpathSync,
-  readdirSync as readdirSync3,
-  rmSync as rmSync3,
+  readdirSync as readdirSync4,
+  rmSync as rmSync2,
   statSync as statSync2,
-  writeFileSync as writeFileSync5
+  writeFileSync as writeFileSync4
 } from "node:fs";
 import { tmpdir } from "node:os";
 import path15 from "node:path";
@@ -20660,7 +20960,7 @@ var StateError = class extends Error {
 var DEFAULT_BRANCH = "arima-state";
 var STATE_GITIGNORE = "*.lock\n*.tmp\nrun.lock\n";
 var STATE_GITATTRIBUTES = "* -text\n";
-var MAX_SCAN_BYTES = 5 * 1024 * 1024;
+var MAX_SCAN_BYTES = 64 * 1024 * 1024;
 function git(cwd, args, input) {
   try {
     return execFileSync("git", args, {
@@ -20718,7 +21018,7 @@ function resolve(o) {
 function excludeArima(repo) {
   const rel2 = git(repo, ["rev-parse", "--git-path", "info/exclude"]);
   const file = path15.resolve(repo, rel2);
-  mkdirSync9(path15.dirname(file), { recursive: true });
+  mkdirSync8(path15.dirname(file), { recursive: true });
   const current = existsSync9(file) ? readFileSync10(file, "utf8") : "";
   if (!current.split(/\r?\n/).includes("/.arima/")) {
     appendFileSync2(file, `${current.endsWith("\n") || current === "" ? "" : "\n"}/.arima/
@@ -20726,7 +21026,7 @@ function excludeArima(repo) {
   }
 }
 var isWorktree = (stateDir) => existsSync9(path15.join(stateDir, ".git"));
-var isEmptyDir = (dir) => !existsSync9(dir) || readdirSync3(dir).length === 0;
+var isEmptyDir = (dir) => !existsSync9(dir) || readdirSync4(dir).length === 0;
 function localBranchExists(r) {
   return gitOk(r.repo, ["show-ref", "--verify", "--quiet", `refs/heads/${r.branch}`]);
 }
@@ -20770,7 +21070,7 @@ function ensureWorktree(r) {
   if (hasFiles) {
     aside = mkdtempSync(path15.join(tmpdir(), "arima-state-"));
     cpSync(r.stateDir, aside, { recursive: true });
-    rmSync3(r.stateDir, { recursive: true, force: true });
+    rmSync2(r.stateDir, { recursive: true, force: true });
   }
   try {
     if (!localBranchExists(r)) {
@@ -20779,28 +21079,34 @@ function ensureWorktree(r) {
     git(r.repo, ["worktree", "add", r.stateDir, r.branch]);
   } finally {
     if (aside !== void 0) {
-      mkdirSync9(r.stateDir, { recursive: true });
+      mkdirSync8(r.stateDir, { recursive: true });
       cpSync(aside, r.stateDir, { recursive: true, force: false, errorOnExist: false });
-      rmSync3(aside, { recursive: true, force: true });
+      rmSync2(aside, { recursive: true, force: true });
     }
   }
 }
 function ensureStateFiles(r) {
   const write = (name, body) => {
     const file = path15.join(r.stateDir, name);
-    if (!existsSync9(file)) writeFileSync5(file, body, "utf8");
+    if (!existsSync9(file)) writeFileSync4(file, body, "utf8");
   };
   write(".gitignore", STATE_GITIGNORE);
   write(".gitattributes", STATE_GITATTRIBUTES);
 }
 function scanStaged(r) {
   const names = git(r.stateDir, ["diff", "--cached", "--name-only", "--diff-filter=AM"]).split("\n").filter(Boolean);
+  const allowed = readAllowlistFile(path15.join(r.stateDir, "secret-allowlist.txt"));
   const bad2 = [];
   for (const name of names) {
     const file = path15.join(r.stateDir, name);
     try {
-      if (statSync2(file).size > MAX_SCAN_BYTES) continue;
-      if (findSecrets(readFileSync10(file, "utf8")).length > 0) bad2.push(name);
+      if (statSync2(file).size > MAX_SCAN_BYTES) {
+        bad2.push({ file: name, rule: "file too large to scan for secrets" });
+        continue;
+      }
+      for (const f of scanSecrets(readFileSync10(file, "utf8"), allowed)) {
+        bad2.push({ file: name, rule: f.rule, fingerprint: f.fingerprint });
+      }
     } catch {
     }
   }
@@ -20822,13 +21128,18 @@ async function pushState(o) {
   git(r.stateDir, ["add", "-A"]);
   const staged = git(r.stateDir, ["diff", "--cached", "--name-only"]).split("\n").filter(Boolean);
   if (staged.length === 0) {
-    return { committed: false, pushed: false, files: 0 };
+    return { committed: false, pushed: false, files: 0, warnings: [] };
   }
   const bad2 = scanStaged(r);
   if (bad2.length > 0) {
     git(r.stateDir, ["reset", "-q"]);
+    const lines = bad2.map(
+      (p) => `  ${p.file}: ${p.rule}${p.fingerprint ? ` (${p.fingerprint})` : ""}`
+    );
     throw new StateError(
-      `refusing to commit state: ${bad2.length} file(s) look like they contain a secret: ${bad2.join(", ")}`
+      `refusing to commit state: ${bad2.length} finding(s) that look like secrets:
+${lines.join("\n")}
+If you have reviewed a finding and it is NOT a secret, add its fingerprint on its own line to .arima/secret-allowlist.txt and run again.`
     );
   }
   git(r.stateDir, [
@@ -20840,15 +21151,337 @@ async function pushState(o) {
   ]);
   const commit = git(r.stateDir, ["rev-parse", "HEAD"]);
   let pushed = false;
+  const warnings = [];
   if (r.hasRemote) {
+    const privacy = checkRemotePrivacy(r, o);
+    if (privacy.kind === "public" && o.allowPublic !== true) {
+      throw new StateError(
+        `refusing to push state: ${privacy.slug} is a PUBLIC GitHub repository, and the state branch holds your Notion data (requirements, client names, costs). Make the repository private, or set github.allow_public_state: true in arima.yaml if you really mean it.`
+      );
+    }
+    if (privacy.kind === "unknown" && o.allowPublic !== true) {
+      throw new StateError(
+        `refusing to push state: could not check whether ${privacy.slug} is private (is the gh CLI installed and signed in, and is the remote a normal github.com repository?). The state branch holds your Notion data, so ARIMA refuses when it cannot be sure. Sign in with 'gh auth login' and run again, or set github.allow_public_state: true in arima.yaml if you accept the risk.`
+      );
+    }
     git(r.stateDir, ["push", "--set-upstream", r.remote, `${r.branch}:${r.branch}`]);
     pushed = true;
   }
-  return { committed: true, pushed, commit, files: staged.length };
+  return { committed: true, pushed, commit, files: staged.length, warnings };
+}
+function remotePauseFlag(o) {
+  let r;
+  try {
+    r = resolve(o);
+  } catch {
+    return void 0;
+  }
+  if (!r.hasRemote) return void 0;
+  const ref = `refs/remotes/${r.remote}/${r.branch}`;
+  try {
+    execFileSync("git", ["fetch", "--quiet", r.remote, `+refs/heads/${r.branch}:${ref}`], {
+      cwd: r.repo,
+      stdio: ["ignore", "ignore", "pipe"],
+      timeout: 15e3,
+      env: { ...process.env, GIT_TERMINAL_PROMPT: "0" }
+    });
+  } catch (e) {
+    const msg = String(e.stderr ?? "");
+    if (!/couldn't find remote ref/i.test(msg)) return void 0;
+    return false;
+  }
+  return gitOk(r.repo, ["cat-file", "-e", `${ref}:PAUSE`]);
+}
+var SLUG_PART = /^[A-Za-z0-9_][A-Za-z0-9._-]*$/;
+function githubSlug(url2) {
+  const m = /^(?:https?:\/\/(?:[^@/]+@)?github\.com\/|git@github\.com:|ssh:\/\/git@github\.com\/)([^/\s]+)\/([^/\s]+?)(?:\.git)?\/?$/i.exec(
+    url2.trim()
+  );
+  if (!m) return void 0;
+  const owner = m[1];
+  const repo = m[2];
+  if (!SLUG_PART.test(owner) || !SLUG_PART.test(repo) || repo === "." || repo === "..") {
+    return void 0;
+  }
+  return { owner, repo };
+}
+var MENTIONS_GITHUB = /(^|[/@:])github\.com[/:]/i;
+function checkRemotePrivacy(r, o) {
+  let url2;
+  try {
+    url2 = git(r.repo, ["config", "--get", "remote." + r.remote + ".url"]);
+  } catch {
+    return { kind: "not-github" };
+  }
+  const slug = githubSlug(url2);
+  if (slug === void 0) {
+    return MENTIONS_GITHUB.test(url2) ? { kind: "unknown", slug: "the remote" } : { kind: "not-github" };
+  }
+  const name = `${slug.owner}/${slug.repo}`;
+  let priv;
+  if (o.isPrivate) {
+    priv = o.isPrivate(slug.owner, slug.repo);
+  } else {
+    try {
+      const out = execFileSync(
+        "gh",
+        ["repo", "view", name, "--json", "isPrivate", "--jq", ".isPrivate"],
+        { encoding: "utf8", timeout: 2e4, stdio: ["ignore", "pipe", "ignore"] }
+      ).trim();
+      priv = out === "true" ? true : out === "false" ? false : void 0;
+    } catch {
+      priv = void 0;
+    }
+  }
+  return { kind: priv === void 0 ? "unknown" : priv ? "private" : "public", slug: name };
+}
+
+// plugins/arima/scripts/src/runlock.ts
+import { existsSync as existsSync10, mkdirSync as mkdirSync9, readFileSync as readFileSync11, rmSync as rmSync3, writeFileSync as writeFileSync5 } from "node:fs";
+import { hostname } from "node:os";
+import path16 from "node:path";
+function runLockFile(projectDir) {
+  return path16.join(projectDir, ".arima", "run.lock");
+}
+function alive(pid) {
+  try {
+    process.kill(pid, 0);
+    return true;
+  } catch (e) {
+    return e.code === "EPERM";
+  }
+}
+function lockStatus(projectDir, staleAfterMs, now = Date.now()) {
+  const file = runLockFile(projectDir);
+  if (!existsSync10(file)) return { held: false, stale: false };
+  let lock;
+  try {
+    lock = JSON.parse(readFileSync11(file, "utf8"));
+  } catch {
+    return { held: false, stale: true };
+  }
+  const age = now - Date.parse(lock.started_at);
+  const sameHost = lock.host === hostname();
+  const dead = sameHost && !alive(lock.pid);
+  if (dead || !(age < staleAfterMs)) return { held: false, stale: true, lock };
+  return { held: true, stale: false, lock };
+}
+function acquireRunLock(projectDir, runId, staleAfterMs) {
+  const file = runLockFile(projectDir);
+  mkdirSync9(path16.dirname(file), { recursive: true });
+  const body = {
+    pid: process.pid,
+    run_id: runId,
+    host: hostname(),
+    started_at: (/* @__PURE__ */ new Date()).toISOString()
+  };
+  for (let attempt = 0; attempt < 2; attempt++) {
+    try {
+      writeFileSync5(file, `${JSON.stringify(body)}
+`, { flag: "wx" });
+      return true;
+    } catch (e) {
+      if (e.code !== "EEXIST") throw e;
+      const status = lockStatus(projectDir, staleAfterMs);
+      if (status.held) return false;
+      rmSync3(file, { force: true });
+    }
+  }
+  return false;
+}
+function releaseRunLock(projectDir, runId) {
+  const file = runLockFile(projectDir);
+  if (!existsSync10(file)) return false;
+  try {
+    const lock = JSON.parse(readFileSync11(file, "utf8"));
+    if (lock.run_id !== runId) return false;
+  } catch {
+  }
+  rmSync3(file, { force: true });
+  return true;
+}
+
+// plugins/arima/scripts/src/preflight.ts
+var PREFLIGHT_EXIT = {
+  ok: 0,
+  usage: 2,
+  config: 10,
+  locked: 11,
+  killSwitch: 12,
+  budget: 13,
+  env: 14
+};
+var CODE = {
+  config: PREFLIGHT_EXIT.config,
+  kill_switch: PREFLIGHT_EXIT.killSwitch,
+  run_lock: PREFLIGHT_EXIT.locked,
+  budget: PREFLIGHT_EXIT.budget,
+  env: PREFLIGHT_EXIT.env
+};
+var localDate = (d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+async function runPreflight(opts) {
+  const env = opts.env ?? process.env;
+  const now = opts.now ?? /* @__PURE__ */ new Date();
+  const today = localDate(now);
+  const checks = [];
+  const cfg = validateProject(opts.projectDir);
+  checks.push({
+    check: "config",
+    ok: cfg.ok,
+    detail: cfg.ok ? "arima.yaml and team.yaml are valid" : `${cfg.errors.length} error(s): ${cfg.errors[0]?.message ?? ""}`
+  });
+  const arima = cfg.arima;
+  const notionTarget = opts.notion && arima ? { port: opts.notion, rootPageId: arima.notion.root_page_id } : null;
+  const stateBranch = arima;
+  const statePause = opts.statePause ?? (() => Promise.resolve(
+    remotePauseFlag({
+      projectDir: opts.projectDir,
+      ...stateBranch?.github?.state_branch ? { branch: stateBranch.github.state_branch } : {},
+      ...stateBranch?.github?.default_branch ? { defaultBranch: stateBranch.github.default_branch } : {}
+    })
+  ));
+  const ks = await checkKillSwitch(opts.projectDir, notionTarget, statePause);
+  const ksCheck = {
+    check: "kill_switch",
+    ok: !ks.on,
+    detail: ks.on ? `paused: ${ks.detail}` : "kill switch is off"
+  };
+  if (!ks.on && ks.detail !== "") ksCheck.warning = ks.detail;
+  if (!ks.on && ks.notion === "unchecked" && opts.notion === null) {
+    ksCheck.warning = "Notion kill switch not checked; only the PAUSE file was consulted";
+  }
+  checks.push(ksCheck);
+  const staleMs = ((arima?.schedule.max_run_minutes ?? 240) + 30) * 6e4;
+  const lock = lockStatus(opts.projectDir, staleMs, now.getTime());
+  checks.push({
+    check: "run_lock",
+    ok: !lock.held,
+    detail: lock.held ? `another run holds .arima/run.lock (run ${lock.lock?.run_id ?? "?"}, pid ${lock.lock?.pid ?? "?"})` : lock.stale ? "a stale run.lock from a dead run will be replaced" : "no other run holds the lock"
+  });
+  if (arima) {
+    const limits = {
+      projectCap: arima.budget.project_cap,
+      dailyCap: arima.budget.daily_cap,
+      alertThresholds: arima.budget.alert_thresholds
+    };
+    const status = budgetStatus(opts.projectDir, limits, today);
+    const check2 = {
+      check: "budget",
+      ok: status.ok,
+      detail: status.ok ? `project ${status.projectSpent}/${status.projectCap}, today ${status.daySpent}/${status.dailyCap} (est. USD)` : `budget exhausted: ${status.exhausted.join(" and ")} (project ${status.projectSpent}/${status.projectCap}, today ${status.daySpent}/${status.dailyCap})`
+    };
+    for (const a of newBudgetAlerts(
+      status,
+      limits.alertThresholds,
+      readAlertHistory(opts.projectDir),
+      today
+    )) {
+      if (opts.record !== false)
+        await appendEvent(opts.projectDir, {
+          type: "budget.alert",
+          actor: "system",
+          data: { scope: a.scope, threshold: a.threshold, spent: a.spent, cap: a.cap, date: today }
+        });
+      check2.warning = `${a.scope} budget passed ${Math.round(a.threshold * 100)}%`;
+    }
+    checks.push(check2);
+  }
+  if (arima) {
+    const required = [arima.notion.token_env];
+    if ((opts.needs?.github ?? true) && arima.github.machine_token_env)
+      required.push(arima.github.machine_token_env);
+    if (arima.telemetry?.otel_enabled && arima.telemetry.endpoint_env)
+      required.push(arima.telemetry.endpoint_env);
+    if (arima.runtime.auth === "api_key") required.push("ANTHROPIC_API_KEY");
+    const missing = required.filter((n) => !env[n]);
+    checks.push({
+      check: "env",
+      ok: missing.length === 0,
+      detail: missing.length === 0 ? `all ${required.length} required variables are set` : `missing environment variable(s): ${missing.join(", ")}`
+    });
+  }
+  const failed = checks.filter((c) => !c.ok);
+  for (const f of failed) {
+    if (opts.record !== false)
+      await appendEvent(opts.projectDir, {
+        type: "preflight.fail",
+        actor: "system",
+        data: { check: f.check, detail: f.detail }
+      });
+  }
+  const exitCode = failed[0] ? CODE[failed[0].check] : PREFLIGHT_EXIT.ok;
+  let acquired = false;
+  if (failed.length === 0 && opts.acquireFor !== void 0) {
+    acquired = acquireRunLock(opts.projectDir, opts.acquireFor, staleMs);
+    if (!acquired) {
+      const c = {
+        check: "run_lock",
+        ok: false,
+        detail: "lost the race for .arima/run.lock"
+      };
+      checks.push(c);
+      if (opts.record !== false)
+        await appendEvent(opts.projectDir, {
+          type: "preflight.fail",
+          actor: "system",
+          data: { check: c.check, detail: c.detail }
+        });
+      return { ok: false, exitCode: PREFLIGHT_EXIT.locked, checks, acquired };
+    }
+  }
+  return { ok: failed.length === 0, exitCode, checks, acquired };
+}
+
+// plugins/arima/scripts/src/templates.ts
+import { readFileSync as readFileSync12 } from "node:fs";
+import path17 from "node:path";
+function renderTemplate(name, vars, root = pluginRoot()) {
+  const text2 = readFileSync12(path17.join(root, "templates", `${name}.md`), "utf8");
+  const used = /* @__PURE__ */ new Set();
+  const out = text2.replace(/\{\{([a-z_]+)\}\}/g, (_m, key) => {
+    const v = vars[key];
+    if (v === void 0) throw new Error(`template ${name}: no value for {{${key}}}`);
+    used.add(key);
+    return v;
+  });
+  const extra = Object.keys(vars).filter((k) => !used.has(k));
+  if (extra.length > 0) throw new Error(`template ${name}: unused values ${extra.join(", ")}`);
+  return out;
+}
+
+// plugins/arima/scripts/src/runid.ts
+import { existsSync as existsSync11, mkdirSync as mkdirSync10, readFileSync as readFileSync13 } from "node:fs";
+import path18 from "node:path";
+var pad = (n, w = 2) => String(n).padStart(w, "0");
+async function issueRunId(projectDir, now = /* @__PURE__ */ new Date()) {
+  const day = `${now.getFullYear()}${pad(now.getMonth() + 1)}${pad(now.getDate())}`;
+  const hhmm = `${pad(now.getHours())}${pad(now.getMinutes())}`;
+  const file = path18.join(projectDir, ".arima", "state", "run-seq.json");
+  mkdirSync10(path18.dirname(file), { recursive: true });
+  return withFileLock(`${file}.lock`, () => {
+    let state = { day, last: 0 };
+    if (existsSync11(file)) {
+      const parsed = JSON.parse(readFileSync13(file, "utf8"));
+      if (parsed.day === day && Number.isInteger(parsed.last))
+        state = { day, last: parsed.last };
+    }
+    state.last += 1;
+    writeFileAtomic(file, `${JSON.stringify(state)}
+`);
+    return `r-${day}-${hhmm}-${pad(state.last)}`;
+  });
 }
 
 // plugins/arima/scripts/src/init.ts
-var INIT_EXIT = { ok: 0, usage: 2, briefGaps: 3, mapFailed: 4, pushFailed: 5 };
+var INIT_EXIT = {
+  ok: 0,
+  usage: 2,
+  briefGaps: 3,
+  mapFailed: 4,
+  pushFailed: 5,
+  briefSecret: 6,
+  stateNotSaved: 7
+};
 var fmt = (n) => `$${n}`;
 function charter(name, arima, team, brief) {
   const a = arima;
@@ -20856,85 +21489,41 @@ function charter(name, arima, team, brief) {
     const who = r.type === "human" ? `human: ${team.people[r.person ?? ""]?.name ?? r.person}` : `agent${r.count ? ` x${r.count}` : ""}`;
     return `- ${role}: ${who}`;
   });
-  return [
-    `# Charter: ${name}`,
-    "",
-    `Project ${a.project.key} for ${a.project.client}. Profile: ${a.profile}. Skeleton drafted by the orchestrator from the brief; the sponsor reviews it at G0.`,
-    "",
-    "## Scope",
-    "### In scope (must-have features)",
-    brief["Must-have features"] ?? "None",
-    "### Out of scope",
-    brief["Out of scope"] ?? "None",
-    "",
-    "## Goals and KPIs",
-    brief["Goals and KPIs"] ?? "None",
-    "",
-    "## Rough milestones",
-    "To be proposed after G0. Milestones of 8-12 points are planned in Phase 2.",
-    "",
-    "## Budget plan",
-    `Project cap ${fmt(a.budget.project_cap)} (estimated consumption). See the Budget plan document.`,
-    "",
-    "## Risks",
-    brief["Known risks"] ?? "None",
-    "",
-    "## Roles and responsibilities (from team.yaml)",
-    ...raci,
-    ""
-  ].join("\n");
+  return renderTemplate("charter", {
+    name,
+    key: a.project.key,
+    client: a.project.client,
+    profile: a.profile,
+    in_scope: brief["Must-have features"] ?? "None",
+    out_of_scope: brief["Out of scope"] ?? "None",
+    goals: brief["Goals and KPIs"] ?? "None",
+    roles: raci.join("\n"),
+    project_cap: fmt(a.budget.project_cap),
+    constraints: brief["Constraints"] ?? "None",
+    risks: brief["Known risks"] ?? "None"
+  });
 }
 function budgetPlan(arima) {
   const b = arima.budget;
   const sizes = b.by_size ?? { S: 1, M: 3, L: 6 };
-  return [
-    "# Budget plan",
-    "",
-    `All amounts are estimated USD consumption, not money spent (spec \xA74.4, \xA713.6).`,
-    "",
-    "## Caps",
-    `- Project cap: ${fmt(b.project_cap)}`,
-    `- Daily cap: ${fmt(b.daily_cap)}`,
-    `- Per-run cap: ${fmt(b.per_run_cap)}`,
-    `- Default per story: ${fmt(b.per_story_default)}`,
-    "",
-    "## Story budgets by size",
-    ...Object.entries(sizes).map(([k, v]) => `- ${k}: ${fmt(v)}`),
-    "",
-    "## Alerts",
-    `Alerts at ${b.alert_thresholds.map((t2) => `${Math.round(t2 * 100)}%`).join(", ")} of each budget.`,
-    "",
-    "## Infrastructure and hosting",
-    "To be estimated by the architect at Phase 2 (hosting cost estimate).",
-    ""
-  ].join("\n");
+  return renderTemplate("budget-plan", {
+    project_cap: fmt(b.project_cap),
+    daily_cap: fmt(b.daily_cap),
+    per_run_cap: fmt(b.per_run_cap),
+    per_story_default: fmt(b.per_story_default),
+    story_budgets: Object.entries(sizes).map(([k, v]) => `- ${k}: ${fmt(v)}`).join("\n"),
+    alerts: b.alert_thresholds.map((t2) => `${Math.round(t2 * 100)}%`).join(", ")
+  });
 }
 function evidencePack(gate, name, runId, date2, approvers, checked) {
-  return [
-    `# ${gate} evidence pack: ${name}`,
-    "",
-    `Prepared by orchestrator run ${runId} on ${date2}. Approvers: ${approvers}.`,
-    "Decision: Not ready.",
-    "",
-    "## Criteria checklist",
-    ...GATE_CRITERIA[gate].map((c) => `- [${checked.has(c) ? "x" : " "}] ${c}`),
-    "",
-    "## Artifact links",
-    "None yet.",
-    "",
-    "## Open risks",
-    "None recorded yet.",
-    "",
-    "## Known issues",
-    "None.",
-    "",
-    "## Agent recommendation",
-    "Not ready: the criteria above are not all met.",
-    "",
-    "## Cost and time to date",
-    "See the Cost log.",
-    ""
-  ].join("\n");
+  return renderTemplate("gate-page", {
+    gate,
+    name,
+    run_id: runId,
+    date: date2,
+    approvers,
+    criteria: GATE_CRITERIA[gate].map((c) => `- [${checked.has(c) ? "x" : " "}] ${c}`).join("\n")
+  });
 }
 async function runInit(o) {
   const log = o.log ?? (() => void 0);
@@ -20949,7 +21538,16 @@ async function runInit(o) {
     warnings: [],
     nextSteps: []
   };
-  const brief = checkBrief(readFileSync11(o.briefFile, "utf8"));
+  const briefText = readFileSync14(o.briefFile, "utf8");
+  const leaked = findSecrets(briefText, loadSecretAllowlist(o.projectDir));
+  if (leaked.length > 0) {
+    result.problems = [
+      `the brief looks like it contains a secret (${leaked.join(", ")}); remove it and keep credentials out of the brief`
+    ];
+    result.exitCode = INIT_EXIT.briefSecret;
+    return result;
+  }
+  const brief = checkBrief(briefText);
   if (!brief.ok) {
     result.gaps = describeGaps(brief);
     result.exitCode = INIT_EXIT.briefGaps;
@@ -20958,7 +21556,7 @@ async function runInit(o) {
   log("brief complete");
   const cfg = validateProject(o.projectDir);
   if (!cfg.ok || cfg.arima === void 0 || cfg.team === void 0) {
-    result.problems = cfg.errors.map((e) => `${path16.basename(e.file)}:${e.line}: ${e.message}`);
+    result.problems = cfg.errors.map((e) => `${path19.basename(e.file)}:${e.line}: ${e.message}`);
     result.exitCode = PREFLIGHT_EXIT.config;
     return result;
   }
@@ -20968,6 +21566,10 @@ async function runInit(o) {
   const raw = arima;
   const name = raw.project.name;
   const root = o.rootPageId ?? raw.notion.root_page_id;
+  try {
+    await ensureNotionSwitch(o.port, root);
+  } catch {
+  }
   const runId = await issueRunId(o.projectDir, now);
   result.runId = runId;
   const pre = await runPreflight({
@@ -20975,7 +21577,8 @@ async function runInit(o) {
     ...o.env ? { env: o.env } : {},
     notion: o.port,
     acquireFor: runId,
-    now
+    now,
+    needs: { github: false }
   });
   if (!pre.ok) {
     result.problems = pre.checks.filter((c) => !c.ok).map((c) => `${c.check}: ${c.detail}`);
@@ -21012,7 +21615,10 @@ async function runInit(o) {
     const map = mapped.result.map;
     log(`mapped ${Object.keys(map.databases).length} databases`);
     await pullMirror(o.projectDir, o.port, map, { now, runId });
-    const leftover = await pushOutbox(o.projectDir, o.port, map, { now });
+    const leftover = await pushOutbox(o.projectDir, o.port, map, {
+      now,
+      allowStatusWrites: { idPrefix: "init-" }
+    });
     for (const r of leftover.rejected)
       result.warnings.push("earlier outbox entry " + r.id + " was rejected: " + r.reason);
     const profile = loadProfile(arima.profile);
@@ -21022,10 +21628,13 @@ async function runInit(o) {
     }).join(", ");
     const date2 = now.toISOString().slice(0, 10);
     let n = 0;
+    const pendingRegistrations = [];
     const entry = (e) => {
       n += 1;
+      const id = `init-${runId}-${String(n).padStart(2, "0")}`;
+      pendingRegistrations.push(registerEngineEntry(o.projectDir, id));
       enqueue(o.projectDir, {
-        id: `init-${runId}-${String(n).padStart(2, "0")}`,
+        id,
         created_at: new Date(now.getTime() + n).toISOString(),
         run_id: runId,
         role: "orchestrator",
@@ -21051,7 +21660,7 @@ async function runInit(o) {
       });
       result.created.push(title);
     };
-    doc("Project brief", "Project brief", "human", readFileSync11(o.briefFile, "utf8"));
+    doc("Project brief", "Project brief", "human", readFileSync14(o.briefFile, "utf8"));
     doc(
       "Charter",
       "Charter",
@@ -21081,7 +21690,11 @@ async function runInit(o) {
       });
       result.created.push(`${gate} gate page`);
     }
-    const report = await pushOutbox(o.projectDir, o.port, map, { now });
+    await Promise.all(pendingRegistrations);
+    const report = await pushOutbox(o.projectDir, o.port, map, {
+      now,
+      allowStatusWrites: { idPrefix: "init-" }
+    });
     if (report.rejected.length + report.conflicts.length + report.deferred.length > 0) {
       result.problems = [
         ...report.rejected.map((r) => `${r.id}: ${r.reason}`),
@@ -21148,8 +21761,10 @@ async function runInit(o) {
         projectDir: o.projectDir,
         runId,
         branch: raw.github.state_branch,
-        defaultBranch: raw.github.default_branch
+        defaultBranch: raw.github.default_branch,
+        ...raw.github.allow_public_state === true ? { allowPublic: true } : {}
       });
+      for (const w of s.warnings) result.warnings.push(w);
       log(
         s.committed ? `state committed${s.pushed ? " and pushed" : " (no remote yet)"}` : "state unchanged"
       );
@@ -21158,6 +21773,7 @@ async function runInit(o) {
           "state was committed locally; add a git remote and re-run `arima-state push` to publish it"
         );
     } catch (e) {
+      result.exitCode = INIT_EXIT.stateNotSaved;
       result.warnings.push(
         `state not saved: ${e instanceof StateError || e instanceof Error ? e.message : String(e)}`
       );
@@ -21170,10 +21786,11 @@ async function runInit(o) {
 // plugins/arima/scripts/src/cli/project-cli.ts
 function settingsOf(projectDir) {
   const out = { tokenEnv: "ARIMA_NOTION_TOKEN" };
-  const file = path17.join(projectDir, "arima.yaml");
-  if (!existsSync10(file)) return out;
+  const file = path20.join(projectDir, "arima.yaml");
+  if (!existsSync12(file)) return out;
   try {
-    const doc = (0, import_yaml3.parse)(readFileSync12(file, "utf8"));
+    const doc = (0, import_yaml3.parse)(readFileSync15(file, "utf8"));
+    if (doc.github?.allow_public_state === true) out.allowPublic = true;
     if (doc.notion?.root_page_id && !doc.notion.root_page_id.startsWith("<"))
       out.rootPageId = doc.notion.root_page_id;
     if (doc.notion?.token_env) out.tokenEnv = doc.notion.token_env;
@@ -21190,7 +21807,7 @@ ${usage}
   return 2;
 };
 var INIT_USAGE = `Usage: arima-init --brief <file> [--project <dir>] [--root <notion-page-id>] [--skip-state] [--json]
-Exit codes: 0 ok, 2 usage, 3 brief has gaps, 4 Notion workspace does not match the template, 5 Notion writes failed, 10-14 preflight failed (see arima-preflight)`;
+Exit codes: 0 ok, 2 usage, 3 brief has gaps, 4 Notion workspace does not match the template, 5 Notion writes failed, 6 brief contains a secret, 7 done but state not saved (re-run arima-state push), 10-14 preflight failed (see arima-preflight)`;
 async function runInitCli(argv, io, deps = {}) {
   let v;
   try {
@@ -21209,9 +21826,9 @@ async function runInitCli(argv, io, deps = {}) {
     return bad(io, INIT_USAGE, e instanceof Error ? e.message : String(e));
   }
   if (v.brief === void 0) return bad(io, INIT_USAGE, "--brief is required");
-  const projectDir = path17.resolve(io.cwd, v.project ?? ".");
-  const briefFile = path17.resolve(io.cwd, v.brief);
-  if (!existsSync10(briefFile)) return bad(io, INIT_USAGE, `brief file not found: ${briefFile}`);
+  const projectDir = path20.resolve(io.cwd, v.project ?? ".");
+  const briefFile = path20.resolve(io.cwd, v.brief);
+  if (!existsSync12(briefFile)) return bad(io, INIT_USAGE, `brief file not found: ${briefFile}`);
   const s = settingsOf(projectDir);
   const env = deps.env ?? process.env;
   const token = env[s.tokenEnv];
@@ -21255,6 +21872,10 @@ async function runInitCli(argv, io, deps = {}) {
 `);
     for (const c of result.existed) io.out(`  = ${c}
 `);
+    if (result.exitCode === INIT_EXIT.stateNotSaved)
+      io.out(
+        "The work is done but the state was NOT saved to the state branch (exit 7). Fix the cause above, then run: arima-state push\n"
+      );
     io.out("Next steps for you:\n");
     for (const n of result.nextSteps) io.out(`  - ${n}
 `);

@@ -1,0 +1,18 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/stephennguye/ARIMA/schemas/finding.schema.json",
+  "title": "Finding record",
+  "description": "A review, security or bug finding (03-contracts 3.4). Severity scales: review blocker/major/minor/nit; security critical/high/medium/low; bug S1 to S4. Every finding needs a location, a claim and evidence.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["severity", "location", "claim", "evidence", "recommendation"],
+  "properties": {
+    "severity": { "enum": ["blocker", "major", "minor", "nit", "critical", "high", "medium", "low", "S1", "S2", "S3", "S4"] },
+    "location": { "type": "string", "minLength": 1, "maxLength": 300, "description": "file:line or an artifact id" },
+    "claim": { "type": "string", "minLength": 1, "maxLength": 1000 },
+    "evidence": { "type": "string", "minLength": 1, "maxLength": 2000 },
+    "recommendation": { "type": "string", "minLength": 1, "maxLength": 1000 },
+    "item": { "type": "string", "pattern": "^(US|BUG|INC|CR|MS|EP|REQ|NFR)-[0-9]{2,}$|^NEW-[0-9]+$" },
+    "refutation": { "type": "string", "maxLength": 1000, "description": "What the verifier tried in order to disprove the finding" }
+  }
+}

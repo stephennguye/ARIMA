@@ -1,5 +1,6 @@
 import path from 'node:path';
 import { appendJsonl, readJsonl } from './lib/jsonl.js';
+import type { ReasonCode } from './reasons.js';
 
 export type Role =
   | 'orchestrator'
@@ -22,6 +23,8 @@ export interface Tokens {
 }
 
 export interface LedgerRow {
+  /** Absent on rows written before the field existed; means 1 (WP-195). */
+  schema_version?: 1;
   run_id: string;
   session_id?: string;
   date: string;
@@ -44,6 +47,8 @@ export interface LedgerRow {
   budget_usd: number;
   ci_minutes?: number;
   result: RunResult;
+  /** Why a run failed, blocked or paused (03-contracts 9b). */
+  reason?: ReasonCode;
 }
 
 /** The `type: "result"` object printed by `claude -p --output-format json`. */
@@ -59,6 +64,10 @@ export interface ClaudeResult {
   /** Older CLI versions. */
   cost_usd?: number;
   result?: string;
+  /** Present on error results, e.g. "Reached maximum number of turns (1)". */
+  errors?: string[];
+  /** completed | max_turns | budget_exhausted | ... (seen in claude 2.1.326). */
+  terminal_reason?: string;
   usage?: {
     input_tokens?: number;
     output_tokens?: number;
@@ -190,7 +199,10 @@ export async function recordRun(
   stdout: string,
   ctx: RunContext,
 ): Promise<LedgerRow> {
-  const row = buildLedgerRow(parseClaudeResult(stdout), ctx, readLedger(projectDir));
+  const row: LedgerRow = {
+    schema_version: 1,
+    ...buildLedgerRow(parseClaudeResult(stdout), ctx, readLedger(projectDir)),
+  };
   await appendLedgerRow(projectDir, row);
   return row;
 }

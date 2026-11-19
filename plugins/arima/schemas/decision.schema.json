@@ -1,0 +1,17 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/stephennguye/ARIMA/schemas/decision.schema.json",
+  "title": "Decision record",
+  "description": "A call an agent made without waiting for the owner (assume-and-log, 03-contracts 3.4, spec 7.5). Shown in the digest with a veto box. The engine issues the DEC id.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["summary", "options_considered", "chosen", "reversible", "rationale"],
+  "properties": {
+    "summary": { "type": "string", "minLength": 1, "maxLength": 300 },
+    "options_considered": { "type": "array", "minItems": 1, "maxItems": 6, "items": { "type": "string", "minLength": 1, "maxLength": 300 } },
+    "chosen": { "type": "string", "minLength": 1, "maxLength": 300 },
+    "reversible": { "type": "boolean" },
+    "rationale": { "type": "string", "minLength": 1, "maxLength": 1000 },
+    "item": { "type": "string", "pattern": "^(US|BUG|INC|CR|MS|EP|REQ|NFR)-[0-9]{2,}$|^NEW-[0-9]+$" }
+  }
+}

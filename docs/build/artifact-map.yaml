@@ -1,0 +1,602 @@
+# Every artifact of the catalog (58) mapped to the work packages that produce or validate it, with its owner,
+# approver, master location and how a wrong output is detected. Checked by build-docs.test.ts: all 58 ids present,
+# every referenced package exists, every non-external artifact has at least one package.
+# This is the "nothing is forgotten" list: a team leaves an artifact trail, so each one needs a builder.
+schema_version: 1
+artifacts:
+  - id: project-brief
+    name: Project brief
+    phase: "0"
+    owner: po (human)
+    approver: orchestrator checks completeness
+    master: Notion page
+    kind: document
+    produced_by:
+      - WP-008
+    validator: template sections (catalog) via validateDocument
+  - id: charter
+    name: Charter
+    phase: "0"
+    owner: orchestrator
+    approver: sponsor (G0)
+    master: Notion page
+    kind: document
+    produced_by:
+      - WP-008
+      - WP-321
+    validator: template sections (catalog) via validateDocument
+  - id: budget-plan
+    name: Budget plan
+    phase: "0"
+    owner: orchestrator
+    approver: sponsor
+    master: Notion page
+    kind: document
+    produced_by:
+      - WP-008
+      - WP-321
+    validator: template sections (catalog) via validateDocument
+  - id: feasibility-note
+    name: Feasibility note
+    phase: "0"
+    owner: architect
+    approver: sponsor
+    master: Notion Documents
+    kind: document
+    produced_by:
+      - WP-312
+      - WP-321
+    validator: template sections (catalog) via validateDocument
+  - id: compliance-screen
+    name: Compliance screen
+    phase: "0"
+    owner: security
+    approver: legal (human)
+    master: Notion Documents
+    kind: document
+    produced_by:
+      - WP-313
+      - WP-321
+    validator: template sections (catalog) via validateDocument
+  - id: sow
+    name: SOW / contract
+    phase: "0"
+    owner: human
+    approver: client
+    master: Outside ARIMA (linked)
+    kind: external
+    produced_by: []
+    validator: "none: human-owned, linked from Notion"
+  - id: risk-register
+    name: Risk register
+    phase: 0+
+    owner: orchestrator
+    approver: sponsor reads
+    master: Notion Risks DB
+    kind: record
+    produced_by:
+      - WP-321
+    validator: outbox schema, Notion property rules, state machine where it has a Status
+  - id: prd
+    name: PRD
+    phase: "1"
+    owner: ba (po owns content)
+    approver: po
+    master: Notion Documents
+    kind: document
+    produced_by:
+      - WP-310
+    validator: template sections (catalog) via validateDocument
+  - id: urs
+    name: URS + REQ items
+    phase: "1"
+    owner: ba
+    approver: sponsor (G1)
+    master: Notion Documents + Requirements DB
+    kind: document
+    produced_by:
+      - WP-310
+    validator: template sections (catalog) via validateDocument
+  - id: srs
+    name: SRS
+    phase: "1"
+    owner: ba
+    approver: po, architect
+    master: Notion Documents
+    kind: document
+    produced_by:
+      - WP-310
+    validator: template sections (catalog) via validateDocument
+  - id: nfr
+    name: NFR items
+    phase: "1"
+    owner: architect
+    approver: po
+    master: Notion Requirements DB (type NFR)
+    kind: record
+    produced_by:
+      - WP-312
+    validator: outbox schema, Notion property rules, state machine where it has a Status
+  - id: glossary
+    name: Glossary
+    phase: "1"
+    owner: ba
+    approver: none
+    master: Notion page
+    kind: document
+    produced_by:
+      - WP-310
+    validator: template sections (catalog) via validateDocument
+  - id: personas-journeys-sitemap
+    name: Personas, journeys, sitemap
+    phase: "1"
+    owner: ux
+    approver: po
+    master: Notion Documents
+    kind: document
+    produced_by:
+      - WP-311
+    validator: template sections (catalog) via validateDocument
+  - id: wireframes
+    name: Wireframes
+    phase: "1"
+    owner: ux
+    approver: po
+    master: "`design/wireframes/`"
+    kind: code
+    produced_by:
+      - WP-311
+    validator: CI checks and review
+  - id: security-requirements
+    name: Security requirements
+    phase: "1"
+    owner: security
+    approver: po
+    master: Notion Documents
+    kind: document
+    produced_by:
+      - WP-313
+    validator: template sections (catalog) via validateDocument
+  - id: dpia
+    name: DPIA
+    phase: "1"
+    owner: security (draft)
+    approver: legal (human)
+    master: Notion Documents
+    kind: document
+    produced_by:
+      - WP-313
+    validator: template sections (catalog) via validateDocument
+  - id: backlog
+    name: Epics, stories, acceptance criteria
+    phase: 1, 4
+    owner: ba
+    approver: po
+    master: Notion Stories DB
+    kind: record
+    produced_by:
+      - WP-310
+      - WP-107
+    validator: outbox schema, Notion property rules, state machine where it has a Status
+  - id: requirement-review-log
+    name: Requirement review log
+    phase: "1"
+    owner: qa
+    approver: ba
+    master: Notion Meetings DB
+    kind: record
+    produced_by:
+      - WP-315
+      - WP-302
+    validator: outbox schema, Notion property rules, state machine where it has a Status
+  - id: sad
+    name: SAD
+    phase: "2"
+    owner: architect
+    approver: tech-lead; G2
+    master: "`docs/architecture/sad.md`"
+    kind: document
+    produced_by:
+      - WP-312
+    validator: template sections (catalog) via validateDocument
+  - id: adrs
+    name: ADRs
+    phase: 2+
+    owner: architect
+    approver: tech-lead
+    master: "`docs/architecture/adr/ADR-NNNN.md`"
+    kind: code
+    produced_by:
+      - WP-312
+    validator: CI checks and review
+  - id: openapi
+    name: OpenAPI spec
+    phase: 2+
+    owner: architect
+    approver: tech-lead
+    master: "`api/openapi.yaml`"
+    kind: code
+    produced_by:
+      - WP-312
+    validator: CI checks and review
+  - id: data-model
+    name: Data model
+    phase: "2"
+    owner: architect
+    approver: tech-lead
+    master: "`docs/architecture/data-model.md` + migrations"
+    kind: document
+    produced_by:
+      - WP-312
+    validator: template sections (catalog) via validateDocument
+  - id: infra-diagram
+    name: Infrastructure diagram, hosting cost estimate
+    phase: "2"
+    owner: architect
+    approver: sponsor reads
+    master: "`docs/architecture/`"
+    kind: document
+    produced_by:
+      - WP-312
+    validator: template sections (catalog) via validateDocument
+  - id: prototype
+    name: Prototype, design tokens
+    phase: "2"
+    owner: ux
+    approver: po, client (G2)
+    master: "`design/`"
+    kind: document
+    produced_by:
+      - WP-311
+    validator: template sections (catalog) via validateDocument
+  - id: threat-model
+    name: Threat model
+    phase: "2"
+    owner: security
+    approver: architect
+    master: "`docs/security/threat-model.md`"
+    kind: document
+    produced_by:
+      - WP-313
+    validator: template sections (catalog) via validateDocument
+  - id: master-test-plan
+    name: Master Test Plan
+    phase: "2"
+    owner: qa
+    approver: po
+    master: Notion Documents
+    kind: document
+    produced_by:
+      - WP-315
+    validator: template sections (catalog) via validateDocument
+  - id: env-matrix
+    name: Environment matrix, pipeline design
+    phase: "2"
+    owner: devops
+    approver: tech-lead
+    master: "`docs/ops/`"
+    kind: document
+    produced_by:
+      - WP-213
+      - WP-320
+    validator: template sections (catalog) via validateDocument
+  - id: milestone-plan
+    name: Milestone plan
+    phase: 2+
+    owner: orchestrator
+    approver: po
+    master: Notion Milestones DB
+    kind: record
+    produced_by:
+      - WP-216
+    validator: outbox schema, Notion property rules, state machine where it has a Status
+  - id: dor-dod
+    name: DoR / DoD
+    phase: "2"
+    owner: orchestrator (from profile)
+    approver: po
+    master: Notion page
+    kind: document
+    produced_by:
+      - WP-106
+    validator: template sections (catalog) via validateDocument
+  - id: conventions
+    name: Engineering conventions
+    phase: "3"
+    owner: tech-lead
+    approver: none
+    master: "`docs/engineering/conventions.md`"
+    kind: document
+    produced_by:
+      - WP-219
+    validator: template sections (catalog) via validateDocument
+  - id: test-cases
+    name: Test cases
+    phase: "4"
+    owner: qa
+    approver: tech-lead spot-check
+    master: Notion Test Cases DB + `tests/e2e/`
+    kind: record
+    produced_by:
+      - WP-211
+      - WP-219
+    validator: outbox schema, Notion property rules, state machine where it has a Status
+  - id: code-tests
+    name: Code, unit and integration tests
+    phase: "4"
+    owner: developer
+    approver: tech-lead
+    master: Repo
+    kind: code
+    produced_by:
+      - WP-210
+      - WP-219
+    validator: CI checks and review
+  - id: pull-requests
+    name: Pull requests and reviews
+    phase: "4"
+    owner: developer / tech-lead
+    approver: tech-lead
+    master: GitHub
+    kind: code
+    produced_by:
+      - WP-111
+      - WP-210
+      - WP-212
+    validator: CI checks and review
+  - id: bug-reports
+    name: Bug reports
+    phase: 4+
+    owner: qa, devops
+    approver: po (severity)
+    master: Notion Bugs DB
+    kind: record
+    produced_by:
+      - WP-211
+    validator: outbox schema, Notion property rules, state machine where it has a Status
+  - id: milestone-review
+    name: Milestone review
+    phase: "4"
+    owner: orchestrator
+    approver: po
+    master: Notion Milestones DB
+    kind: record
+    produced_by:
+      - WP-217
+    validator: outbox schema, Notion property rules, state machine where it has a Status
+  - id: digest
+    name: Daily digest
+    phase: all
+    owner: orchestrator
+    approver: humans read
+    master: Notion Digests DB
+    kind: record
+    produced_by:
+      - WP-130
+    validator: outbox schema, Notion property rules, state machine where it has a Status
+  - id: decision-log
+    name: Decision log
+    phase: all
+    owner: any agent via orchestrator
+    approver: humans (veto)
+    master: Notion Decisions DB
+    kind: record
+    produced_by:
+      - WP-141
+      - WP-140
+    validator: outbox schema, Notion property rules, state machine where it has a Status
+  - id: questions
+    name: Questions
+    phase: all
+    owner: any agent via orchestrator
+    approver: humans answer
+    master: Notion Questions DB
+    kind: record
+    produced_by:
+      - WP-141
+    validator: outbox schema, Notion property rules, state machine where it has a Status
+  - id: meeting-minutes
+    name: Meeting minutes
+    phase: all
+    owner: orchestrator
+    approver: none
+    master: Notion Meetings DB
+    kind: record
+    produced_by:
+      - WP-302
+    validator: outbox schema, Notion property rules, state machine where it has a Status
+  - id: lessons
+    name: Lessons
+    phase: 4+
+    owner: all agents
+    approver: po
+    master: Notion Lessons DB + `.arima/overrides/`
+    kind: record
+    produced_by:
+      - WP-217
+      - WP-403
+    validator: outbox schema, Notion property rules, state machine where it has a Status
+  - id: test-reports
+    name: Test, regression, performance, accessibility reports
+    phase: "5"
+    owner: qa, devops
+    approver: po
+    master: Notion Documents (generated from CI output)
+    kind: document
+    produced_by:
+      - WP-315
+      - WP-401
+    validator: template sections (catalog) via validateDocument
+  - id: security-report
+    name: Pre-release security report
+    phase: "5"
+    owner: security
+    approver: sponsor ack
+    master: Notion Documents
+    kind: document
+    produced_by:
+      - WP-401
+    validator: template sections (catalog) via validateDocument
+  - id: pentest-report
+    name: Penetration test report
+    phase: "5"
+    owner: external human
+    approver: sponsor
+    master: Notion Documents (uploaded)
+    kind: document
+    produced_by:
+      - WP-401
+    validator: template sections (catalog) via validateDocument
+  - id: uat
+    name: UAT scripts and sign-off
+    phase: "5"
+    owner: orchestrator / humans
+    approver: sponsor
+    master: Notion Test Runs
+    kind: record
+    produced_by:
+      - WP-401
+    validator: outbox schema, Notion property rules, state machine where it has a Status
+  - id: go-no-go-minutes
+    name: Go/No-Go minutes
+    phase: "5"
+    owner: orchestrator
+    approver: sponsor
+    master: Notion Meetings DB
+    kind: record
+    produced_by:
+      - WP-302
+      - WP-401
+    validator: outbox schema, Notion property rules, state machine where it has a Status
+  - id: runbook-rollback
+    name: Runbook, rollback plan
+    phase: 5–6
+    owner: devops
+    approver: tech-lead
+    master: "`docs/ops/`"
+    kind: document
+    produced_by:
+      - WP-401
+      - WP-402
+    validator: template sections (catalog) via validateDocument
+  - id: release-record
+    name: Release record, release notes
+    phase: "6"
+    owner: devops, ba
+    approver: po
+    master: Notion Releases DB + GitHub release
+    kind: record
+    produced_by:
+      - WP-402
+    validator: outbox schema, Notion property rules, state machine where it has a Status
+  - id: user-guide-faq
+    name: User guide, FAQ
+    phase: "6"
+    owner: ba
+    approver: po
+    master: Notion (published)
+    kind: document
+    produced_by:
+      - WP-402
+    validator: template sections (catalog) via validateDocument
+  - id: support-kb
+    name: Support knowledge base, escalation matrix
+    phase: "6"
+    owner: devops
+    approver: po
+    master: Notion page
+    kind: document
+    produced_by:
+      - WP-402
+    validator: template sections (catalog) via validateDocument
+  - id: hypercare-closure
+    name: Hypercare report, closure report
+    phase: "7"
+    owner: orchestrator
+    approver: sponsor (G4)
+    master: Notion Documents
+    kind: document
+    produced_by:
+      - WP-403
+    validator: template sections (catalog) via validateDocument
+  - id: ops-manual
+    name: Operations manual
+    phase: "7"
+    owner: devops
+    approver: tech-lead
+    master: "`docs/ops/ops-manual.md`"
+    kind: document
+    produced_by:
+      - WP-403
+    validator: template sections (catalog) via validateDocument
+  - id: incidents
+    name: Incident records, postmortems
+    phase: "8"
+    owner: devops
+    approver: po reads
+    master: Notion Incidents DB
+    kind: record
+    produced_by:
+      - WP-403
+    validator: outbox schema, Notion property rules, state machine where it has a Status
+  - id: change-requests
+    name: Change requests, impact analyses
+    phase: "8"
+    owner: requester, ba
+    approver: po or sponsor
+    master: Notion CR DB
+    kind: record
+    produced_by:
+      - WP-336
+      - WP-403
+    validator: outbox schema, Notion property rules, state machine where it has a Status
+  - id: slo-cost-reports
+    name: SLO and cost reports
+    phase: "8"
+    owner: orchestrator
+    approver: sponsor reads
+    master: Notion Documents
+    kind: document
+    produced_by:
+      - WP-403
+    validator: template sections (catalog) via validateDocument
+  - id: sbom
+    name: SBOM
+    phase: 6, 8
+    owner: devops
+    approver: security
+    master: GitHub release asset
+    kind: generated
+    produced_by:
+      - WP-402
+    validator: generator test on a fixed fixture
+  - id: rtm
+    name: RTM
+    phase: derived
+    owner: generated
+    approver: none
+    master: Notion relations view
+    kind: generated
+    produced_by:
+      - WP-340
+    validator: generator test on a fixed fixture
+  - id: changelog
+    name: CHANGELOG
+    phase: derived
+    owner: generated from PRs
+    approver: none
+    master: "`CHANGELOG.md`"
+    kind: generated
+    produced_by:
+      - WP-402
+    validator: generator test on a fixed fixture
+  - id: ledger-events
+    name: Run ledger, event log
+    phase: all
+    owner: orchestrator
+    approver: none
+    master: "`.arima/` on state branch"
+    kind: generated
+    produced_by:
+      - WP-003
+    validator: generator test on a fixed fixture

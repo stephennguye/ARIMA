@@ -1,0 +1,24 @@
+[
+  {
+    "name": "reversible decision",
+    "value": {
+      "summary": "Use cursor pagination",
+      "options_considered": ["offset", "cursor"],
+      "chosen": "cursor",
+      "reversible": true,
+      "rationale": "Stable under inserts",
+      "item": "US-120"
+    }
+  },
+  {
+    "name": "decision with placeholder item",
+    "value": {
+      "summary": "Split the story",
+      "options_considered": ["split", "keep"],
+      "chosen": "split",
+      "reversible": true,
+      "rationale": "Story is L",
+      "item": "NEW-1"
+    }
+  }
+]

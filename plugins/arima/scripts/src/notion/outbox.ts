@@ -7,18 +7,26 @@ import {
   writeFileSync,
 } from 'node:fs';
 import path from 'node:path';
-import { appendEvent } from '../events.js';
+import { appendEvent, readEvents } from '../events.js';
+import type { ReasonCode } from '../reasons.js';
+import { OUTBOX_DATABASES, OUTBOX_FORBIDDEN_PROPERTIES, ROLES } from '../roles.js';
+import type { Role } from '../ledger.js';
 import { writeFileAtomic } from '../lib/atomic-file.js';
 import { describeError, getValidator } from '../lib/schema.js';
-import { findRow, pullMirror, readMirror, writeMirror } from './mirror.js';
+import { findSecrets, loadSecretAllowlist } from '../lib/secrets.js';
+import { ID_PREFIX_BY_DB, allocatedTo, isEngineEntry, titleProperty } from './allocations.js';
+import { findRow, pullMirror, readMirror, toMirrorRow, writeMirror } from './mirror.js';
 import type { MirrorFile, MirrorRow } from './mirror.js';
 import type { MapDatabase, NotionMap } from './mapper.js';
-import type { NotionPort } from './port.js';
+import type { NotionPort, RawRow } from './port.js';
 import { LAST_WRITTEN_BY_RUN, NON_UNIQUE_TITLES, RETIRE_STATUS } from './schema.js';
 import type { DbKey } from './schema.js';
-import { ValueError, markdownToBlocks, toNotionValue } from './values.js';
+import { ValueError, fromNotionValue, markdownToBlocks, toNotionValue } from './values.js';
+import { migrateRecord } from '../lib/migrate.js';
 
 export interface OutboxEntry {
+  /** Absent on entries written before the field existed; means 1 (WP-195). */
+  schema_version?: 1;
   id: string;
   created_at: string;
   run_id: string;
@@ -29,13 +37,23 @@ export interface OutboxEntry {
   properties?: Record<string, unknown>;
   content_markdown?: string;
   base_last_edited?: string;
+  /** What the agent saw for the properties it writes; the strongest baseline for conflicts. */
+  base_values?: Record<string, unknown>;
 }
 
 export const outboxDir = (projectDir: string): string => path.join(projectDir, '.arima', 'outbox');
 
+/** Kinds of secret found in the parts of an entry that would be written to Notion. */
+function secretsIn(entry: OutboxEntry, allowed: ReadonlySet<string> = new Set()): string[] {
+  return findSecrets(
+    JSON.stringify({ p: entry.properties ?? {}, c: entry.content_markdown ?? '' }),
+    allowed,
+  );
+}
+
 export interface PushReport {
   applied: string[];
-  rejected: { id: string; reason: string }[];
+  rejected: { id: string; reason: string; code?: ReasonCode }[];
   conflicts: string[];
   /** Left in the outbox because Notion could not be reached or errored; retried next run. */
   deferred: string[];
@@ -44,12 +62,47 @@ export interface PushReport {
 const UUID = /^[0-9a-f]{8}-?[0-9a-f]{4}-?[0-9a-f]{4}-?[0-9a-f]{4}-?[0-9a-f]{12}$/i;
 
 /** Writes a validated outbox entry (what an agent or script does to propose a Notion change). */
-export function enqueue(projectDir: string, entry: OutboxEntry): string {
+export function enqueue(
+  projectDir: string,
+  entry: OutboxEntry,
+  opts: { env?: NodeJS.ProcessEnv } = {},
+): string {
+  // Inside a run the wrapper sets the run id and role; an entry may not claim another run's.
+  const env = opts.env ?? process.env;
+  if (env['ARIMA_RUN_ID'] !== undefined && env['ARIMA_RUN_ID'] !== entry.run_id)
+    throw new Error(
+      `entry ${entry.id} names run ${entry.run_id}, but this process is run ${env['ARIMA_RUN_ID']}`,
+    );
+  if (env['ARIMA_ROLE'] !== undefined && env['ARIMA_ROLE'] !== entry.role)
+    throw new Error(
+      `entry ${entry.id} names role ${entry.role}, but this process runs as ${env['ARIMA_ROLE']}`,
+    );
   const validate = getValidator('outbox');
   if (!validate(entry)) {
     throw new Error(
       `Invalid outbox entry: ${(validate.errors ?? []).map(describeError).join('; ')}`,
     );
+  }
+  const leaked = secretsIn(entry, loadSecretAllowlist(projectDir));
+  if (leaked.length > 0) {
+    throw new Error(
+      `Refusing outbox entry ${entry.id}: it looks like it contains a secret (${leaked.join(', ')})`,
+    );
+  }
+  // Remember what the agent saw, so a later mirror refresh cannot erase the evidence of a human edit.
+  if (
+    entry.base_values === undefined &&
+    (entry.op === 'update' || entry.op === 'retire') &&
+    entry.item_id !== undefined
+  ) {
+    const row = findRow(readMirror(projectDir, entry.database), entry.item_id);
+    if (row !== undefined) {
+      const names = entry.op === 'retire' ? ['Status'] : Object.keys(entry.properties ?? {});
+      entry = {
+        ...entry,
+        base_values: Object.fromEntries(names.map((n) => [n, row.properties[n] ?? null])),
+      };
+    }
   }
   const dir = outboxDir(projectDir);
   mkdirSync(dir, { recursive: true });
@@ -66,7 +119,7 @@ interface Pending {
 
 type Settled =
   | { kind: 'applied'; pageId: string }
-  | { kind: 'rejected'; reason: string; refused?: boolean }
+  | { kind: 'rejected'; reason: string; refused?: boolean; code?: ReasonCode }
   | { kind: 'conflict'; humanEditedAt: string }
   | { kind: 'deferred'; reason: string };
 
@@ -88,6 +141,18 @@ function listPending(projectDir: string, report: PushReport): Pending[] {
         file,
         name.replace(/\.json$/, ''),
         { kind: 'rejected', reason: 'not valid JSON' },
+        report,
+      );
+      continue;
+    }
+    try {
+      data = migrateRecord('outbox', data);
+    } catch (e) {
+      settle(
+        projectDir,
+        file,
+        name.replace(/.json$/, ''),
+        { kind: 'rejected', reason: (e as Error).message },
         report,
       );
       continue;
@@ -123,7 +188,12 @@ function settle(
           : undefined;
   if (result.kind === 'applied') report.applied.push(id);
   else if (result.kind === 'conflict') report.conflicts.push(id);
-  else if (result.kind === 'rejected') report.rejected.push({ id, reason: result.reason });
+  else if (result.kind === 'rejected')
+    report.rejected.push({
+      id,
+      reason: result.reason,
+      ...(result.code ? { code: result.code } : {}),
+    });
   else report.deferred.push(id);
   if (bucket === undefined) return; // deferred: stays where it is
   const dir = path.join(outboxDir(projectDir), bucket);
@@ -143,10 +213,6 @@ function classify(e: unknown): 'permanent' | 'transient' {
     : 'transient';
 }
 
-function plainOf(v: unknown): unknown {
-  return v;
-}
-
 /**
  * Applies the outbox to Notion (spec §3.3, §9.3). Per entry: validate, refuse human-only fields,
  * refuse anything that is not a create/update/append/retire (there is no delete), detect a human
@@ -157,9 +223,27 @@ export async function pushOutbox(
   projectDir: string,
   port: NotionPort,
   map: NotionMap,
-  opts: { now?: Date } = {},
+  opts: {
+    now?: Date;
+    /**
+     * Let entries write the Status property. Off by default: until the ticket state machine
+     * exists, an agent's outbox entry must not be able to mark a story Done. Only a human-run
+     * command (init, or `arima-notion push --allow-status-writes`) turns this on.
+     */
+    allowStatusWrites?: boolean | { idPrefix: string };
+    /**
+     * Require every entry to belong to a run ARIMA started (a `run.start` event) with that run's
+     * role, and every created id-titled row to carry an id the engine issued to the run. On by
+     * default; only tests that push hand-made entries turn it off.
+     */
+    bindRuns?: boolean;
+  } = {},
 ): Promise<PushReport> {
   const report: PushReport = { applied: [], rejected: [], conflicts: [], deferred: [] };
+  const allowed = loadSecretAllowlist(projectDir);
+  const runRoles = new Map<string, string>();
+  for (const e of readEvents(projectDir))
+    if (e.type === 'run.start' && e.run_id !== undefined) runRoles.set(e.run_id, e.actor);
   const pending = listPending(projectDir, report);
   if (pending.length === 0) return report;
 
@@ -180,7 +264,18 @@ export async function pushOutbox(
     return report;
   }
 
-  const ownWrites = new Map<string, string>();
+  // What Notion held for each page right after OUR last write in this push (only the properties we
+  // wrote, overlaid on the baseline). A later entry on the same page is compared against this, so
+  // our own writes are never mistaken for a human edit.
+  const snapshots = new Map<string, MirrorRow['properties']>();
+  const normalised = (
+    pageId: string,
+    lastEdited: string,
+    raw: RawRow['properties'] | undefined,
+  ): MirrorRow['properties'] | undefined =>
+    raw === undefined ? undefined : toMirrorRow({ pageId, lastEdited, properties: raw }).properties;
+  const sameValue = (a: unknown, b: unknown): boolean =>
+    JSON.stringify(a ?? null) === JSON.stringify(b ?? null);
   const resolveAnywhere = (id: string): string => {
     if (UUID.test(id)) return id;
     const hits: string[] = [];
@@ -231,7 +326,11 @@ export async function pushOutbox(
         actor: 'system',
         run_id: entry.run_id,
         ...(base.item ? { item: base.item } : {}),
-        data: { ...common, reason: result.reason },
+        data: {
+          ...common,
+          reason: result.reason,
+          ...(result.code ? { reason_code: result.code } : {}),
+        },
       });
     }
     if (result.kind === 'deferred') break; // Notion is struggling: stop, retry next run
@@ -239,11 +338,82 @@ export async function pushOutbox(
   for (const m of mirrors.values()) writeMirror(projectDir, m);
   return report;
 
+  function mayWriteStatus(entry: OutboxEntry): boolean {
+    const a = opts.allowStatusWrites;
+    if (a === true) return true;
+    return (
+      typeof a === 'object' &&
+      entry.id.startsWith(a.idPrefix) &&
+      isEngineEntry(projectDir, entry.id)
+    );
+  }
+
   async function applyEntry(entry: OutboxEntry): Promise<Settled> {
     const db = map.databases[entry.database] as MapDatabase | undefined;
     if (db === undefined)
       return { kind: 'rejected', reason: `database "${entry.database}" is not in notion-map.json` };
     const mirror = mirrors.get(entry.database) as MirrorFile;
+
+    // Who may write what: a known role, bound to its run, to databases and properties its job needs.
+    if (!(ROLES as readonly string[]).includes(entry.role))
+      return {
+        kind: 'rejected',
+        refused: true,
+        reason: `"${entry.role}" is not a role of the team`,
+      };
+    const role = entry.role as Role;
+    if (opts.bindRuns !== false) {
+      const runRole = runRoles.get(entry.run_id);
+      if (runRole === undefined)
+        return {
+          kind: 'rejected',
+          refused: true,
+          reason: `run ${entry.run_id} was not started by ARIMA (no run.start event); an outbox entry must belong to a run`,
+        };
+      if (runRole !== role)
+        return {
+          kind: 'rejected',
+          refused: true,
+          reason: `the entry says role ${role}, but run ${entry.run_id} was started as ${runRole}`,
+        };
+    }
+    if (!OUTBOX_DATABASES[role].includes(entry.database))
+      return {
+        kind: 'rejected',
+        refused: true,
+        code: 'database_not_allowed',
+        reason: `role ${role} may not write ${db.title} (database_not_allowed)`,
+      };
+    for (const name of Object.keys(entry.properties ?? {}))
+      if (OUTBOX_FORBIDDEN_PROPERTIES[role]?.includes(name))
+        return {
+          kind: 'rejected',
+          refused: true,
+          reason: `role ${role} may not write "${name}" (that decision belongs to the product owner)`,
+        };
+    if (
+      opts.bindRuns !== false &&
+      entry.op === 'create' &&
+      ID_PREFIX_BY_DB[entry.database] !== undefined
+    ) {
+      const title = String((entry.properties ?? {})[titleProperty(entry.database)] ?? '');
+      if (allocatedTo(projectDir, title) !== entry.run_id)
+        return {
+          kind: 'rejected',
+          refused: true,
+          reason: `"${title}" was not issued to run ${entry.run_id}: an agent cannot choose an id; propose the record in the report and the engine issues it`,
+        };
+    }
+
+    // Secrets never go to Notion (spec §11.3), whoever wrote the entry.
+    const leaked = secretsIn(entry, allowed);
+    if (leaked.length > 0) {
+      return {
+        kind: 'rejected',
+        refused: true,
+        reason: `the entry looks like it contains a secret (${leaked.join(', ')}); secrets must never be written to Notion (spec §11.3)`,
+      };
+    }
 
     // Property checks: known, writable, not human-only.
     const props = entry.properties ?? {};
@@ -253,6 +423,13 @@ export async function pushOutbox(
         return { kind: 'rejected', reason: `unknown property "${name}" on ${db.title}` };
       if (name === LAST_WRITTEN_BY_RUN)
         return { kind: 'rejected', reason: `"${name}" is stamped by ARIMA and cannot be set` };
+      if (name === 'Status' && !mayWriteStatus(entry)) {
+        return {
+          kind: 'rejected',
+          refused: true,
+          reason: `"Status" on ${db.title} cannot be written from the outbox except by the engine (the state machine) or init; pass --allow-status-writes, which only a human may do`,
+        };
+      }
       if (def.human_only === true) {
         return {
           kind: 'rejected',
@@ -307,12 +484,16 @@ export async function pushOutbox(
         notionProps(),
         entry.content_markdown ? markdownToBlocks(entry.content_markdown) : undefined,
       );
-      ownWrites.set(created.pageId, created.lastEdited);
+      // Keep Notion's own spelling of the values (not the agent's), so later comparisons are exact.
+      const fresh =
+        normalised(created.pageId, created.lastEdited, created.properties) ??
+        toMirrorRow(await port.getPage(created.pageId)).properties;
+      snapshots.set(created.pageId, fresh);
       const row: MirrorRow = {
         page_id: created.pageId,
         last_edited_time: created.lastEdited,
         id: title,
-        properties: { ...(props as MirrorRow['properties']), [LAST_WRITTEN_BY_RUN]: entry.run_id },
+        properties: { ...fresh },
       };
       mirror.rows.push(row);
       return { kind: 'applied', pageId: created.pageId };
@@ -335,23 +516,54 @@ export async function pushOutbox(
       if (row.properties['Status'] === status) return { kind: 'applied', pageId: row.page_id };
     }
 
-    // A human edit since the agent looked wins.
-    const basis =
-      entry.base_last_edited ??
-      baseline.get(entry.database)?.rows.find((r) => r.page_id === row.page_id)?.last_edited_time;
-    const current = await port.getPageLastEdited(row.page_id);
-    if (
-      basis !== undefined &&
-      Date.parse(current) > Date.parse(basis) &&
-      current !== ownWrites.get(row.page_id)
-    ) {
-      return { kind: 'conflict', humanEditedAt: current };
+    // A human edit since the agent looked wins (spec §3.3). Notion rounds last_edited_time to the
+    // minute, so edits are detected by VALUE: for every property this entry would write, the value
+    // Notion holds right now must equal the value the agent saw (the mirror as it was before this
+    // push), or the value Notion held right after our own earlier write in this push. Edits to
+    // other properties do not conflict. Appending content overwrites nothing, so it never does.
+    const touched =
+      entry.op === 'update' ? Object.keys(props) : entry.op === 'retire' ? ['Status'] : [];
+    if (touched.length > 0) {
+      const live = await port.getPage(row.page_id);
+      const liveProps = toMirrorRow(live).properties;
+      // Already applied (a retry after a lost response): Notion already holds exactly what this
+      // entry would write, and this run stamped it.
+      if (entry.op === 'update' && liveProps[LAST_WRITTEN_BY_RUN] === entry.run_id) {
+        const intended = notionProps();
+        if (
+          touched.every((n) =>
+            sameValue(
+              fromNotionValue({
+                type: (db.properties[n] as { type: string }).type,
+                ...(intended[n] as object),
+              }),
+              liveProps[n],
+            ),
+          )
+        ) {
+          return { kind: 'applied', pageId: row.page_id };
+        }
+      }
+      const seen =
+        snapshots.get(row.page_id) ??
+        (entry.base_values as MirrorRow['properties'] | undefined) ??
+        baseline.get(entry.database)?.rows.find((r) => r.page_id === row.page_id)?.properties;
+      if (seen !== undefined) {
+        if (touched.some((n) => !sameValue(seen[n], liveProps[n]))) {
+          return { kind: 'conflict', humanEditedAt: live.lastEdited };
+        }
+      } else if (
+        // No earlier copy to compare values with: fall back to the (coarse) timestamp.
+        entry.base_last_edited !== undefined &&
+        Date.parse(live.lastEdited) > Date.parse(entry.base_last_edited)
+      ) {
+        return { kind: 'conflict', humanEditedAt: live.lastEdited };
+      }
     }
 
-    let written: { lastEdited: string };
+    let written: { lastEdited: string; properties?: RawRow['properties'] };
     if (entry.op === 'update') {
       written = await port.updatePage(row.page_id, notionProps());
-      Object.assign(row.properties, props);
     } else if (entry.op === 'append_content') {
       if (!entry.content_markdown)
         return { kind: 'rejected', reason: 'append_content needs content_markdown' };
@@ -365,11 +577,24 @@ export async function pushOutbox(
         ...notionProps(),
         Status: toNotionValue(statusType, 'Status', status, resolveAnywhere),
       });
-      row.properties['Status'] = plainOf(status) as string;
     }
-    row.properties[LAST_WRITTEN_BY_RUN] = entry.run_id;
+    // Record Notion's own values after the write: the mirror holds the page as it now is, and the
+    // snapshot remembers only what WE wrote (a concurrent human edit elsewhere stays visible to the
+    // next entry's comparison against the older baseline).
+    const fresh =
+      normalised(row.page_id, written.lastEdited, written.properties) ??
+      toMirrorRow(await port.getPage(row.page_id)).properties;
+    const wrote = [...touched, LAST_WRITTEN_BY_RUN];
+    const before =
+      snapshots.get(row.page_id) ??
+      baseline.get(entry.database)?.rows.find((r) => r.page_id === row.page_id)?.properties ??
+      {};
+    snapshots.set(row.page_id, {
+      ...before,
+      ...Object.fromEntries(wrote.map((n) => [n, fresh[n] ?? null])),
+    });
+    row.properties = { ...fresh };
     row.last_edited_time = written.lastEdited;
-    ownWrites.set(row.page_id, written.lastEdited);
     return { kind: 'applied', pageId: row.page_id };
   }
 }

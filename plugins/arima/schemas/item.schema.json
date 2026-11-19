@@ -1,0 +1,21 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/stephennguye/ARIMA/schemas/item.schema.json",
+  "title": "Item counters",
+  "description": ".arima/items/<id>.json: the counters the engine holds for a story, bug, incident or change request (03-contracts 9a). Written only by the state machine; an agent never writes it.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "id", "attempt", "run_failures", "cost_usd_total"],
+  "properties": {
+    "schema_version": { "const": 1 },
+    "id": { "type": "string", "pattern": "^(US|BUG|INC|CR)-[0-9]{2,}$" },
+    "attempt": { "type": "integer", "minimum": 1, "description": "Review and QA rework attempts; starts at 1; mirrors Notion Attempt" },
+    "run_failures": { "type": "integer", "minimum": 0, "description": "Failed runs of the current stage; reset when the stage changes" },
+    "blocked_from": {
+      "enum": ["Backlog", "Ready", "In Progress", "In Review", "In QA", "PO Acceptance", null],
+      "description": "The status the item had before it was Blocked"
+    },
+    "blocked_reason": { "type": ["string", "null"], "maxLength": 1000 },
+    "cost_usd_total": { "type": "number", "minimum": 0 }
+  }
+}

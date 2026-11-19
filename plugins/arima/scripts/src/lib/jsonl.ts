@@ -4,6 +4,7 @@ import { withFileLock } from './filelock.js';
 import { assertNoSecrets } from './secrets.js';
 import { describeError, getValidator } from './schema.js';
 import type { SchemaName } from './schema.js';
+import { CURRENT_SCHEMA_VERSION, VERSIONED, migrateRecord } from './migrate.js';
 
 /**
  * Appends one validated record to a JSON Lines file. Append-only: there is intentionally no
@@ -15,6 +16,8 @@ export async function appendJsonl(
   record: unknown,
 ): Promise<void> {
   const validate = getValidator(schema);
+  if (VERSIONED.includes(schema) && typeof record === 'object' && record !== null)
+    record = { schema_version: CURRENT_SCHEMA_VERSION, ...record };
   if (!validate(record)) {
     throw new Error(
       `Invalid ${schema} record: ${(validate.errors ?? []).map(describeError).join('; ')}`,
@@ -41,6 +44,11 @@ export function readJsonl<T>(file: string, schema: SchemaName): T[] {
       parsed = JSON.parse(raw);
     } catch (e) {
       throw new Error(`${file}:${i + 1}: not valid JSON`, { cause: e });
+    }
+    try {
+      parsed = migrateRecord(schema, parsed);
+    } catch (e) {
+      throw new Error(`${file}:${i + 1}: ${(e as Error).message}`, { cause: e });
     }
     if (!validate(parsed)) {
       throw new Error(

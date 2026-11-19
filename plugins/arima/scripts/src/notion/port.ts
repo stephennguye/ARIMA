@@ -1,5 +1,5 @@
 import { Client } from '@notionhq/client';
-import { Throttle, withBackoff } from '../lib/throttle.js';
+import { Throttle, withBackoff, withReadRetry } from '../lib/throttle.js';
 import type { BackoffOptions } from '../lib/throttle.js';
 import type { ApiProperty } from './props.js';
 
@@ -68,13 +68,18 @@ export interface NotionPort extends PauseSwitchPort {
   /** Every row of a data source (all pages of results). */
   queryRows(dataSourceId: string): Promise<RawRow[]>;
   getPageLastEdited(pageId: string): Promise<string>;
+  /** One page with its raw property values (what a human sees now). */
+  getPage(pageId: string): Promise<RawRow>;
   createPage(
     dataSourceId: string,
     properties: Record<string, unknown>,
     children?: unknown[],
-  ): Promise<{ pageId: string; lastEdited: string }>;
+  ): Promise<{ pageId: string; lastEdited: string; properties?: RawRow['properties'] }>;
   /** Updates property values. There is no way to trash or archive a page through this port. */
-  updatePage(pageId: string, properties: Record<string, unknown>): Promise<{ lastEdited: string }>;
+  updatePage(
+    pageId: string,
+    properties: Record<string, unknown>,
+  ): Promise<{ lastEdited: string; properties?: RawRow['properties'] }>;
   appendChildren(pageId: string, blocks: unknown[]): Promise<void>;
 }
 
@@ -167,12 +172,20 @@ export function createNotionPort(
   /** Every API call: spaced to ~3 requests/second, and retried with backoff on HTTP 429. */
   const call = <T>(fn: () => Promise<T>): Promise<T> =>
     throttle.run(() => withBackoff(fn, backoff));
+  /** Reads also survive a dropped connection or a 5xx (writes never do: a retry could duplicate). */
+  const callRead = <T>(fn: () => Promise<T>): Promise<T> =>
+    throttle.run(() =>
+      withReadRetry(
+        () => withBackoff(fn, backoff),
+        backoff.sleep ? { sleep: async (ms) => void (await backoff.sleep?.(ms)) } : {},
+      ),
+    );
 
   const listChildren = async (pageId: string): Promise<ChildBlock[]> => {
     const out: ChildBlock[] = [];
     let cursor: string | undefined;
     for (;;) {
-      const page = await call(() =>
+      const page = await callRead(() =>
         client.blocks.children.list({
           block_id: pageId,
           page_size: 100,
@@ -204,7 +217,7 @@ export function createNotionPort(
   const getDataSourceProperties = async (
     dataSourceId: string,
   ): Promise<Record<string, PropertyInfo>> => {
-    const raw = (await call(() =>
+    const raw = (await callRead(() =>
       client.dataSources.retrieve({ data_source_id: dataSourceId }),
     )) as {
       properties?: Record<string, RawProperty>;
@@ -282,7 +295,7 @@ export function createNotionPort(
     },
 
     async getDatabase(databaseId) {
-      const raw = (await call(() =>
+      const raw = (await callRead(() =>
         client.databases.retrieve({ database_id: databaseId }),
       )) as RawDatabase;
       return toDatabaseInfo(raw);
@@ -303,7 +316,7 @@ export function createNotionPort(
       const rows: RawRow[] = [];
       let cursor: string | undefined;
       for (;;) {
-        const page = await call(() =>
+        const page = await callRead(() =>
           client.dataSources.query({
             data_source_id: dataSourceId,
             page_size: 100,
@@ -329,10 +342,19 @@ export function createNotionPort(
     },
 
     async getPageLastEdited(pageId) {
-      const raw = (await call(() => client.pages.retrieve({ page_id: pageId }))) as {
+      const raw = (await callRead(() => client.pages.retrieve({ page_id: pageId }))) as {
         last_edited_time: string;
       };
       return raw.last_edited_time;
+    },
+
+    async getPage(pageId) {
+      const raw = (await callRead(() => client.pages.retrieve({ page_id: pageId }))) as {
+        id: string;
+        last_edited_time: string;
+        properties?: RawRow['properties'];
+      };
+      return { pageId: raw.id, lastEdited: raw.last_edited_time, properties: raw.properties ?? {} };
     },
 
     async createPage(dataSourceId, properties, children) {
@@ -343,21 +365,29 @@ export function createNotionPort(
           properties,
           ...(first && first.length > 0 ? { children: first } : {}),
         }),
-      )) as { id: string; last_edited_time: string };
+      )) as { id: string; last_edited_time: string; properties?: RawRow['properties'] };
       let lastEdited = raw.last_edited_time;
       for (let i = 100; children && i < children.length; i += 100) {
         const rest = children.slice(i, i + 100);
         await call(() => client.blocks.children.append({ block_id: raw.id, children: rest }));
       }
       if (children && children.length > 100) lastEdited = await this.getPageLastEdited(raw.id);
-      return { pageId: raw.id, lastEdited };
+      return {
+        pageId: raw.id,
+        lastEdited,
+        ...(raw.properties ? { properties: raw.properties } : {}),
+      };
     },
 
     async updatePage(pageId, properties) {
       const raw = (await call(() => client.pages.update({ page_id: pageId, properties }))) as {
         last_edited_time: string;
+        properties?: RawRow['properties'];
       };
-      return { lastEdited: raw.last_edited_time };
+      return {
+        lastEdited: raw.last_edited_time,
+        ...(raw.properties ? { properties: raw.properties } : {}),
+      };
     },
 
     async appendChildren(pageId, blocks) {
