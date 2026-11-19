@@ -147,6 +147,7 @@
         "repo": { "type": "string", "pattern": "^[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+$" },
         "default_branch": { "type": "string" },
         "state_branch": { "type": "string" },
+        "allow_unchecked_remote": { "type": "boolean", "default": false, "description": "Let the publish script push to a remote that is not a github.com repository (ARIMA cannot check what it is). Leave false unless you know the remote." },
         "allow_public_state": { "type": "boolean", "default": false, "description": "Allow pushing the state branch (Notion mirror, ledger) to a PUBLIC GitHub repo. Leave false for client work." },
         "machine_account": { "type": "string", "description": "GitHub login that opens agent PRs (D-30)" },
         "machine_token_env": { "type": "string", "pattern": "^[A-Z][A-Z0-9_]*$" }

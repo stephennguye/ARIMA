@@ -222,18 +222,12 @@ const DANGEROUS: string[] = [
 
 /** Commands a developer legitimately runs; the guard must let every one through. */
 const LEGIT: string[] = [
-  'git push -u origin feat/US-1-checkout',
-  'git push origin feat/US-1-checkout',
-  'git push origin HEAD:feat/US-1-checkout',
-  'git push origin feat/US-1-x:feat/US-1-x',
   'git status',
   'git diff HEAD~1',
   'git add -A && git commit -m "feat(US-1): add checkout"',
   'git commit -m "docs: explain rm .arima/PAUSE"',
   'git commit -m "ignore .env files in the repo"',
   'git checkout -b feat/US-1-x',
-  'gh pr create --title "US-1: x" --body y',
-  'gh pr view 3',
   'echo $TOKEN_COUNT',
   'npm test',
   'npm run lint',
@@ -289,10 +283,11 @@ describe('role allow-list x guard matrix', () => {
   );
 
   it('the matrix model itself behaves (sanity)', () => {
-    expect(roleAllows('developer', 'git push origin main')).toBe(true); // role alone would allow it...
-    expect(guardBash('git push origin main', DEV)).toBeDefined(); // ...the guard is what stops it
+    expect(roleAllows('developer', 'git push origin main')).toBe(false); // no role pushes (D-49)
+    expect(guardBash('git push origin main', DEV)).toBeDefined(); // and the guard says so too
     expect(roleAllows('qa', 'git push origin main')).toBe(false);
-    expect(roleAllows('developer', 'git status && git push origin main')).toBe(true);
+    expect(roleAllows('developer', 'git status && git push origin main')).toBe(false);
+    expect(roleAllows('developer', 'git status && git diff')).toBe(true);
     expect(roleAllows('developer', 'rm -rf /')).toBe(false);
   });
 

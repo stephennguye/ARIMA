@@ -102,7 +102,8 @@ describe('runAgent: a normal run', () => {
     expect(flag('--max-turns')).toBe('10');
     expect(flag('--permission-mode')).toBe('dontAsk');
     expect(flag('--model')).toBe('claude-sonnet-5-5');
-    expect(flag('--allowedTools')).toContain('Bash(git push *)');
+    expect(flag('--allowedTools')).not.toContain('git push');
+    expect(flag('--allowedTools')).not.toContain('Bash(gh');
     expect(flag('--disallowedTools')).toContain('mcp__*notion*');
     expect(rec.stdin).toBe('Implement US-112.');
     expect(path.resolve(rec.cwd).toLowerCase()).toBe(path.resolve(worktree).toLowerCase());
@@ -263,7 +264,7 @@ describe('least privilege', () => {
     }
   });
 
-  it('only developer, tech-lead and devops receive the GitHub machine token', async () => {
+  it('no role receives a GitHub token, whatever the config names (D-49)', async () => {
     for (const role of [
       'developer',
       'tech-lead',
@@ -274,7 +275,7 @@ describe('least privilege', () => {
     ] as const) {
       const s = setup();
       await go(s, 'success', { role });
-      expect(recorded(s).hasGithubToken).toBe(['developer', 'tech-lead', 'devops'].includes(role));
+      expect(recorded(s).hasGithubToken, role).toBe(false);
     }
   });
 

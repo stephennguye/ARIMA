@@ -63,7 +63,8 @@ export function branchFor(item: string, title?: string): string {
   return `${PREFIX[m[1] as string] ?? 'chore'}/${item}${slug ? `-${slug}` : ''}`;
 }
 
-const BRANCH =
+/** The branch names ARIMA creates and publishes (spec 10.2). */
+export const BRANCH =
   /^(?:feat|fix|hotfix|chore|qa)\/[A-Za-z0-9][A-Za-z0-9._-]*(?:\/[A-Za-z0-9][A-Za-z0-9._-]*)*$/;
 
 export interface WorktreeOptions {

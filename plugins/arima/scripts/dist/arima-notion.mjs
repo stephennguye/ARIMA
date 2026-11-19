@@ -19906,14 +19906,6 @@ var GIT_READ = [
   ...bash("git branch --list"),
   ...bash("git fetch")
 ];
-var GH_READ = [
-  ...bash("gh pr view"),
-  ...bash("gh pr list"),
-  ...bash("gh pr diff"),
-  ...bash("gh pr checks"),
-  ...bash("gh run list"),
-  ...bash("gh run view")
-];
 var NPM_TEST = [...bash("npm test"), ...bash("npm run"), ...bash("npm ci")];
 var OUTBOX_DATABASES = {
   orchestrator: [

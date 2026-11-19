@@ -18702,14 +18702,6 @@ var GIT_READ = [
   ...bash("git branch --list"),
   ...bash("git fetch")
 ];
-var GH_READ = [
-  ...bash("gh pr view"),
-  ...bash("gh pr list"),
-  ...bash("gh pr diff"),
-  ...bash("gh pr checks"),
-  ...bash("gh run list"),
-  ...bash("gh run view")
-];
 var NPM_TEST = [...bash("npm test"), ...bash("npm run"), ...bash("npm ci")];
 function allowedTools(role, scriptsDir) {
   const read = ["Read", "Glob", "Grep"];
@@ -18725,7 +18717,6 @@ function allowedTools(role, scriptsDir) {
         "Write(./docs/spec/**)",
         "Edit(./docs/spec/**)",
         ...GIT_READ,
-        ...GH_READ,
         ...[
           "arima-config",
           "arima-preflight",
@@ -18764,16 +18755,7 @@ function allowedTools(role, scriptsDir) {
         "WebFetch"
       ];
     case "tech-lead":
-      return [
-        ...read,
-        OUTBOX,
-        ...GIT_READ,
-        ...GH_READ,
-        ...bash("gh pr review"),
-        ...bash("gh pr comment"),
-        ...NPM_TEST,
-        "WebFetch"
-      ];
+      return [...read, OUTBOX, ...GIT_READ, ...NPM_TEST, "WebFetch"];
     case "developer":
       return [
         ...read,
@@ -18784,10 +18766,6 @@ function allowedTools(role, scriptsDir) {
         ...bash("git commit"),
         ...bash("git switch"),
         ...bash("git checkout"),
-        // The guard hook limits pushes to the story's own branch; the default branch is blocked.
-        ...bash("git push"),
-        ...bash("gh pr create"),
-        ...bash("gh pr view"),
         ...NPM_TEST,
         "WebFetch"
       ];
@@ -18815,10 +18793,6 @@ function allowedTools(role, scriptsDir) {
         ...GIT_READ,
         ...bash("git add"),
         ...bash("git commit"),
-        ...bash("git push"),
-        ...GH_READ,
-        ...bash("gh workflow list"),
-        ...bash("gh workflow view"),
         "WebFetch"
       ];
   }
@@ -18844,6 +18818,9 @@ function deniedTools(role) {
     "Write(./.arima/PAUSE)",
     "Edit(./.arima/run.lock)",
     "Write(./.arima/run.lock)",
+    // D-49: no role pushes or runs gh. The host publish script pushes, opens PRs and posts comments.
+    ...bash("git push"),
+    ...bash("gh"),
     ...bash("gh pr merge"),
     ...bash("gh api"),
     ...bash("gh workflow run"),
@@ -18855,8 +18832,10 @@ function deniedTools(role) {
   if (role !== "devops") out.push("Edit(./.github/**)", "Write(./.github/**)");
   return out;
 }
+var githubTokenScope = () => "none";
 function mayHoldGithubToken(role) {
-  return role === "developer" || role === "tech-lead" || role === "devops";
+  void role;
+  return githubTokenScope() !== "none";
 }
 function mayHoldNotionToken(role) {
   return role === "orchestrator";

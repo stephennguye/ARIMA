@@ -39,10 +39,24 @@ describe('role tool lists: no role can merge, push blindly, publish or change se
     expect(list).not.toContain('Bash');
   });
 
-  it('only developer and devops may push, and only the developer opens pull requests', () => {
+  it('no role pushes, runs gh, opens pull requests or comments on them (D-49, G-05)', () => {
     for (const role of ROLES) {
-      expect(hasPattern(role, 'git push'), role).toBe(role === 'developer' || role === 'devops');
-      expect(hasPattern(role, 'gh pr create'), role).toBe(role === 'developer');
+      for (const p of [
+        'git push',
+        'gh pr create',
+        'gh pr view',
+        'gh pr review',
+        'gh pr comment',
+        'gh pr diff',
+        'gh workflow list',
+      ])
+        expect(hasPattern(role, p), `${role}: ${p}`).toBe(false);
+      expect(
+        allowedTools(role, '/p/scripts/dist').some((t) => /\bgh\b/.test(t)),
+        role,
+      ).toBe(false);
+      expect(deniedTools(role)).toContain('Bash(gh *)');
+      expect(deniedTools(role)).toContain('Bash(git push *)');
     }
   });
 

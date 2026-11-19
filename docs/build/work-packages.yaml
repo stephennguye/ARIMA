@@ -355,7 +355,7 @@ packages:
   - id: WP-111
     stage: 1
     track: safety
-    status: ready
+    status: done
     title: "Host publish script arima-publish: pushes the story branch and opens the PR; agents hold no push credential"
     deps:
       - WP-110
@@ -377,7 +377,7 @@ packages:
   - id: WP-112
     stage: 1
     track: safety
-    status: planned
+    status: ready
     title: "Merge script arima-merge: only merger; needs CI green, QA pass, human approving review"
     deps:
       - WP-111
@@ -393,7 +393,7 @@ packages:
   - id: WP-113
     stage: 1
     track: safety
-    status: planned
+    status: ready
     title: PR template, ID-in-commit hook on feat/fix/hotfix branches (S9), DoD check before ready
     deps:
       - WP-111
@@ -591,7 +591,7 @@ packages:
   - id: WP-190
     stage: 1
     track: safety
-    status: planned
+    status: ready
     title: "Docker sandbox runtime: runtime.sandbox docker|none (ADR-0006)"
     deps:
       - WP-103

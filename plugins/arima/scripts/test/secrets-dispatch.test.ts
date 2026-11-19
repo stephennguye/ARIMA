@@ -16,6 +16,7 @@ import { createNotionPort } from '../src/notion/port.js';
 import { setKillSwitch } from '../src/pause.js';
 import { appendLedgerRow, buildLedgerRow, parseClaudeResult } from '../src/ledger.js';
 import { DispatchRefused, childEnv, runAgent } from '../src/run-agent.js';
+import { ROLES } from '../src/roles.js';
 import type { AgentConfig } from '../src/run-agent.js';
 import { FakeNotion } from './fake-notion.js';
 import { REPO_ROOT, example, project, tempDir } from './helpers.js';
@@ -256,13 +257,14 @@ describe('the child environment is an allow-list (spec §11.3)', () => {
     });
   });
 
-  it('gives the orchestrator the Notion token, and developer, tech-lead and devops the GitHub token as GH_TOKEN', () => {
+  it('gives the orchestrator the Notion token and no role a GitHub token (D-49)', () => {
     expect(env('orchestrator')['ARIMA_NOTION_TOKEN']).toBe('notion-not-real');
     expect(env('orchestrator')['ARIMA_GITHUB_TOKEN']).toBeUndefined();
-    for (const role of ['developer', 'tech-lead', 'devops'] as const) {
-      expect(env(role)['ARIMA_GITHUB_TOKEN'], role).toBe('github-not-real');
-      expect(env(role)['GH_TOKEN'], role).toBe('github-not-real');
-      expect(env(role)['ARIMA_NOTION_TOKEN'], role).toBeUndefined();
+    for (const role of ROLES) {
+      expect(env(role)['ARIMA_GITHUB_TOKEN'], role).toBeUndefined();
+      expect(env(role)['GH_TOKEN'], role).toBeUndefined();
+      expect(env(role)['GITHUB_TOKEN'], role).toBeUndefined();
+      if (role !== 'orchestrator') expect(env(role)['ARIMA_NOTION_TOKEN'], role).toBeUndefined();
     }
   });
 

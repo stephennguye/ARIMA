@@ -40,16 +40,6 @@ const GIT_READ = [
   ...bash('git fetch'),
 ];
 
-/** Read-only GitHub CLI. There is deliberately no `gh pr merge`, `gh api`, `gh workflow run`. */
-const GH_READ = [
-  ...bash('gh pr view'),
-  ...bash('gh pr list'),
-  ...bash('gh pr diff'),
-  ...bash('gh pr checks'),
-  ...bash('gh run list'),
-  ...bash('gh run view'),
-];
-
 /** Running the app's own tests. No `npx` (it downloads and runs arbitrary packages). */
 const NPM_TEST = [...bash('npm test'), ...bash('npm run'), ...bash('npm ci')];
 
@@ -77,7 +67,6 @@ export function allowedTools(role: Role, scriptsDir: string): string[] {
         'Write(./docs/spec/**)',
         'Edit(./docs/spec/**)',
         ...GIT_READ,
-        ...GH_READ,
         ...[
           'arima-config',
           'arima-preflight',
@@ -116,16 +105,7 @@ export function allowedTools(role: Role, scriptsDir: string): string[] {
         'WebFetch',
       ];
     case 'tech-lead':
-      return [
-        ...read,
-        OUTBOX,
-        ...GIT_READ,
-        ...GH_READ,
-        ...bash('gh pr review'),
-        ...bash('gh pr comment'),
-        ...NPM_TEST,
-        'WebFetch',
-      ];
+      return [...read, OUTBOX, ...GIT_READ, ...NPM_TEST, 'WebFetch'];
     case 'developer':
       return [
         ...read,
@@ -136,10 +116,6 @@ export function allowedTools(role: Role, scriptsDir: string): string[] {
         ...bash('git commit'),
         ...bash('git switch'),
         ...bash('git checkout'),
-        // The guard hook limits pushes to the story's own branch; the default branch is blocked.
-        ...bash('git push'),
-        ...bash('gh pr create'),
-        ...bash('gh pr view'),
         ...NPM_TEST,
         'WebFetch',
       ];
@@ -167,10 +143,6 @@ export function allowedTools(role: Role, scriptsDir: string): string[] {
         ...GIT_READ,
         ...bash('git add'),
         ...bash('git commit'),
-        ...bash('git push'),
-        ...GH_READ,
-        ...bash('gh workflow list'),
-        ...bash('gh workflow view'),
         'WebFetch',
       ];
   }
@@ -203,6 +175,9 @@ export function deniedTools(role?: Role): string[] {
     'Write(./.arima/PAUSE)',
     'Edit(./.arima/run.lock)',
     'Write(./.arima/run.lock)',
+    // D-49: no role pushes or runs gh. The host publish script pushes, opens PRs and posts comments.
+    ...bash('git push'),
+    ...bash('gh'),
     ...bash('gh pr merge'),
     ...bash('gh api'),
     ...bash('gh workflow run'),
@@ -215,9 +190,17 @@ export function deniedTools(role?: Role): string[] {
   return out;
 }
 
-/** Roles that may hold the machine-account GitHub token (spec §10.3, §11.3). */
+/**
+ * No role holds a GitHub token (D-49, G-05): the host reads pull requests, CI and review threads
+ * into the run packet and posts each role's comments, and only the host publish and merge scripts
+ * push, open PRs and merge. The scope of a role's GitHub credential is therefore always `none`.
+ */
+export const githubTokenScope = (): 'none' => 'none';
+
+/** Roles that may hold a GitHub token: none (see `githubTokenScope`). */
 export function mayHoldGithubToken(role: Role): boolean {
-  return role === 'developer' || role === 'tech-lead' || role === 'devops';
+  void role;
+  return githubTokenScope() !== 'none';
 }
 
 /** Only the orchestrator talks to Notion (spec principle 6, D-07). */

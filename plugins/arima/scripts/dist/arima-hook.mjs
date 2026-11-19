@@ -8515,6 +8515,10 @@ function guardGit(g, dynamic, ctx) {
       }
       return void 0;
     case "push": {
+      if (ctx.role !== void 0)
+        return vcs(
+          "agents do not push: the host publish script pushes the branch and opens the pull request (D-49)"
+        );
       if (dynamic) return vcs("push arguments must be literal text, not shell substitutions");
       const flags = g.args.filter((a) => a.startsWith("-"));
       const positional = g.args.filter((a) => !a.startsWith("-"));
@@ -8573,6 +8577,10 @@ function guardGh(h, ctx) {
     else if (!t.startsWith("--repo=") && !t.startsWith("--hostname=")) w.push(t);
   }
   const [a, b] = [w[0], w[1]];
+  if (ctx.role !== void 0)
+    return vcs(
+      "agents hold no GitHub access: the host reads pull requests and CI into your run packet and posts your comments (D-49)"
+    );
   if (a === "pr" && b === "merge")
     return vcs("merging is done only by ARIMA's merge script after human approval (spec \xA710.3)");
   if (a === "api") {

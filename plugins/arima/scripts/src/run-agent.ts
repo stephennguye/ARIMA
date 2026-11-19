@@ -242,6 +242,7 @@ export function childEnv(
     const v = base[o.config.notionTokenEnv];
     if (v !== undefined) env[o.config.notionTokenEnv] = v;
   }
+  // No role is given a GitHub token (D-49): the host publish and merge scripts hold it.
   if (mayHoldGithubToken(o.role) && o.config.githubTokenEnv !== undefined) {
     const v = base[o.config.githubTokenEnv];
     if (v !== undefined) {
