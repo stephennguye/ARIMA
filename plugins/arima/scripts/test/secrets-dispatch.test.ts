@@ -11,6 +11,7 @@ import { Throttle } from '../src/lib/throttle.js';
 import { bootstrapTemplate } from '../src/notion/build.js';
 import { mapWorkspace } from '../src/notion/mapper.js';
 import { enqueue, pushOutbox } from '../src/notion/outbox.js';
+import type { PushReport } from '../src/notion/outbox.js';
 import { createNotionPort } from '../src/notion/port.js';
 import { setKillSwitch } from '../src/pause.js';
 import { appendLedgerRow, buildLedgerRow, parseClaudeResult } from '../src/ledger.js';
@@ -18,6 +19,14 @@ import { DispatchRefused, childEnv, runAgent } from '../src/run-agent.js';
 import type { AgentConfig } from '../src/run-agent.js';
 import { FakeNotion } from './fake-notion.js';
 import { REPO_ROOT, example, project, tempDir } from './helpers.js';
+
+/** Pushes hand-made entries: no run binding or id issuance (those are WP-104's own tests). */
+const pushHandMade = (
+  dir: Parameters<typeof pushOutbox>[0],
+  port: Parameters<typeof pushOutbox>[1],
+  map: Parameters<typeof pushOutbox>[2],
+  opts: Parameters<typeof pushOutbox>[3] = {},
+): Promise<PushReport> => pushOutbox(dir, port, map, { bindRuns: false, ...opts });
 
 const STUB = path.join(import.meta.dirname, 'fixtures', 'stub-claude.mjs');
 
@@ -83,7 +92,7 @@ describe('secrets never reach Notion', () => {
     id: 'ob-1',
     created_at: '2026-11-18T00:00:01.000Z',
     run_id: 'r-20261118-0200-01',
-    role: 'ba',
+    role: 'orchestrator',
     op: 'create' as const,
     database: 'documents' as const,
     ...extra,
@@ -113,7 +122,7 @@ describe('secrets never reach Notion', () => {
         entry({ properties: { Title: 'Leaky' }, content_markdown: `ntn_${'z'.repeat(30)}` }),
       ),
     );
-    const r = await pushOutbox(dir, port, map);
+    const r = await pushHandMade(dir, port, map);
     expect(r.applied).toEqual([]);
     expect(r.rejected[0]?.reason).toMatch(/contains a secret/);
     expect(fake.rows.size).toBe(0);
@@ -153,13 +162,13 @@ describe('an agent cannot hide a human edit by choosing its own baseline', () =>
       id,
       created_at: `2026-11-18T00:00:0${id.endsWith('1') ? 1 : 2}.000Z`,
       run_id: 'r-20261118-0200-01',
-      role: 'ba',
+      role: 'orchestrator',
       op,
       database: 'stories' as const,
       ...extra,
     });
     enqueue(dir, mk('e-1', 'create', { properties: { ID: 'US-001', Title: 'orig' } }));
-    await pushOutbox(dir, port, map);
+    await pushHandMade(dir, port, map);
     const row = fake.rowByTitle('Stories', 'US-001')!;
     fake.humanEdit(row.id, {
       Title: { rich_text: [{ type: 'text', text: { content: 'human' } }] },
@@ -172,7 +181,7 @@ describe('an agent cannot hide a human edit by choosing its own baseline', () =>
         properties: { Title: 'agent' },
       }),
     );
-    const r = await pushOutbox(dir, port, map);
+    const r = await pushHandMade(dir, port, map);
     expect(r.conflicts).toEqual(['e-2']);
     expect(fake.text(row, 'Title')).toBe('human');
   });

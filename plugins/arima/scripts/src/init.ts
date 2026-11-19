@@ -6,7 +6,7 @@ import type { ArimaConfig, TeamConfig } from './config.js';
 import { appendEvent } from './events.js';
 import { ensureNotionSwitch } from './killswitch.js';
 import { GATE_CRITERIA, GATE_PHASE } from './gates.js';
-import { findSecrets } from './lib/secrets.js';
+import { findSecrets, loadSecretAllowlist } from './lib/secrets.js';
 import { appendLedgerRow, buildLedgerRow } from './ledger.js';
 import { mapAndWrite } from './notion/map-file.js';
 import { findRow, pullMirror, readMirror } from './notion/mirror.js';
@@ -160,7 +160,7 @@ export async function runInit(o: InitOptions): Promise<InitResult> {
   // 1. brief
   const briefText = readFileSync(o.briefFile, 'utf8');
   // The brief is published to Notion and read by agents, so a pasted credential must stop here.
-  const leaked = findSecrets(briefText);
+  const leaked = findSecrets(briefText, loadSecretAllowlist(o.projectDir));
   if (leaked.length > 0) {
     result.problems = [
       `the brief looks like it contains a secret (${leaked.join(', ')}); remove it and keep credentials out of the brief`,
@@ -256,7 +256,7 @@ export async function runInit(o: InitOptions): Promise<InitResult> {
     // Entries left over from an earlier, interrupted run go first, so a re-run never queues duplicates.
     const leftover = await pushOutbox(o.projectDir, o.port, map, {
       now,
-      allowStatusWrites: true,
+      allowStatusWrites: { idPrefix: 'init-' },
     });
     for (const r of leftover.rejected)
       result.warnings.push('earlier outbox entry ' + r.id + ' was rejected: ' + r.reason);
@@ -337,7 +337,10 @@ export async function runInit(o: InitOptions): Promise<InitResult> {
     }
 
     // 6. apply
-    const report = await pushOutbox(o.projectDir, o.port, map, { now, allowStatusWrites: true });
+    const report = await pushOutbox(o.projectDir, o.port, map, {
+      now,
+      allowStatusWrites: { idPrefix: 'init-' },
+    });
     if (report.rejected.length + report.conflicts.length + report.deferred.length > 0) {
       result.problems = [
         ...report.rejected.map((r) => `${r.id}: ${r.reason}`),

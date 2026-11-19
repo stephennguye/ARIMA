@@ -339,7 +339,7 @@ describe('G-06: the orchestrator cannot hand-write engine state', () => {
     expect(arima.sort()).toEqual(
       [
         'Edit(./.arima/overrides/**)',
-        'Write(./.arima/outbox/**)',
+        'Write(./.arima/outbox/*.json)',
         'Write(./.arima/overrides/**)',
       ].sort(),
     );

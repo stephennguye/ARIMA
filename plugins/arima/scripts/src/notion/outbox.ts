@@ -7,10 +7,14 @@ import {
   writeFileSync,
 } from 'node:fs';
 import path from 'node:path';
-import { appendEvent } from '../events.js';
+import { appendEvent, readEvents } from '../events.js';
+import type { ReasonCode } from '../reasons.js';
+import { OUTBOX_DATABASES, OUTBOX_FORBIDDEN_PROPERTIES, ROLES } from '../roles.js';
+import type { Role } from '../ledger.js';
 import { writeFileAtomic } from '../lib/atomic-file.js';
 import { describeError, getValidator } from '../lib/schema.js';
-import { findSecrets } from '../lib/secrets.js';
+import { findSecrets, loadSecretAllowlist } from '../lib/secrets.js';
+import { ID_PREFIX_BY_DB, allocatedTo, titleProperty } from './allocations.js';
 import { findRow, pullMirror, readMirror, toMirrorRow, writeMirror } from './mirror.js';
 import type { MirrorFile, MirrorRow } from './mirror.js';
 import type { MapDatabase, NotionMap } from './mapper.js';
@@ -37,15 +41,16 @@ export interface OutboxEntry {
 export const outboxDir = (projectDir: string): string => path.join(projectDir, '.arima', 'outbox');
 
 /** Kinds of secret found in the parts of an entry that would be written to Notion. */
-function secretsIn(entry: OutboxEntry): string[] {
+function secretsIn(entry: OutboxEntry, allowed: ReadonlySet<string> = new Set()): string[] {
   return findSecrets(
     JSON.stringify({ p: entry.properties ?? {}, c: entry.content_markdown ?? '' }),
+    allowed,
   );
 }
 
 export interface PushReport {
   applied: string[];
-  rejected: { id: string; reason: string }[];
+  rejected: { id: string; reason: string; code?: ReasonCode }[];
   conflicts: string[];
   /** Left in the outbox because Notion could not be reached or errored; retried next run. */
   deferred: string[];
@@ -54,14 +59,28 @@ export interface PushReport {
 const UUID = /^[0-9a-f]{8}-?[0-9a-f]{4}-?[0-9a-f]{4}-?[0-9a-f]{4}-?[0-9a-f]{12}$/i;
 
 /** Writes a validated outbox entry (what an agent or script does to propose a Notion change). */
-export function enqueue(projectDir: string, entry: OutboxEntry): string {
+export function enqueue(
+  projectDir: string,
+  entry: OutboxEntry,
+  opts: { env?: NodeJS.ProcessEnv } = {},
+): string {
+  // Inside a run the wrapper sets the run id and role; an entry may not claim another run's.
+  const env = opts.env ?? process.env;
+  if (env['ARIMA_RUN_ID'] !== undefined && env['ARIMA_RUN_ID'] !== entry.run_id)
+    throw new Error(
+      `entry ${entry.id} names run ${entry.run_id}, but this process is run ${env['ARIMA_RUN_ID']}`,
+    );
+  if (env['ARIMA_ROLE'] !== undefined && env['ARIMA_ROLE'] !== entry.role)
+    throw new Error(
+      `entry ${entry.id} names role ${entry.role}, but this process runs as ${env['ARIMA_ROLE']}`,
+    );
   const validate = getValidator('outbox');
   if (!validate(entry)) {
     throw new Error(
       `Invalid outbox entry: ${(validate.errors ?? []).map(describeError).join('; ')}`,
     );
   }
-  const leaked = secretsIn(entry);
+  const leaked = secretsIn(entry, loadSecretAllowlist(projectDir));
   if (leaked.length > 0) {
     throw new Error(
       `Refusing outbox entry ${entry.id}: it looks like it contains a secret (${leaked.join(', ')})`,
@@ -97,7 +116,7 @@ interface Pending {
 
 type Settled =
   | { kind: 'applied'; pageId: string }
-  | { kind: 'rejected'; reason: string; refused?: boolean }
+  | { kind: 'rejected'; reason: string; refused?: boolean; code?: ReasonCode }
   | { kind: 'conflict'; humanEditedAt: string }
   | { kind: 'deferred'; reason: string };
 
@@ -154,7 +173,12 @@ function settle(
           : undefined;
   if (result.kind === 'applied') report.applied.push(id);
   else if (result.kind === 'conflict') report.conflicts.push(id);
-  else if (result.kind === 'rejected') report.rejected.push({ id, reason: result.reason });
+  else if (result.kind === 'rejected')
+    report.rejected.push({
+      id,
+      reason: result.reason,
+      ...(result.code ? { code: result.code } : {}),
+    });
   else report.deferred.push(id);
   if (bucket === undefined) return; // deferred: stays where it is
   const dir = path.join(outboxDir(projectDir), bucket);
@@ -191,10 +215,20 @@ export async function pushOutbox(
      * exists, an agent's outbox entry must not be able to mark a story Done. Only a human-run
      * command (init, or `arima-notion push --allow-status-writes`) turns this on.
      */
-    allowStatusWrites?: boolean;
+    allowStatusWrites?: boolean | { idPrefix: string };
+    /**
+     * Require every entry to belong to a run ARIMA started (a `run.start` event) with that run's
+     * role, and every created id-titled row to carry an id the engine issued to the run. On by
+     * default; only tests that push hand-made entries turn it off.
+     */
+    bindRuns?: boolean;
   } = {},
 ): Promise<PushReport> {
   const report: PushReport = { applied: [], rejected: [], conflicts: [], deferred: [] };
+  const allowed = loadSecretAllowlist(projectDir);
+  const runRoles = new Map<string, string>();
+  for (const e of readEvents(projectDir))
+    if (e.type === 'run.start' && e.run_id !== undefined) runRoles.set(e.run_id, e.actor);
   const pending = listPending(projectDir, report);
   if (pending.length === 0) return report;
 
@@ -277,7 +311,11 @@ export async function pushOutbox(
         actor: 'system',
         run_id: entry.run_id,
         ...(base.item ? { item: base.item } : {}),
-        data: { ...common, reason: result.reason },
+        data: {
+          ...common,
+          reason: result.reason,
+          ...(result.code ? { reason_code: result.code } : {}),
+        },
       });
     }
     if (result.kind === 'deferred') break; // Notion is struggling: stop, retry next run
@@ -285,14 +323,71 @@ export async function pushOutbox(
   for (const m of mirrors.values()) writeMirror(projectDir, m);
   return report;
 
+  function mayWriteStatus(entry: OutboxEntry): boolean {
+    const a = opts.allowStatusWrites;
+    if (a === true) return true;
+    return typeof a === 'object' && entry.id.startsWith(a.idPrefix);
+  }
+
   async function applyEntry(entry: OutboxEntry): Promise<Settled> {
     const db = map.databases[entry.database] as MapDatabase | undefined;
     if (db === undefined)
       return { kind: 'rejected', reason: `database "${entry.database}" is not in notion-map.json` };
     const mirror = mirrors.get(entry.database) as MirrorFile;
 
+    // Who may write what: a known role, bound to its run, to databases and properties its job needs.
+    if (!(ROLES as readonly string[]).includes(entry.role))
+      return {
+        kind: 'rejected',
+        refused: true,
+        reason: `"${entry.role}" is not a role of the team`,
+      };
+    const role = entry.role as Role;
+    if (opts.bindRuns !== false) {
+      const runRole = runRoles.get(entry.run_id);
+      if (runRole === undefined)
+        return {
+          kind: 'rejected',
+          refused: true,
+          reason: `run ${entry.run_id} was not started by ARIMA (no run.start event); an outbox entry must belong to a run`,
+        };
+      if (runRole !== role)
+        return {
+          kind: 'rejected',
+          refused: true,
+          reason: `the entry says role ${role}, but run ${entry.run_id} was started as ${runRole}`,
+        };
+    }
+    if (!OUTBOX_DATABASES[role].includes(entry.database))
+      return {
+        kind: 'rejected',
+        refused: true,
+        code: 'database_not_allowed',
+        reason: `role ${role} may not write ${db.title} (database_not_allowed)`,
+      };
+    for (const name of Object.keys(entry.properties ?? {}))
+      if (OUTBOX_FORBIDDEN_PROPERTIES[role]?.includes(name))
+        return {
+          kind: 'rejected',
+          refused: true,
+          reason: `role ${role} may not write "${name}" (that decision belongs to the product owner)`,
+        };
+    if (
+      opts.bindRuns !== false &&
+      entry.op === 'create' &&
+      ID_PREFIX_BY_DB[entry.database] !== undefined
+    ) {
+      const title = String((entry.properties ?? {})[titleProperty(entry.database)] ?? '');
+      if (allocatedTo(projectDir, title) !== entry.run_id)
+        return {
+          kind: 'rejected',
+          refused: true,
+          reason: `"${title}" was not issued to run ${entry.run_id}: an agent cannot choose an id; propose the record in the report and the engine issues it`,
+        };
+    }
+
     // Secrets never go to Notion (spec §11.3), whoever wrote the entry.
-    const leaked = secretsIn(entry);
+    const leaked = secretsIn(entry, allowed);
     if (leaked.length > 0) {
       return {
         kind: 'rejected',
@@ -309,7 +404,7 @@ export async function pushOutbox(
         return { kind: 'rejected', reason: `unknown property "${name}" on ${db.title}` };
       if (name === LAST_WRITTEN_BY_RUN)
         return { kind: 'rejected', reason: `"${name}" is stamped by ARIMA and cannot be set` };
-      if (name === 'Status' && opts.allowStatusWrites !== true) {
+      if (name === 'Status' && !mayWriteStatus(entry)) {
         return {
           kind: 'rejected',
           refused: true,

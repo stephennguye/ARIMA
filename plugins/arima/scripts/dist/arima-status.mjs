@@ -19126,6 +19126,47 @@ function readMirror(projectDir, db) {
   return JSON.parse(readFileSync5(file, "utf8"));
 }
 
+// plugins/arima/scripts/src/roles.ts
+var bash = (cmd) => [`Bash(${cmd})`, `Bash(${cmd} *)`];
+var GIT_READ = [
+  ...bash("git status"),
+  ...bash("git diff"),
+  ...bash("git log"),
+  ...bash("git show"),
+  ...bash("git rev-parse"),
+  ...bash("git ls-files"),
+  ...bash("git branch --list"),
+  ...bash("git fetch")
+];
+var GH_READ = [
+  ...bash("gh pr view"),
+  ...bash("gh pr list"),
+  ...bash("gh pr diff"),
+  ...bash("gh pr checks"),
+  ...bash("gh run list"),
+  ...bash("gh run view")
+];
+var NPM_TEST = [...bash("npm test"), ...bash("npm run"), ...bash("npm ci")];
+
+// plugins/arima/scripts/src/ids.ts
+var ID_WIDTHS = {
+  REQ: 3,
+  NFR: 3,
+  EP: 2,
+  US: 3,
+  TC: 4,
+  BUG: 3,
+  ADR: 4,
+  RISK: 3,
+  DEC: 4,
+  Q: 3,
+  MS: 2,
+  CR: 3,
+  INC: 3,
+  LES: 3
+};
+var ID_PREFIXES = Object.keys(ID_WIDTHS);
+
 // plugins/arima/scripts/src/budget.ts
 var round = (n) => Math.round(n * 1e6) / 1e6;
 function budgetStatus(projectDir, limits, today) {

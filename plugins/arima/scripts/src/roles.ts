@@ -1,3 +1,4 @@
+import type { DbKey } from './notion/schema.js';
 import type { Role } from './ledger.js';
 
 export const ROLES: readonly Role[] = [
@@ -21,7 +22,8 @@ export function configKey(role: Role): string {
   return role.replace('-', '_');
 }
 
-const OUTBOX = 'Write(./.arima/outbox/**)';
+/** Top-level outbox files only (G-07); the sub-folders are written by `arima-notion push`. */
+const OUTBOX = 'Write(./.arima/outbox/*.json)';
 
 /** `Bash(cmd)` and `Bash(cmd *)`, so a command with and without arguments both match. */
 const bash = (cmd: string): string[] => [`Bash(${cmd})`, `Bash(${cmd} *)`];
@@ -222,3 +224,47 @@ export function mayHoldGithubToken(role: Role): boolean {
 export function mayHoldNotionToken(role: Role): boolean {
   return role === 'orchestrator';
 }
+
+/**
+ * Databases a role may write through the outbox (RD-F03-2, 09 section 1: tools match the whole job,
+ * no more). Enforced at push; a violation is rejected with reason `database_not_allowed`. The
+ * orchestrator may write every database (human-only fields stay refused). Never for a non-
+ * orchestrator role: gates, digests, cost_log, milestones (releases only for devops).
+ */
+export const OUTBOX_DATABASES: Record<Role, readonly DbKey[]> = {
+  orchestrator: [
+    'gates',
+    'requirements',
+    'epics',
+    'stories',
+    'test_cases',
+    'bugs',
+    'milestones',
+    'documents',
+    'decisions',
+    'questions',
+    'meetings',
+    'digests',
+    'releases',
+    'incidents',
+    'change_requests',
+    'risks',
+    'lessons',
+    'cost_log',
+    'human_tasks',
+  ],
+  ba: ['requirements', 'epics', 'stories', 'documents', 'risks', 'questions', 'decisions'],
+  ux: ['documents', 'stories', 'questions', 'decisions'],
+  architect: ['documents', 'requirements', 'risks', 'questions', 'decisions'],
+  'tech-lead': ['documents', 'risks', 'questions', 'decisions'],
+  developer: ['stories', 'bugs', 'questions', 'decisions'],
+  qa: ['test_cases', 'bugs', 'documents', 'questions', 'decisions'],
+  security: ['risks', 'documents', 'questions', 'decisions'],
+  devops: ['documents', 'releases', 'incidents', 'risks', 'human_tasks', 'questions', 'decisions'],
+};
+
+/** Properties a role may not write even in a database it may write (priority is the PO's call). */
+export const OUTBOX_FORBIDDEN_PROPERTIES: Partial<Record<Role, readonly string[]>> = {
+  ba: ['Priority'],
+  ux: ['Priority'],
+};

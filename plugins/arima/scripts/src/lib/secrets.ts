@@ -1,3 +1,5 @@
+import { existsSync, readFileSync } from 'node:fs';
+import path from 'node:path';
 import { createHash } from 'node:crypto';
 
 /**
@@ -119,6 +121,19 @@ export function assertNoSecrets(text: string, where: string): void {
       `Refusing to write ${where}: content looks like a secret (${found.join(', ')})`,
     );
   }
+}
+
+/**
+ * The one place the secret allow-list is read (G-09): state push, outbox and init all call this.
+ * A missing file is an empty list. Only a human writes `.arima/secret-allowlist.txt`.
+ */
+export function readAllowlistFile(file: string): Set<string> {
+  return existsSync(file) ? parseAllowlist(readFileSync(file, 'utf8')) : new Set<string>();
+}
+
+/** The allow-list of a project (`<project>/.arima/secret-allowlist.txt`). */
+export function loadSecretAllowlist(projectDir: string): Set<string> {
+  return readAllowlistFile(path.join(projectDir, '.arima', 'secret-allowlist.txt'));
 }
 
 /** Parses an allowlist file: one `sha256:<16 hex>` per line, `#` comments allowed. */

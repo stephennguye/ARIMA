@@ -18690,7 +18690,7 @@ function isRole(value) {
 function configKey(role) {
   return role.replace("-", "_");
 }
-var OUTBOX = "Write(./.arima/outbox/**)";
+var OUTBOX = "Write(./.arima/outbox/*.json)";
 var bash = (cmd) => [`Bash(${cmd})`, `Bash(${cmd} *)`];
 var GIT_READ = [
   ...bash("git status"),

@@ -112,17 +112,17 @@ var require_visit = __commonJS({
     visit.BREAK = BREAK;
     visit.SKIP = SKIP;
     visit.REMOVE = REMOVE;
-    function visit_(key, node, visitor, path9) {
-      const ctrl = callVisitor(key, node, visitor, path9);
+    function visit_(key, node, visitor, path11) {
+      const ctrl = callVisitor(key, node, visitor, path11);
       if (identity.isNode(ctrl) || identity.isPair(ctrl)) {
-        replaceNode(key, path9, ctrl);
-        return visit_(key, ctrl, visitor, path9);
+        replaceNode(key, path11, ctrl);
+        return visit_(key, ctrl, visitor, path11);
       }
       if (typeof ctrl !== "symbol") {
         if (identity.isCollection(node)) {
-          path9 = Object.freeze(path9.concat(node));
+          path11 = Object.freeze(path11.concat(node));
           for (let i = 0; i < node.items.length; ++i) {
-            const ci = visit_(i, node.items[i], visitor, path9);
+            const ci = visit_(i, node.items[i], visitor, path11);
             if (typeof ci === "number")
               i = ci - 1;
             else if (ci === BREAK)
@@ -133,13 +133,13 @@ var require_visit = __commonJS({
             }
           }
         } else if (identity.isPair(node)) {
-          path9 = Object.freeze(path9.concat(node));
-          const ck = visit_("key", node.key, visitor, path9);
+          path11 = Object.freeze(path11.concat(node));
+          const ck = visit_("key", node.key, visitor, path11);
           if (ck === BREAK)
             return BREAK;
           else if (ck === REMOVE)
             node.key = null;
-          const cv = visit_("value", node.value, visitor, path9);
+          const cv = visit_("value", node.value, visitor, path11);
           if (cv === BREAK)
             return BREAK;
           else if (cv === REMOVE)
@@ -160,17 +160,17 @@ var require_visit = __commonJS({
     visitAsync.BREAK = BREAK;
     visitAsync.SKIP = SKIP;
     visitAsync.REMOVE = REMOVE;
-    async function visitAsync_(key, node, visitor, path9) {
-      const ctrl = await callVisitor(key, node, visitor, path9);
+    async function visitAsync_(key, node, visitor, path11) {
+      const ctrl = await callVisitor(key, node, visitor, path11);
       if (identity.isNode(ctrl) || identity.isPair(ctrl)) {
-        replaceNode(key, path9, ctrl);
-        return visitAsync_(key, ctrl, visitor, path9);
+        replaceNode(key, path11, ctrl);
+        return visitAsync_(key, ctrl, visitor, path11);
       }
       if (typeof ctrl !== "symbol") {
         if (identity.isCollection(node)) {
-          path9 = Object.freeze(path9.concat(node));
+          path11 = Object.freeze(path11.concat(node));
           for (let i = 0; i < node.items.length; ++i) {
-            const ci = await visitAsync_(i, node.items[i], visitor, path9);
+            const ci = await visitAsync_(i, node.items[i], visitor, path11);
             if (typeof ci === "number")
               i = ci - 1;
             else if (ci === BREAK)
@@ -181,13 +181,13 @@ var require_visit = __commonJS({
             }
           }
         } else if (identity.isPair(node)) {
-          path9 = Object.freeze(path9.concat(node));
-          const ck = await visitAsync_("key", node.key, visitor, path9);
+          path11 = Object.freeze(path11.concat(node));
+          const ck = await visitAsync_("key", node.key, visitor, path11);
           if (ck === BREAK)
             return BREAK;
           else if (ck === REMOVE)
             node.key = null;
-          const cv = await visitAsync_("value", node.value, visitor, path9);
+          const cv = await visitAsync_("value", node.value, visitor, path11);
           if (cv === BREAK)
             return BREAK;
           else if (cv === REMOVE)
@@ -214,23 +214,23 @@ var require_visit = __commonJS({
       }
       return visitor;
     }
-    function callVisitor(key, node, visitor, path9) {
+    function callVisitor(key, node, visitor, path11) {
       if (typeof visitor === "function")
-        return visitor(key, node, path9);
+        return visitor(key, node, path11);
       if (identity.isMap(node))
-        return visitor.Map?.(key, node, path9);
+        return visitor.Map?.(key, node, path11);
       if (identity.isSeq(node))
-        return visitor.Seq?.(key, node, path9);
+        return visitor.Seq?.(key, node, path11);
       if (identity.isPair(node))
-        return visitor.Pair?.(key, node, path9);
+        return visitor.Pair?.(key, node, path11);
       if (identity.isScalar(node))
-        return visitor.Scalar?.(key, node, path9);
+        return visitor.Scalar?.(key, node, path11);
       if (identity.isAlias(node))
-        return visitor.Alias?.(key, node, path9);
+        return visitor.Alias?.(key, node, path11);
       return void 0;
     }
-    function replaceNode(key, path9, node) {
-      const parent = path9[path9.length - 1];
+    function replaceNode(key, path11, node) {
+      const parent = path11[path11.length - 1];
       if (identity.isCollection(parent)) {
         parent.items[key] = node;
       } else if (identity.isPair(parent)) {
@@ -842,10 +842,10 @@ var require_Collection = __commonJS({
     var createNode = require_createNode();
     var identity = require_identity();
     var Node = require_Node();
-    function collectionFromPath(schema, path9, value) {
+    function collectionFromPath(schema, path11, value) {
       let v = value;
-      for (let i = path9.length - 1; i >= 0; --i) {
-        const k = path9[i];
+      for (let i = path11.length - 1; i >= 0; --i) {
+        const k = path11[i];
         if (typeof k === "number" && Number.isInteger(k) && k >= 0) {
           const a = [];
           a[k] = v;
@@ -864,7 +864,7 @@ var require_Collection = __commonJS({
         sourceObjects: /* @__PURE__ */ new Map()
       });
     }
-    var isEmptyPath = (path9) => path9 == null || typeof path9 === "object" && !!path9[Symbol.iterator]().next().done;
+    var isEmptyPath = (path11) => path11 == null || typeof path11 === "object" && !!path11[Symbol.iterator]().next().done;
     var Collection = class extends Node.NodeBase {
       constructor(type, schema) {
         super(type);
@@ -894,11 +894,11 @@ var require_Collection = __commonJS({
        * be a Pair instance or a `{ key, value }` object, which may not have a key
        * that already exists in the map.
        */
-      addIn(path9, value) {
-        if (isEmptyPath(path9))
+      addIn(path11, value) {
+        if (isEmptyPath(path11))
           this.add(value);
         else {
-          const [key, ...rest] = path9;
+          const [key, ...rest] = path11;
           const node = this.get(key, true);
           if (identity.isCollection(node))
             node.addIn(rest, value);
@@ -912,8 +912,8 @@ var require_Collection = __commonJS({
        * Removes a value from the collection.
        * @returns `true` if the item was found and removed.
        */
-      deleteIn(path9) {
-        const [key, ...rest] = path9;
+      deleteIn(path11) {
+        const [key, ...rest] = path11;
         if (rest.length === 0)
           return this.delete(key);
         const node = this.get(key, true);
@@ -927,8 +927,8 @@ var require_Collection = __commonJS({
        * scalar values from their surrounding node; to disable set `keepScalar` to
        * `true` (collections are always returned intact).
        */
-      getIn(path9, keepScalar) {
-        const [key, ...rest] = path9;
+      getIn(path11, keepScalar) {
+        const [key, ...rest] = path11;
         const node = this.get(key, true);
         if (rest.length === 0)
           return !keepScalar && identity.isScalar(node) ? node.value : node;
@@ -946,8 +946,8 @@ var require_Collection = __commonJS({
       /**
        * Checks if the collection includes a value with the key `key`.
        */
-      hasIn(path9) {
-        const [key, ...rest] = path9;
+      hasIn(path11) {
+        const [key, ...rest] = path11;
         if (rest.length === 0)
           return this.has(key);
         const node = this.get(key, true);
@@ -957,8 +957,8 @@ var require_Collection = __commonJS({
        * Sets a value in this collection. For `!!set`, `value` needs to be a
        * boolean to add/remove the item from the set.
        */
-      setIn(path9, value) {
-        const [key, ...rest] = path9;
+      setIn(path11, value) {
+        const [key, ...rest] = path11;
         if (rest.length === 0) {
           this.set(key, value);
         } else {
@@ -3473,9 +3473,9 @@ var require_Document = __commonJS({
           this.contents.add(value);
       }
       /** Adds a value to the document. */
-      addIn(path9, value) {
+      addIn(path11, value) {
         if (assertCollection(this.contents))
-          this.contents.addIn(path9, value);
+          this.contents.addIn(path11, value);
       }
       /**
        * Create a new `Alias` node, ensuring that the target `node` has the required anchor.
@@ -3550,14 +3550,14 @@ var require_Document = __commonJS({
        * Removes a value from the document.
        * @returns `true` if the item was found and removed.
        */
-      deleteIn(path9) {
-        if (Collection.isEmptyPath(path9)) {
+      deleteIn(path11) {
+        if (Collection.isEmptyPath(path11)) {
           if (this.contents == null)
             return false;
           this.contents = null;
           return true;
         }
-        return assertCollection(this.contents) ? this.contents.deleteIn(path9) : false;
+        return assertCollection(this.contents) ? this.contents.deleteIn(path11) : false;
       }
       /**
        * Returns item at `key`, or `undefined` if not found. By default unwraps
@@ -3572,10 +3572,10 @@ var require_Document = __commonJS({
        * scalar values from their surrounding node; to disable set `keepScalar` to
        * `true` (collections are always returned intact).
        */
-      getIn(path9, keepScalar) {
-        if (Collection.isEmptyPath(path9))
+      getIn(path11, keepScalar) {
+        if (Collection.isEmptyPath(path11))
           return !keepScalar && identity.isScalar(this.contents) ? this.contents.value : this.contents;
-        return identity.isCollection(this.contents) ? this.contents.getIn(path9, keepScalar) : void 0;
+        return identity.isCollection(this.contents) ? this.contents.getIn(path11, keepScalar) : void 0;
       }
       /**
        * Checks if the document includes a value with the key `key`.
@@ -3586,10 +3586,10 @@ var require_Document = __commonJS({
       /**
        * Checks if the document includes a value at `path`.
        */
-      hasIn(path9) {
-        if (Collection.isEmptyPath(path9))
+      hasIn(path11) {
+        if (Collection.isEmptyPath(path11))
           return this.contents !== void 0;
-        return identity.isCollection(this.contents) ? this.contents.hasIn(path9) : false;
+        return identity.isCollection(this.contents) ? this.contents.hasIn(path11) : false;
       }
       /**
        * Sets a value in this document. For `!!set`, `value` needs to be a
@@ -3606,13 +3606,13 @@ var require_Document = __commonJS({
        * Sets a value in this document. For `!!set`, `value` needs to be a
        * boolean to add/remove the item from the set.
        */
-      setIn(path9, value) {
-        if (Collection.isEmptyPath(path9)) {
+      setIn(path11, value) {
+        if (Collection.isEmptyPath(path11)) {
           this.contents = value;
         } else if (this.contents == null) {
-          this.contents = Collection.collectionFromPath(this.schema, Array.from(path9), value);
+          this.contents = Collection.collectionFromPath(this.schema, Array.from(path11), value);
         } else if (assertCollection(this.contents)) {
-          this.contents.setIn(path9, value);
+          this.contents.setIn(path11, value);
         }
       }
       /**
@@ -5573,9 +5573,9 @@ var require_cst_visit = __commonJS({
     visit.BREAK = BREAK;
     visit.SKIP = SKIP;
     visit.REMOVE = REMOVE;
-    visit.itemAtPath = (cst, path9) => {
+    visit.itemAtPath = (cst, path11) => {
       let item = cst;
-      for (const [field, index] of path9) {
+      for (const [field, index] of path11) {
         const tok = item?.[field];
         if (tok && "items" in tok) {
           item = tok.items[index];
@@ -5584,23 +5584,23 @@ var require_cst_visit = __commonJS({
       }
       return item;
     };
-    visit.parentCollection = (cst, path9) => {
-      const parent = visit.itemAtPath(cst, path9.slice(0, -1));
-      const field = path9[path9.length - 1][0];
+    visit.parentCollection = (cst, path11) => {
+      const parent = visit.itemAtPath(cst, path11.slice(0, -1));
+      const field = path11[path11.length - 1][0];
       const coll = parent?.[field];
       if (coll && "items" in coll)
         return coll;
       throw new Error("Parent collection not found");
     };
-    function _visit(path9, item, visitor) {
-      let ctrl = visitor(item, path9);
+    function _visit(path11, item, visitor) {
+      let ctrl = visitor(item, path11);
       if (typeof ctrl === "symbol")
         return ctrl;
       for (const field of ["key", "value"]) {
         const token = item[field];
         if (token && "items" in token) {
           for (let i = 0; i < token.items.length; ++i) {
-            const ci = _visit(Object.freeze(path9.concat([[field, i]])), token.items[i], visitor);
+            const ci = _visit(Object.freeze(path11.concat([[field, i]])), token.items[i], visitor);
             if (typeof ci === "number")
               i = ci - 1;
             else if (ci === BREAK)
@@ -5611,10 +5611,10 @@ var require_cst_visit = __commonJS({
             }
           }
           if (typeof ctrl === "function" && field === "key")
-            ctrl = ctrl(item, path9);
+            ctrl = ctrl(item, path11);
         }
       }
-      return typeof ctrl === "function" ? ctrl(item, path9) : ctrl;
+      return typeof ctrl === "function" ? ctrl(item, path11) : ctrl;
     }
     exports.visit = visit;
   }
@@ -10594,8 +10594,8 @@ var require_utils = __commonJS({
       }
       return ind;
     }
-    function removeDotSegments(path9) {
-      let input = path9;
+    function removeDotSegments(path11) {
+      let input = path11;
       const output = [];
       let nextSlash = -1;
       let len = 0;
@@ -10669,11 +10669,11 @@ var require_utils = __commonJS({
       }
       return output.join("");
     }
-    function removeDotSegmentsRelative(path9) {
-      if (path9 === "" || path9[0] === "/") {
-        return removeDotSegments(path9);
+    function removeDotSegmentsRelative(path11) {
+      if (path11 === "" || path11[0] === "/") {
+        return removeDotSegments(path11);
       }
-      const segments = path9.split("/");
+      const segments = path11.split("/");
       const last = segments.length - 1;
       const output = [];
       let trailingDirectory = false;
@@ -11036,8 +11036,8 @@ var require_schemes = __commonJS({
       }
       if (wsComponent.resourceName) {
         const queryIndex = wsComponent.resourceName.indexOf("?");
-        const path9 = queryIndex === -1 ? wsComponent.resourceName : wsComponent.resourceName.slice(0, queryIndex);
-        wsComponent.path = path9 && path9 !== "/" ? path9 : void 0;
+        const path11 = queryIndex === -1 ? wsComponent.resourceName : wsComponent.resourceName.slice(0, queryIndex);
+        wsComponent.path = path11 && path11 !== "/" ? path11 : void 0;
         wsComponent.query = queryIndex === -1 ? void 0 : wsComponent.resourceName.slice(queryIndex + 1);
         wsComponent.resourceName = void 0;
       }
@@ -16713,19 +16713,19 @@ var require_errors3 = __commonJS({
       }
     };
     exports.BrowserTokenNotAllowedError = BrowserTokenNotAllowedError;
-    function validateRequestPath(path9) {
-      if (path9.includes("..")) {
-        throw new InvalidPathParameterError(`Request path "${path9}" contains path traversal sequence ".."`);
+    function validateRequestPath(path11) {
+      if (path11.includes("..")) {
+        throw new InvalidPathParameterError(`Request path "${path11}" contains path traversal sequence ".."`);
       }
-      if (/%2e/i.test(path9)) {
+      if (/%2e/i.test(path11)) {
         let decoded;
         try {
-          decoded = decodeURIComponent(path9);
+          decoded = decodeURIComponent(path11);
         } catch {
           return;
         }
         if (decoded.includes("..")) {
-          throw new InvalidPathParameterError(`Request path "${path9}" contains encoded path traversal sequence`);
+          throw new InvalidPathParameterError(`Request path "${path11}" contains encoded path traversal sequence`);
         }
       }
     }
@@ -17409,17 +17409,17 @@ var require_Client = __commonJS({
        * Sends a request.
        */
       async request(args) {
-        const { path: path9, method, query, body, formDataParams, auth } = args;
-        (0, errors_1.validateRequestPath)(path9);
-        this.log(logging_1.LogLevel.INFO, "request start", { method, path: path9 });
-        const url2 = this.buildRequestUrl(path9, query);
+        const { path: path11, method, query, body, formDataParams, auth } = args;
+        (0, errors_1.validateRequestPath)(path11);
+        this.log(logging_1.LogLevel.INFO, "request start", { method, path: path11 });
+        const url2 = this.buildRequestUrl(path11, query);
         const bodyAsJsonString = this.serializeBody(body);
         const headers = this.buildRequestHeaders(args.headers, auth, bodyAsJsonString);
         const formData = this.buildFormData(formDataParams, headers);
         return this.executeWithRetry({
           url: url2,
           method,
-          path: path9,
+          path: path11,
           headers,
           body: bodyAsJsonString !== null && bodyAsJsonString !== void 0 ? bodyAsJsonString : formData
         }, (request) => this.executeSingleRequest(request));
@@ -17429,20 +17429,20 @@ var require_Client = __commonJS({
        */
       async *streamRequest(args, parseEvent) {
         var _a;
-        const { path: path9, method, query, body, auth } = args;
-        (0, errors_1.validateRequestPath)(path9);
-        this.log(logging_1.LogLevel.INFO, "stream request start", { method, path: path9 });
-        const url2 = this.buildRequestUrl(path9, query);
+        const { path: path11, method, query, body, auth } = args;
+        (0, errors_1.validateRequestPath)(path11);
+        this.log(logging_1.LogLevel.INFO, "stream request start", { method, path: path11 });
+        const url2 = this.buildRequestUrl(path11, query);
         const bodyAsJsonString = this.serializeBody(body);
         const headers = this.buildRequestHeaders(args.headers, auth, bodyAsJsonString);
         const response = await this.executeWithRetry({
           url: url2,
           method,
-          path: path9,
+          path: path11,
           headers,
           body: bodyAsJsonString
         }, (request) => this.executeSingleStreamRequest(request));
-        this.log(logging_1.LogLevel.INFO, "stream request opened", { method, path: path9 });
+        this.log(logging_1.LogLevel.INFO, "stream request opened", { method, path: path11 });
         if (response.body === void 0 || response.body === null) {
           for (const frame of takeSseFrames({
             content: await response.text(),
@@ -17494,8 +17494,8 @@ var require_Client = __commonJS({
       /**
        * Builds the full URL with query parameters.
        */
-      buildRequestUrl(path9, query) {
-        const url2 = new URL(`${__classPrivateFieldGet(this, _Client_prefixUrl, "f")}${path9}`);
+      buildRequestUrl(path11, query) {
+        const url2 = new URL(`${__classPrivateFieldGet(this, _Client_prefixUrl, "f")}${path11}`);
         if (query) {
           for (const [key, value] of Object.entries(query)) {
             if (value !== void 0 && value !== null) {
@@ -17582,14 +17582,14 @@ var require_Client = __commonJS({
        * Executes the request with retry logic.
        */
       async executeWithRetry(args, execute) {
-        const { url: url2, method, path: path9, headers, body } = args;
+        const { url: url2, method, path: path11, headers, body } = args;
         let attempt = 0;
         while (true) {
           try {
             return await execute({
               url: url2,
               method,
-              path: path9,
+              path: path11,
               headers,
               body
             });
@@ -17602,7 +17602,7 @@ var require_Client = __commonJS({
               const delayMs = this.calculateRetryDelay(error, attempt);
               this.log(logging_1.LogLevel.INFO, "retrying request", {
                 method,
-                path: path9,
+                path: path11,
                 attempt: attempt + 1,
                 delayMs
               });
@@ -17618,7 +17618,7 @@ var require_Client = __commonJS({
        * Executes a single HTTP request (no retry).
        */
       async executeSingleRequest(args) {
-        const { url: url2, method, path: path9, headers, body } = args;
+        const { url: url2, method, path: path11, headers, body } = args;
         const response = await errors_1.RequestTimeoutError.rejectAfterTimeout(__classPrivateFieldGet(this, _Client_fetch, "f").call(this, url2.toString(), {
           method: method.toUpperCase(),
           headers,
@@ -17632,7 +17632,7 @@ var require_Client = __commonJS({
         const responseJson = JSON.parse(responseText);
         this.log(logging_1.LogLevel.INFO, "request success", {
           method,
-          path: path9,
+          path: path11,
           ...this.extractRequestId(responseJson)
         });
         return responseJson;
@@ -18299,8 +18299,8 @@ var require_src = __commonJS({
 
 // plugins/arima/scripts/src/cli/notion-cli.ts
 var import_yaml = __toESM(require_dist(), 1);
-import { existsSync as existsSync5, mkdirSync as mkdirSync5, readFileSync as readFileSync5 } from "node:fs";
-import path8 from "node:path";
+import { existsSync as existsSync7, mkdirSync as mkdirSync6, readFileSync as readFileSync7 } from "node:fs";
+import path10 from "node:path";
 import { parseArgs } from "node:util";
 
 // plugins/arima/scripts/src/lib/atomic-file.ts
@@ -19165,6 +19165,11 @@ function expandedSpec() {
   }
   return [...byKey.values()];
 }
+function dbByKey(key) {
+  const found = expandedSpec().find((d) => d.key === key);
+  if (found === void 0) throw new Error(`unknown database ${key}`);
+  return found;
+}
 var RETIRE_STATUS = {
   requirements: "Retired",
   epics: "Cancelled",
@@ -19474,15 +19479,15 @@ function buildMap(rootPageId, specs, found, propsByKey, now) {
 }
 
 // plugins/arima/scripts/src/notion/mirror.ts
-import { existsSync as existsSync3, mkdirSync as mkdirSync3, readFileSync as readFileSync3 } from "node:fs";
-import path6 from "node:path";
+import { existsSync as existsSync4, mkdirSync as mkdirSync3, readFileSync as readFileSync4 } from "node:fs";
+import path7 from "node:path";
 
 // plugins/arima/scripts/src/events.ts
-import path5 from "node:path";
+import path6 from "node:path";
 
 // plugins/arima/scripts/src/lib/jsonl.ts
-import { appendFileSync, existsSync as existsSync2, mkdirSync as mkdirSync2, readFileSync as readFileSync2 } from "node:fs";
-import path4 from "node:path";
+import { appendFileSync, existsSync as existsSync3, mkdirSync as mkdirSync2, readFileSync as readFileSync3 } from "node:fs";
+import path5 from "node:path";
 
 // plugins/arima/scripts/src/lib/filelock.ts
 import { closeSync, openSync, statSync, unlinkSync as unlinkSync2, writeSync } from "node:fs";
@@ -19529,6 +19534,8 @@ async function withFileLock(lockPath, fn, { timeoutMs = 15e3, staleMs = 3e4, ret
 }
 
 // plugins/arima/scripts/src/lib/secrets.ts
+import { existsSync as existsSync2, readFileSync as readFileSync2 } from "node:fs";
+import path4 from "node:path";
 import { createHash } from "node:crypto";
 function entropy(s) {
   if (s.length === 0) return 0;
@@ -19609,6 +19616,20 @@ function assertNoSecrets(text2, where) {
     );
   }
 }
+function readAllowlistFile(file) {
+  return existsSync2(file) ? parseAllowlist(readFileSync2(file, "utf8")) : /* @__PURE__ */ new Set();
+}
+function loadSecretAllowlist(projectDir) {
+  return readAllowlistFile(path4.join(projectDir, ".arima", "secret-allowlist.txt"));
+}
+function parseAllowlist(text2) {
+  const out = /* @__PURE__ */ new Set();
+  for (const line of text2.split(/\r?\n/)) {
+    const m = /^\s*(sha256:[0-9a-f]{16})\s*(?:#.*)?$/i.exec(line);
+    if (m) out.add(m[1].toLowerCase());
+  }
+  return out;
+}
 
 // plugins/arima/scripts/src/lib/jsonl.ts
 async function appendJsonl(file, schema, record) {
@@ -19619,22 +19640,47 @@ async function appendJsonl(file, schema, record) {
     );
   }
   const line = JSON.stringify(record);
-  assertNoSecrets(line, path4.basename(file));
-  mkdirSync2(path4.dirname(file), { recursive: true });
+  assertNoSecrets(line, path5.basename(file));
+  mkdirSync2(path5.dirname(file), { recursive: true });
   await withFileLock(`${file}.lock`, () => {
     appendFileSync(file, `${line}
 `, "utf8");
   });
 }
+function readJsonl(file, schema) {
+  if (!existsSync3(file)) return [];
+  const validate = getValidator(schema);
+  const out = [];
+  const lines = readFileSync3(file, "utf8").split("\n");
+  lines.forEach((raw, i) => {
+    if (raw.trim() === "") return;
+    let parsed;
+    try {
+      parsed = JSON.parse(raw);
+    } catch (e) {
+      throw new Error(`${file}:${i + 1}: not valid JSON`, { cause: e });
+    }
+    if (!validate(parsed)) {
+      throw new Error(
+        `${file}:${i + 1}: invalid ${schema} record: ${(validate.errors ?? []).map(describeError).join("; ")}`
+      );
+    }
+    out.push(parsed);
+  });
+  return out;
+}
 
 // plugins/arima/scripts/src/events.ts
 function eventsFile(projectDir) {
-  return path5.join(projectDir, ".arima", "events.jsonl");
+  return path6.join(projectDir, ".arima", "events.jsonl");
 }
 async function appendEvent(projectDir, event) {
   const full = { ...event, ts: event.ts ?? (/* @__PURE__ */ new Date()).toISOString() };
   await appendJsonl(eventsFile(projectDir), "event", full);
   return full;
+}
+function readEvents(projectDir) {
+  return readJsonl(eventsFile(projectDir), "event");
 }
 
 // plugins/arima/scripts/src/notion/values.ts
@@ -19769,13 +19815,13 @@ function markdownToBlocks(markdown) {
 }
 
 // plugins/arima/scripts/src/notion/mirror.ts
-var mirrorDir = (projectDir) => path6.join(projectDir, ".arima", "mirror");
-var mirrorFile = (projectDir, db) => path6.join(mirrorDir(projectDir), `${db}.json`);
-var notionMapFile = (projectDir) => path6.join(projectDir, ".arima", "notion-map.json");
+var mirrorDir = (projectDir) => path7.join(projectDir, ".arima", "mirror");
+var mirrorFile = (projectDir, db) => path7.join(mirrorDir(projectDir), `${db}.json`);
+var notionMapFile = (projectDir) => path7.join(projectDir, ".arima", "notion-map.json");
 function readNotionMap(projectDir) {
   const file = notionMapFile(projectDir);
-  if (!existsSync3(file)) throw new Error(`${file} not found; run arima-notion map first`);
-  const data = JSON.parse(readFileSync3(file, "utf8"));
+  if (!existsSync4(file)) throw new Error(`${file} not found; run arima-notion map first`);
+  const data = JSON.parse(readFileSync4(file, "utf8"));
   const validate = getValidator("notion-map");
   if (!validate(data)) {
     throw new Error(`Invalid ${file}: ${(validate.errors ?? []).map(describeError).join("; ")}`);
@@ -19793,8 +19839,8 @@ function toMirrorRow(raw) {
 }
 function readMirror(projectDir, db) {
   const file = mirrorFile(projectDir, db);
-  if (!existsSync3(file)) return void 0;
-  return JSON.parse(readFileSync3(file, "utf8"));
+  if (!existsSync4(file)) return void 0;
+  return JSON.parse(readFileSync4(file, "utf8"));
 }
 function writeMirror(projectDir, m) {
   mkdirSync3(mirrorDir(projectDir), { recursive: true });
@@ -19828,31 +19874,151 @@ function findRow(m, id) {
 
 // plugins/arima/scripts/src/notion/outbox.ts
 import {
-  existsSync as existsSync4,
-  mkdirSync as mkdirSync4,
-  readFileSync as readFileSync4,
+  existsSync as existsSync6,
+  mkdirSync as mkdirSync5,
+  readFileSync as readFileSync6,
   readdirSync as readdirSync2,
   renameSync as renameSync2,
   writeFileSync as writeFileSync2
 } from "node:fs";
-import path7 from "node:path";
-var outboxDir = (projectDir) => path7.join(projectDir, ".arima", "outbox");
-function secretsIn(entry) {
+import path9 from "node:path";
+
+// plugins/arima/scripts/src/roles.ts
+var ROLES = [
+  "orchestrator",
+  "ba",
+  "ux",
+  "architect",
+  "tech-lead",
+  "developer",
+  "qa",
+  "security",
+  "devops"
+];
+var bash = (cmd) => [`Bash(${cmd})`, `Bash(${cmd} *)`];
+var GIT_READ = [
+  ...bash("git status"),
+  ...bash("git diff"),
+  ...bash("git log"),
+  ...bash("git show"),
+  ...bash("git rev-parse"),
+  ...bash("git ls-files"),
+  ...bash("git branch --list"),
+  ...bash("git fetch")
+];
+var GH_READ = [
+  ...bash("gh pr view"),
+  ...bash("gh pr list"),
+  ...bash("gh pr diff"),
+  ...bash("gh pr checks"),
+  ...bash("gh run list"),
+  ...bash("gh run view")
+];
+var NPM_TEST = [...bash("npm test"), ...bash("npm run"), ...bash("npm ci")];
+var OUTBOX_DATABASES = {
+  orchestrator: [
+    "gates",
+    "requirements",
+    "epics",
+    "stories",
+    "test_cases",
+    "bugs",
+    "milestones",
+    "documents",
+    "decisions",
+    "questions",
+    "meetings",
+    "digests",
+    "releases",
+    "incidents",
+    "change_requests",
+    "risks",
+    "lessons",
+    "cost_log",
+    "human_tasks"
+  ],
+  ba: ["requirements", "epics", "stories", "documents", "risks", "questions", "decisions"],
+  ux: ["documents", "stories", "questions", "decisions"],
+  architect: ["documents", "requirements", "risks", "questions", "decisions"],
+  "tech-lead": ["documents", "risks", "questions", "decisions"],
+  developer: ["stories", "bugs", "questions", "decisions"],
+  qa: ["test_cases", "bugs", "documents", "questions", "decisions"],
+  security: ["risks", "documents", "questions", "decisions"],
+  devops: ["documents", "releases", "incidents", "risks", "human_tasks", "questions", "decisions"]
+};
+var OUTBOX_FORBIDDEN_PROPERTIES = {
+  ba: ["Priority"],
+  ux: ["Priority"]
+};
+
+// plugins/arima/scripts/src/notion/allocations.ts
+import { existsSync as existsSync5, mkdirSync as mkdirSync4, readFileSync as readFileSync5 } from "node:fs";
+import path8 from "node:path";
+
+// plugins/arima/scripts/src/ids.ts
+var ID_WIDTHS = {
+  REQ: 3,
+  NFR: 3,
+  EP: 2,
+  US: 3,
+  TC: 4,
+  BUG: 3,
+  ADR: 4,
+  RISK: 3,
+  DEC: 4,
+  Q: 3,
+  MS: 2,
+  CR: 3,
+  INC: 3,
+  LES: 3
+};
+var ID_PREFIXES = Object.keys(ID_WIDTHS);
+
+// plugins/arima/scripts/src/notion/allocations.ts
+var ID_PREFIX_BY_DB = {
+  requirements: "REQ",
+  epics: "EP",
+  stories: "US",
+  test_cases: "TC",
+  bugs: "BUG",
+  milestones: "MS",
+  decisions: "DEC",
+  questions: "Q",
+  change_requests: "CR",
+  incidents: "INC",
+  risks: "RISK",
+  lessons: "LES"
+};
+var allocationsFile = (projectDir) => path8.join(projectDir, ".arima", "state", "allocations.json");
+function readAllocations(projectDir) {
+  const file = allocationsFile(projectDir);
+  if (!existsSync5(file)) return {};
+  return JSON.parse(readFileSync5(file, "utf8"));
+}
+function allocatedTo(projectDir, id) {
+  return readAllocations(projectDir)[id];
+}
+var titleProperty = (db) => dbByKey(db).props.find((p) => p.type === "title")?.name;
+
+// plugins/arima/scripts/src/notion/outbox.ts
+var outboxDir = (projectDir) => path9.join(projectDir, ".arima", "outbox");
+function secretsIn(entry, allowed = /* @__PURE__ */ new Set()) {
   return findSecrets(
-    JSON.stringify({ p: entry.properties ?? {}, c: entry.content_markdown ?? "" })
+    JSON.stringify({ p: entry.properties ?? {}, c: entry.content_markdown ?? "" }),
+    allowed
   );
 }
 var UUID = /^[0-9a-f]{8}-?[0-9a-f]{4}-?[0-9a-f]{4}-?[0-9a-f]{4}-?[0-9a-f]{12}$/i;
 function listPending(projectDir, report) {
   const dir = outboxDir(projectDir);
-  if (!existsSync4(dir)) return [];
+  if (!existsSync6(dir)) return [];
   const validate = getValidator("outbox");
   const out = [];
   for (const name of readdirSync2(dir).filter((f) => f.endsWith(".json")).sort()) {
-    const file = path7.join(dir, name);
+    const file = path9.join(dir, name);
     let data;
     try {
-      data = JSON.parse(readFileSync4(file, "utf8"));
+      data = JSON.parse(readFileSync6(file, "utf8"));
     } catch {
       settle(
         projectDir,
@@ -19878,14 +20044,19 @@ function settle(projectDir, file, id, result, report) {
   const bucket = result.kind === "applied" ? "applied" : result.kind === "conflict" ? "conflicts" : result.kind === "rejected" ? "rejected" : void 0;
   if (result.kind === "applied") report.applied.push(id);
   else if (result.kind === "conflict") report.conflicts.push(id);
-  else if (result.kind === "rejected") report.rejected.push({ id, reason: result.reason });
+  else if (result.kind === "rejected")
+    report.rejected.push({
+      id,
+      reason: result.reason,
+      ...result.code ? { code: result.code } : {}
+    });
   else report.deferred.push(id);
   if (bucket === void 0) return;
-  const dir = path7.join(outboxDir(projectDir), bucket);
-  mkdirSync4(dir, { recursive: true });
-  renameSync2(file, path7.join(dir, `${id}.json`));
+  const dir = path9.join(outboxDir(projectDir), bucket);
+  mkdirSync5(dir, { recursive: true });
+  renameSync2(file, path9.join(dir, `${id}.json`));
   writeFileSync2(
-    path7.join(dir, `${id}.result.json`),
+    path9.join(dir, `${id}.result.json`),
     `${JSON.stringify({ ...result, at: (/* @__PURE__ */ new Date()).toISOString() }, null, 2)}
 `
   );
@@ -19896,6 +20067,10 @@ function classify(e) {
 }
 async function pushOutbox(projectDir, port, map, opts = {}) {
   const report = { applied: [], rejected: [], conflicts: [], deferred: [] };
+  const allowed = loadSecretAllowlist(projectDir);
+  const runRoles = /* @__PURE__ */ new Map();
+  for (const e of readEvents(projectDir))
+    if (e.type === "run.start" && e.run_id !== void 0) runRoles.set(e.run_id, e.actor);
   const pending = listPending(projectDir, report);
   if (pending.length === 0) return report;
   const baseline = new Map(
@@ -19958,19 +20133,73 @@ async function pushOutbox(projectDir, port, map, opts = {}) {
         actor: "system",
         run_id: entry.run_id,
         ...base.item ? { item: base.item } : {},
-        data: { ...common, reason: result.reason }
+        data: {
+          ...common,
+          reason: result.reason,
+          ...result.code ? { reason_code: result.code } : {}
+        }
       });
     }
     if (result.kind === "deferred") break;
   }
   for (const m of mirrors.values()) writeMirror(projectDir, m);
   return report;
+  function mayWriteStatus(entry) {
+    const a = opts.allowStatusWrites;
+    if (a === true) return true;
+    return typeof a === "object" && entry.id.startsWith(a.idPrefix);
+  }
   async function applyEntry(entry) {
     const db = map.databases[entry.database];
     if (db === void 0)
       return { kind: "rejected", reason: `database "${entry.database}" is not in notion-map.json` };
     const mirror = mirrors.get(entry.database);
-    const leaked = secretsIn(entry);
+    if (!ROLES.includes(entry.role))
+      return {
+        kind: "rejected",
+        refused: true,
+        reason: `"${entry.role}" is not a role of the team`
+      };
+    const role = entry.role;
+    if (opts.bindRuns !== false) {
+      const runRole = runRoles.get(entry.run_id);
+      if (runRole === void 0)
+        return {
+          kind: "rejected",
+          refused: true,
+          reason: `run ${entry.run_id} was not started by ARIMA (no run.start event); an outbox entry must belong to a run`
+        };
+      if (runRole !== role)
+        return {
+          kind: "rejected",
+          refused: true,
+          reason: `the entry says role ${role}, but run ${entry.run_id} was started as ${runRole}`
+        };
+    }
+    if (!OUTBOX_DATABASES[role].includes(entry.database))
+      return {
+        kind: "rejected",
+        refused: true,
+        code: "database_not_allowed",
+        reason: `role ${role} may not write ${db.title} (database_not_allowed)`
+      };
+    for (const name of Object.keys(entry.properties ?? {}))
+      if (OUTBOX_FORBIDDEN_PROPERTIES[role]?.includes(name))
+        return {
+          kind: "rejected",
+          refused: true,
+          reason: `role ${role} may not write "${name}" (that decision belongs to the product owner)`
+        };
+    if (opts.bindRuns !== false && entry.op === "create" && ID_PREFIX_BY_DB[entry.database] !== void 0) {
+      const title = String((entry.properties ?? {})[titleProperty(entry.database)] ?? "");
+      if (allocatedTo(projectDir, title) !== entry.run_id)
+        return {
+          kind: "rejected",
+          refused: true,
+          reason: `"${title}" was not issued to run ${entry.run_id}: an agent cannot choose an id; propose the record in the report and the engine issues it`
+        };
+    }
+    const leaked = secretsIn(entry, allowed);
     if (leaked.length > 0) {
       return {
         kind: "rejected",
@@ -19985,7 +20214,7 @@ async function pushOutbox(projectDir, port, map, opts = {}) {
         return { kind: "rejected", reason: `unknown property "${name}" on ${db.title}` };
       if (name === LAST_WRITTEN_BY_RUN)
         return { kind: "rejected", reason: `"${name}" is stamped by ARIMA and cannot be set` };
-      if (name === "Status" && opts.allowStatusWrites !== true) {
+      if (name === "Status" && !mayWriteStatus(entry)) {
         return {
           kind: "rejected",
           refused: true,
@@ -20141,10 +20370,10 @@ map finds them under a duplicated template, verifies every property, writes .ari
 The Notion integration token is read from the environment (default ARIMA_NOTION_TOKEN); it is never printed.
 Exit codes: 0 ok, 1 verification failed, Notion error, or outbox entries rejected/in conflict/deferred, 2 usage`;
 function rootFromConfig(projectDir) {
-  const file = path8.join(projectDir, "arima.yaml");
-  if (!existsSync5(file)) return {};
+  const file = path10.join(projectDir, "arima.yaml");
+  if (!existsSync7(file)) return {};
   try {
-    const doc = (0, import_yaml.parse)(readFileSync5(file, "utf8"));
+    const doc = (0, import_yaml.parse)(readFileSync7(file, "utf8"));
     return {
       ...doc.notion?.root_page_id && !doc.notion.root_page_id.startsWith("<") ? { root: doc.notion.root_page_id } : {},
       ...doc.notion?.token_env ? { tokenEnv: doc.notion.token_env } : {}
@@ -20180,7 +20409,7 @@ ${USAGE}
 `);
     return 2;
   }
-  const projectDir = path8.resolve(io.cwd, values.project ?? ".");
+  const projectDir = path10.resolve(io.cwd, values.project ?? ".");
   const cfg = rootFromConfig(projectDir);
   const tokenEnv = values["token-env"] ?? cfg.tokenEnv ?? "ARIMA_NOTION_TOKEN";
   const token = (deps.env ?? process.env)[tokenEnv];
@@ -20284,11 +20513,11 @@ ${USAGE}
       return 1;
     }
     const file = notionMapFile(projectDir);
-    mkdirSync5(path8.dirname(file), { recursive: true });
+    mkdirSync6(path10.dirname(file), { recursive: true });
     writeFileAtomic(file, `${JSON.stringify(result.map, null, 2)}
 `);
     io.out(
-      `wrote ${path8.relative(io.cwd, file) || file} (${Object.keys(result.map.databases).length} databases)
+      `wrote ${path10.relative(io.cwd, file) || file} (${Object.keys(result.map.databases).length} databases)
 `
     );
     return 0;

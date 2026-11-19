@@ -15,7 +15,7 @@ import {
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { appendEvent } from './events.js';
-import { parseAllowlist, scanSecrets } from './lib/secrets.js';
+import { readAllowlistFile, scanSecrets } from './lib/secrets.js';
 
 export class StateError extends Error {}
 
@@ -258,10 +258,7 @@ function scanStaged(r: Resolved): StagedProblem[] {
   const names = git(r.stateDir, ['diff', '--cached', '--name-only', '--diff-filter=AM'])
     .split('\n')
     .filter(Boolean);
-  const allowFile = path.join(r.stateDir, 'secret-allowlist.txt');
-  const allowed = existsSync(allowFile)
-    ? parseAllowlist(readFileSync(allowFile, 'utf8'))
-    : new Set<string>();
+  const allowed = readAllowlistFile(path.join(r.stateDir, 'secret-allowlist.txt'));
   const bad: StagedProblem[] = [];
   for (const name of names) {
     const file = path.join(r.stateDir, name);

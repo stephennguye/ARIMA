@@ -19,7 +19,7 @@ Every interface between components. If code crosses a boundary in a way this fil
 | `events.jsonl` | scripts and hooks (locked append) | no | One `ArimaEvent` per line (section 5) |
 | `ledger.jsonl` | `arima-run-agent`, `arima-init` | no | One `LedgerRow` per run (section 6) |
 | `mirror/<db>.json` | `arima-notion pull`/`push` | read only | `MirrorFile`: rows with Notion's own plain values, ARIMA id = title text |
-| `outbox/*.json` | agents (and `enqueue`) | **write top-level `*.json` only** (the role pattern currently also allows the sub-folders: G-07, WP-104) | `OutboxEntry` (section 4) |
+| `outbox/*.json` | agents (and `enqueue`) | **write top-level `*.json` only** (role pattern `Write(./.arima/outbox/*.json)`, G-07 fixed) | `OutboxEntry` (section 4) |
 | `outbox/{applied,rejected,conflicts}/` | `arima-notion push` | no | Entry plus `.result.json` |
 | `notion-map.json` | `arima-notion map` | no | database and property ids; `notion-map.schema.json` |
 | `runs/<run_id>.json` | `arima-run-agent` | no | Run report: result, subtype, errors, `terminal_reason`, cost; secret-scanned `[BUILT]` |
@@ -28,6 +28,7 @@ Every interface between components. If code crosses a boundary in a way this fil
 | `findings.json` | the engine `[PROPOSED]` WP-313 | never | Ledger of `FND-nnn` security findings with fingerprint and status |
 | `evidence/<run_id>/` | the report collector `[PROPOSED]` WP-103 | read by the packet builder only | Copied bug evidence and design-QA screenshots |
 | `state/ids.json`, `state/run-seq.json` | `arima-ids` / run id issuer | no | Locked counters |
+| `state/allocations.json` | `allocateId` (`notion/allocations.ts`) | no | Issued id -> run id. Push accepts a created id-titled row only if its id was issued to the entry's run (WP-104) |
 | `items/<id>.json` | the state machine only `[PROPOSED]` WP-106 | never | Item counters and blocked-from (section 9a) |
 | `PAUSE` | `arima-pause` only | **never** | Kill switch file; first line is the reason |
 | `run.lock` | preflight `--acquire` | never | One live run at a time; stale after `schedule.max_run_minutes + 30` |
@@ -114,7 +115,7 @@ id, created_at, run_id, role, op (create|update|append_content|retire), database
 item_id (required unless create), properties{}, content_markdown?, base_values{} (filled by enqueue), base_last_edited?
 ```
 
-Applied by `arima-notion push` in `created_at` order. Per entry, in this order: schema, secret scan, property checks (unknown property, audit property, **human-only property or value**, **`Status` unless a human passed `--allow-status-writes`**), create-duplicate check, **value-based conflict check against `base_values`** (then own-write snapshot, then the pre-push mirror), write, record Notion's own values in the mirror. Results: `applied`, `rejected` (permanent), `conflict` (human wins), `deferred` (transient; retried next push). There is **no delete**; `retire` only sets a retired status.
+Applied by `arima-notion push` in `created_at` order. Per entry, in this order: schema, **role in `ROLES`, bound to the role of its run (`run.start` event), database in `OUTBOX_DATABASES[role]` (`database_not_allowed`), no forbidden property for the role (ba and ux: `Priority`), created id issued to this run**, secret scan, property checks (unknown property, audit property, **human-only property or value**, **`Status` unless a human passed `--allow-status-writes`**), create-duplicate check, **value-based conflict check against `base_values`** (then own-write snapshot, then the pre-push mirror), write, record Notion's own values in the mirror. Results: `applied`, `rejected` (permanent), `conflict` (human wins), `deferred` (transient; retried next push). There is **no delete**; `retire` only sets a retired status.
 
 ## 5. Events `[BUILT]` frozen
 

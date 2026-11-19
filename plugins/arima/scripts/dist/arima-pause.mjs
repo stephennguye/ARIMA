@@ -18299,7 +18299,7 @@ var require_src = __commonJS({
 
 // plugins/arima/scripts/src/cli/project-cli.ts
 var import_yaml3 = __toESM(require_dist(), 1);
-import { existsSync as existsSync7, readFileSync as readFileSync6 } from "node:fs";
+import { existsSync as existsSync8, readFileSync as readFileSync7 } from "node:fs";
 import path9 from "node:path";
 import { parseArgs } from "node:util";
 
@@ -18374,7 +18374,7 @@ var import_yaml2 = __toESM(require_dist(), 1);
 import path4 from "node:path";
 
 // plugins/arima/scripts/src/lib/jsonl.ts
-import { appendFileSync, existsSync as existsSync2, mkdirSync, readFileSync as readFileSync2 } from "node:fs";
+import { appendFileSync, existsSync as existsSync3, mkdirSync, readFileSync as readFileSync3 } from "node:fs";
 import path3 from "node:path";
 
 // plugins/arima/scripts/src/lib/filelock.ts
@@ -18422,6 +18422,7 @@ async function withFileLock(lockPath, fn, { timeoutMs = 15e3, staleMs = 3e4, ret
 }
 
 // plugins/arima/scripts/src/lib/secrets.ts
+import { existsSync as existsSync2, readFileSync as readFileSync2 } from "node:fs";
 import { createHash } from "node:crypto";
 function entropy(s) {
   if (s.length === 0) return 0;
@@ -18502,6 +18503,9 @@ function assertNoSecrets(text2, where) {
     );
   }
 }
+function readAllowlistFile(file) {
+  return existsSync2(file) ? parseAllowlist(readFileSync2(file, "utf8")) : /* @__PURE__ */ new Set();
+}
 function parseAllowlist(text2) {
   const out = /* @__PURE__ */ new Set();
   for (const line of text2.split(/\r?\n/)) {
@@ -18539,7 +18543,7 @@ async function appendEvent(projectDir, event) {
 }
 
 // plugins/arima/scripts/src/killswitch.ts
-import { existsSync as existsSync3, mkdirSync as mkdirSync2, readFileSync as readFileSync3, rmSync, writeFileSync } from "node:fs";
+import { existsSync as existsSync4, mkdirSync as mkdirSync2, readFileSync as readFileSync4, rmSync, writeFileSync } from "node:fs";
 import path5 from "node:path";
 
 // plugins/arima/scripts/src/notion/port.ts
@@ -19284,15 +19288,56 @@ var DATABASES = [
   }
 ];
 
+// plugins/arima/scripts/src/roles.ts
+var bash = (cmd) => [`Bash(${cmd})`, `Bash(${cmd} *)`];
+var GIT_READ = [
+  ...bash("git status"),
+  ...bash("git diff"),
+  ...bash("git log"),
+  ...bash("git show"),
+  ...bash("git rev-parse"),
+  ...bash("git ls-files"),
+  ...bash("git branch --list"),
+  ...bash("git fetch")
+];
+var GH_READ = [
+  ...bash("gh pr view"),
+  ...bash("gh pr list"),
+  ...bash("gh pr diff"),
+  ...bash("gh pr checks"),
+  ...bash("gh run list"),
+  ...bash("gh run view")
+];
+var NPM_TEST = [...bash("npm test"), ...bash("npm run"), ...bash("npm ci")];
+
+// plugins/arima/scripts/src/ids.ts
+var ID_WIDTHS = {
+  REQ: 3,
+  NFR: 3,
+  EP: 2,
+  US: 3,
+  TC: 4,
+  BUG: 3,
+  ADR: 4,
+  RISK: 3,
+  DEC: 4,
+  Q: 3,
+  MS: 2,
+  CR: 3,
+  INC: 3,
+  LES: 3
+};
+var ID_PREFIXES = Object.keys(ID_WIDTHS);
+
 // plugins/arima/scripts/src/state.ts
 import { execFileSync } from "node:child_process";
 import {
   appendFileSync as appendFileSync2,
   cpSync,
-  existsSync as existsSync4,
+  existsSync as existsSync5,
   mkdirSync as mkdirSync4,
   mkdtempSync,
-  readFileSync as readFileSync4,
+  readFileSync as readFileSync5,
   realpathSync,
   readdirSync as readdirSync2,
   rmSync as rmSync2,
@@ -19341,7 +19386,7 @@ function identityArgs(cwd) {
 }
 function resolve(o) {
   const repo = path7.resolve(o.projectDir);
-  if (!existsSync4(repo) || !gitOk(repo, ["rev-parse", "--git-dir"])) {
+  if (!existsSync5(repo) || !gitOk(repo, ["rev-parse", "--git-dir"])) {
     throw new StateError(`${repo} is not a git repository`);
   }
   const norm = (p) => {
@@ -19365,14 +19410,14 @@ function excludeArima(repo) {
   const rel2 = git(repo, ["rev-parse", "--git-path", "info/exclude"]);
   const file = path7.resolve(repo, rel2);
   mkdirSync4(path7.dirname(file), { recursive: true });
-  const current = existsSync4(file) ? readFileSync4(file, "utf8") : "";
+  const current = existsSync5(file) ? readFileSync5(file, "utf8") : "";
   if (!current.split(/\r?\n/).includes("/.arima/")) {
     appendFileSync2(file, `${current.endsWith("\n") || current === "" ? "" : "\n"}/.arima/
 `);
   }
 }
-var isWorktree = (stateDir) => existsSync4(path7.join(stateDir, ".git"));
-var isEmptyDir = (dir) => !existsSync4(dir) || readdirSync2(dir).length === 0;
+var isWorktree = (stateDir) => existsSync5(path7.join(stateDir, ".git"));
+var isEmptyDir = (dir) => !existsSync5(dir) || readdirSync2(dir).length === 0;
 function localBranchExists(r) {
   return gitOk(r.repo, ["show-ref", "--verify", "--quiet", `refs/heads/${r.branch}`]);
 }
@@ -19434,15 +19479,14 @@ function ensureWorktree(r) {
 function ensureStateFiles(r) {
   const write = (name, body) => {
     const file = path7.join(r.stateDir, name);
-    if (!existsSync4(file)) writeFileSync3(file, body, "utf8");
+    if (!existsSync5(file)) writeFileSync3(file, body, "utf8");
   };
   write(".gitignore", STATE_GITIGNORE);
   write(".gitattributes", STATE_GITATTRIBUTES);
 }
 function scanStaged(r) {
   const names = git(r.stateDir, ["diff", "--cached", "--name-only", "--diff-filter=AM"]).split("\n").filter(Boolean);
-  const allowFile = path7.join(r.stateDir, "secret-allowlist.txt");
-  const allowed = existsSync4(allowFile) ? parseAllowlist(readFileSync4(allowFile, "utf8")) : /* @__PURE__ */ new Set();
+  const allowed = readAllowlistFile(path7.join(r.stateDir, "secret-allowlist.txt"));
   const bad2 = [];
   for (const name of names) {
     const file = path7.join(r.stateDir, name);
@@ -19451,7 +19495,7 @@ function scanStaged(r) {
         bad2.push({ file: name, rule: "file too large to scan for secrets" });
         continue;
       }
-      for (const f of scanSecrets(readFileSync4(file, "utf8"), allowed)) {
+      for (const f of scanSecrets(readFileSync5(file, "utf8"), allowed)) {
         bad2.push({ file: name, rule: f.rule, fingerprint: f.fingerprint });
       }
     } catch {
@@ -19579,7 +19623,7 @@ var CODE = {
 };
 
 // plugins/arima/scripts/src/runid.ts
-import { existsSync as existsSync5, mkdirSync as mkdirSync5, readFileSync as readFileSync5 } from "node:fs";
+import { existsSync as existsSync6, mkdirSync as mkdirSync5, readFileSync as readFileSync6 } from "node:fs";
 import path8 from "node:path";
 var pad = (n, w = 2) => String(n).padStart(w, "0");
 async function issueRunId(projectDir, now = /* @__PURE__ */ new Date()) {
@@ -19589,8 +19633,8 @@ async function issueRunId(projectDir, now = /* @__PURE__ */ new Date()) {
   mkdirSync5(path8.dirname(file), { recursive: true });
   return withFileLock(`${file}.lock`, () => {
     let state = { day, last: 0 };
-    if (existsSync5(file)) {
-      const parsed = JSON.parse(readFileSync5(file, "utf8"));
+    if (existsSync6(file)) {
+      const parsed = JSON.parse(readFileSync6(file, "utf8"));
       if (parsed.day === day && Number.isInteger(parsed.last))
         state = { day, last: parsed.last };
     }
@@ -19602,7 +19646,7 @@ async function issueRunId(projectDir, now = /* @__PURE__ */ new Date()) {
 }
 
 // plugins/arima/scripts/src/pause.ts
-import { existsSync as existsSync6 } from "node:fs";
+import { existsSync as existsSync7 } from "node:fs";
 async function setKillSwitch(o) {
   const messages = [];
   let notion = "skipped";
@@ -19649,8 +19693,8 @@ async function setKillSwitch(o) {
   }
   const stillPausedInNotion = !o.on && notion === "unreachable";
   return {
-    paused: o.on ? true : existsSync6(pauseFile(o.projectDir)) || stillPausedInNotion,
-    file: existsSync6(pauseFile(o.projectDir)),
+    paused: o.on ? true : existsSync7(pauseFile(o.projectDir)) || stillPausedInNotion,
+    file: existsSync7(pauseFile(o.projectDir)),
     notion,
     stillPausedInNotion,
     stateSaved,
@@ -19662,9 +19706,9 @@ async function setKillSwitch(o) {
 function settingsOf(projectDir) {
   const out = { tokenEnv: "ARIMA_NOTION_TOKEN" };
   const file = path9.join(projectDir, "arima.yaml");
-  if (!existsSync7(file)) return out;
+  if (!existsSync8(file)) return out;
   try {
-    const doc = (0, import_yaml3.parse)(readFileSync6(file, "utf8"));
+    const doc = (0, import_yaml3.parse)(readFileSync7(file, "utf8"));
     if (doc.github?.allow_public_state === true) out.allowPublic = true;
     if (doc.notion?.root_page_id && !doc.notion.root_page_id.startsWith("<"))
       out.rootPageId = doc.notion.root_page_id;

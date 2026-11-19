@@ -15413,7 +15413,7 @@ var require_dist2 = __commonJS({
 
 // plugins/arima/scripts/src/cli/state-cli.ts
 var import_yaml = __toESM(require_dist(), 1);
-import { existsSync as existsSync4, readFileSync as readFileSync4 } from "node:fs";
+import { existsSync as existsSync5, readFileSync as readFileSync5 } from "node:fs";
 import path6 from "node:path";
 import { parseArgs } from "node:util";
 
@@ -15422,10 +15422,10 @@ import { execFileSync } from "node:child_process";
 import {
   appendFileSync as appendFileSync2,
   cpSync,
-  existsSync as existsSync3,
+  existsSync as existsSync4,
   mkdirSync as mkdirSync2,
   mkdtempSync,
-  readFileSync as readFileSync3,
+  readFileSync as readFileSync4,
   realpathSync,
   readdirSync as readdirSync2,
   rmSync,
@@ -15439,7 +15439,7 @@ import path5 from "node:path";
 import path4 from "node:path";
 
 // plugins/arima/scripts/src/lib/jsonl.ts
-import { appendFileSync, existsSync as existsSync2, mkdirSync, readFileSync as readFileSync2 } from "node:fs";
+import { appendFileSync, existsSync as existsSync3, mkdirSync, readFileSync as readFileSync3 } from "node:fs";
 import path3 from "node:path";
 
 // plugins/arima/scripts/src/lib/filelock.ts
@@ -15487,6 +15487,7 @@ async function withFileLock(lockPath, fn, { timeoutMs = 15e3, staleMs = 3e4, ret
 }
 
 // plugins/arima/scripts/src/lib/secrets.ts
+import { existsSync, readFileSync } from "node:fs";
 import { createHash } from "node:crypto";
 function entropy(s) {
   if (s.length === 0) return 0;
@@ -15567,6 +15568,9 @@ function assertNoSecrets(text, where) {
     );
   }
 }
+function readAllowlistFile(file) {
+  return existsSync(file) ? parseAllowlist(readFileSync(file, "utf8")) : /* @__PURE__ */ new Set();
+}
 function parseAllowlist(text) {
   const out = /* @__PURE__ */ new Set();
   for (const line of text.split(/\r?\n/)) {
@@ -15579,11 +15583,11 @@ function parseAllowlist(text) {
 // plugins/arima/scripts/src/lib/schema.ts
 var import__ = __toESM(require__(), 1);
 var import_ajv_formats = __toESM(require_dist2(), 1);
-import { readFileSync, readdirSync } from "node:fs";
+import { readFileSync as readFileSync2, readdirSync } from "node:fs";
 import path2 from "node:path";
 
 // plugins/arima/scripts/src/lib/paths.ts
-import { existsSync } from "node:fs";
+import { existsSync as existsSync2 } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 function pluginRoot() {
@@ -15591,7 +15595,7 @@ function pluginRoot() {
   if (fromEnv) return path.resolve(fromEnv);
   let dir = path.dirname(fileURLToPath(import.meta.url));
   for (; ; ) {
-    if (existsSync(path.join(dir, ".claude-plugin", "plugin.json"))) return dir;
+    if (existsSync2(path.join(dir, ".claude-plugin", "plugin.json"))) return dir;
     const parent = path.dirname(dir);
     if (parent === dir) throw new Error("Cannot locate the ARIMA plugin root");
     dir = parent;
@@ -15608,7 +15612,7 @@ function ajvFor(root) {
   (0, import_ajv_formats.default)(ajv);
   const dir = path2.join(root, "schemas");
   for (const f of readdirSync(dir).filter((n) => n.endsWith(".schema.json"))) {
-    ajv.addSchema(JSON.parse(readFileSync(path2.join(dir, f), "utf8")), f);
+    ajv.addSchema(JSON.parse(readFileSync2(path2.join(dir, f), "utf8")), f);
   }
   instances.set(root, ajv);
   return ajv;
@@ -15707,7 +15711,7 @@ function identityArgs(cwd) {
 }
 function resolve(o) {
   const repo = path5.resolve(o.projectDir);
-  if (!existsSync3(repo) || !gitOk(repo, ["rev-parse", "--git-dir"])) {
+  if (!existsSync4(repo) || !gitOk(repo, ["rev-parse", "--git-dir"])) {
     throw new StateError(`${repo} is not a git repository`);
   }
   const norm = (p) => {
@@ -15731,14 +15735,14 @@ function excludeArima(repo) {
   const rel = git(repo, ["rev-parse", "--git-path", "info/exclude"]);
   const file = path5.resolve(repo, rel);
   mkdirSync2(path5.dirname(file), { recursive: true });
-  const current = existsSync3(file) ? readFileSync3(file, "utf8") : "";
+  const current = existsSync4(file) ? readFileSync4(file, "utf8") : "";
   if (!current.split(/\r?\n/).includes("/.arima/")) {
     appendFileSync2(file, `${current.endsWith("\n") || current === "" ? "" : "\n"}/.arima/
 `);
   }
 }
-var isWorktree = (stateDir) => existsSync3(path5.join(stateDir, ".git"));
-var isEmptyDir = (dir) => !existsSync3(dir) || readdirSync2(dir).length === 0;
+var isWorktree = (stateDir) => existsSync4(path5.join(stateDir, ".git"));
+var isEmptyDir = (dir) => !existsSync4(dir) || readdirSync2(dir).length === 0;
 function localBranchExists(r) {
   return gitOk(r.repo, ["show-ref", "--verify", "--quiet", `refs/heads/${r.branch}`]);
 }
@@ -15800,7 +15804,7 @@ function ensureWorktree(r) {
 function ensureStateFiles(r) {
   const write = (name, body) => {
     const file = path5.join(r.stateDir, name);
-    if (!existsSync3(file)) writeFileSync(file, body, "utf8");
+    if (!existsSync4(file)) writeFileSync(file, body, "utf8");
   };
   write(".gitignore", STATE_GITIGNORE);
   write(".gitattributes", STATE_GITATTRIBUTES);
@@ -15832,8 +15836,7 @@ async function pullState(o) {
 }
 function scanStaged(r) {
   const names = git(r.stateDir, ["diff", "--cached", "--name-only", "--diff-filter=AM"]).split("\n").filter(Boolean);
-  const allowFile = path5.join(r.stateDir, "secret-allowlist.txt");
-  const allowed = existsSync3(allowFile) ? parseAllowlist(readFileSync3(allowFile, "utf8")) : /* @__PURE__ */ new Set();
+  const allowed = readAllowlistFile(path5.join(r.stateDir, "secret-allowlist.txt"));
   const bad = [];
   for (const name of names) {
     const file = path5.join(r.stateDir, name);
@@ -15842,7 +15845,7 @@ function scanStaged(r) {
         bad.push({ file: name, rule: "file too large to scan for secrets" });
         continue;
       }
-      for (const f of scanSecrets(readFileSync3(file, "utf8"), allowed)) {
+      for (const f of scanSecrets(readFileSync4(file, "utf8"), allowed)) {
         bad.push({ file: name, rule: f.rule, fingerprint: f.fingerprint });
       }
     } catch {
@@ -15970,9 +15973,9 @@ var USAGE = `Usage: arima-state pull [--project <dir>]
 Keeps .arima/ on the orphan branch from github.state_branch (default arima-state). Never touches main.`;
 function branchesFromConfig(projectDir) {
   const file = path6.join(projectDir, "arima.yaml");
-  if (!existsSync4(file)) return {};
+  if (!existsSync5(file)) return {};
   try {
-    const doc = (0, import_yaml.parse)(readFileSync4(file, "utf8"));
+    const doc = (0, import_yaml.parse)(readFileSync5(file, "utf8"));
     return {
       ...doc.github?.allow_public_state === true ? { allowPublic: true } : {},
       ...doc.github?.state_branch ? { branch: doc.github.state_branch } : {},
