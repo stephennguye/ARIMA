@@ -22042,7 +22042,7 @@ ${extra}` : ""}`;
 }
 function outputContractFor(kind) {
   const verdict = REVIEW_KINDS.has(kind) ? " Include `verdict` (`result` and `reasons`)." : "";
-  const criteria = kind === "develop" || kind === "qa" ? ' Include `criteria_map`: a list of objects {criterion (the criterion id and its text, for example "AC-1: the total is the sum of the lines"), status (`met`, `unmet` or `unclear`), evidence (a list of strings, each `file:line` or a test case id; `met` needs at least one)}, one for every acceptance criterion.' : "";
+  const criteria = kind === "develop" || kind === "qa" ? ' Include `criteria_map`: a list of objects {criterion (the criterion id and its text, for example "AC-1: the total is the sum of the lines"), status (`met`, `unmet` or `unclear`), evidence (a list of strings, each exactly `path:line` such as "src/cart.js:7", or a TC or BUG id, never a test name or a sentence; `met` needs at least one)}, one for every acceptance criterion.' : "";
   return [
     "End your final message with exactly one fenced block whose info string is `arima-report`, containing JSON:",
     "`schema_version` 1, `run_id` (the id in the title of this packet), `role`, `item`, `status` (`done`, `blocked`, `failed` or `needs_input`; when any question has `blocking` true the status MUST be `needs_input` or `blocked`, never `done`),`summary` (at most 600 characters), and as needed `artifacts`, `findings`, `questions`, `decisions`, `assumptions`, `records`." + criteria + verdict,

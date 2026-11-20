@@ -62,7 +62,7 @@ Size guide (changed lines): S about 200, M about 400. A larger diff is a `findin
 ## Done when
 
 - Every criterion is `met` with evidence, or you stopped with a question; the build, lint and tests you ran pass; the work is committed on the branch.
-- The final message ends with the `arima-report` block: `schema_version` 1, `run_id`, `role` `developer`, `item`, `status`, `summary`, `artifacts` (kind `code`, `test` or `doc`), `criteria_map` (a list of objects with exactly the keys `criterion` (the id and text, "AC-1: ..."), `status` (`met`, `unmet` or `unclear`) and `evidence` (a list of `file:line` strings or test case ids; at least one for `met`)), and as needed `questions`, `findings`, `decisions`, `assumptions`. Each is a list of objects with exactly the keys the output contract lists. Never `verdict`.
+- The final message ends with the `arima-report` block: `schema_version` 1, `run_id`, `role` `developer`, `item`, `status`, `summary`, `artifacts` (kind `code`, `test` or `doc`), `criteria_map` (a list of objects with exactly the keys `criterion` (the id and text, "AC-1: ..."), `status` (`met`, `unmet` or `unclear`) and `evidence` (a list of `file:line` strings such as "src/cart.js:7" or "test/cart.test.js:12", or a TC or BUG id; never a test name or a sentence; at least one for `met`)), and as needed `questions`, `findings`, `decisions`, `assumptions`. Each is a list of objects with exactly the keys the output contract lists. Never `verdict`.
 
 ## Escalates when
 
