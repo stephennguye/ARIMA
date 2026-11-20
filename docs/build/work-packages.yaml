@@ -652,7 +652,7 @@ packages:
   - id: WP-210
     stage: 2
     track: agent
-    status: planned
+    status: ready
     title: developer agent
     deps:
       - WP-102
@@ -722,7 +722,7 @@ packages:
   - id: WP-213
     stage: 2
     track: agent
-    status: ready
+    status: done
     title: devops agent, staging only, with stub deploy script refusing production
     deps:
       - WP-201
@@ -741,7 +741,7 @@ packages:
   - id: WP-218
     stage: 2
     track: agent
-    status: planned
+    status: ready
     title: "Preview environment per PR (or a QA environment): deploy, URL in the work unit, smoke request; owned by devops"
     deps:
       - WP-213
@@ -1325,7 +1325,7 @@ packages:
   - id: WP-503
     stage: 5
     track: contracts
-    status: planned
+    status: ready
     title: Migrations for config, Notion template and ledger versions
     deps:
       - WP-195

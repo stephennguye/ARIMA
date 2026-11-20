@@ -101,6 +101,8 @@ Delivered: repo, TypeScript tooling, bundled scripts, CI on Windows and Linux wi
 
 ### Gate U: unattended readiness (owner decision point after Stage 2 exit)
 
+> **Owner decision D-51 (2026-11-21):** Gate U, the scheduler and the real-Claude-in-container check are taken after Stage 5, once the attended features are stable and proven on a real application. Stages 2 to 5 are attended.
+
 Unattended or scheduled runs are **not allowed** (D-41) until all of: the Docker sandbox runtime built and verified (WP-190); seat terms and billing resolved or an API key chosen (S15); branch protection on the default branch and no agent holds push credentials (WP-111, S16); two weeks of attended runs with no hard-stop failure and no guard bypass found; the owner says go. Then WP-230 (scheduler) is built.
 
 ## 6. Stage 3: Discovery and design (v0.3)
