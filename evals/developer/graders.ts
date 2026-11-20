@@ -72,7 +72,7 @@ export function evidenceProblems(
     if (c.status !== 'met') continue;
     if (c.evidence.length === 0) out.push(`${c.criterion}: met without evidence`);
     for (const ev of c.evidence) {
-      if (/^TC-\d+$/i.test(ev.trim())) continue;
+      if (/^(TC|BUG)-\d+$/i.test(ev.trim())) continue;
       const m = /^(.+?):(\d+)(?:-\d+)?$/.exec(ev.trim());
       if (m === null) {
         out.push(`${c.criterion}: evidence "${ev}" is not file:line or a test case id`);
