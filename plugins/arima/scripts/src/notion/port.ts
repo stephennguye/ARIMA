@@ -81,6 +81,22 @@ export interface NotionPort extends PauseSwitchPort {
     properties: Record<string, unknown>,
   ): Promise<{ lastEdited: string; properties?: RawRow['properties'] }>;
   appendChildren(pageId: string, blocks: unknown[]): Promise<void>;
+  /** The views of a database (id and name). */
+  listViews(databaseId: string): Promise<{ id: string; name: string }[]>;
+  /** Creates a view of a data source (WP-142). Never alters or deletes an existing view. */
+  createView(input: {
+    databaseId: string;
+    dataSourceId: string;
+    name: string;
+    type: 'table' | 'board';
+    filter?: Record<string, unknown>;
+    sorts?: Record<string, unknown>[];
+    groupBy?: { propertyId: string; type: 'select' };
+  }): Promise<string>;
+  /** Adds a comment to a page (a mention in a comment notifies the person). */
+  createComment(pageId: string, richText: unknown[]): Promise<void>;
+  /** The id of the child page with this title under the page, created when there is none. */
+  findOrCreateChildPage(parentPageId: string, title: string): Promise<string>;
 }
 
 /** A page of a data source with its raw Notion property values. */
@@ -124,11 +140,24 @@ export interface NotionClientLike {
   pages: {
     retrieve(args: { page_id: string }): Promise<unknown>;
     create(args: {
-      parent: { type: 'data_source_id'; data_source_id: string };
+      parent:
+        { type: 'data_source_id'; data_source_id: string } | { type: 'page_id'; page_id: string };
       properties: Record<string, unknown>;
       children?: unknown[];
     }): Promise<unknown>;
     update(args: { page_id: string; properties: Record<string, unknown> }): Promise<unknown>;
+  };
+  views?: {
+    list(args: { database_id?: string; data_source_id?: string; start_cursor?: string }): Promise<{
+      results: { id?: string }[];
+      has_more: boolean;
+      next_cursor: string | null;
+    }>;
+    retrieve(args: { view_id: string }): Promise<unknown>;
+    create(args: Record<string, unknown>): Promise<unknown>;
+  };
+  comments?: {
+    create(args: { parent: { page_id: string }; rich_text: unknown[] }): Promise<unknown>;
   };
 }
 
@@ -138,6 +167,7 @@ interface RawBlock {
   to_do?: { rich_text?: { plain_text?: string }[]; checked?: boolean };
   paragraph?: { rich_text?: { plain_text?: string }[] };
   child_database?: { title?: string };
+  child_page?: { title?: string };
 }
 
 interface RawDatabase {
@@ -203,6 +233,8 @@ export function createNotionPort(
           });
         } else if (raw.type === 'paragraph') {
           out.push({ id: raw.id, type: 'paragraph', text: plain(raw.paragraph?.rich_text) });
+        } else if (raw.type === 'child_page') {
+          out.push({ id: raw.id, type: 'child_page', text: raw.child_page?.title ?? '' });
         } else if (raw.type === 'child_database') {
           out.push({ id: raw.id, type: 'child_database', text: raw.child_database?.title ?? '' });
         } else {
@@ -388,6 +420,78 @@ export function createNotionPort(
         lastEdited: raw.last_edited_time,
         ...(raw.properties ? { properties: raw.properties } : {}),
       };
+    },
+
+    async listViews(databaseId) {
+      if (client.views === undefined) throw new Error('this Notion client has no views API');
+      const v = client.views;
+      const out: { id: string; name: string }[] = [];
+      let cursor: string | undefined;
+      for (;;) {
+        const page = await callRead(() =>
+          v.list({
+            database_id: databaseId,
+            ...(cursor !== undefined ? { start_cursor: cursor } : {}),
+          }),
+        );
+        for (const r of page.results) {
+          if (r.id === undefined) continue;
+          const full = (await callRead(() => v.retrieve({ view_id: r.id as string }))) as {
+            name?: string;
+          };
+          out.push({ id: r.id, name: full.name ?? '' });
+        }
+        if (!page.has_more || page.next_cursor === null) return out;
+        cursor = page.next_cursor;
+      }
+    },
+
+    async createView(i) {
+      if (client.views === undefined) throw new Error('this Notion client has no views API');
+      const v = client.views;
+      const raw = (await call(() =>
+        v.create({
+          database_id: i.databaseId,
+          data_source_id: i.dataSourceId,
+          name: i.name,
+          type: i.type,
+          ...(i.filter ? { filter: i.filter } : {}),
+          ...(i.sorts ? { sorts: i.sorts } : {}),
+          ...(i.groupBy
+            ? {
+                configuration: {
+                  type: i.type,
+                  group_by: {
+                    type: i.groupBy.type,
+                    property_id: i.groupBy.propertyId,
+                    sort: { type: 'manual' },
+                  },
+                },
+              }
+            : {}),
+        }),
+      )) as { id: string };
+      return raw.id;
+    },
+
+    async createComment(pageId, richText) {
+      if (client.comments === undefined) throw new Error('this Notion client has no comments API');
+      const c = client.comments;
+      await call(() => c.create({ parent: { page_id: pageId }, rich_text: richText }));
+    },
+
+    async findOrCreateChildPage(parentPageId, title) {
+      const have = (await listChildren(parentPageId)).find(
+        (b) => b.type === 'child_page' && b.text === title,
+      );
+      if (have !== undefined) return have.id;
+      const raw = (await call(() =>
+        client.pages.create({
+          parent: { type: 'page_id', page_id: parentPageId },
+          properties: { title: { title: [{ type: 'text', text: { content: title } }] } },
+        }),
+      )) as { id: string };
+      return raw.id;
     },
 
     async appendChildren(pageId, blocks) {

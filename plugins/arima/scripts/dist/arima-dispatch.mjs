@@ -3264,8 +3264,8 @@ var require_utils = __commonJS({
       }
       return ind;
     }
-    function removeDotSegments(path39) {
-      let input = path39;
+    function removeDotSegments(path40) {
+      let input = path40;
       const output = [];
       let nextSlash = -1;
       let len = 0;
@@ -3339,11 +3339,11 @@ var require_utils = __commonJS({
       }
       return output.join("");
     }
-    function removeDotSegmentsRelative(path39) {
-      if (path39 === "" || path39[0] === "/") {
-        return removeDotSegments(path39);
+    function removeDotSegmentsRelative(path40) {
+      if (path40 === "" || path40[0] === "/") {
+        return removeDotSegments(path40);
       }
-      const segments = path39.split("/");
+      const segments = path40.split("/");
       const last = segments.length - 1;
       const output = [];
       let trailingDirectory = false;
@@ -3706,8 +3706,8 @@ var require_schemes = __commonJS({
       }
       if (wsComponent.resourceName) {
         const queryIndex = wsComponent.resourceName.indexOf("?");
-        const path39 = queryIndex === -1 ? wsComponent.resourceName : wsComponent.resourceName.slice(0, queryIndex);
-        wsComponent.path = path39 && path39 !== "/" ? path39 : void 0;
+        const path40 = queryIndex === -1 ? wsComponent.resourceName : wsComponent.resourceName.slice(0, queryIndex);
+        wsComponent.path = path40 && path40 !== "/" ? path40 : void 0;
         wsComponent.query = queryIndex === -1 ? void 0 : wsComponent.resourceName.slice(queryIndex + 1);
         wsComponent.resourceName = void 0;
       }
@@ -8158,17 +8158,17 @@ var require_visit = __commonJS({
     visit.BREAK = BREAK;
     visit.SKIP = SKIP;
     visit.REMOVE = REMOVE;
-    function visit_(key, node, visitor, path39) {
-      const ctrl = callVisitor(key, node, visitor, path39);
+    function visit_(key, node, visitor, path40) {
+      const ctrl = callVisitor(key, node, visitor, path40);
       if (identity.isNode(ctrl) || identity.isPair(ctrl)) {
-        replaceNode(key, path39, ctrl);
-        return visit_(key, ctrl, visitor, path39);
+        replaceNode(key, path40, ctrl);
+        return visit_(key, ctrl, visitor, path40);
       }
       if (typeof ctrl !== "symbol") {
         if (identity.isCollection(node)) {
-          path39 = Object.freeze(path39.concat(node));
+          path40 = Object.freeze(path40.concat(node));
           for (let i = 0; i < node.items.length; ++i) {
-            const ci = visit_(i, node.items[i], visitor, path39);
+            const ci = visit_(i, node.items[i], visitor, path40);
             if (typeof ci === "number")
               i = ci - 1;
             else if (ci === BREAK)
@@ -8179,13 +8179,13 @@ var require_visit = __commonJS({
             }
           }
         } else if (identity.isPair(node)) {
-          path39 = Object.freeze(path39.concat(node));
-          const ck = visit_("key", node.key, visitor, path39);
+          path40 = Object.freeze(path40.concat(node));
+          const ck = visit_("key", node.key, visitor, path40);
           if (ck === BREAK)
             return BREAK;
           else if (ck === REMOVE)
             node.key = null;
-          const cv = visit_("value", node.value, visitor, path39);
+          const cv = visit_("value", node.value, visitor, path40);
           if (cv === BREAK)
             return BREAK;
           else if (cv === REMOVE)
@@ -8206,17 +8206,17 @@ var require_visit = __commonJS({
     visitAsync.BREAK = BREAK;
     visitAsync.SKIP = SKIP;
     visitAsync.REMOVE = REMOVE;
-    async function visitAsync_(key, node, visitor, path39) {
-      const ctrl = await callVisitor(key, node, visitor, path39);
+    async function visitAsync_(key, node, visitor, path40) {
+      const ctrl = await callVisitor(key, node, visitor, path40);
       if (identity.isNode(ctrl) || identity.isPair(ctrl)) {
-        replaceNode(key, path39, ctrl);
-        return visitAsync_(key, ctrl, visitor, path39);
+        replaceNode(key, path40, ctrl);
+        return visitAsync_(key, ctrl, visitor, path40);
       }
       if (typeof ctrl !== "symbol") {
         if (identity.isCollection(node)) {
-          path39 = Object.freeze(path39.concat(node));
+          path40 = Object.freeze(path40.concat(node));
           for (let i = 0; i < node.items.length; ++i) {
-            const ci = await visitAsync_(i, node.items[i], visitor, path39);
+            const ci = await visitAsync_(i, node.items[i], visitor, path40);
             if (typeof ci === "number")
               i = ci - 1;
             else if (ci === BREAK)
@@ -8227,13 +8227,13 @@ var require_visit = __commonJS({
             }
           }
         } else if (identity.isPair(node)) {
-          path39 = Object.freeze(path39.concat(node));
-          const ck = await visitAsync_("key", node.key, visitor, path39);
+          path40 = Object.freeze(path40.concat(node));
+          const ck = await visitAsync_("key", node.key, visitor, path40);
           if (ck === BREAK)
             return BREAK;
           else if (ck === REMOVE)
             node.key = null;
-          const cv = await visitAsync_("value", node.value, visitor, path39);
+          const cv = await visitAsync_("value", node.value, visitor, path40);
           if (cv === BREAK)
             return BREAK;
           else if (cv === REMOVE)
@@ -8260,23 +8260,23 @@ var require_visit = __commonJS({
       }
       return visitor;
     }
-    function callVisitor(key, node, visitor, path39) {
+    function callVisitor(key, node, visitor, path40) {
       if (typeof visitor === "function")
-        return visitor(key, node, path39);
+        return visitor(key, node, path40);
       if (identity.isMap(node))
-        return visitor.Map?.(key, node, path39);
+        return visitor.Map?.(key, node, path40);
       if (identity.isSeq(node))
-        return visitor.Seq?.(key, node, path39);
+        return visitor.Seq?.(key, node, path40);
       if (identity.isPair(node))
-        return visitor.Pair?.(key, node, path39);
+        return visitor.Pair?.(key, node, path40);
       if (identity.isScalar(node))
-        return visitor.Scalar?.(key, node, path39);
+        return visitor.Scalar?.(key, node, path40);
       if (identity.isAlias(node))
-        return visitor.Alias?.(key, node, path39);
+        return visitor.Alias?.(key, node, path40);
       return void 0;
     }
-    function replaceNode(key, path39, node) {
-      const parent = path39[path39.length - 1];
+    function replaceNode(key, path40, node) {
+      const parent = path40[path40.length - 1];
       if (identity.isCollection(parent)) {
         parent.items[key] = node;
       } else if (identity.isPair(parent)) {
@@ -8888,10 +8888,10 @@ var require_Collection = __commonJS({
     var createNode = require_createNode();
     var identity = require_identity();
     var Node = require_Node();
-    function collectionFromPath(schema, path39, value) {
+    function collectionFromPath(schema, path40, value) {
       let v = value;
-      for (let i = path39.length - 1; i >= 0; --i) {
-        const k = path39[i];
+      for (let i = path40.length - 1; i >= 0; --i) {
+        const k = path40[i];
         if (typeof k === "number" && Number.isInteger(k) && k >= 0) {
           const a = [];
           a[k] = v;
@@ -8910,7 +8910,7 @@ var require_Collection = __commonJS({
         sourceObjects: /* @__PURE__ */ new Map()
       });
     }
-    var isEmptyPath = (path39) => path39 == null || typeof path39 === "object" && !!path39[Symbol.iterator]().next().done;
+    var isEmptyPath = (path40) => path40 == null || typeof path40 === "object" && !!path40[Symbol.iterator]().next().done;
     var Collection = class extends Node.NodeBase {
       constructor(type, schema) {
         super(type);
@@ -8940,11 +8940,11 @@ var require_Collection = __commonJS({
        * be a Pair instance or a `{ key, value }` object, which may not have a key
        * that already exists in the map.
        */
-      addIn(path39, value) {
-        if (isEmptyPath(path39))
+      addIn(path40, value) {
+        if (isEmptyPath(path40))
           this.add(value);
         else {
-          const [key, ...rest] = path39;
+          const [key, ...rest] = path40;
           const node = this.get(key, true);
           if (identity.isCollection(node))
             node.addIn(rest, value);
@@ -8958,8 +8958,8 @@ var require_Collection = __commonJS({
        * Removes a value from the collection.
        * @returns `true` if the item was found and removed.
        */
-      deleteIn(path39) {
-        const [key, ...rest] = path39;
+      deleteIn(path40) {
+        const [key, ...rest] = path40;
         if (rest.length === 0)
           return this.delete(key);
         const node = this.get(key, true);
@@ -8973,8 +8973,8 @@ var require_Collection = __commonJS({
        * scalar values from their surrounding node; to disable set `keepScalar` to
        * `true` (collections are always returned intact).
        */
-      getIn(path39, keepScalar) {
-        const [key, ...rest] = path39;
+      getIn(path40, keepScalar) {
+        const [key, ...rest] = path40;
         const node = this.get(key, true);
         if (rest.length === 0)
           return !keepScalar && identity.isScalar(node) ? node.value : node;
@@ -8992,8 +8992,8 @@ var require_Collection = __commonJS({
       /**
        * Checks if the collection includes a value with the key `key`.
        */
-      hasIn(path39) {
-        const [key, ...rest] = path39;
+      hasIn(path40) {
+        const [key, ...rest] = path40;
         if (rest.length === 0)
           return this.has(key);
         const node = this.get(key, true);
@@ -9003,8 +9003,8 @@ var require_Collection = __commonJS({
        * Sets a value in this collection. For `!!set`, `value` needs to be a
        * boolean to add/remove the item from the set.
        */
-      setIn(path39, value) {
-        const [key, ...rest] = path39;
+      setIn(path40, value) {
+        const [key, ...rest] = path40;
         if (rest.length === 0) {
           this.set(key, value);
         } else {
@@ -11519,9 +11519,9 @@ var require_Document = __commonJS({
           this.contents.add(value);
       }
       /** Adds a value to the document. */
-      addIn(path39, value) {
+      addIn(path40, value) {
         if (assertCollection(this.contents))
-          this.contents.addIn(path39, value);
+          this.contents.addIn(path40, value);
       }
       /**
        * Create a new `Alias` node, ensuring that the target `node` has the required anchor.
@@ -11596,14 +11596,14 @@ var require_Document = __commonJS({
        * Removes a value from the document.
        * @returns `true` if the item was found and removed.
        */
-      deleteIn(path39) {
-        if (Collection.isEmptyPath(path39)) {
+      deleteIn(path40) {
+        if (Collection.isEmptyPath(path40)) {
           if (this.contents == null)
             return false;
           this.contents = null;
           return true;
         }
-        return assertCollection(this.contents) ? this.contents.deleteIn(path39) : false;
+        return assertCollection(this.contents) ? this.contents.deleteIn(path40) : false;
       }
       /**
        * Returns item at `key`, or `undefined` if not found. By default unwraps
@@ -11618,10 +11618,10 @@ var require_Document = __commonJS({
        * scalar values from their surrounding node; to disable set `keepScalar` to
        * `true` (collections are always returned intact).
        */
-      getIn(path39, keepScalar) {
-        if (Collection.isEmptyPath(path39))
+      getIn(path40, keepScalar) {
+        if (Collection.isEmptyPath(path40))
           return !keepScalar && identity.isScalar(this.contents) ? this.contents.value : this.contents;
-        return identity.isCollection(this.contents) ? this.contents.getIn(path39, keepScalar) : void 0;
+        return identity.isCollection(this.contents) ? this.contents.getIn(path40, keepScalar) : void 0;
       }
       /**
        * Checks if the document includes a value with the key `key`.
@@ -11632,10 +11632,10 @@ var require_Document = __commonJS({
       /**
        * Checks if the document includes a value at `path`.
        */
-      hasIn(path39) {
-        if (Collection.isEmptyPath(path39))
+      hasIn(path40) {
+        if (Collection.isEmptyPath(path40))
           return this.contents !== void 0;
-        return identity.isCollection(this.contents) ? this.contents.hasIn(path39) : false;
+        return identity.isCollection(this.contents) ? this.contents.hasIn(path40) : false;
       }
       /**
        * Sets a value in this document. For `!!set`, `value` needs to be a
@@ -11652,13 +11652,13 @@ var require_Document = __commonJS({
        * Sets a value in this document. For `!!set`, `value` needs to be a
        * boolean to add/remove the item from the set.
        */
-      setIn(path39, value) {
-        if (Collection.isEmptyPath(path39)) {
+      setIn(path40, value) {
+        if (Collection.isEmptyPath(path40)) {
           this.contents = value;
         } else if (this.contents == null) {
-          this.contents = Collection.collectionFromPath(this.schema, Array.from(path39), value);
+          this.contents = Collection.collectionFromPath(this.schema, Array.from(path40), value);
         } else if (assertCollection(this.contents)) {
-          this.contents.setIn(path39, value);
+          this.contents.setIn(path40, value);
         }
       }
       /**
@@ -13619,9 +13619,9 @@ var require_cst_visit = __commonJS({
     visit.BREAK = BREAK;
     visit.SKIP = SKIP;
     visit.REMOVE = REMOVE;
-    visit.itemAtPath = (cst, path39) => {
+    visit.itemAtPath = (cst, path40) => {
       let item = cst;
-      for (const [field, index] of path39) {
+      for (const [field, index] of path40) {
         const tok = item?.[field];
         if (tok && "items" in tok) {
           item = tok.items[index];
@@ -13630,23 +13630,23 @@ var require_cst_visit = __commonJS({
       }
       return item;
     };
-    visit.parentCollection = (cst, path39) => {
-      const parent = visit.itemAtPath(cst, path39.slice(0, -1));
-      const field = path39[path39.length - 1][0];
+    visit.parentCollection = (cst, path40) => {
+      const parent = visit.itemAtPath(cst, path40.slice(0, -1));
+      const field = path40[path40.length - 1][0];
       const coll = parent?.[field];
       if (coll && "items" in coll)
         return coll;
       throw new Error("Parent collection not found");
     };
-    function _visit(path39, item, visitor) {
-      let ctrl = visitor(item, path39);
+    function _visit(path40, item, visitor) {
+      let ctrl = visitor(item, path40);
       if (typeof ctrl === "symbol")
         return ctrl;
       for (const field of ["key", "value"]) {
         const token = item[field];
         if (token && "items" in token) {
           for (let i = 0; i < token.items.length; ++i) {
-            const ci = _visit(Object.freeze(path39.concat([[field, i]])), token.items[i], visitor);
+            const ci = _visit(Object.freeze(path40.concat([[field, i]])), token.items[i], visitor);
             if (typeof ci === "number")
               i = ci - 1;
             else if (ci === BREAK)
@@ -13657,10 +13657,10 @@ var require_cst_visit = __commonJS({
             }
           }
           if (typeof ctrl === "function" && field === "key")
-            ctrl = ctrl(item, path39);
+            ctrl = ctrl(item, path40);
         }
       }
-      return typeof ctrl === "function" ? ctrl(item, path39) : ctrl;
+      return typeof ctrl === "function" ? ctrl(item, path40) : ctrl;
     }
     exports.visit = visit;
   }
@@ -14086,9 +14086,9 @@ var require_lexer = __commonJS({
         }
       }
       *parseQuotedScalar() {
-        const quote3 = this.charAt(0);
-        let end = this.buffer.indexOf(quote3, this.pos + 1);
-        if (quote3 === "'") {
+        const quote4 = this.charAt(0);
+        let end = this.buffer.indexOf(quote4, this.pos + 1);
+        if (quote4 === "'") {
           while (end !== -1 && this.buffer[end + 1] === "'")
             end = this.buffer.indexOf("'", end + 2);
         } else {
@@ -16713,19 +16713,19 @@ var require_errors3 = __commonJS({
       }
     };
     exports.BrowserTokenNotAllowedError = BrowserTokenNotAllowedError;
-    function validateRequestPath(path39) {
-      if (path39.includes("..")) {
-        throw new InvalidPathParameterError(`Request path "${path39}" contains path traversal sequence ".."`);
+    function validateRequestPath(path40) {
+      if (path40.includes("..")) {
+        throw new InvalidPathParameterError(`Request path "${path40}" contains path traversal sequence ".."`);
       }
-      if (/%2e/i.test(path39)) {
+      if (/%2e/i.test(path40)) {
         let decoded;
         try {
-          decoded = decodeURIComponent(path39);
+          decoded = decodeURIComponent(path40);
         } catch {
           return;
         }
         if (decoded.includes("..")) {
-          throw new InvalidPathParameterError(`Request path "${path39}" contains encoded path traversal sequence`);
+          throw new InvalidPathParameterError(`Request path "${path40}" contains encoded path traversal sequence`);
         }
       }
     }
@@ -17409,17 +17409,17 @@ var require_Client = __commonJS({
        * Sends a request.
        */
       async request(args) {
-        const { path: path39, method, query, body, formDataParams, auth } = args;
-        (0, errors_1.validateRequestPath)(path39);
-        this.log(logging_1.LogLevel.INFO, "request start", { method, path: path39 });
-        const url2 = this.buildRequestUrl(path39, query);
+        const { path: path40, method, query, body, formDataParams, auth } = args;
+        (0, errors_1.validateRequestPath)(path40);
+        this.log(logging_1.LogLevel.INFO, "request start", { method, path: path40 });
+        const url2 = this.buildRequestUrl(path40, query);
         const bodyAsJsonString = this.serializeBody(body);
         const headers = this.buildRequestHeaders(args.headers, auth, bodyAsJsonString);
         const formData = this.buildFormData(formDataParams, headers);
         return this.executeWithRetry({
           url: url2,
           method,
-          path: path39,
+          path: path40,
           headers,
           body: bodyAsJsonString !== null && bodyAsJsonString !== void 0 ? bodyAsJsonString : formData
         }, (request) => this.executeSingleRequest(request));
@@ -17429,20 +17429,20 @@ var require_Client = __commonJS({
        */
       async *streamRequest(args, parseEvent) {
         var _a;
-        const { path: path39, method, query, body, auth } = args;
-        (0, errors_1.validateRequestPath)(path39);
-        this.log(logging_1.LogLevel.INFO, "stream request start", { method, path: path39 });
-        const url2 = this.buildRequestUrl(path39, query);
+        const { path: path40, method, query, body, auth } = args;
+        (0, errors_1.validateRequestPath)(path40);
+        this.log(logging_1.LogLevel.INFO, "stream request start", { method, path: path40 });
+        const url2 = this.buildRequestUrl(path40, query);
         const bodyAsJsonString = this.serializeBody(body);
         const headers = this.buildRequestHeaders(args.headers, auth, bodyAsJsonString);
         const response = await this.executeWithRetry({
           url: url2,
           method,
-          path: path39,
+          path: path40,
           headers,
           body: bodyAsJsonString
         }, (request) => this.executeSingleStreamRequest(request));
-        this.log(logging_1.LogLevel.INFO, "stream request opened", { method, path: path39 });
+        this.log(logging_1.LogLevel.INFO, "stream request opened", { method, path: path40 });
         if (response.body === void 0 || response.body === null) {
           for (const frame of takeSseFrames({
             content: await response.text(),
@@ -17494,8 +17494,8 @@ var require_Client = __commonJS({
       /**
        * Builds the full URL with query parameters.
        */
-      buildRequestUrl(path39, query) {
-        const url2 = new URL(`${__classPrivateFieldGet(this, _Client_prefixUrl, "f")}${path39}`);
+      buildRequestUrl(path40, query) {
+        const url2 = new URL(`${__classPrivateFieldGet(this, _Client_prefixUrl, "f")}${path40}`);
         if (query) {
           for (const [key, value] of Object.entries(query)) {
             if (value !== void 0 && value !== null) {
@@ -17582,14 +17582,14 @@ var require_Client = __commonJS({
        * Executes the request with retry logic.
        */
       async executeWithRetry(args, execute) {
-        const { url: url2, method, path: path39, headers, body } = args;
+        const { url: url2, method, path: path40, headers, body } = args;
         let attempt = 0;
         while (true) {
           try {
             return await execute({
               url: url2,
               method,
-              path: path39,
+              path: path40,
               headers,
               body
             });
@@ -17602,7 +17602,7 @@ var require_Client = __commonJS({
               const delayMs = this.calculateRetryDelay(error, attempt);
               this.log(logging_1.LogLevel.INFO, "retrying request", {
                 method,
-                path: path39,
+                path: path40,
                 attempt: attempt + 1,
                 delayMs
               });
@@ -17618,7 +17618,7 @@ var require_Client = __commonJS({
        * Executes a single HTTP request (no retry).
        */
       async executeSingleRequest(args) {
-        const { url: url2, method, path: path39, headers, body } = args;
+        const { url: url2, method, path: path40, headers, body } = args;
         const response = await errors_1.RequestTimeoutError.rejectAfterTimeout(__classPrivateFieldGet(this, _Client_fetch, "f").call(this, url2.toString(), {
           method: method.toUpperCase(),
           headers,
@@ -17632,7 +17632,7 @@ var require_Client = __commonJS({
         const responseJson = JSON.parse(responseText);
         this.log(logging_1.LogLevel.INFO, "request success", {
           method,
-          path: path39,
+          path: path40,
           ...this.extractRequestId(responseJson)
         });
         return responseJson;
@@ -18298,7 +18298,7 @@ var require_src = __commonJS({
 });
 
 // plugins/arima/scripts/src/cli/dispatch-cli.ts
-import path38 from "node:path";
+import path39 from "node:path";
 import { parseArgs } from "node:util";
 
 // plugins/arima/scripts/src/config.ts
@@ -18998,6 +18998,8 @@ function createNotionPort(client, throttle = new Throttle(), backoff = {}) {
           });
         } else if (raw.type === "paragraph") {
           out.push({ id: raw.id, type: "paragraph", text: plain(raw.paragraph?.rich_text) });
+        } else if (raw.type === "child_page") {
+          out.push({ id: raw.id, type: "child_page", text: raw.child_page?.title ?? "" });
         } else if (raw.type === "child_database") {
           out.push({ id: raw.id, type: "child_database", text: raw.child_database?.title ?? "" });
         } else {
@@ -19148,6 +19150,70 @@ function createNotionPort(client, throttle = new Throttle(), backoff = {}) {
         lastEdited: raw.last_edited_time,
         ...raw.properties ? { properties: raw.properties } : {}
       };
+    },
+    async listViews(databaseId) {
+      if (client.views === void 0) throw new Error("this Notion client has no views API");
+      const v = client.views;
+      const out = [];
+      let cursor;
+      for (; ; ) {
+        const page = await callRead(
+          () => v.list({
+            database_id: databaseId,
+            ...cursor !== void 0 ? { start_cursor: cursor } : {}
+          })
+        );
+        for (const r of page.results) {
+          if (r.id === void 0) continue;
+          const full = await callRead(() => v.retrieve({ view_id: r.id }));
+          out.push({ id: r.id, name: full.name ?? "" });
+        }
+        if (!page.has_more || page.next_cursor === null) return out;
+        cursor = page.next_cursor;
+      }
+    },
+    async createView(i) {
+      if (client.views === void 0) throw new Error("this Notion client has no views API");
+      const v = client.views;
+      const raw = await call(
+        () => v.create({
+          database_id: i.databaseId,
+          data_source_id: i.dataSourceId,
+          name: i.name,
+          type: i.type,
+          ...i.filter ? { filter: i.filter } : {},
+          ...i.sorts ? { sorts: i.sorts } : {},
+          ...i.groupBy ? {
+            configuration: {
+              type: i.type,
+              group_by: {
+                type: i.groupBy.type,
+                property_id: i.groupBy.propertyId,
+                sort: { type: "manual" }
+              }
+            }
+          } : {}
+        })
+      );
+      return raw.id;
+    },
+    async createComment(pageId, richText) {
+      if (client.comments === void 0) throw new Error("this Notion client has no comments API");
+      const c = client.comments;
+      await call(() => c.create({ parent: { page_id: pageId }, rich_text: richText }));
+    },
+    async findOrCreateChildPage(parentPageId, title) {
+      const have = (await listChildren(parentPageId)).find(
+        (b) => b.type === "child_page" && b.text === title
+      );
+      if (have !== void 0) return have.id;
+      const raw = await call(
+        () => client.pages.create({
+          parent: { type: "page_id", page_id: parentPageId },
+          properties: { title: { title: [{ type: "text", text: { content: title } }] } }
+        })
+      );
+      return raw.id;
     },
     async appendChildren(pageId, blocks) {
       for (let i = 0; i < blocks.length; i += 100) {
@@ -21807,8 +21873,8 @@ function stagingFailing(projectDir) {
 // plugins/arima/scripts/src/dispatch.ts
 import { execFileSync as execFileSync5 } from "node:child_process";
 import { createHash as createHash3 } from "node:crypto";
-import { existsSync as existsSync28, readFileSync as readFileSync27 } from "node:fs";
-import path37 from "node:path";
+import { existsSync as existsSync29, readFileSync as readFileSync28 } from "node:fs";
+import path38 from "node:path";
 
 // plugins/arima/scripts/src/dispatch-units.ts
 var flat = (n) => ({ S: n, M: n, L: n });
@@ -26627,6 +26693,195 @@ async function reviewTick(i) {
   return out;
 }
 
+// plugins/arima/scripts/src/notify.ts
+import { existsSync as existsSync27, readFileSync as readFileSync26 } from "node:fs";
+import path36 from "node:path";
+var URGENT_PAGE = "Urgent";
+var MAX_PER_RUN = 20;
+var UUID2 = /^[0-9a-f]{8}-?[0-9a-f]{4}-?[0-9a-f]{4}-?[0-9a-f]{4}-?[0-9a-f]{12}$/i;
+var stateFile3 = (projectDir) => path36.join(projectDir, ".arima", "state", "notifications.json");
+function readSent(projectDir) {
+  const f = stateFile3(projectDir);
+  if (!existsSync27(f)) return {};
+  const data = JSON.parse(readFileSync26(f, "utf8"));
+  if (!getValidator("notifications-state")(data))
+    throw new Error(`${f} is not a valid notifications file`);
+  return data.sent;
+}
+function writeSent(projectDir, sent) {
+  const s = { schema_version: 1, sent };
+  if (!getValidator("notifications-state")(s))
+    throw new Error("refusing to write an invalid notifications file");
+  writeFileAtomic(stateFile3(projectDir), `${JSON.stringify(s, null, 2)}
+`);
+}
+function ownersOf(projectDir) {
+  const team = validateProject(projectDir).team;
+  const idOf = (role) => {
+    const r = team?.roles[role];
+    if (r?.type !== "human" || r.person === void 0) return void 0;
+    const id = team?.people[r.person]?.notion_user;
+    return id !== void 0 && UUID2.test(id) ? id : void 0;
+  };
+  const po = idOf("po");
+  const sponsor = idOf("sponsor");
+  return {
+    po: po ? [po] : [],
+    both: [...new Set([po, sponsor].filter((x) => x !== void 0))]
+  };
+}
+var quote3 = (s) => s.replace(/\s+/g, " ").trim().slice(0, 100);
+var waitedSince = (ts) => ts;
+function collectNotices(i) {
+  const o = ownersOf(i.projectDir);
+  const out = [];
+  const rows2 = (db) => readMirror(i.projectDir, db)?.rows ?? [];
+  const add2 = (n) => void out.push(n);
+  for (const g of rows2("gates").filter((r) => r.properties["Status"] === "Ready for review"))
+    add2({
+      key: `gate:${g.id}:${waitedSince(g.last_edited_time)}`,
+      pageId: g.page_id,
+      kind: "awaiting",
+      who: o.both,
+      text: `Gate ${g.id} is ready for your decision.`
+    });
+  for (const r of rows2("releases").filter((x) => x.properties["Status"] === "Awaiting approval"))
+    add2({
+      key: `release:${r.id}:${r.last_edited_time}`,
+      pageId: r.page_id,
+      kind: "awaiting",
+      who: o.both,
+      text: `Production approval for ${r.id} is waiting for you.`
+    });
+  for (const c of rows2("change_requests").filter((x) => x.properties["Decision"] === "Pending"))
+    add2({
+      key: `cr:${c.id}:${c.last_edited_time}`,
+      pageId: c.page_id,
+      kind: "awaiting",
+      who: o.po,
+      text: `Change request ${c.id} awaits your decision.`
+    });
+  for (const q of digestQuestions(i.projectDir, { max: 1e3 }).shown) {
+    const row = findRow(readMirror(i.projectDir, "questions"), q.id);
+    if (row === void 0) continue;
+    add2({
+      key: `question:${q.id}`,
+      pageId: row.page_id,
+      kind: "awaiting",
+      who: q.hardStop ? o.both : o.po,
+      text: `${q.blocking ? "Blocking q" : "Q"}uestion ${q.id} needs your answer: ${quote3(q.question)}${q.hardStop ? ` [hard stop: ${q.hardStop}]` : ""}`
+    });
+  }
+  const events = readEvents(i.projectDir);
+  for (const s of rows2("stories").filter((x) => x.properties["Status"] === "In QA")) {
+    if (verdictAfterLastPush(i.projectDir, s.id, "qa", "qa") !== "pass") continue;
+    const pr = [...events].reverse().find((e) => e.type === "pr.published" && e.item === s.id)?.data?.["pr"];
+    const qaAt = [...events].reverse().find((e) => e.type === "report.accepted" && e.item === s.id && e.data?.["role"] === "qa")?.ts ?? "";
+    if (typeof pr !== "number") continue;
+    add2({
+      key: `pr:${s.id}:${pr}:${qaAt}`,
+      pageId: s.page_id,
+      kind: "awaiting",
+      who: o.po,
+      text: `Pull request #${pr} for ${s.id} passed QA and awaits your approval.`
+    });
+  }
+  const incidents = rows2("incidents").filter(
+    (x) => ["P1", "P2"].includes(String(x.properties["Priority"])) && ["Open", "Mitigated"].includes(String(x.properties["Status"]))
+  );
+  for (const inc of incidents)
+    add2({
+      key: `urgent:incident:${inc.id}:${String(inc.properties["Status"])}`,
+      pageId: i.urgentPageId,
+      kind: "urgent",
+      who: o.both,
+      text: `URGENT: incident ${inc.id} (${String(inc.properties["Priority"])}) is ${String(inc.properties["Status"])}.`
+    });
+  if (incidents.length > 0)
+    for (const r of rows2("releases").filter((x) => x.properties["Status"] === "Awaiting approval"))
+      add2({
+        key: `urgent:hotfix:${r.id}:${r.last_edited_time}`,
+        pageId: i.urgentPageId,
+        kind: "urgent",
+        who: o.both,
+        text: `URGENT: the production approval for ${r.id} is waiting while an incident is open (hotfix).`
+      });
+  if (i.redHealth)
+    add2({
+      key: `urgent:health:${i.redHealth.date}`,
+      pageId: i.urgentPageId,
+      kind: "urgent",
+      who: o.both,
+      text: `URGENT: health is red on ${i.redHealth.date}: ${quote3(i.redHealth.reasons.join("; "))}.`
+    });
+  return out;
+}
+var mention = (userId) => ({
+  type: "mention",
+  mention: { type: "user", user: { id: userId } }
+});
+async function sendNotifications(o) {
+  const res = { sent: [], skipped: [], failed: [] };
+  const sent = readSent(o.projectDir);
+  const needsUrgent = true;
+  let urgentPageId = "";
+  const cheap = collectNotices({
+    projectDir: o.projectDir,
+    urgentPageId: "pending",
+    ...o.redHealth ? { redHealth: o.redHealth } : {}
+  });
+  const fresh = cheap.filter((n2) => sent[n2.key] === void 0);
+  if (fresh.length === 0) return res;
+  if (fresh.some((n2) => n2.kind === "urgent") && needsUrgent && o.dryRun !== true)
+    urgentPageId = await o.port.findOrCreateChildPage(o.rootPageId, URGENT_PAGE);
+  let n = 0;
+  for (const notice of fresh) {
+    if (notice.who.length === 0) {
+      res.skipped.push(`${notice.key}: no Notion user id for po or sponsor in team.yaml`);
+      continue;
+    }
+    if (n >= MAX_PER_RUN) {
+      res.skipped.push(`${notice.key}: over ${MAX_PER_RUN} for this run, next run`);
+      continue;
+    }
+    if (findSecrets(notice.text).length > 0) {
+      res.skipped.push(`${notice.key}: the text looks like a secret`);
+      continue;
+    }
+    if (o.dryRun === true) {
+      res.sent.push({ key: notice.key, kind: notice.kind, via: "comment" });
+      n += 1;
+      continue;
+    }
+    const pageId = notice.kind === "urgent" ? urgentPageId : notice.pageId;
+    const rich2 = [
+      ...notice.who.flatMap((id) => [mention(id), { type: "text", text: { content: " " } }]),
+      { type: "text", text: { content: notice.text } }
+    ];
+    try {
+      let via = "comment";
+      try {
+        await o.port.createComment(pageId, rich2);
+      } catch {
+        via = "page";
+        await o.port.appendChildren(pageId, [
+          { object: "block", type: "paragraph", paragraph: { rich_text: rich2 } }
+        ]);
+      }
+      sent[notice.key] = (o.now ?? /* @__PURE__ */ new Date()).toISOString();
+      writeSent(o.projectDir, sent);
+      res.sent.push({ key: notice.key, kind: notice.kind, via });
+      n += 1;
+    } catch (e) {
+      res.failed.push({
+        key: notice.key,
+        reason: e instanceof Error ? e.message.slice(0, 160) : String(e)
+      });
+    }
+  }
+  return res;
+}
+
 // plugins/arima/scripts/src/notion/proposals.ts
 var PLACEHOLDER2 = /\bNEW-(\d+)\b/g;
 var isPlaceholder = (v) => typeof v === "string" && /^NEW-\d+$/.test(v);
@@ -26975,11 +27230,11 @@ function validatePacket(text3) {
 }
 
 // plugins/arima/scripts/src/runlock.ts
-import { existsSync as existsSync27, mkdirSync as mkdirSync21, readFileSync as readFileSync26, rmSync as rmSync6, writeFileSync as writeFileSync10 } from "node:fs";
+import { existsSync as existsSync28, mkdirSync as mkdirSync21, readFileSync as readFileSync27, rmSync as rmSync6, writeFileSync as writeFileSync10 } from "node:fs";
 import { hostname } from "node:os";
-import path36 from "node:path";
+import path37 from "node:path";
 function runLockFile(projectDir) {
-  return path36.join(projectDir, ".arima", "run.lock");
+  return path37.join(projectDir, ".arima", "run.lock");
 }
 function alive2(pid) {
   try {
@@ -26991,10 +27246,10 @@ function alive2(pid) {
 }
 function lockStatus(projectDir, staleAfterMs, now = Date.now()) {
   const file = runLockFile(projectDir);
-  if (!existsSync27(file)) return { held: false, stale: false };
+  if (!existsSync28(file)) return { held: false, stale: false };
   let lock;
   try {
-    lock = JSON.parse(readFileSync26(file, "utf8"));
+    lock = JSON.parse(readFileSync27(file, "utf8"));
   } catch {
     return { held: false, stale: true };
   }
@@ -27006,7 +27261,7 @@ function lockStatus(projectDir, staleAfterMs, now = Date.now()) {
 }
 function acquireRunLock(projectDir, runId, staleAfterMs) {
   const file = runLockFile(projectDir);
-  mkdirSync21(path36.dirname(file), { recursive: true });
+  mkdirSync21(path37.dirname(file), { recursive: true });
   const body = {
     pid: process.pid,
     run_id: runId,
@@ -27029,9 +27284,9 @@ function acquireRunLock(projectDir, runId, staleAfterMs) {
 }
 function releaseRunLock(projectDir, runId) {
   const file = runLockFile(projectDir);
-  if (!existsSync27(file)) return false;
+  if (!existsSync28(file)) return false;
   try {
-    const lock = JSON.parse(readFileSync26(file, "utf8"));
+    const lock = JSON.parse(readFileSync27(file, "utf8"));
     if (lock.run_id !== runId) return false;
   } catch {
   }
@@ -27266,7 +27521,7 @@ async function runDispatch(o) {
   if (!cfgResult.ok || cfgResult.arima === void 0 || cfgResult.team === void 0)
     return fail(
       DISPATCH_EXIT.config,
-      cfgResult.errors.map((e) => `${path37.basename(e.file)}:${e.line}: ${e.message}`).join("\n")
+      cfgResult.errors.map((e) => `${path38.basename(e.file)}:${e.line}: ${e.message}`).join("\n")
     );
   const cfg = cfgResult.arima;
   const team = cfgResult.team;
@@ -27326,8 +27581,8 @@ async function runDispatch(o) {
       if (e?.run_id === void 0) return void 0;
       try {
         return JSON.parse(
-          readFileSync27(
-            path37.join(o.projectDir, ".arima", "runs", `${e.run_id}.report.json`),
+          readFileSync28(
+            path38.join(o.projectDir, ".arima", "runs", `${e.run_id}.report.json`),
             "utf8"
           )
         );
@@ -27847,7 +28102,7 @@ async function runDispatch(o) {
     }
     async function publishDevelop(unit, report, branch) {
       const criteria = report.criteria_map ?? [];
-      const ui = existsSync28(path37.join(o.projectDir, "design", "screens", unit.item));
+      const ui = existsSync29(path38.join(o.projectDir, "design", "screens", unit.item));
       const body = renderPrBody({
         items: [unit.item],
         summary: report.summary,
@@ -28019,11 +28274,13 @@ async function runDispatch(o) {
       )
     );
     let digestNote = "not written";
+    let red;
     if (!dry) {
       try {
         const model = buildDigest(o.projectDir, now);
         const pub = await publishDigest({ projectDir: o.projectDir, runId, model, now });
-        digestNote = `${model.health}; ${path37.relative(o.projectDir, pub.file)}`;
+        digestNote = `${model.health}; ${path38.relative(o.projectDir, pub.file)}`;
+        if (model.health === "red") red = { date: model.date, reasons: model.healthReasons };
       } catch (e) {
         res.warnings.push(
           `the digest was not written: ${e instanceof Error ? e.message.slice(0, 160) : String(e)}`
@@ -28047,6 +28304,25 @@ async function runDispatch(o) {
         res.warnings.push(`the outbox push failed: ${e instanceof Error ? e.message : String(e)}`);
       }
     } else syncFailed = d.notion !== void 0 && d.notion !== null;
+    if (!dry && d.notion !== void 0 && d.notion !== null && !res.degraded && cfg.notion?.root_page_id) {
+      try {
+        const n = await sendNotifications({
+          projectDir: o.projectDir,
+          port: d.notion.port,
+          rootPageId: cfg.notion.root_page_id,
+          now,
+          ...red ? { redHealth: red } : {}
+        });
+        if (n.failed.length > 0)
+          res.warnings.push(
+            `${n.failed.length} notification(s) failed: ${n.failed[0]?.reason ?? ""}`
+          );
+      } catch (e) {
+        res.warnings.push(
+          `notifications failed: ${e instanceof Error ? e.message.slice(0, 160) : String(e)}`
+        );
+      }
+    }
     await step(9);
     await pruneWorktrees({
       projectDir: o.projectDir,
@@ -28085,7 +28361,7 @@ async function runDispatch(o) {
   }
 }
 function branchExists(projectDir, branch) {
-  return existsSync28(worktreePath(projectDir, branch)) ? true : gitHasBranch(projectDir, branch);
+  return existsSync29(worktreePath(projectDir, branch)) ? true : gitHasBranch(projectDir, branch);
 }
 function gitHasBranch(projectDir, branch) {
   try {
@@ -28187,7 +28463,7 @@ ${DISPATCH_USAGE}
 `);
     return DISPATCH_EXIT.usage;
   }
-  const projectDir = path38.resolve(io.cwd, v.project ?? ".");
+  const projectDir = path39.resolve(io.cwd, v.project ?? ".");
   const env = deps.env ?? process.env;
   let wired = deps;
   if (deps.wired !== true) {

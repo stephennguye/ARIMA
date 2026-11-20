@@ -48,10 +48,10 @@ var require_identity = __commonJS({
     var NODE_TYPE = /* @__PURE__ */ Symbol.for("yaml.node.type");
     var isAlias = (node) => !!node && typeof node === "object" && node[NODE_TYPE] === ALIAS;
     var isDocument = (node) => !!node && typeof node === "object" && node[NODE_TYPE] === DOC;
-    var isMap = (node) => !!node && typeof node === "object" && node[NODE_TYPE] === MAP;
+    var isMap2 = (node) => !!node && typeof node === "object" && node[NODE_TYPE] === MAP;
     var isPair = (node) => !!node && typeof node === "object" && node[NODE_TYPE] === PAIR;
-    var isScalar = (node) => !!node && typeof node === "object" && node[NODE_TYPE] === SCALAR;
-    var isSeq = (node) => !!node && typeof node === "object" && node[NODE_TYPE] === SEQ;
+    var isScalar2 = (node) => !!node && typeof node === "object" && node[NODE_TYPE] === SCALAR;
+    var isSeq2 = (node) => !!node && typeof node === "object" && node[NODE_TYPE] === SEQ;
     function isCollection(node) {
       if (node && typeof node === "object")
         switch (node[NODE_TYPE]) {
@@ -72,7 +72,7 @@ var require_identity = __commonJS({
         }
       return false;
     }
-    var hasAnchor = (node) => (isScalar(node) || isCollection(node)) && !!node.anchor;
+    var hasAnchor = (node) => (isScalar2(node) || isCollection(node)) && !!node.anchor;
     exports.ALIAS = ALIAS;
     exports.DOC = DOC;
     exports.MAP = MAP;
@@ -84,11 +84,11 @@ var require_identity = __commonJS({
     exports.isAlias = isAlias;
     exports.isCollection = isCollection;
     exports.isDocument = isDocument;
-    exports.isMap = isMap;
+    exports.isMap = isMap2;
     exports.isNode = isNode;
     exports.isPair = isPair;
-    exports.isScalar = isScalar;
-    exports.isSeq = isSeq;
+    exports.isScalar = isScalar2;
+    exports.isSeq = isSeq2;
   }
 });
 
@@ -112,17 +112,17 @@ var require_visit = __commonJS({
     visit.BREAK = BREAK;
     visit.SKIP = SKIP;
     visit.REMOVE = REMOVE;
-    function visit_(key, node, visitor, path15) {
-      const ctrl = callVisitor(key, node, visitor, path15);
+    function visit_(key, node, visitor, path22) {
+      const ctrl = callVisitor(key, node, visitor, path22);
       if (identity.isNode(ctrl) || identity.isPair(ctrl)) {
-        replaceNode(key, path15, ctrl);
-        return visit_(key, ctrl, visitor, path15);
+        replaceNode(key, path22, ctrl);
+        return visit_(key, ctrl, visitor, path22);
       }
       if (typeof ctrl !== "symbol") {
         if (identity.isCollection(node)) {
-          path15 = Object.freeze(path15.concat(node));
+          path22 = Object.freeze(path22.concat(node));
           for (let i = 0; i < node.items.length; ++i) {
-            const ci = visit_(i, node.items[i], visitor, path15);
+            const ci = visit_(i, node.items[i], visitor, path22);
             if (typeof ci === "number")
               i = ci - 1;
             else if (ci === BREAK)
@@ -133,13 +133,13 @@ var require_visit = __commonJS({
             }
           }
         } else if (identity.isPair(node)) {
-          path15 = Object.freeze(path15.concat(node));
-          const ck = visit_("key", node.key, visitor, path15);
+          path22 = Object.freeze(path22.concat(node));
+          const ck = visit_("key", node.key, visitor, path22);
           if (ck === BREAK)
             return BREAK;
           else if (ck === REMOVE)
             node.key = null;
-          const cv = visit_("value", node.value, visitor, path15);
+          const cv = visit_("value", node.value, visitor, path22);
           if (cv === BREAK)
             return BREAK;
           else if (cv === REMOVE)
@@ -160,17 +160,17 @@ var require_visit = __commonJS({
     visitAsync.BREAK = BREAK;
     visitAsync.SKIP = SKIP;
     visitAsync.REMOVE = REMOVE;
-    async function visitAsync_(key, node, visitor, path15) {
-      const ctrl = await callVisitor(key, node, visitor, path15);
+    async function visitAsync_(key, node, visitor, path22) {
+      const ctrl = await callVisitor(key, node, visitor, path22);
       if (identity.isNode(ctrl) || identity.isPair(ctrl)) {
-        replaceNode(key, path15, ctrl);
-        return visitAsync_(key, ctrl, visitor, path15);
+        replaceNode(key, path22, ctrl);
+        return visitAsync_(key, ctrl, visitor, path22);
       }
       if (typeof ctrl !== "symbol") {
         if (identity.isCollection(node)) {
-          path15 = Object.freeze(path15.concat(node));
+          path22 = Object.freeze(path22.concat(node));
           for (let i = 0; i < node.items.length; ++i) {
-            const ci = await visitAsync_(i, node.items[i], visitor, path15);
+            const ci = await visitAsync_(i, node.items[i], visitor, path22);
             if (typeof ci === "number")
               i = ci - 1;
             else if (ci === BREAK)
@@ -181,13 +181,13 @@ var require_visit = __commonJS({
             }
           }
         } else if (identity.isPair(node)) {
-          path15 = Object.freeze(path15.concat(node));
-          const ck = await visitAsync_("key", node.key, visitor, path15);
+          path22 = Object.freeze(path22.concat(node));
+          const ck = await visitAsync_("key", node.key, visitor, path22);
           if (ck === BREAK)
             return BREAK;
           else if (ck === REMOVE)
             node.key = null;
-          const cv = await visitAsync_("value", node.value, visitor, path15);
+          const cv = await visitAsync_("value", node.value, visitor, path22);
           if (cv === BREAK)
             return BREAK;
           else if (cv === REMOVE)
@@ -214,23 +214,23 @@ var require_visit = __commonJS({
       }
       return visitor;
     }
-    function callVisitor(key, node, visitor, path15) {
+    function callVisitor(key, node, visitor, path22) {
       if (typeof visitor === "function")
-        return visitor(key, node, path15);
+        return visitor(key, node, path22);
       if (identity.isMap(node))
-        return visitor.Map?.(key, node, path15);
+        return visitor.Map?.(key, node, path22);
       if (identity.isSeq(node))
-        return visitor.Seq?.(key, node, path15);
+        return visitor.Seq?.(key, node, path22);
       if (identity.isPair(node))
-        return visitor.Pair?.(key, node, path15);
+        return visitor.Pair?.(key, node, path22);
       if (identity.isScalar(node))
-        return visitor.Scalar?.(key, node, path15);
+        return visitor.Scalar?.(key, node, path22);
       if (identity.isAlias(node))
-        return visitor.Alias?.(key, node, path15);
+        return visitor.Alias?.(key, node, path22);
       return void 0;
     }
-    function replaceNode(key, path15, node) {
-      const parent = path15[path15.length - 1];
+    function replaceNode(key, path22, node) {
+      const parent = path22[path22.length - 1];
       if (identity.isCollection(parent)) {
         parent.items[key] = node;
       } else if (identity.isPair(parent)) {
@@ -770,13 +770,13 @@ var require_createNode = __commonJS({
     var defaultTagPrefix = "tag:yaml.org,2002:";
     function findTagObject(value, tagName, tags) {
       if (tagName) {
-        const match = tags.filter((t2) => t2.tag === tagName);
-        const tagObj = match.find((t2) => !t2.format) ?? match[0];
+        const match = tags.filter((t3) => t3.tag === tagName);
+        const tagObj = match.find((t3) => !t3.format) ?? match[0];
         if (!tagObj)
           throw new Error(`Tag ${tagName} not found`);
         return tagObj;
       }
-      return tags.find((t2) => t2.identify?.(value) && !t2.format);
+      return tags.find((t3) => t3.identify?.(value) && !t3.format);
     }
     function createNode(value, tagName, ctx) {
       if (identity.isDocument(value))
@@ -842,10 +842,10 @@ var require_Collection = __commonJS({
     var createNode = require_createNode();
     var identity = require_identity();
     var Node = require_Node();
-    function collectionFromPath(schema, path15, value) {
+    function collectionFromPath(schema, path22, value) {
       let v = value;
-      for (let i = path15.length - 1; i >= 0; --i) {
-        const k = path15[i];
+      for (let i = path22.length - 1; i >= 0; --i) {
+        const k = path22[i];
         if (typeof k === "number" && Number.isInteger(k) && k >= 0) {
           const a = [];
           a[k] = v;
@@ -864,7 +864,7 @@ var require_Collection = __commonJS({
         sourceObjects: /* @__PURE__ */ new Map()
       });
     }
-    var isEmptyPath = (path15) => path15 == null || typeof path15 === "object" && !!path15[Symbol.iterator]().next().done;
+    var isEmptyPath = (path22) => path22 == null || typeof path22 === "object" && !!path22[Symbol.iterator]().next().done;
     var Collection = class extends Node.NodeBase {
       constructor(type, schema) {
         super(type);
@@ -894,11 +894,11 @@ var require_Collection = __commonJS({
        * be a Pair instance or a `{ key, value }` object, which may not have a key
        * that already exists in the map.
        */
-      addIn(path15, value) {
-        if (isEmptyPath(path15))
+      addIn(path22, value) {
+        if (isEmptyPath(path22))
           this.add(value);
         else {
-          const [key, ...rest] = path15;
+          const [key, ...rest] = path22;
           const node = this.get(key, true);
           if (identity.isCollection(node))
             node.addIn(rest, value);
@@ -912,8 +912,8 @@ var require_Collection = __commonJS({
        * Removes a value from the collection.
        * @returns `true` if the item was found and removed.
        */
-      deleteIn(path15) {
-        const [key, ...rest] = path15;
+      deleteIn(path22) {
+        const [key, ...rest] = path22;
         if (rest.length === 0)
           return this.delete(key);
         const node = this.get(key, true);
@@ -927,8 +927,8 @@ var require_Collection = __commonJS({
        * scalar values from their surrounding node; to disable set `keepScalar` to
        * `true` (collections are always returned intact).
        */
-      getIn(path15, keepScalar) {
-        const [key, ...rest] = path15;
+      getIn(path22, keepScalar) {
+        const [key, ...rest] = path22;
         const node = this.get(key, true);
         if (rest.length === 0)
           return !keepScalar && identity.isScalar(node) ? node.value : node;
@@ -946,8 +946,8 @@ var require_Collection = __commonJS({
       /**
        * Checks if the collection includes a value with the key `key`.
        */
-      hasIn(path15) {
-        const [key, ...rest] = path15;
+      hasIn(path22) {
+        const [key, ...rest] = path22;
         if (rest.length === 0)
           return this.has(key);
         const node = this.get(key, true);
@@ -957,8 +957,8 @@ var require_Collection = __commonJS({
        * Sets a value in this collection. For `!!set`, `value` needs to be a
        * boolean to add/remove the item from the set.
        */
-      setIn(path15, value) {
-        const [key, ...rest] = path15;
+      setIn(path22, value) {
+        const [key, ...rest] = path22;
         if (rest.length === 0) {
           this.set(key, value);
         } else {
@@ -1403,10 +1403,10 @@ ${indent}`);
       let res = _stringify(type);
       if (res === null) {
         const { defaultKeyType, defaultStringType } = ctx.options;
-        const t2 = implicitKey && defaultKeyType || defaultStringType;
-        res = _stringify(t2);
+        const t3 = implicitKey && defaultKeyType || defaultStringType;
+        res = _stringify(t3);
         if (res === null)
-          throw new Error(`Unsupported default string type ${t2}`);
+          throw new Error(`Unsupported default string type ${t3}`);
       }
       return res;
     }
@@ -1466,24 +1466,24 @@ var require_stringify = __commonJS({
     }
     function getTagObject(tags, item) {
       if (item.tag) {
-        const match = tags.filter((t2) => t2.tag === item.tag);
+        const match = tags.filter((t3) => t3.tag === item.tag);
         if (match.length > 0)
-          return match.find((t2) => t2.format === item.format) ?? match[0];
+          return match.find((t3) => t3.format === item.format) ?? match[0];
       }
       let tagObj = void 0;
       let obj;
       if (identity.isScalar(item)) {
         obj = item.value;
-        let match = tags.filter((t2) => t2.identify?.(obj));
+        let match = tags.filter((t3) => t3.identify?.(obj));
         if (match.length > 1) {
-          const testMatch = match.filter((t2) => t2.test);
+          const testMatch = match.filter((t3) => t3.test);
           if (testMatch.length > 0)
             match = testMatch;
         }
-        tagObj = match.find((t2) => t2.format === item.format) ?? match.find((t2) => !t2.format);
+        tagObj = match.find((t3) => t3.format === item.format) ?? match.find((t3) => !t3.format);
       } else {
         obj = item;
-        tagObj = tags.find((t2) => t2.nodeClass && obj instanceof t2.nodeClass);
+        tagObj = tags.find((t3) => t3.nodeClass && obj instanceof t3.nodeClass);
       }
       if (!tagObj) {
         const name = obj?.constructor?.name ?? (obj === null ? "null" : typeof obj);
@@ -2045,7 +2045,7 @@ var require_YAMLMap = __commonJS({
       static from(schema, obj, ctx) {
         const { keepUndefined, replacer } = ctx;
         const map = new this(schema);
-        const add = (key, value) => {
+        const add2 = (key, value) => {
           if (typeof replacer === "function")
             value = replacer.call(obj, key, value);
           else if (Array.isArray(replacer) && !replacer.includes(key))
@@ -2055,10 +2055,10 @@ var require_YAMLMap = __commonJS({
         };
         if (obj instanceof Map) {
           for (const [key, value] of obj)
-            add(key, value);
+            add2(key, value);
         } else if (obj && typeof obj === "object") {
           for (const key of Object.keys(obj))
-            add(key, obj[key]);
+            add2(key, obj[key]);
         }
         if (typeof schema.sortMapEntries === "function") {
           map.items.sort(schema.sortMapEntries);
@@ -3473,9 +3473,9 @@ var require_Document = __commonJS({
           this.contents.add(value);
       }
       /** Adds a value to the document. */
-      addIn(path15, value) {
+      addIn(path22, value) {
         if (assertCollection(this.contents))
-          this.contents.addIn(path15, value);
+          this.contents.addIn(path22, value);
       }
       /**
        * Create a new `Alias` node, ensuring that the target `node` has the required anchor.
@@ -3550,14 +3550,14 @@ var require_Document = __commonJS({
        * Removes a value from the document.
        * @returns `true` if the item was found and removed.
        */
-      deleteIn(path15) {
-        if (Collection.isEmptyPath(path15)) {
+      deleteIn(path22) {
+        if (Collection.isEmptyPath(path22)) {
           if (this.contents == null)
             return false;
           this.contents = null;
           return true;
         }
-        return assertCollection(this.contents) ? this.contents.deleteIn(path15) : false;
+        return assertCollection(this.contents) ? this.contents.deleteIn(path22) : false;
       }
       /**
        * Returns item at `key`, or `undefined` if not found. By default unwraps
@@ -3572,10 +3572,10 @@ var require_Document = __commonJS({
        * scalar values from their surrounding node; to disable set `keepScalar` to
        * `true` (collections are always returned intact).
        */
-      getIn(path15, keepScalar) {
-        if (Collection.isEmptyPath(path15))
+      getIn(path22, keepScalar) {
+        if (Collection.isEmptyPath(path22))
           return !keepScalar && identity.isScalar(this.contents) ? this.contents.value : this.contents;
-        return identity.isCollection(this.contents) ? this.contents.getIn(path15, keepScalar) : void 0;
+        return identity.isCollection(this.contents) ? this.contents.getIn(path22, keepScalar) : void 0;
       }
       /**
        * Checks if the document includes a value with the key `key`.
@@ -3586,10 +3586,10 @@ var require_Document = __commonJS({
       /**
        * Checks if the document includes a value at `path`.
        */
-      hasIn(path15) {
-        if (Collection.isEmptyPath(path15))
+      hasIn(path22) {
+        if (Collection.isEmptyPath(path22))
           return this.contents !== void 0;
-        return identity.isCollection(this.contents) ? this.contents.hasIn(path15) : false;
+        return identity.isCollection(this.contents) ? this.contents.hasIn(path22) : false;
       }
       /**
        * Sets a value in this document. For `!!set`, `value` needs to be a
@@ -3606,13 +3606,13 @@ var require_Document = __commonJS({
        * Sets a value in this document. For `!!set`, `value` needs to be a
        * boolean to add/remove the item from the set.
        */
-      setIn(path15, value) {
-        if (Collection.isEmptyPath(path15)) {
+      setIn(path22, value) {
+        if (Collection.isEmptyPath(path22)) {
           this.contents = value;
         } else if (this.contents == null) {
-          this.contents = Collection.collectionFromPath(this.schema, Array.from(path15), value);
+          this.contents = Collection.collectionFromPath(this.schema, Array.from(path22), value);
         } else if (assertCollection(this.contents)) {
-          this.contents.setIn(path15, value);
+          this.contents.setIn(path22, value);
         }
       }
       /**
@@ -4196,9 +4196,9 @@ var require_resolve_flow_collection = __commonJS({
     var blockMsg = "Block collections are not allowed within flow collections";
     var isBlock = (token) => token && (token.type === "block-map" || token.type === "block-seq");
     function resolveFlowCollection({ composeNode, composeEmptyNode }, ctx, fc, onError, tag) {
-      const isMap = fc.start.source === "{";
-      const fcName = isMap ? "flow map" : "flow sequence";
-      const NodeClass = tag?.nodeClass ?? (isMap ? YAMLMap.YAMLMap : YAMLSeq.YAMLSeq);
+      const isMap2 = fc.start.source === "{";
+      const fcName = isMap2 ? "flow map" : "flow sequence";
+      const NodeClass = tag?.nodeClass ?? (isMap2 ? YAMLMap.YAMLMap : YAMLSeq.YAMLSeq);
       const coll = new NodeClass(ctx.schema);
       coll.flow = true;
       const atRoot = ctx.atRoot;
@@ -4234,7 +4234,7 @@ var require_resolve_flow_collection = __commonJS({
             offset = props.end;
             continue;
           }
-          if (!isMap && ctx.options.strict && utilContainsNewline.containsNewline(key))
+          if (!isMap2 && ctx.options.strict && utilContainsNewline.containsNewline(key))
             onError(
               key,
               // checked by containsNewline()
@@ -4274,7 +4274,7 @@ var require_resolve_flow_collection = __commonJS({
             }
           }
         }
-        if (!isMap && !sep && !props.found) {
+        if (!isMap2 && !sep && !props.found) {
           const valueNode = value ? composeNode(ctx, value, props, onError) : composeEmptyNode(ctx, props.end, sep, null, props, onError);
           coll.items.push(valueNode);
           offset = valueNode.range[2];
@@ -4297,7 +4297,7 @@ var require_resolve_flow_collection = __commonJS({
             startOnNewline: false
           });
           if (valueProps.found) {
-            if (!isMap && !props.found && ctx.options.strict) {
+            if (!isMap2 && !props.found && ctx.options.strict) {
               if (sep)
                 for (const st of sep) {
                   if (st === valueProps.found)
@@ -4329,7 +4329,7 @@ var require_resolve_flow_collection = __commonJS({
           const pair = new Pair.Pair(keyNode, valueNode);
           if (ctx.options.keepSourceTokens)
             pair.srcToken = collItem;
-          if (isMap) {
+          if (isMap2) {
             const map = coll;
             if (utilMapIncludes.mapIncludes(ctx, map.items, keyNode))
               onError(keyStart, "DUPLICATE_KEY", "Map keys must be unique");
@@ -4345,7 +4345,7 @@ var require_resolve_flow_collection = __commonJS({
           offset = valueNode ? valueNode.range[2] : valueProps.end;
         }
       }
-      const expectedEnd = isMap ? "}" : "]";
+      const expectedEnd = isMap2 ? "}" : "]";
       const [ce, ...ee] = fc.end;
       let cePos = offset;
       if (ce?.source === expectedEnd)
@@ -4412,7 +4412,7 @@ var require_compose_collection = __commonJS({
       if (!tagToken || !tagName || tagName === "!" || tagName === YAMLMap.YAMLMap.tagName && expType === "map" || tagName === YAMLSeq.YAMLSeq.tagName && expType === "seq") {
         return resolveCollection(CN, ctx, token, onError, tagName);
       }
-      let tag = ctx.schema.tags.find((t2) => t2.tag === tagName && t2.collection === expType);
+      let tag = ctx.schema.tags.find((t3) => t3.tag === tagName && t3.collection === expType);
       if (!tag) {
         const kt = ctx.schema.knownTags[tagName];
         if (kt?.collection === expType) {
@@ -5573,9 +5573,9 @@ var require_cst_visit = __commonJS({
     visit.BREAK = BREAK;
     visit.SKIP = SKIP;
     visit.REMOVE = REMOVE;
-    visit.itemAtPath = (cst, path15) => {
+    visit.itemAtPath = (cst, path22) => {
       let item = cst;
-      for (const [field, index] of path15) {
+      for (const [field, index] of path22) {
         const tok = item?.[field];
         if (tok && "items" in tok) {
           item = tok.items[index];
@@ -5584,23 +5584,23 @@ var require_cst_visit = __commonJS({
       }
       return item;
     };
-    visit.parentCollection = (cst, path15) => {
-      const parent = visit.itemAtPath(cst, path15.slice(0, -1));
-      const field = path15[path15.length - 1][0];
+    visit.parentCollection = (cst, path22) => {
+      const parent = visit.itemAtPath(cst, path22.slice(0, -1));
+      const field = path22[path22.length - 1][0];
       const coll = parent?.[field];
       if (coll && "items" in coll)
         return coll;
       throw new Error("Parent collection not found");
     };
-    function _visit(path15, item, visitor) {
-      let ctrl = visitor(item, path15);
+    function _visit(path22, item, visitor) {
+      let ctrl = visitor(item, path22);
       if (typeof ctrl === "symbol")
         return ctrl;
       for (const field of ["key", "value"]) {
         const token = item[field];
         if (token && "items" in token) {
           for (let i = 0; i < token.items.length; ++i) {
-            const ci = _visit(Object.freeze(path15.concat([[field, i]])), token.items[i], visitor);
+            const ci = _visit(Object.freeze(path22.concat([[field, i]])), token.items[i], visitor);
             if (typeof ci === "number")
               i = ci - 1;
             else if (ci === BREAK)
@@ -5611,10 +5611,10 @@ var require_cst_visit = __commonJS({
             }
           }
           if (typeof ctrl === "function" && field === "key")
-            ctrl = ctrl(item, path15);
+            ctrl = ctrl(item, path22);
         }
       }
-      return typeof ctrl === "function" ? ctrl(item, path15) : ctrl;
+      return typeof ctrl === "function" ? ctrl(item, path22) : ctrl;
     }
     exports.visit = visit;
   }
@@ -5632,7 +5632,7 @@ var require_cst = __commonJS({
     var FLOW_END = "";
     var SCALAR = "";
     var isCollection = (token) => !!token && "items" in token;
-    var isScalar = (token) => !!token && (token.type === "scalar" || token.type === "single-quoted-scalar" || token.type === "double-quoted-scalar" || token.type === "block-scalar");
+    var isScalar2 = (token) => !!token && (token.type === "scalar" || token.type === "single-quoted-scalar" || token.type === "double-quoted-scalar" || token.type === "block-scalar");
     function prettyToken(token) {
       switch (token) {
         case BOM:
@@ -5716,7 +5716,7 @@ var require_cst = __commonJS({
     exports.FLOW_END = FLOW_END;
     exports.SCALAR = SCALAR;
     exports.isCollection = isCollection;
-    exports.isScalar = isScalar;
+    exports.isScalar = isScalar2;
     exports.prettyToken = prettyToken;
     exports.tokenType = tokenType;
   }
@@ -6040,9 +6040,9 @@ var require_lexer = __commonJS({
         }
       }
       *parseQuotedScalar() {
-        const quote = this.charAt(0);
-        let end = this.buffer.indexOf(quote, this.pos + 1);
-        if (quote === "'") {
+        const quote3 = this.charAt(0);
+        let end = this.buffer.indexOf(quote3, this.pos + 1);
+        if (quote3 === "'") {
           while (end !== -1 && this.buffer[end + 1] === "'")
             end = this.buffer.indexOf("'", end + 2);
         } else {
@@ -6315,7 +6315,7 @@ var require_lexer = __commonJS({
 var require_line_counter = __commonJS({
   "node_modules/yaml/dist/parse/line-counter.js"(exports) {
     "use strict";
-    var LineCounter = class {
+    var LineCounter2 = class {
       constructor() {
         this.lineStarts = [];
         this.addNewLine = (offset) => this.lineStarts.push(offset);
@@ -6338,7 +6338,7 @@ var require_line_counter = __commonJS({
         };
       }
     };
-    exports.LineCounter = LineCounter;
+    exports.LineCounter = LineCounter2;
   }
 });
 
@@ -7246,7 +7246,7 @@ var require_public_api = __commonJS({
         return docs;
       return Object.assign([], { empty: true }, composer$1.streamInfo());
     }
-    function parseDocument(source, options2 = {}) {
+    function parseDocument2(source, options2 = {}) {
       const { lineCounter: lineCounter2, prettyErrors } = parseOptions(options2);
       const parser$1 = new parser.Parser(lineCounter2?.addNewLine);
       const composer$1 = new composer.Composer(options2);
@@ -7265,14 +7265,14 @@ var require_public_api = __commonJS({
       }
       return doc;
     }
-    function parse3(src, reviver, options2) {
+    function parse5(src, reviver, options2) {
       let _reviver = void 0;
       if (typeof reviver === "function") {
         _reviver = reviver;
       } else if (options2 === void 0 && reviver && typeof reviver === "object") {
         options2 = reviver;
       }
-      const doc = parseDocument(src, options2);
+      const doc = parseDocument2(src, options2);
       if (!doc)
         return null;
       doc.warnings.forEach((warning) => log.warn(doc.options.logLevel, warning));
@@ -7306,9 +7306,9 @@ var require_public_api = __commonJS({
         return value.toString(options2);
       return new Document.Document(value, _replacer, options2).toString(options2);
     }
-    exports.parse = parse3;
+    exports.parse = parse5;
     exports.parseAllDocuments = parseAllDocuments;
-    exports.parseDocument = parseDocument;
+    exports.parseDocument = parseDocument2;
     exports.stringify = stringify;
   }
 });
@@ -8874,7 +8874,7 @@ var require_dataType = __commonJS({
     exports.coerceAndCheckDataType = coerceAndCheckDataType;
     var COERCIBLE = /* @__PURE__ */ new Set(["string", "number", "integer", "boolean", "null"]);
     function coerceToTypes(types, coerceTypes) {
-      return coerceTypes ? types.filter((t2) => COERCIBLE.has(t2) || coerceTypes === "array" && t2 === "array") : [];
+      return coerceTypes ? types.filter((t3) => COERCIBLE.has(t3) || coerceTypes === "array" && t3 === "array") : [];
     }
     function coerceData(it, types, coerceTo) {
       const { gen, data, opts } = it;
@@ -8884,9 +8884,9 @@ var require_dataType = __commonJS({
         gen.if((0, codegen_1._)`${dataType} == 'object' && Array.isArray(${data}) && ${data}.length == 1`, () => gen.assign(data, (0, codegen_1._)`${data}[0]`).assign(dataType, (0, codegen_1._)`typeof ${data}`).if(checkDataTypes(types, data, opts.strictNumbers), () => gen.assign(coerced, data)));
       }
       gen.if((0, codegen_1._)`${coerced} !== undefined`);
-      for (const t2 of coerceTo) {
-        if (COERCIBLE.has(t2) || t2 === "array" && opts.coerceTypes === "array") {
-          coerceSpecificType(t2);
+      for (const t3 of coerceTo) {
+        if (COERCIBLE.has(t3) || t3 === "array" && opts.coerceTypes === "array") {
+          coerceSpecificType(t3);
         }
       }
       gen.else();
@@ -8896,8 +8896,8 @@ var require_dataType = __commonJS({
         gen.assign(data, coerced);
         assignParentData(it, coerced);
       });
-      function coerceSpecificType(t2) {
-        switch (t2) {
+      function coerceSpecificType(t3) {
+        switch (t3) {
           case "string":
             gen.elseIf((0, codegen_1._)`${dataType} == "number" || ${dataType} == "boolean"`).assign(coerced, (0, codegen_1._)`"" + ${data}`).elseIf((0, codegen_1._)`${data} === null`).assign(coerced, (0, codegen_1._)`""`);
             return;
@@ -8969,8 +8969,8 @@ var require_dataType = __commonJS({
       }
       if (types.number)
         delete types.integer;
-      for (const t2 in types)
-        cond = (0, codegen_1.and)(cond, checkDataType(t2, data, strictNums, correct));
+      for (const t3 in types)
+        cond = (0, codegen_1.and)(cond, checkDataType(t3, data, strictNums, correct));
       return cond;
     }
     exports.checkDataTypes = checkDataTypes;
@@ -9885,9 +9885,9 @@ var require_validate = __commonJS({
         it.dataTypes = types;
         return;
       }
-      types.forEach((t2) => {
-        if (!includesType(it.dataTypes, t2)) {
-          strictTypesError(it, `type "${t2}" not allowed by context "${it.dataTypes.join(",")}"`);
+      types.forEach((t3) => {
+        if (!includesType(it.dataTypes, t3)) {
+          strictTypesError(it, `type "${t3}" not allowed by context "${it.dataTypes.join(",")}"`);
         }
       });
       narrowSchemaTypes(it, types);
@@ -9903,7 +9903,7 @@ var require_validate = __commonJS({
         const rule = rules[keyword];
         if (typeof rule == "object" && (0, applicability_1.shouldUseRule)(it.schema, rule)) {
           const { type } = rule.definition;
-          if (type.length && !type.some((t2) => hasApplicableType(ts, t2))) {
+          if (type.length && !type.some((t3) => hasApplicableType(ts, t3))) {
             strictTypesError(it, `missing type "${type.join(",")}" for keyword "${keyword}"`);
           }
         }
@@ -9912,15 +9912,15 @@ var require_validate = __commonJS({
     function hasApplicableType(schTs, kwdT) {
       return schTs.includes(kwdT) || kwdT === "number" && schTs.includes("integer");
     }
-    function includesType(ts, t2) {
-      return ts.includes(t2) || t2 === "integer" && ts.includes("number");
+    function includesType(ts, t3) {
+      return ts.includes(t3) || t3 === "integer" && ts.includes("number");
     }
     function narrowSchemaTypes(it, withTypes) {
       const ts = [];
-      for (const t2 of it.dataTypes) {
-        if (includesType(withTypes, t2))
-          ts.push(t2);
-        else if (withTypes.includes("integer") && t2 === "number")
+      for (const t3 of it.dataTypes) {
+        if (includesType(withTypes, t3))
+          ts.push(t3);
+        else if (withTypes.includes("integer") && t3 === "number")
           ts.push("integer");
       }
       it.dataTypes = ts;
@@ -10594,8 +10594,8 @@ var require_utils = __commonJS({
       }
       return ind;
     }
-    function removeDotSegments(path15) {
-      let input = path15;
+    function removeDotSegments(path22) {
+      let input = path22;
       const output = [];
       let nextSlash = -1;
       let len = 0;
@@ -10669,11 +10669,11 @@ var require_utils = __commonJS({
       }
       return output.join("");
     }
-    function removeDotSegmentsRelative(path15) {
-      if (path15 === "" || path15[0] === "/") {
-        return removeDotSegments(path15);
+    function removeDotSegmentsRelative(path22) {
+      if (path22 === "" || path22[0] === "/") {
+        return removeDotSegments(path22);
       }
-      const segments = path15.split("/");
+      const segments = path22.split("/");
       const last = segments.length - 1;
       const output = [];
       let trailingDirectory = false;
@@ -11036,8 +11036,8 @@ var require_schemes = __commonJS({
       }
       if (wsComponent.resourceName) {
         const queryIndex = wsComponent.resourceName.indexOf("?");
-        const path15 = queryIndex === -1 ? wsComponent.resourceName : wsComponent.resourceName.slice(0, queryIndex);
-        wsComponent.path = path15 && path15 !== "/" ? path15 : void 0;
+        const path22 = queryIndex === -1 ? wsComponent.resourceName : wsComponent.resourceName.slice(0, queryIndex);
+        wsComponent.path = path22 && path22 !== "/" ? path22 : void 0;
         wsComponent.query = queryIndex === -1 ? void 0 : wsComponent.resourceName.slice(queryIndex + 1);
         wsComponent.resourceName = void 0;
       }
@@ -11203,7 +11203,7 @@ var require_fast_uri = __commonJS({
         normalizeString(uri, options2);
       } else if (typeof uri === "object") {
         uri = /** @type {T} */
-        parse3(serialize(uri, options2), options2);
+        parse5(serialize(uri, options2), options2);
       }
       return uri;
     }
@@ -11246,8 +11246,8 @@ var require_fast_uri = __commonJS({
     function resolveComponent(base, relative, options2, skipNormalization) {
       const target = {};
       if (!skipNormalization) {
-        base = parse3(serialize(base, options2), options2);
-        relative = parse3(serialize(relative, options2), options2);
+        base = parse5(serialize(base, options2), options2);
+        relative = parse5(serialize(relative, options2), options2);
       }
       options2 = options2 || {};
       if (!options2.tolerant && relative.scheme) {
@@ -11565,7 +11565,7 @@ var require_fast_uri = __commonJS({
       }
       return { parsed, malformedAuthorityOrPort, malformedPercentEncoding, malformedSchemeSpecific, malformedHost, malformedScheme };
     }
-    function parse3(uri, opts) {
+    function parse5(uri, opts) {
       return parseWithStatus(uri, opts).parsed;
     }
     function normalizeString(uri, opts) {
@@ -11602,7 +11602,7 @@ var require_fast_uri = __commonJS({
       resolveComponent,
       equal,
       serialize,
-      parse: parse3
+      parse: parse5
     };
     module.exports = fastUri;
     module.exports.default = fastUri;
@@ -11984,7 +11984,7 @@ var require_core = __commonJS({
           type: (0, dataType_1.getJSONTypes)(def.type),
           schemaType: (0, dataType_1.getJSONTypes)(def.schemaType)
         };
-        (0, util_1.eachItem)(keyword, definition.type.length === 0 ? (k) => addRule.call(this, k, definition) : (k) => definition.type.forEach((t2) => addRule.call(this, k, definition, t2)));
+        (0, util_1.eachItem)(keyword, definition.type.length === 0 ? (k) => addRule.call(this, k, definition) : (k) => definition.type.forEach((t3) => addRule.call(this, k, definition, t3)));
         return this;
       }
       getKeyword(keyword) {
@@ -12183,7 +12183,7 @@ var require_core = __commonJS({
       if (dataType && post)
         throw new Error('keyword with "post" flag cannot have "type"');
       const { RULES } = this;
-      let ruleGroup = post ? RULES.post : RULES.rules.find(({ type: t2 }) => t2 === dataType);
+      let ruleGroup = post ? RULES.post : RULES.rules.find(({ type: t3 }) => t3 === dataType);
       if (!ruleGroup) {
         ruleGroup = { type: dataType, rules: [] };
         RULES.rules.push(ruleGroup);
@@ -12731,7 +12731,7 @@ var require_uniqueItems = __commonJS({
           gen.if((0, codegen_1._)`${i} > 1`, () => (canOptimize() ? loopN : loopN2)(i, j));
         }
         function canOptimize() {
-          return itemTypes.length > 0 && !itemTypes.some((t2) => t2 === "object" || t2 === "array");
+          return itemTypes.length > 0 && !itemTypes.some((t3) => t3 === "object" || t3 === "array");
         }
         function loopN(i, j) {
           const item = gen.name("item");
@@ -14966,23 +14966,23 @@ var require_formats = __commonJS({
       if (!(s1 && s2))
         return void 0;
       const t1 = (/* @__PURE__ */ new Date("2020-01-01T" + s1)).valueOf();
-      const t2 = (/* @__PURE__ */ new Date("2020-01-01T" + s2)).valueOf();
-      if (!(t1 && t2))
+      const t22 = (/* @__PURE__ */ new Date("2020-01-01T" + s2)).valueOf();
+      if (!(t1 && t22))
         return void 0;
-      return t1 - t2;
+      return t1 - t22;
     }
-    function compareIsoTime(t1, t2) {
-      if (!(t1 && t2))
+    function compareIsoTime(t1, t22) {
+      if (!(t1 && t22))
         return void 0;
       const a1 = TIME.exec(t1);
-      const a2 = TIME.exec(t2);
+      const a2 = TIME.exec(t22);
       if (!(a1 && a2))
         return void 0;
       t1 = a1[1] + a1[2] + a1[3];
-      t2 = a2[1] + a2[2] + a2[3];
-      if (t1 > t2)
+      t22 = a2[1] + a2[2] + a2[3];
+      if (t1 > t22)
         return 1;
-      if (t1 < t2)
+      if (t1 < t22)
         return -1;
       return 0;
     }
@@ -15007,11 +15007,11 @@ var require_formats = __commonJS({
       if (!(dt1 && dt2))
         return void 0;
       const [d1, t1] = dt1.split(DATE_TIME_SEPARATOR);
-      const [d2, t2] = dt2.split(DATE_TIME_SEPARATOR);
+      const [d2, t22] = dt2.split(DATE_TIME_SEPARATOR);
       const res = compareDate(d1, d2);
       if (res === void 0)
         return void 0;
-      return res || compareTime(t1, t2);
+      return res || compareTime(t1, t22);
     }
     var NOT_URI_FRAGMENT = /\/|:/;
     var URI = /^(?:[a-z][a-z0-9+\-.]*:)(?:\/?\/(?:(?:[a-z0-9\-._~!$&'()*+,;=:]|%[0-9a-f]{2})*@)?(?:\[(?:(?:(?:(?:[0-9a-f]{1,4}:){6}|::(?:[0-9a-f]{1,4}:){5}|(?:[0-9a-f]{1,4})?::(?:[0-9a-f]{1,4}:){4}|(?:(?:[0-9a-f]{1,4}:){0,1}[0-9a-f]{1,4})?::(?:[0-9a-f]{1,4}:){3}|(?:(?:[0-9a-f]{1,4}:){0,2}[0-9a-f]{1,4})?::(?:[0-9a-f]{1,4}:){2}|(?:(?:[0-9a-f]{1,4}:){0,3}[0-9a-f]{1,4})?::[0-9a-f]{1,4}:|(?:(?:[0-9a-f]{1,4}:){0,4}[0-9a-f]{1,4})?::)(?:[0-9a-f]{1,4}:[0-9a-f]{1,4}|(?:(?:25[0-5]|2[0-4]\d|[01]?\d\d?)\.){3}(?:25[0-5]|2[0-4]\d|[01]?\d\d?))|(?:(?:[0-9a-f]{1,4}:){0,5}[0-9a-f]{1,4})?::[0-9a-f]{1,4}|(?:(?:[0-9a-f]{1,4}:){0,6}[0-9a-f]{1,4})?::)|[Vv][0-9a-f]+\.[a-z0-9\-._~!$&'()*+,;=:]+)\]|(?:(?:25[0-5]|2[0-4]\d|[01]?\d\d?)\.){3}(?:25[0-5]|2[0-4]\d|[01]?\d\d?)|(?:[a-z0-9\-._~!$&'()*+,;=]|%[0-9a-f]{2})*)(?::\d*)?(?:\/(?:[a-z0-9\-._~!$&'()*+,;=:@]|%[0-9a-f]{2})*)*|\/(?:(?:[a-z0-9\-._~!$&'()*+,;=:@]|%[0-9a-f]{2})+(?:\/(?:[a-z0-9\-._~!$&'()*+,;=:@]|%[0-9a-f]{2})*)*)?|(?:[a-z0-9\-._~!$&'()*+,;=:@]|%[0-9a-f]{2})+(?:\/(?:[a-z0-9\-._~!$&'()*+,;=:@]|%[0-9a-f]{2})*)*)(?:\?(?:[a-z0-9\-._~!$&'()*+,;=:@/?]|%[0-9a-f]{2})*)?(?:#(?:[a-z0-9\-._~!$&'()*+,;=:@/?]|%[0-9a-f]{2})*)?$/i;
@@ -16713,19 +16713,19 @@ var require_errors3 = __commonJS({
       }
     };
     exports.BrowserTokenNotAllowedError = BrowserTokenNotAllowedError;
-    function validateRequestPath(path15) {
-      if (path15.includes("..")) {
-        throw new InvalidPathParameterError(`Request path "${path15}" contains path traversal sequence ".."`);
+    function validateRequestPath(path22) {
+      if (path22.includes("..")) {
+        throw new InvalidPathParameterError(`Request path "${path22}" contains path traversal sequence ".."`);
       }
-      if (/%2e/i.test(path15)) {
+      if (/%2e/i.test(path22)) {
         let decoded;
         try {
-          decoded = decodeURIComponent(path15);
+          decoded = decodeURIComponent(path22);
         } catch {
           return;
         }
         if (decoded.includes("..")) {
-          throw new InvalidPathParameterError(`Request path "${path15}" contains encoded path traversal sequence`);
+          throw new InvalidPathParameterError(`Request path "${path22}" contains encoded path traversal sequence`);
         }
       }
     }
@@ -17409,17 +17409,17 @@ var require_Client = __commonJS({
        * Sends a request.
        */
       async request(args) {
-        const { path: path15, method, query, body, formDataParams, auth } = args;
-        (0, errors_1.validateRequestPath)(path15);
-        this.log(logging_1.LogLevel.INFO, "request start", { method, path: path15 });
-        const url2 = this.buildRequestUrl(path15, query);
+        const { path: path22, method, query, body, formDataParams, auth } = args;
+        (0, errors_1.validateRequestPath)(path22);
+        this.log(logging_1.LogLevel.INFO, "request start", { method, path: path22 });
+        const url2 = this.buildRequestUrl(path22, query);
         const bodyAsJsonString = this.serializeBody(body);
         const headers = this.buildRequestHeaders(args.headers, auth, bodyAsJsonString);
         const formData = this.buildFormData(formDataParams, headers);
         return this.executeWithRetry({
           url: url2,
           method,
-          path: path15,
+          path: path22,
           headers,
           body: bodyAsJsonString !== null && bodyAsJsonString !== void 0 ? bodyAsJsonString : formData
         }, (request) => this.executeSingleRequest(request));
@@ -17429,20 +17429,20 @@ var require_Client = __commonJS({
        */
       async *streamRequest(args, parseEvent) {
         var _a;
-        const { path: path15, method, query, body, auth } = args;
-        (0, errors_1.validateRequestPath)(path15);
-        this.log(logging_1.LogLevel.INFO, "stream request start", { method, path: path15 });
-        const url2 = this.buildRequestUrl(path15, query);
+        const { path: path22, method, query, body, auth } = args;
+        (0, errors_1.validateRequestPath)(path22);
+        this.log(logging_1.LogLevel.INFO, "stream request start", { method, path: path22 });
+        const url2 = this.buildRequestUrl(path22, query);
         const bodyAsJsonString = this.serializeBody(body);
         const headers = this.buildRequestHeaders(args.headers, auth, bodyAsJsonString);
         const response = await this.executeWithRetry({
           url: url2,
           method,
-          path: path15,
+          path: path22,
           headers,
           body: bodyAsJsonString
         }, (request) => this.executeSingleStreamRequest(request));
-        this.log(logging_1.LogLevel.INFO, "stream request opened", { method, path: path15 });
+        this.log(logging_1.LogLevel.INFO, "stream request opened", { method, path: path22 });
         if (response.body === void 0 || response.body === null) {
           for (const frame of takeSseFrames({
             content: await response.text(),
@@ -17494,8 +17494,8 @@ var require_Client = __commonJS({
       /**
        * Builds the full URL with query parameters.
        */
-      buildRequestUrl(path15, query) {
-        const url2 = new URL(`${__classPrivateFieldGet(this, _Client_prefixUrl, "f")}${path15}`);
+      buildRequestUrl(path22, query) {
+        const url2 = new URL(`${__classPrivateFieldGet(this, _Client_prefixUrl, "f")}${path22}`);
         if (query) {
           for (const [key, value] of Object.entries(query)) {
             if (value !== void 0 && value !== null) {
@@ -17582,14 +17582,14 @@ var require_Client = __commonJS({
        * Executes the request with retry logic.
        */
       async executeWithRetry(args, execute) {
-        const { url: url2, method, path: path15, headers, body } = args;
+        const { url: url2, method, path: path22, headers, body } = args;
         let attempt = 0;
         while (true) {
           try {
             return await execute({
               url: url2,
               method,
-              path: path15,
+              path: path22,
               headers,
               body
             });
@@ -17602,7 +17602,7 @@ var require_Client = __commonJS({
               const delayMs = this.calculateRetryDelay(error, attempt);
               this.log(logging_1.LogLevel.INFO, "retrying request", {
                 method,
-                path: path15,
+                path: path22,
                 attempt: attempt + 1,
                 delayMs
               });
@@ -17618,7 +17618,7 @@ var require_Client = __commonJS({
        * Executes a single HTTP request (no retry).
        */
       async executeSingleRequest(args) {
-        const { url: url2, method, path: path15, headers, body } = args;
+        const { url: url2, method, path: path22, headers, body } = args;
         const response = await errors_1.RequestTimeoutError.rejectAfterTimeout(__classPrivateFieldGet(this, _Client_fetch, "f").call(this, url2.toString(), {
           method: method.toUpperCase(),
           headers,
@@ -17632,7 +17632,7 @@ var require_Client = __commonJS({
         const responseJson = JSON.parse(responseText);
         this.log(logging_1.LogLevel.INFO, "request success", {
           method,
-          path: path15,
+          path: path22,
           ...this.extractRequestId(responseJson)
         });
         return responseJson;
@@ -18298,9 +18298,9 @@ var require_src = __commonJS({
 });
 
 // plugins/arima/scripts/src/cli/notion-cli.ts
-var import_yaml2 = __toESM(require_dist(), 1);
-import { existsSync as existsSync11, mkdirSync as mkdirSync9, readFileSync as readFileSync11 } from "node:fs";
-import path14 from "node:path";
+var import_yaml5 = __toESM(require_dist(), 1);
+import { existsSync as existsSync16, mkdirSync as mkdirSync11, readFileSync as readFileSync16 } from "node:fs";
+import path21 from "node:path";
 import { parseArgs } from "node:util";
 
 // plugins/arima/scripts/src/lib/atomic-file.ts
@@ -18464,7 +18464,7 @@ async function withBackoff(fn, o = {}) {
 
 // plugins/arima/scripts/src/notion/port.ts
 var PAUSE_TODO_TEXT = "Pause ARIMA";
-var plain = (rt) => (rt ?? []).map((t2) => t2.plain_text ?? "").join("");
+var plain = (rt) => (rt ?? []).map((t3) => t3.plain_text ?? "").join("");
 function toDatabaseInfo(raw) {
   const dataSourceId = raw.data_sources?.[0]?.id;
   if (dataSourceId === void 0) throw new Error(`database ${raw.id} has no data source`);
@@ -18500,6 +18500,8 @@ function createNotionPort(client, throttle = new Throttle(), backoff = {}) {
           });
         } else if (raw.type === "paragraph") {
           out.push({ id: raw.id, type: "paragraph", text: plain(raw.paragraph?.rich_text) });
+        } else if (raw.type === "child_page") {
+          out.push({ id: raw.id, type: "child_page", text: raw.child_page?.title ?? "" });
         } else if (raw.type === "child_database") {
           out.push({ id: raw.id, type: "child_database", text: raw.child_database?.title ?? "" });
         } else {
@@ -18651,6 +18653,70 @@ function createNotionPort(client, throttle = new Throttle(), backoff = {}) {
         ...raw.properties ? { properties: raw.properties } : {}
       };
     },
+    async listViews(databaseId) {
+      if (client.views === void 0) throw new Error("this Notion client has no views API");
+      const v = client.views;
+      const out = [];
+      let cursor;
+      for (; ; ) {
+        const page = await callRead(
+          () => v.list({
+            database_id: databaseId,
+            ...cursor !== void 0 ? { start_cursor: cursor } : {}
+          })
+        );
+        for (const r of page.results) {
+          if (r.id === void 0) continue;
+          const full = await callRead(() => v.retrieve({ view_id: r.id }));
+          out.push({ id: r.id, name: full.name ?? "" });
+        }
+        if (!page.has_more || page.next_cursor === null) return out;
+        cursor = page.next_cursor;
+      }
+    },
+    async createView(i) {
+      if (client.views === void 0) throw new Error("this Notion client has no views API");
+      const v = client.views;
+      const raw = await call(
+        () => v.create({
+          database_id: i.databaseId,
+          data_source_id: i.dataSourceId,
+          name: i.name,
+          type: i.type,
+          ...i.filter ? { filter: i.filter } : {},
+          ...i.sorts ? { sorts: i.sorts } : {},
+          ...i.groupBy ? {
+            configuration: {
+              type: i.type,
+              group_by: {
+                type: i.groupBy.type,
+                property_id: i.groupBy.propertyId,
+                sort: { type: "manual" }
+              }
+            }
+          } : {}
+        })
+      );
+      return raw.id;
+    },
+    async createComment(pageId, richText) {
+      if (client.comments === void 0) throw new Error("this Notion client has no comments API");
+      const c = client.comments;
+      await call(() => c.create({ parent: { page_id: pageId }, rich_text: richText }));
+    },
+    async findOrCreateChildPage(parentPageId, title) {
+      const have = (await listChildren(parentPageId)).find(
+        (b) => b.type === "child_page" && b.text === title
+      );
+      if (have !== void 0) return have.id;
+      const raw = await call(
+        () => client.pages.create({
+          parent: { type: "page_id", page_id: parentPageId },
+          properties: { title: { title: [{ type: "text", text: { content: title } }] } }
+        })
+      );
+      return raw.id;
+    },
     async appendChildren(pageId, blocks) {
       for (let i = 0; i < blocks.length; i += 100) {
         const chunk = blocks.slice(i, i + 100);
@@ -18675,7 +18741,7 @@ async function checkKillSwitch(projectDir, notion, remotePause) {
   if (notion !== null) {
     try {
       const todos = await notion.port.listTodoBlocks(notion.rootPageId);
-      const sw = todos.find((t2) => t2.text.trim() === PAUSE_TODO_TEXT);
+      const sw = todos.find((t3) => t3.text.trim() === PAUSE_TODO_TEXT);
       if (sw === void 0) {
         remote = "missing";
         detail = `the "${PAUSE_TODO_TEXT}" to-do is missing from the Notion root page, so ARIMA cannot tell whether it is paused; run /arima:pause --resume to recreate it`;
@@ -18714,7 +18780,7 @@ async function checkKillSwitch(projectDir, notion, remotePause) {
 }
 async function ensureNotionSwitch(port, rootPageId) {
   const todos = await port.listTodoBlocks(rootPageId);
-  if (todos.some((t2) => t2.text.trim() === PAUSE_TODO_TEXT)) return false;
+  if (todos.some((t3) => t3.text.trim() === PAUSE_TODO_TEXT)) return false;
   await port.appendTodo(rootPageId, PAUSE_TODO_TEXT, false);
   return true;
 }
@@ -19646,8 +19712,8 @@ function scan(text2) {
   const out = [];
   const seen = /* @__PURE__ */ new Set();
   for (const p of PATTERNS) {
-    for (const t2 of text2 === unescaped ? [text2] : [text2, unescaped]) {
-      for (const m of t2.matchAll(new RegExp(p.re.source, p.re.flags))) {
+    for (const t3 of text2 === unescaped ? [text2] : [text2, unescaped]) {
+      for (const m of t3.matchAll(new RegExp(p.re.source, p.re.flags))) {
         const groups = m.slice(1).map((x) => x ?? "");
         if (p.accept && !p.accept(m[0], groups)) continue;
         const f = fingerprint(m[0]);
@@ -19834,9 +19900,9 @@ async function waitForRunLock(o) {
     const s = lockStatus(o.projectDir, stale, clock());
     if (!s.held || o.holderRunId !== void 0 && s.lock?.run_id === o.holderRunId)
       return { ok: true, waitedMs: clock() - start };
-    const waited = clock() - start;
-    if (waited >= maxWait) return { ok: false, waitedMs: waited, lock: s.lock };
-    await sleep3(Math.min(poll, maxWait - waited));
+    const waited2 = clock() - start;
+    if (waited2 >= maxWait) return { ok: false, waitedMs: waited2, lock: s.lock };
+    await sleep3(Math.min(poll, maxWait - waited2));
   }
 }
 async function guardInteractive(o) {
@@ -19869,9 +19935,18 @@ async function guardInteractive(o) {
   return void 0;
 }
 
+// plugins/arima/scripts/src/ledger.ts
+import path10 from "node:path";
+function ledgerFile(projectDir) {
+  return path10.join(projectDir, ".arima", "ledger.jsonl");
+}
+function readLedger(projectDir) {
+  return readJsonl(ledgerFile(projectDir), "ledger");
+}
+
 // plugins/arima/scripts/src/notion/mirror.ts
 import { existsSync as existsSync7, mkdirSync as mkdirSync5, readFileSync as readFileSync7 } from "node:fs";
-import path10 from "node:path";
+import path11 from "node:path";
 
 // plugins/arima/scripts/src/notion/values.ts
 var CHUNK = 2e3;
@@ -19918,7 +19993,7 @@ function toNotionValue(type, name, value, resolveRelation) {
       throw new ValueError(`"${name}" is a ${type} property, which agents cannot write`);
   }
 }
-var plain2 = (rt) => Array.isArray(rt) ? rt.map((t2) => t2.plain_text ?? "").join("") : "";
+var plain2 = (rt) => Array.isArray(rt) ? rt.map((t3) => t3.plain_text ?? "").join("") : "";
 function fromNotionValue(raw) {
   switch (raw.type) {
     case "title":
@@ -20005,9 +20080,9 @@ function markdownToBlocks(markdown) {
 }
 
 // plugins/arima/scripts/src/notion/mirror.ts
-var mirrorDir = (projectDir) => path10.join(projectDir, ".arima", "mirror");
-var mirrorFile = (projectDir, db) => path10.join(mirrorDir(projectDir), `${db}.json`);
-var notionMapFile = (projectDir) => path10.join(projectDir, ".arima", "notion-map.json");
+var mirrorDir = (projectDir) => path11.join(projectDir, ".arima", "mirror");
+var mirrorFile = (projectDir, db) => path11.join(mirrorDir(projectDir), `${db}.json`);
+var notionMapFile = (projectDir) => path11.join(projectDir, ".arima", "notion-map.json");
 function readNotionMap(projectDir) {
   const file = notionMapFile(projectDir);
   if (!existsSync7(file)) throw new Error(`${file} not found; run arima-notion map first`);
@@ -20062,9 +20137,40 @@ function findRow(m, id) {
   return m.rows.find((r) => r.page_id === id);
 }
 
+// plugins/arima/scripts/src/story-budget.ts
+var RUN_COST_FLOOR_USD = 0.25;
+var round = (n) => Math.round(n * 1e6) / 1e6;
+function itemSpent(projectDir, item) {
+  return round(
+    readLedger(projectDir).filter((r) => r.item === item).reduce((s, r) => s + r.cost_usd, 0)
+  );
+}
+function unitBudget(projectDir, item, budget, perRunCap, floor = RUN_COST_FLOOR_USD) {
+  const spent = itemSpent(projectDir, item);
+  const remaining = round(budget - spent);
+  if (!(remaining > 0) || remaining < floor)
+    return {
+      ok: false,
+      reason: "story_budget",
+      spent,
+      remaining: Math.max(0, remaining),
+      storyBudget: budget
+    };
+  return {
+    ok: true,
+    budgetUsd: round(Math.min(perRunCap, remaining)),
+    spent,
+    remaining,
+    storyBudget: budget
+  };
+}
+
+// plugins/arima/scripts/src/item.ts
+var SIZE_POINTS = { S: 1, M: 2, L: 4 };
+
 // plugins/arima/scripts/src/notion/allocations.ts
 import { existsSync as existsSync8, mkdirSync as mkdirSync6, readFileSync as readFileSync8 } from "node:fs";
-import path11 from "node:path";
+import path12 from "node:path";
 
 // plugins/arima/scripts/src/ids.ts
 var ID_WIDTHS = {
@@ -20100,7 +20206,7 @@ var ID_PREFIX_BY_DB = {
   risks: "RISK",
   lessons: "LES"
 };
-var allocationsFile = (projectDir) => path11.join(projectDir, ".arima", "state", "allocations.json");
+var allocationsFile = (projectDir) => path12.join(projectDir, ".arima", "state", "allocations.json");
 function readAllocations(projectDir) {
   const file = allocationsFile(projectDir);
   if (!existsSync8(file)) return {};
@@ -20110,7 +20216,7 @@ function allocatedTo(projectDir, id) {
   return readAllocations(projectDir)[id];
 }
 var titleProperty = (db) => dbByKey(db).props.find((p) => p.type === "title")?.name;
-var engineEntriesFile = (projectDir) => path11.join(projectDir, ".arima", "state", "engine-entries.json");
+var engineEntriesFile = (projectDir) => path12.join(projectDir, ".arima", "state", "engine-entries.json");
 function readEngineEntries(projectDir) {
   const file = engineEntriesFile(projectDir);
   if (!existsSync8(file)) return [];
@@ -20127,7 +20233,7 @@ import {
   renameSync as renameSync2,
   writeFileSync as writeFileSync4
 } from "node:fs";
-import path12 from "node:path";
+import path13 from "node:path";
 
 // plugins/arima/scripts/src/roles.ts
 var ROLES = [
@@ -20190,7 +20296,7 @@ var OUTBOX_FORBIDDEN_PROPERTIES = {
 };
 
 // plugins/arima/scripts/src/notion/outbox.ts
-var outboxDir = (projectDir) => path12.join(projectDir, ".arima", "outbox");
+var outboxDir = (projectDir) => path13.join(projectDir, ".arima", "outbox");
 function secretsIn(entry, allowed = /* @__PURE__ */ new Set()) {
   return findSecrets(
     JSON.stringify({ p: entry.properties ?? {}, c: entry.content_markdown ?? "" }),
@@ -20204,7 +20310,7 @@ function listPending(projectDir, report) {
   const validate = getValidator("outbox");
   const out = [];
   for (const name of readdirSync2(dir).filter((f) => f.endsWith(".json")).sort()) {
-    const file = path12.join(dir, name);
+    const file = path13.join(dir, name);
     let data;
     try {
       data = JSON.parse(readFileSync9(file, "utf8"));
@@ -20253,11 +20359,11 @@ function settle(projectDir, file, id, result, report) {
     });
   else report.deferred.push(id);
   if (bucket === void 0) return;
-  const dir = path12.join(outboxDir(projectDir), bucket);
+  const dir = path13.join(outboxDir(projectDir), bucket);
   mkdirSync7(dir, { recursive: true });
-  renameSync2(file, path12.join(dir, `${id}.json`));
+  renameSync2(file, path13.join(dir, `${id}.json`));
   writeFileSync4(
-    path12.join(dir, `${id}.result.json`),
+    path13.join(dir, `${id}.result.json`),
     `${JSON.stringify({ ...result, at: (/* @__PURE__ */ new Date()).toISOString() }, null, 2)}
 `
   );
@@ -20632,13 +20738,13 @@ var refuse = (code2, message, failed) => ({
   message,
   ...failed ? { failed } : {}
 });
-var matches = (t2, from) => t2.from === from || t2.from === "open" && OPEN.includes(from) || t2.from === "before_done" && BEFORE_DONE.includes(from);
+var matches = (t3, from) => t3.from === from || t3.from === "open" && OPEN.includes(from) || t3.from === "before_done" && BEFORE_DONE.includes(from);
 function createMachine(table = TRANSITIONS) {
-  const edges = (from) => table.filter((t2) => matches(t2, from));
+  const edges = (from) => table.filter((t3) => matches(t3, from));
   const transition2 = (state, req) => {
     const { to, actor, facts } = req;
     const edge = edges(state.status).find(
-      (t2) => t2.to === "previous" ? to === state.blocked_from : t2.to === to
+      (t3) => t3.to === "previous" ? to === state.blocked_from : t3.to === to
     );
     if (edge === void 0) {
       if (state.status === "Blocked" && to !== "Blocked" && to !== "Cancelled")
@@ -20744,7 +20850,7 @@ import {
   statSync as statSync2,
   writeFileSync as writeFileSync5
 } from "node:fs";
-import path13 from "node:path";
+import path14 from "node:path";
 var StateError = class extends Error {
 };
 var DEFAULT_BRANCH = "arima-state";
@@ -20772,7 +20878,7 @@ function gitOk(cwd, args) {
   }
 }
 function resolve(o) {
-  const repo = path13.resolve(o.projectDir);
+  const repo = path14.resolve(o.projectDir);
   if (!existsSync10(repo) || !gitOk(repo, ["rev-parse", "--git-dir"])) {
     throw new StateError(`${repo} is not a git repository`);
   }
@@ -20791,7 +20897,7 @@ function resolve(o) {
   }
   const remote = o.remote ?? "origin";
   const hasRemote = git(repo, ["remote"]).split("\n").includes(remote);
-  return { repo, stateDir: path13.join(repo, ".arima"), branch, remote, hasRemote };
+  return { repo, stateDir: path14.join(repo, ".arima"), branch, remote, hasRemote };
 }
 function remotePauseFlag(o) {
   let r;
@@ -20817,21 +20923,1668 @@ function remotePauseFlag(o) {
   return gitOk(r.repo, ["cat-file", "-e", `${ref}:PAUSE`]);
 }
 
+// plugins/arima/scripts/src/notion/views.ts
+var select2 = (property, equals) => ({
+  property,
+  select: { equals }
+});
+var VIEW_SPECS = [
+  {
+    db: "stories",
+    name: "Board",
+    type: "board",
+    groupBy: "Status",
+    filter: { property: "Status", select: { does_not_equal: "Cancelled" } },
+    sorts: [{ property: "Priority", direction: "ascending" }],
+    why: "Stories by Status (add a Milestone filter in Notion for the current milestone)"
+  },
+  {
+    db: "gates",
+    name: "Approval inbox",
+    type: "table",
+    filter: select2("Status", "Ready for review"),
+    why: "Gates waiting for your decision"
+  },
+  {
+    db: "questions",
+    name: "Approval inbox",
+    type: "table",
+    filter: {
+      and: [select2("Status", "Open"), { property: "Blocking", checkbox: { equals: true } }]
+    },
+    why: "Blocking questions waiting for your answer"
+  },
+  {
+    db: "releases",
+    name: "Approval inbox",
+    type: "table",
+    filter: select2("Status", "Awaiting approval"),
+    why: "Production approvals waiting"
+  },
+  {
+    db: "change_requests",
+    name: "Approval inbox",
+    type: "table",
+    filter: select2("Decision", "Pending"),
+    why: "Change requests waiting for a decision"
+  },
+  {
+    db: "decisions",
+    name: "Approval inbox",
+    type: "table",
+    filter: { property: "Date", date: { past_week: {} } },
+    sorts: [{ property: "Date", direction: "descending" }],
+    why: "Decisions made for you recently, each with its veto box"
+  },
+  {
+    db: "requirements",
+    name: "RTM",
+    type: "table",
+    sorts: [{ property: "ID", direction: "ascending" }],
+    why: "Requirements with their stories, test cases, results and coverage"
+  },
+  {
+    db: "milestones",
+    name: "Milestone burn",
+    type: "table",
+    sorts: [{ property: "ID", direction: "ascending" }],
+    why: "Budget against cost per milestone"
+  },
+  {
+    db: "stories",
+    name: "Milestone burn",
+    type: "table",
+    sorts: [{ property: "Cost USD", direction: "descending" }],
+    why: "Cost against budget per story"
+  },
+  {
+    db: "bugs",
+    name: "Open bugs",
+    type: "table",
+    filter: {
+      or: [select2("Status", "Open"), select2("Status", "In progress"), select2("Status", "Fixed")]
+    },
+    sorts: [{ property: "Severity", direction: "ascending" }],
+    why: "Bugs not yet verified, by severity"
+  }
+];
+async function ensureViews(port, map, specs = VIEW_SPECS) {
+  const res = { created: [], existing: [], failed: [] };
+  const have = /* @__PURE__ */ new Map();
+  for (const spec of specs) {
+    const db = map.databases[spec.db];
+    if (db === void 0) {
+      res.failed.push({
+        db: spec.db,
+        name: spec.name,
+        reason: "the database is not in the Notion map (run arima-notion map)"
+      });
+      continue;
+    }
+    try {
+      if (!have.has(db.database_id))
+        have.set(
+          db.database_id,
+          new Set((await port.listViews(db.database_id)).map((v) => v.name))
+        );
+      const names = have.get(db.database_id);
+      if (names.has(spec.name)) {
+        res.existing.push({ db: spec.db, name: spec.name });
+        continue;
+      }
+      const groupId = spec.groupBy === void 0 ? void 0 : db.properties[spec.groupBy]?.id;
+      if (spec.groupBy !== void 0 && groupId === void 0)
+        throw new Error(`${spec.groupBy} is not a property of ${spec.db}`);
+      const id = await port.createView({
+        databaseId: db.database_id,
+        dataSourceId: db.data_source_id,
+        name: spec.name,
+        type: spec.type,
+        ...spec.filter ? { filter: spec.filter } : {},
+        ...spec.sorts ? { sorts: spec.sorts } : {},
+        ...groupId !== void 0 ? { groupBy: { propertyId: groupId, type: "select" } } : {}
+      });
+      names.add(spec.name);
+      res.created.push({ db: spec.db, name: spec.name, id });
+    } catch (e) {
+      res.failed.push({
+        db: spec.db,
+        name: spec.name,
+        reason: e instanceof Error ? e.message.slice(0, 200) : String(e)
+      });
+    }
+  }
+  return res;
+}
+
+// plugins/arima/scripts/src/status.ts
+import path17 from "node:path";
+
+// plugins/arima/scripts/src/budget.ts
+var round2 = (n) => Math.round(n * 1e6) / 1e6;
+function budgetStatus(projectDir, limits, today) {
+  const rows = readLedger(projectDir);
+  const projectSpent = round2(rows.reduce((s, r) => s + r.cost_usd, 0));
+  const daySpent = round2(rows.filter((r) => r.date === today).reduce((s, r) => s + r.cost_usd, 0));
+  const exhausted = [];
+  if (projectSpent >= limits.projectCap) exhausted.push("project");
+  if (daySpent >= limits.dailyCap) exhausted.push("daily");
+  return {
+    projectSpent,
+    projectCap: limits.projectCap,
+    daySpent,
+    dailyCap: limits.dailyCap,
+    ok: exhausted.length === 0,
+    exhausted
+  };
+}
+
+// plugins/arima/scripts/src/config.ts
+import { existsSync as existsSync11 } from "node:fs";
+
+// plugins/arima/scripts/src/hardstops.ts
+var HARD_STOPS = [
+  "G0",
+  "G1",
+  "G2",
+  "G3",
+  "G4",
+  "prod_deploy",
+  "secrets_change",
+  "budget_exceeded",
+  "story_budget",
+  "notion_delete",
+  "prod_data_migration",
+  "new_paid_service",
+  "licence",
+  "critical_finding",
+  "kill_switch",
+  "missing_credential"
+];
+var isHardStop = (id) => HARD_STOPS.includes(id);
+
+// plugins/arima/scripts/src/config.ts
+import path16 from "node:path";
+
+// plugins/arima/scripts/src/lib/yaml-source.ts
+var import_yaml2 = __toESM(require_dist(), 1);
+import { readFileSync as readFileSync11 } from "node:fs";
+var YamlSource = class {
+  file;
+  doc;
+  lines = new import_yaml2.LineCounter();
+  parseErrors = [];
+  constructor(file, text2 = readFileSync11(file, "utf8")) {
+    this.file = file;
+    this.doc = (0, import_yaml2.parseDocument)(text2, { lineCounter: this.lines, prettyErrors: false });
+    for (const e of this.doc.errors) {
+      this.parseErrors.push({
+        line: e.linePos?.[0]?.line ?? 1,
+        message: e.message.split("\n")[0] ?? e.message
+      });
+    }
+  }
+  get data() {
+    return this.doc.toJS();
+  }
+  /** 1-based line of a JSON pointer ("/roles/po"), falling back to the nearest existing parent. */
+  lineOf(pointer) {
+    const parts = pointer.split("/").filter(Boolean).map((p) => p.replace(/~1/g, "/").replace(/~0/g, "~"));
+    let node = this.doc.contents;
+    let best = this.doc.contents ?? null;
+    for (const part of parts) {
+      if ((0, import_yaml2.isMap)(node)) {
+        const pair = node.items.find((i) => (0, import_yaml2.isScalar)(i.key) && String(i.key.value) === part);
+        if (!pair) break;
+        node = pair.value;
+        if ((0, import_yaml2.isScalar)(pair.key) && pair.key.range) best = pair.key;
+      } else if ((0, import_yaml2.isSeq)(node)) {
+        node = node.items[Number(part)];
+        const n = node;
+        if (n?.range) best = n;
+      } else break;
+    }
+    const offset = best?.range?.[0] ?? 0;
+    return this.lines.linePos(offset).line;
+  }
+};
+
+// plugins/arima/scripts/src/profiles.ts
+var import_yaml3 = __toESM(require_dist(), 1);
+import { readdirSync as readdirSync4, readFileSync as readFileSync12 } from "node:fs";
+import path15 from "node:path";
+var PROFILE_NAMES = ["solo-lite", "client-project", "regulated"];
+function profilesDir(root = pluginRoot()) {
+  return path15.join(root, "profiles");
+}
+function loadProfile(name, root = pluginRoot()) {
+  if (!PROFILE_NAMES.includes(name)) {
+    throw new Error(`Unknown profile "${name}". Expected one of: ${PROFILE_NAMES.join(", ")}`);
+  }
+  const file = path15.join(profilesDir(root), `${name}.yaml`);
+  const data = (0, import_yaml3.parse)(readFileSync12(file, "utf8"));
+  const validate = getValidator("profile", root);
+  if (!validate(data)) {
+    const problems = (validate.errors ?? []).map(describeError).join("; ");
+    throw new Error(`Invalid profile ${file}: ${problems}`);
+  }
+  const profile = data;
+  if (profile.name !== name) {
+    throw new Error(`Profile ${file} declares name "${profile.name}", expected "${name}"`);
+  }
+  return profile;
+}
+function enforcedGates(profile) {
+  return ["G0", "G1", "G2", "G3", "G4"].filter((g) => profile.gates[g] !== void 0);
+}
+function requiredApproverRoles(profile) {
+  const set = /* @__PURE__ */ new Set();
+  for (const g of Object.values(profile.gates)) for (const r of g?.approvers ?? []) set.add(r);
+  return [...set];
+}
+
+// plugins/arima/scripts/src/config.ts
+var ROLE_BRANCH = ["human", "agent"];
+function refine(errors, data) {
+  const oneOfPaths = new Set(
+    errors.filter((e) => e.keyword === "oneOf").map((e) => e.instancePath)
+  );
+  if (oneOfPaths.size === 0) return errors;
+  const out = [];
+  for (const e of errors) {
+    const underOneOf = [...oneOfPaths].find((p) => e.instancePath.startsWith(p));
+    if (underOneOf === void 0) {
+      out.push(e);
+      continue;
+    }
+    if (e.keyword === "oneOf") {
+      const node2 = getByPointer(data, e.instancePath);
+      if (!ROLE_BRANCH.includes(node2?.type)) {
+        out.push({
+          ...e,
+          keyword: "enum",
+          params: { allowedValues: [...ROLE_BRANCH] },
+          instancePath: `${e.instancePath}/type`
+        });
+      }
+      continue;
+    }
+    const node = getByPointer(data, underOneOf);
+    const idx = ROLE_BRANCH.indexOf(node?.type);
+    if (idx >= 0 && e.schemaPath.includes(`/oneOf/${idx}/`)) out.push(e);
+  }
+  return out;
+}
+function getByPointer(data, pointer) {
+  let cur = data;
+  for (const part of pointer.split("/").filter(Boolean)) {
+    if (cur === null || typeof cur !== "object") return void 0;
+    cur = cur[part];
+  }
+  return cur;
+}
+function schemaIssues(src, schema, root) {
+  const issues = src.parseErrors.map((p) => ({
+    severity: "error",
+    file: src.file,
+    line: p.line,
+    path: "(syntax)",
+    message: `YAML syntax error: ${p.message}`
+  }));
+  if (issues.length > 0) return issues;
+  const data = src.data;
+  const validate = getValidator(schema, root);
+  if (validate(data)) return [];
+  for (const e of refine(validate.errors ?? [], data)) {
+    let pointer = e.instancePath;
+    if (e.keyword === "additionalProperties") {
+      pointer += `/${e.params.additionalProperty}`;
+    }
+    issues.push({
+      severity: "error",
+      file: src.file,
+      line: src.lineOf(pointer),
+      path: pointer.split("/").filter(Boolean).join(".") || "(root)",
+      message: describeError(e)
+    });
+  }
+  return issues;
+}
+function validateProject(projectDir, root = pluginRoot()) {
+  const errors = [];
+  const warnings = [];
+  const arimaFile = path16.join(projectDir, "arima.yaml");
+  const teamFile = path16.join(projectDir, "team.yaml");
+  const sources = {};
+  for (const [key, file] of [
+    ["arima", arimaFile],
+    ["team", teamFile]
+  ]) {
+    if (!existsSync11(file)) {
+      errors.push({
+        severity: "error",
+        file,
+        line: 1,
+        path: "(file)",
+        message: `${path16.basename(file)} not found`
+      });
+      continue;
+    }
+    const src = new YamlSource(file);
+    sources[key] = src;
+    errors.push(...schemaIssues(src, key, root));
+  }
+  const aSrc = sources.arima;
+  const tSrc = sources.team;
+  const aOk = aSrc !== void 0 && !errors.some((e) => e.file === aSrc.file);
+  const tOk = tSrc !== void 0 && !errors.some((e) => e.file === tSrc.file);
+  if (!aOk || !tOk || !aSrc || !tSrc) return { ok: false, errors, warnings };
+  const arima = aSrc.data;
+  const team = tSrc.data;
+  const err = (src, pointer, message) => {
+    errors.push({
+      severity: "error",
+      file: src.file,
+      line: src.lineOf(pointer),
+      path: pointer.split("/").filter(Boolean).join("."),
+      message
+    });
+  };
+  const profile = loadProfile(arima.profile, root);
+  for (const role of requiredApproverRoles(profile)) {
+    if (team.roles[role]?.type !== "human") {
+      err(
+        tSrc,
+        `/roles/${role}`,
+        `role "${role}" approves gates in profile "${profile.name}" and must be type: human, not agent`
+      );
+    }
+  }
+  const dev = team.roles["developer"];
+  const max = arima.parallelism?.max_developer_agents;
+  if (dev?.type === "agent" && dev.count !== void 0 && max !== void 0 && dev.count > max) {
+    err(
+      tSrc,
+      "/roles/developer/count",
+      `developer.count (${dev.count}) exceeds parallelism.max_developer_agents (${max}) in arima.yaml`
+    );
+  }
+  for (const [name, role] of Object.entries(team.roles)) {
+    if (role.type === "human" && role.person !== void 0 && !(role.person in team.people)) {
+      err(
+        tSrc,
+        `/roles/${name}/person`,
+        `role "${name}" references unknown person "${role.person}" (not in people)`
+      );
+    }
+  }
+  if (arima.runtime.allow_usage_credits) {
+    warnings.push({
+      severity: "warning",
+      file: aSrc.file,
+      line: aSrc.lineOf("/runtime/allow_usage_credits"),
+      path: "runtime.allow_usage_credits",
+      message: "usage credits are enabled: set a spend cap and note it in the digest configuration (Q-22); budgets are estimates, not money spent"
+    });
+  }
+  const listed = new Set(
+    arima.autonomy.hard_stops
+  );
+  const missing = REQUIRED_HARD_STOPS.filter((s) => !listed.has(s));
+  const unknown = [...listed].filter((s) => !isHardStop(s));
+  if (unknown.length > 0) {
+    warnings.push({
+      severity: "warning",
+      file: aSrc.file,
+      line: aSrc.lineOf("/autonomy/hard_stops"),
+      path: "autonomy.hard_stops",
+      message: `unknown hard stop ids: ${unknown.join(", ")}. The ids are fixed in code (see src/hardstops.ts); a typo here protects nothing`
+    });
+  }
+  if (missing.length > 0) {
+    warnings.push({
+      severity: "warning",
+      file: aSrc.file,
+      line: aSrc.lineOf("/autonomy/hard_stops"),
+      path: "autonomy.hard_stops",
+      message: `hard stops missing from this list: ${missing.join(", ")}. ARIMA enforces them anyway (they cannot be disabled by configuration, spec \xA711.1); keep the list complete so it matches what is enforced`
+    });
+  }
+  return { ok: errors.length === 0, errors, warnings, arima, team };
+}
+var REQUIRED_HARD_STOPS = HARD_STOPS;
+
+// plugins/arima/scripts/src/gates.ts
+var PHASE_AFTER_GATE = {
+  G0: "1 Discovery and requirements",
+  G1: "2 Design",
+  G2: "3 Setup and 4 Build",
+  G3: "6 Release",
+  G4: "8 Operations and maintenance"
+};
+
+// plugins/arima/scripts/src/status.ts
+import { existsSync as existsSync12 } from "node:fs";
+var StatusError = class extends Error {
+  constructor(message, problems) {
+    super(message);
+    this.problems = problems;
+  }
+  problems;
+};
+var STORY_STATUSES = [
+  "Backlog",
+  "Ready",
+  "In Progress",
+  "In Review",
+  "In QA",
+  "PO Acceptance",
+  "Done",
+  "Released",
+  "Blocked",
+  "Cancelled"
+];
+var localDate = (d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+function buildStatus(projectDir, now = /* @__PURE__ */ new Date()) {
+  const cfg = validateProject(projectDir);
+  if (!cfg.ok || cfg.arima === void 0) {
+    throw new StatusError(
+      "config is invalid",
+      cfg.errors.map((e) => `${path17.basename(e.file)}:${e.line}: ${e.message}`)
+    );
+  }
+  const a = cfg.arima;
+  const warnings = [];
+  const profile = loadProfile(a.profile);
+  const gateMirror = readMirror(projectDir, "gates");
+  const gates = enforcedGates(profile).map((gate) => {
+    const row = gateMirror?.rows.find((r) => r.id === gate);
+    return { gate, status: row ? String(row.properties["Status"] ?? "Not ready") : "no page" };
+  });
+  const approved = (s) => s === "Approved" || s === "Approved with conditions";
+  let phase = "0 Initiation";
+  if (gateMirror === void 0) {
+    phase = "unknown (no Notion mirror yet; run /arima:init or arima-notion pull)";
+    warnings.push("no Notion mirror: gates, questions and board are empty");
+  } else {
+    for (const g of gates) {
+      if (!approved(g.status)) break;
+      phase = PHASE_AFTER_GATE[g.gate];
+    }
+  }
+  const qMirror = readMirror(projectDir, "questions");
+  const open = (qMirror?.rows ?? []).filter((r) => r.properties["Status"] === "Open");
+  const top = open.map((r) => ({
+    id: r.id,
+    question: String(r.properties["Question"] ?? ""),
+    blocking: r.properties["Blocking"] === true
+  })).sort((x, y) => Number(y.blocking) - Number(x.blocking) || x.id.localeCompare(y.id)).slice(0, 10);
+  const board = {};
+  for (const s of STORY_STATUSES) board[s] = 0;
+  for (const r of readMirror(projectDir, "stories")?.rows ?? []) {
+    const s = String(r.properties["Status"] ?? "Backlog");
+    board[s] = (board[s] ?? 0) + 1;
+  }
+  const budget = budgetStatus(
+    projectDir,
+    {
+      projectCap: a.budget.project_cap,
+      dailyCap: a.budget.daily_cap,
+      alertThresholds: a.budget.alert_thresholds
+    },
+    localDate(now)
+  );
+  const ledger = readLedger(projectDir);
+  const last = ledger[ledger.length - 1];
+  const report = {
+    project: { key: a.project.key, name: a.project.name, profile: a.profile },
+    phase,
+    gates,
+    questions: {
+      open: open.length,
+      blocking: open.filter((r) => r.properties["Blocking"] === true).length,
+      top
+    },
+    board,
+    budget,
+    runs: {
+      total: ledger.length,
+      failed: ledger.filter((r) => r.result === "error").length,
+      paused: ledger.filter((r) => r.result === "paused").length,
+      ...last ? { lastRunId: last.run_id } : {}
+    },
+    paused: existsSync12(pauseFile(projectDir)),
+    warnings
+  };
+  const fetched = gateMirror?.fetched_at ?? qMirror?.fetched_at;
+  if (fetched !== void 0) report.mirrorFetchedAt = fetched;
+  return report;
+}
+
+// plugins/arima/scripts/src/cost.ts
+var MICRO = 1e6;
+var micro = (usd2) => Math.round(usd2 * MICRO);
+var usd = (m) => m / MICRO;
+var zero = () => ({
+  runs: 0,
+  cost_micro: 0,
+  turns: 0,
+  input: 0,
+  output: 0,
+  cache_read: 0,
+  cache_creation: 0,
+  duration_ms: 0,
+  rework_micro: 0,
+  rework_runs: 0,
+  failed_runs: 0
+});
+function add(t3, r) {
+  t3.runs += 1;
+  t3.cost_micro += micro(r.cost_usd);
+  t3.turns += r.num_turns;
+  t3.input += r.tokens.input;
+  t3.output += r.tokens.output;
+  t3.cache_read += r.tokens.cache_read;
+  t3.cache_creation += r.tokens.cache_creation;
+  t3.duration_ms += r.duration_ms;
+  if (r.is_rework) {
+    t3.rework_micro += micro(r.cost_usd);
+    t3.rework_runs += 1;
+  }
+  if (r.result === "fail" || r.result === "error") t3.failed_runs += 1;
+}
+var filterRows = (rows, f) => rows.filter(
+  (r) => (f.from === void 0 || r.date >= f.from) && (f.to === void 0 || r.date <= f.to) && (f.milestone === void 0 || r.milestone === f.milestone) && (f.phase === void 0 || r.phase === f.phase) && (f.item === void 0 || r.item === f.item) && (f.role === void 0 || r.role === f.role)
+);
+var bump = (m, k, r) => {
+  let t3 = m.get(k);
+  if (t3 === void 0) m.set(k, t3 = zero());
+  add(t3, r);
+};
+function rollup(rows, filter = {}) {
+  const out = {
+    total: zero(),
+    byItem: /* @__PURE__ */ new Map(),
+    byRole: /* @__PURE__ */ new Map(),
+    byPhase: /* @__PURE__ */ new Map(),
+    byDay: /* @__PURE__ */ new Map(),
+    byTier: /* @__PURE__ */ new Map(),
+    byMilestone: /* @__PURE__ */ new Map(),
+    overhead: zero()
+  };
+  for (const r of filterRows(rows, filter)) {
+    add(out.total, r);
+    bump(out.byItem, r.item, r);
+    bump(out.byRole, r.role, r);
+    bump(out.byPhase, r.phase, r);
+    bump(out.byDay, r.date, r);
+    bump(out.byTier, r.model_tier ?? "unknown", r);
+    if (r.milestone) bump(out.byMilestone, r.milestone, r);
+    if (r.item === "none") add(out.overhead, r);
+  }
+  return out;
+}
+
+// plugins/arima/scripts/src/metrics.ts
+var t2 = (ts) => Date.parse(ts);
+function itemTimes(events, rows, now) {
+  const byItem = /* @__PURE__ */ new Map();
+  const created = /* @__PURE__ */ new Map();
+  const push = (id, e) => void byItem.set(id, [...byItem.get(id) ?? [], e]);
+  for (const e of [...events].sort((a, b) => a.ts.localeCompare(b.ts))) {
+    if (e.type === "id.issued" && e.item !== void 0 && !created.has(e.item))
+      created.set(e.item, t2(e.ts));
+    if (e.type === "item.status" && e.item !== void 0 && typeof e.data?.["to"] === "string")
+      push(e.item, e);
+  }
+  const touch = /* @__PURE__ */ new Map();
+  for (const r of rows)
+    if (r.item !== "none") touch.set(r.item, (touch.get(r.item) ?? 0) + r.duration_ms);
+  const out = [];
+  for (const item of /* @__PURE__ */ new Set([...byItem.keys(), ...created.keys(), ...touch.keys()])) {
+    const evs = byItem.get(item) ?? [];
+    const stays = evs.map((e, i) => ({
+      status: e.data?.["to"],
+      from: t2(e.ts),
+      to: i + 1 < evs.length ? t2(evs[i + 1].ts) : now.getTime(),
+      ...typeof e.data?.["reason"] === "string" ? { reason: e.data["reason"] } : {}
+    }));
+    const createdAt = created.get(item) ?? (evs[0] ? t2(evs[0].ts) : void 0);
+    const released = stays.find((s) => s.status === "Released");
+    const firstProgress = stays.find((s) => s.status === "In Progress");
+    const firstDone = stays.find(
+      (s) => s.status === "Done" && (firstProgress === void 0 || s.from >= firstProgress.from)
+    );
+    const sum = (pred) => stays.filter(pred).reduce((a, s) => a + Math.max(0, s.to - s.from), 0);
+    const leadMs = createdAt !== void 0 && released !== void 0 ? released.from - createdAt : void 0;
+    const touchMs = touch.get(item) ?? 0;
+    const last = stays.at(-1);
+    out.push({
+      item,
+      ...createdAt !== void 0 ? { createdAt: new Date(createdAt).toISOString() } : {},
+      ...released ? { releasedAt: new Date(released.from).toISOString() } : {},
+      ...leadMs !== void 0 ? { leadMs } : {},
+      ...firstProgress && firstDone ? { cycleMs: firstDone.from - firstProgress.from } : {},
+      touchMs,
+      queueMs: sum((s) => s.status === "Ready"),
+      humanWaitMs: sum(
+        (s) => s.status === "PO Acceptance" || s.status === "Blocked" && /^Q-\d+/.test(s.reason ?? "")
+      ),
+      ...leadMs !== void 0 && leadMs > 0 ? { flowEfficiency: touchMs / leadMs } : {},
+      closed: last?.status === "Released" || last?.status === "Cancelled",
+      ...last ? { status: last.status } : {}
+    });
+  }
+  return out.sort((a, b) => a.item.localeCompare(b.item));
+}
+function gateWaitMs(events, now) {
+  const open = /* @__PURE__ */ new Map();
+  let total = 0;
+  for (const e of [...events].sort((a, b) => a.ts.localeCompare(b.ts))) {
+    const gate = typeof e.data?.["gate"] === "string" ? e.data["gate"] : void 0;
+    if (gate === void 0) continue;
+    if (e.type === "gate.opened" && !open.has(gate)) open.set(gate, t2(e.ts));
+    if (e.type === "gate.decided" && open.has(gate)) {
+      total += t2(e.ts) - open.get(gate);
+      open.delete(gate);
+    }
+  }
+  for (const from of open.values()) total += Math.max(0, now.getTime() - from);
+  return total;
+}
+function agentVersusWall(rows) {
+  const spans = rows.filter((r) => r.started_at !== void 0).map((r) => ({
+    from: t2(r.started_at),
+    to: t2(r.started_at) + r.duration_ms
+  }));
+  const agentMs = rows.reduce((a, r) => a + r.duration_ms, 0);
+  const merged = spans.sort((a, b) => a.from - b.from).reduce((acc, s) => {
+    const last = acc.at(-1);
+    if (last && s.from <= last.to) last.to = Math.max(last.to, s.to);
+    else acc.push({ ...s });
+    return acc;
+  }, []);
+  const wallMs = merged.reduce((a, s) => a + (s.to - s.from), 0);
+  return { agentMs, wallMs, parallelism: wallMs > 0 ? agentMs / wallMs : void 0 };
+}
+function stat(xs) {
+  if (xs.length === 0) return { n: 0, median: void 0, mean: void 0 };
+  const s = [...xs].sort((a, b) => a - b);
+  const h = Math.floor(s.length / 2);
+  return {
+    n: s.length,
+    median: s.length % 2 ? s[h] : (s[h - 1] + s[h]) / 2,
+    mean: s.reduce((a, b) => a + b, 0) / s.length
+  };
+}
+function dora(events) {
+  const deploys = events.filter((e) => e.type === "deploy.production");
+  if (deploys.length === 0)
+    return { measurable: false, reason: "no production deployment has been recorded yet" };
+  const ok = deploys.filter((e) => e.data?.["ok"] !== false);
+  const first = Math.min(...deploys.map((e) => t2(e.ts)));
+  const last = Math.max(...deploys.map((e) => t2(e.ts)));
+  const weeks = Math.max(1, (last - first) / (7 * 864e5));
+  const merges = /* @__PURE__ */ new Map();
+  for (const e of events) if (e.type === "merge.done" && e.item) merges.set(e.item, t2(e.ts));
+  const leads = [];
+  for (const d of ok)
+    for (const item of Array.isArray(d.data?.["items"]) ? d.data["items"] : [])
+      if (merges.has(item)) leads.push(t2(d.ts) - merges.get(item));
+  const rolled = new Set(
+    events.filter((e) => e.type === "deploy.rollback").map((e) => String(e.data?.["version"] ?? ""))
+  );
+  const incidentVersions = new Set(
+    events.filter((e) => e.type === "incident.opened").map((e) => String(e.data?.["version"] ?? "")).filter(Boolean)
+  );
+  const failed = deploys.filter(
+    (d) => d.data?.["ok"] === false || rolled.has(String(d.data?.["version"] ?? "")) || incidentVersions.has(String(d.data?.["version"] ?? ""))
+  ).length;
+  const opened = /* @__PURE__ */ new Map();
+  const recov = [];
+  for (const e of [...events].sort((a, b) => a.ts.localeCompare(b.ts))) {
+    if (e.type === "incident.opened" && e.item) opened.set(e.item, t2(e.ts));
+    if (e.type === "incident.closed" && e.item && opened.has(e.item))
+      recov.push(t2(e.ts) - opened.get(e.item));
+  }
+  return {
+    measurable: true,
+    deployments: deploys.length,
+    deploymentFrequencyPerWeek: ok.length / weeks,
+    changeLeadTimeMs: stat(leads).median,
+    changeFailureRate: failed / deploys.length,
+    failedDeploymentRecoveryMs: stat(recov).median,
+    deploymentReworkRate: deploys.filter((d) => d.data?.["hotfix"] === true).length / deploys.length
+  };
+}
+function delivery(o) {
+  const now = o.now ?? /* @__PURE__ */ new Date();
+  const items = itemTimes(o.events, o.rows, now);
+  const stories = items.filter((i) => /^US-/.test(i.item));
+  const accepted = new Set(
+    o.events.filter(
+      (e) => e.type === "item.status" && (e.data?.["to"] === "Done" || e.data?.["to"] === "Released") && e.item !== void 0
+    ).map((e) => e.item)
+  );
+  const cost = (id) => Math.round(o.rows.filter((r) => r.item === id).reduce((a, r) => a + r.cost_usd * 1e6, 0)) / 1e6;
+  const acceptedStories = [...accepted].filter((id) => /^US-/.test(id));
+  const spent = Math.round(o.rows.reduce((a, r) => a + r.cost_usd * 1e6, 0)) / 1e6;
+  return {
+    items,
+    lead: stat(items.flatMap((i) => i.leadMs !== void 0 ? [i.leadMs] : [])),
+    cycle: stat(items.flatMap((i) => i.cycleMs !== void 0 ? [i.cycleMs] : [])),
+    touch: stat(stories.filter((i) => i.touchMs > 0).map((i) => i.touchMs)),
+    queue: stat(stories.filter((i) => i.queueMs > 0).map((i) => i.queueMs)),
+    humanWait: stat(stories.filter((i) => i.humanWaitMs > 0).map((i) => i.humanWaitMs)),
+    flowEfficiency: stat(
+      items.flatMap((i) => i.flowEfficiency !== void 0 ? [i.flowEfficiency] : [])
+    ),
+    gateWaitMs: gateWaitMs(o.events, now),
+    agentVsWall: agentVersusWall(o.rows),
+    costPerAcceptedStory: {
+      stories: acceptedStories.length,
+      costUsd: acceptedStories.length > 0 ? Math.round(
+        acceptedStories.reduce((a, id) => a + cost(id), 0) / acceptedStories.length * 1e6
+      ) / 1e6 : void 0
+    },
+    budgetBurn: o.projectCap !== void 0 && o.projectCap > 0 ? spent / o.projectCap : void 0,
+    humanMinutes: Math.round((o.humanHours ?? 0) * 60),
+    dora: dora(o.events)
+  };
+}
+
+// plugins/arima/scripts/src/questions.ts
+import { mkdirSync as mkdirSync9, existsSync as existsSync13, readFileSync as readFileSync13 } from "node:fs";
+import path18 from "node:path";
+var MAX_QUESTIONS_PER_DIGEST = 10;
+var questionsFile = (projectDir) => path18.join(projectDir, ".arima", "state", "questions.json");
+function readQuestions(projectDir) {
+  const f = questionsFile(projectDir);
+  if (!existsSync13(f)) return {};
+  const data = JSON.parse(readFileSync13(f, "utf8"));
+  const v = getValidator("questions-state");
+  if (!v(data)) throw new Error(`Corrupt ${f}: ${(v.errors ?? []).map(describeError).join("; ")}`);
+  return data.questions;
+}
+function digestQuestions(projectDir, o = {}) {
+  const max = o.max ?? MAX_QUESTIONS_PER_DIGEST;
+  const today = (o.now ?? /* @__PURE__ */ new Date()).toISOString().slice(0, 10);
+  const open = Object.entries(readQuestions(projectDir)).filter(([, q]) => q.route === "owner" && q.status === "open").sort(
+    ([ia, a], [ib, b]) => Number(b.blocking) - Number(a.blocking) || Number(b.hard_stop !== void 0) - Number(a.hard_stop !== void 0) || a.created_at.localeCompare(b.created_at) || ia.localeCompare(ib)
+  );
+  const all = open.map(([id, q]) => ({
+    id,
+    question: q.question,
+    item: q.item,
+    topic: q.topic ?? q.item,
+    blocking: q.blocking,
+    ...q.hard_stop ? { hardStop: q.hard_stop } : {},
+    ...q.default !== void 0 ? { default: q.default } : {},
+    ...q.expires ? { expires: q.expires } : {},
+    expired: q.expires !== void 0 && q.expires < today
+  }));
+  const shown = all.slice(0, max);
+  const byTopic = /* @__PURE__ */ new Map();
+  for (const d of shown) byTopic.set(d.topic, [...byTopic.get(d.topic) ?? [], d]);
+  return { shown, more: Math.max(0, all.length - shown.length), byTopic };
+}
+function decisionsToVeto(projectDir, o = {}) {
+  const m = readMirror(projectDir, "decisions");
+  return (m?.rows ?? []).filter(
+    (r) => r.properties["Veto"] !== true && (o.sinceDate === void 0 || String(r.properties["Date"] ?? "") >= o.sinceDate)
+  ).map((r) => ({
+    id: r.id,
+    summary: String(r.properties["Summary"] ?? ""),
+    chosen: String(r.properties["Chosen"] ?? ""),
+    ...r.properties["Item"] ? { item: String(r.properties["Item"]) } : {},
+    date: String(r.properties["Date"] ?? "")
+  }));
+}
+
+// plugins/arima/scripts/src/queue.ts
+var RANK_NAMES = [
+  "incident",
+  "broken_main",
+  "rework",
+  "qa_of_prs",
+  "test_cases",
+  "new_stories",
+  "recurring",
+  "docs_and_debt"
+];
+var RANKS = RANK_NAMES;
+var SIZE_ORDER = { S: 0, M: 1, L: 2 };
+var idNumber = (id) => Number(/(\d+)$/.exec(id)?.[1] ?? Number.MAX_SAFE_INTEGER);
+function byTieBreak(a, b) {
+  const p = (a.priority ?? Number.MAX_SAFE_INTEGER) - (b.priority ?? Number.MAX_SAFE_INTEGER);
+  if (p !== 0) return p;
+  const s = (SIZE_ORDER[a.size ?? ""] ?? 3) - (SIZE_ORDER[b.size ?? ""] ?? 3);
+  if (s !== 0) return s;
+  return idNumber(a.id) - idNumber(b.id) || a.id.localeCompare(b.id);
+}
+function planDay(input, limits, ranks = RANKS) {
+  const skipped = [];
+  const skip = (rankName, item, reason) => void skipped.push({ rankName, item, reason });
+  const developerCap = Math.max(1, limits.maxDevelopers);
+  const wipLimit = developerCap;
+  let developerRuns = 0;
+  const claimed = /* @__PURE__ */ new Set();
+  const stories = [...input.stories].sort(byTieBreak);
+  const inProgress = stories.filter((s) => s.status === "In Progress").length;
+  const draft = (rankName) => {
+    const out = [];
+    switch (rankName) {
+      case "incident":
+        for (const inc of (input.incidents ?? []).filter(
+          (i) => i.priority === "P1" || i.priority === "P2"
+        )) {
+          out.push({
+            rankName,
+            kind: "triage",
+            role: "devops",
+            item: inc.id,
+            why: `${inc.priority} incident`
+          });
+          if (inc.needsHotfix === true) {
+            if (developerRuns < developerCap) {
+              developerRuns += 1;
+              out.push({
+                rankName,
+                kind: "hotfix",
+                role: "developer",
+                item: inc.id,
+                why: `${inc.priority} incident needs a hotfix`
+              });
+            } else skip(rankName, inc.id, "no developer slot left for the hotfix");
+          }
+        }
+        return out;
+      case "broken_main":
+        if (input.ciRedOnMain === true) {
+          if (developerRuns < developerCap) {
+            developerRuns += 1;
+            out.push({
+              rankName,
+              kind: "fix",
+              role: "developer",
+              item: "none",
+              why: "CI is red on main after the re-run"
+            });
+          } else skip(rankName, "none", "no developer slot left to fix main");
+        }
+        if (input.stagingSmokeFailing === true)
+          out.push({
+            rankName,
+            kind: "deploy-staging",
+            role: "devops",
+            item: "none",
+            why: "the staging deploy failed its smoke test"
+          });
+        return out;
+      case "rework":
+        for (const s of stories.filter(
+          (x) => x.status === "In Progress" && (x.attempt > 1 || x.openBugs > 0)
+        )) {
+          if (claimed.has(s.id)) continue;
+          if (!s.budgetOk) {
+            skip(rankName, s.id, "story budget used up");
+            continue;
+          }
+          if (developerRuns >= developerCap) {
+            skip(rankName, s.id, "no developer slot left");
+            continue;
+          }
+          developerRuns += 1;
+          out.push({
+            rankName,
+            kind: "develop",
+            role: "developer",
+            item: s.id,
+            reworkReason: s.openBugs > 0 && s.attempt <= 1 ? "bug" : s.lastFailureQa === true ? "failed_qa" : "failed_review",
+            why: s.openBugs > 0 ? "open bug on an in-flight story" : `attempt ${s.attempt}`
+          });
+        }
+        return out;
+      case "qa_of_prs":
+        for (const s of stories) {
+          if (claimed.has(s.id)) continue;
+          if (s.status === "In Review" && s.prReady === true) {
+            if (!s.budgetOk) {
+              skip(rankName, s.id, "story budget used up");
+              continue;
+            }
+            for (let r = 1; r <= limits.reviewers; r++)
+              out.push({
+                rankName,
+                kind: "review",
+                role: "tech-lead",
+                item: s.id,
+                ...limits.reviewers > 1 ? { reviewer: r } : {},
+                why: "PR open, CI green, criteria mapped"
+              });
+          } else if (s.status === "In QA" && s.qaPassed === true) {
+            skip(
+              rankName,
+              s.id,
+              "QA already passed this head; waiting for the human approval and the merge"
+            );
+          } else if (s.status === "In QA") {
+            if (!s.budgetOk) {
+              skip(rankName, s.id, "story budget used up");
+              continue;
+            }
+            out.push({
+              rankName,
+              kind: "qa",
+              role: "qa",
+              item: s.id,
+              why: "the tech-lead approved; QA runs on the preview"
+            });
+          }
+        }
+        return out;
+      case "test_cases":
+        for (const s of stories.filter((x) => x.status === "Ready" && x.testCases === 0)) {
+          if (claimed.has(s.id)) continue;
+          if (!s.budgetOk) {
+            skip(rankName, s.id, "story budget used up");
+            continue;
+          }
+          out.push({
+            rankName,
+            kind: "test-write",
+            role: "qa",
+            item: s.id,
+            why: "Ready story with no test cases"
+          });
+        }
+        return out;
+      case "new_stories": {
+        const ready = stories.filter((x) => x.status === "Ready" && x.testCases > 0);
+        if (limits.prsAwaitingHuman >= limits.maxPrsAwaitingHuman) {
+          for (const s of ready)
+            skip(
+              rankName,
+              s.id,
+              `${limits.prsAwaitingHuman} pull requests await your approval (limit ${limits.maxPrsAwaitingHuman})`
+            );
+          return out;
+        }
+        let wip = inProgress;
+        for (const s of ready) {
+          if (claimed.has(s.id)) continue;
+          if (!s.budgetOk) {
+            skip(rankName, s.id, "story budget used up");
+            continue;
+          }
+          if (wip >= wipLimit) {
+            skip(rankName, s.id, `work in progress is at its limit (${wipLimit})`);
+            continue;
+          }
+          if (developerRuns >= developerCap) {
+            skip(rankName, s.id, `all ${developerCap} developer slots are in use`);
+            continue;
+          }
+          wip += 1;
+          developerRuns += 1;
+          out.push({
+            rankName,
+            kind: "develop",
+            role: "developer",
+            item: s.id,
+            why: "Ready, has test cases, budget and a free slot"
+          });
+        }
+        return out;
+      }
+      case "recurring":
+        for (const j of input.recurringDue ?? [])
+          out.push({
+            rankName,
+            kind: j.kind,
+            role: j.role,
+            item: "none",
+            why: `recurring job ${j.name} is due`
+          });
+        return out;
+      case "docs_and_debt":
+        for (const d of input.docsAndDebt ?? [])
+          out.push({
+            rankName,
+            kind: d.kind,
+            role: d.role,
+            item: d.item,
+            why: "documentation or tech-debt item"
+          });
+        return out;
+    }
+  };
+  const units = [];
+  ranks.forEach((rankName, i) => {
+    const claimedHere = [];
+    for (const d of draft(rankName)) {
+      if (d.item !== "none" && claimed.has(d.item)) continue;
+      if (d.item !== "none") claimedHere.push(d.item);
+      units.push({ ...d, order: units.length + 1, rank: i + 1 });
+    }
+    for (const item of claimedHere) claimed.add(item);
+  });
+  return { units, skipped };
+}
+function storiesFromMirror(projectDir, cfg, pr = {}) {
+  const mirror = readMirror(projectDir, "stories");
+  if (mirror === void 0) return [];
+  const bugs = readMirror(projectDir, "bugs");
+  const openBugStatuses = /* @__PURE__ */ new Set(["Open", "In progress", "Fixed"]);
+  const rel2 = (v) => Array.isArray(v) ? v.filter((x) => typeof x === "string") : [];
+  const out = [];
+  for (const row of mirror.rows) {
+    if (!/^US-\d+$/.test(row.id)) continue;
+    const p = row.properties;
+    const status = p["Status"];
+    if (typeof status !== "string") continue;
+    const size = p["Complexity"];
+    const budget = typeof p["Budget USD"] === "number" ? p["Budget USD"] : void 0;
+    const bugIds = rel2(p["Bugs"]);
+    const openBugs = bugIds.filter(
+      (b) => openBugStatuses.has(String(findRow(bugs, b)?.properties["Status"] ?? "Open"))
+    ).length;
+    const sizeOk = size === "S" || size === "M" || size === "L" ? size : void 0;
+    const storyBudget2 = budget ?? (sizeOk ? cfg.bySize?.[sizeOk] : void 0) ?? cfg.perStoryDefault;
+    out.push({
+      id: row.id,
+      status,
+      attempt: typeof p["Attempt"] === "number" ? p["Attempt"] : 1,
+      priority: typeof p["Priority"] === "number" ? p["Priority"] : void 0,
+      size: sizeOk,
+      testCases: rel2(p["Test Cases"]).length,
+      openBugs,
+      budgetOk: unitBudget(projectDir, row.id, storyBudget2, cfg.perRunCap).ok,
+      ...pr[row.id]?.prReady !== void 0 ? { prReady: pr[row.id]?.prReady } : {},
+      ...pr[row.id]?.lastFailureQa !== void 0 ? { lastFailureQa: pr[row.id]?.lastFailureQa } : {}
+    });
+  }
+  return out;
+}
+
+// plugins/arima/scripts/src/env.ts
+import {
+  existsSync as existsSync14,
+  lstatSync,
+  mkdirSync as mkdirSync10,
+  realpathSync as realpathSync2,
+  mkdtempSync as mkdtempSync2,
+  readFileSync as readFileSync14,
+  readdirSync as readdirSync5,
+  rmSync as rmSync4,
+  writeFileSync as writeFileSync6
+} from "node:fs";
+import path19 from "node:path";
+
+// plugins/arima/scripts/src/compose-lint.ts
+var import_yaml4 = __toESM(require_dist(), 1);
+
+// plugins/arima/scripts/src/env.ts
+var ENV_EXIT = {
+  ok: 0,
+  failed: 1,
+  usage: 2,
+  config: 10,
+  killSwitch: 12,
+  docker: 14,
+  refused: 70,
+  smokeFailed: 71,
+  capacity: 72
+};
+var EnvError = class extends Error {
+  constructor(message, exit) {
+    super(message);
+    this.exit = exit;
+    this.name = "EnvError";
+  }
+  exit;
+};
+var stateFile = (projectDir) => path19.join(projectDir, ".arima", "state", "environments.json");
+function readEnvState(projectDir) {
+  const f = stateFile(projectDir);
+  if (!existsSync14(f)) return { schema_version: 1, previews: {} };
+  const data = JSON.parse(readFileSync14(f, "utf8"));
+  const v = getValidator("environments-state");
+  if (!v(data)) throw new EnvError(`${f} is not a valid environments file`, ENV_EXIT.failed);
+  return data;
+}
+function stagingFailing(projectDir) {
+  try {
+    return readEnvState(projectDir).staging_failed;
+  } catch {
+    return void 0;
+  }
+}
+
+// plugins/arima/scripts/src/run-agent.ts
+var PASS_THROUGH = new Set(
+  [
+    "PATH",
+    "PATHEXT",
+    "SystemRoot",
+    "windir",
+    "COMSPEC",
+    "HOME",
+    "USERPROFILE",
+    "HOMEDRIVE",
+    "HOMEPATH",
+    "APPDATA",
+    "LOCALAPPDATA",
+    "ProgramData",
+    "ProgramFiles",
+    "ProgramFiles(x86)",
+    "ProgramW6432",
+    "CommonProgramFiles",
+    "CommonProgramFiles(x86)",
+    "ALLUSERSPROFILE",
+    "PUBLIC",
+    "SystemDrive",
+    "TEMP",
+    "TMP",
+    "TMPDIR",
+    "USERNAME",
+    "USER",
+    "LOGNAME",
+    "SHELL",
+    "LANG",
+    "LANGUAGE",
+    "TERM",
+    "COLORTERM",
+    "TZ",
+    "NO_COLOR",
+    "FORCE_COLOR",
+    "OS",
+    "PROCESSOR_ARCHITECTURE",
+    "NUMBER_OF_PROCESSORS",
+    "SSL_CERT_FILE",
+    "SSL_CERT_DIR",
+    "NODE_EXTRA_CA_CERTS",
+    "HTTP_PROXY",
+    "HTTPS_PROXY",
+    "NO_PROXY",
+    "XDG_CONFIG_HOME",
+    "XDG_DATA_HOME",
+    "XDG_CACHE_HOME",
+    "XDG_RUNTIME_DIR",
+    "DISPLAY"
+  ].map((n) => n.toLowerCase())
+);
+
+// plugins/arima/scripts/src/worktree.ts
+var win = process.platform === "win32";
+
+// plugins/arima/scripts/src/merge.ts
+function verdictAfterLastPush(projectDir, item, role, kind) {
+  const events = readEvents(projectDir);
+  let lastPush = -1;
+  let verdict;
+  events.forEach((e, i) => {
+    if (e.item !== item) return;
+    if (e.type === "pr.published") lastPush = i;
+    if (e.type === "report.accepted" && e.data?.["role"] === role && e.data?.["kind"] === kind)
+      verdict = {
+        at: i,
+        result: typeof e.data["verdict"] === "string" ? e.data["verdict"] : void 0
+      };
+  });
+  const v = verdict;
+  return v !== void 0 && v.at > lastPush ? v.result : void 0;
+}
+
+// plugins/arima/scripts/src/digest.ts
+var DIGEST_LIST_CAP = 10;
+var H = 36e5;
+function health(i) {
+  const red = [];
+  if ((i.hardStopWaitHours ?? 0) > 48)
+    red.push(`a hard stop has waited ${Math.floor(i.hardStopWaitHours)} hours (over 48)`);
+  if (i.openP1P2) red.push("an open P1 or P2 incident");
+  if (i.dayPct >= 1) red.push("the daily budget is used up");
+  if (i.projectPct >= 1) red.push("the project budget is used up");
+  if (red.length > 0) return { health: "red", reasons: red };
+  const amber = [];
+  if (i.dayPct >= 0.8) amber.push(`the daily budget is at ${Math.round(i.dayPct * 100)}%`);
+  if (i.projectPct >= 0.8)
+    amber.push(`the project budget is at ${Math.round(i.projectPct * 100)}%`);
+  if ((i.oldestBlockerHours ?? 0) > 24)
+    amber.push(
+      `a story has been blocked for ${Math.floor(i.oldestBlockerHours)} hours (over 24)`
+    );
+  if (amber.length > 0) return { health: "amber", reasons: amber };
+  return { health: "green", reasons: [] };
+}
+function capList(items, cap = DIGEST_LIST_CAP) {
+  const sorted = items.map((it, i) => ({ it, i })).sort((a, b) => b.it.weight - a.it.weight || a.i - b.i).map((x) => x.it);
+  const shown = sorted.slice(0, cap).map((x) => `- ${x.line}`);
+  if (sorted.length > cap)
+    shown.push(`- and ${sorted.length - cap} more (see the full view in Notion)`);
+  return shown;
+}
+var quote = (s) => s.replace(/\s+/g, " ").trim().slice(0, 120);
+var hours = (ms) => Math.max(0, Math.floor(ms / H));
+var waited = (since, now) => since === void 0 ? "wait not recorded" : `waiting ${hours(now.getTime() - Date.parse(since))} h`;
+var hoursSince = (since, now) => since === void 0 || Number.isNaN(Date.parse(since)) ? void 0 : (now.getTime() - Date.parse(since)) / H;
+var localDate2 = (d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+function buildDigest(projectDir, now = /* @__PURE__ */ new Date(), o = {}) {
+  const date2 = o.date ?? localDate2(now);
+  const status = buildStatus(projectDir, now);
+  const cfg = validateProject(projectDir).arima;
+  const events = readEvents(projectDir);
+  const ledger = readLedger(projectDir);
+  const warnings = [...status.warnings];
+  const todayRows = ledger.filter((r2) => r2.date === date2);
+  const mirrorOf = (db) => readMirror(projectDir, db)?.rows ?? [];
+  const lastDigest = [...events].reverse().find((e) => e.type === "digest.published" && e.data?.["date"] !== date2);
+  const since = lastDigest ? lastDigest.ts : new Date(now.getTime() - 24 * H).toISOString();
+  const sinceDate = since.slice(0, 10);
+  const awaiting = [];
+  let hardStopWait;
+  const noteHardStop = (h2) => {
+    if (h2 !== void 0 && (hardStopWait === void 0 || h2 > hardStopWait)) hardStopWait = h2;
+  };
+  for (const g of mirrorOf("gates").filter((r2) => r2.properties["Status"] === "Ready for review")) {
+    const h2 = hoursSince(g.last_edited_time, now);
+    noteHardStop(h2);
+    awaiting.push({
+      weight: 4e6 + (h2 ?? 0),
+      line: `Gate ${g.id} is ready for your decision (${waited(g.last_edited_time, now)})`
+    });
+  }
+  for (const r2 of mirrorOf("releases").filter(
+    (x) => x.properties["Status"] === "Awaiting approval"
+  )) {
+    const h2 = hoursSince(r2.last_edited_time, now);
+    noteHardStop(h2);
+    awaiting.push({
+      weight: 3e6 + (h2 ?? 0),
+      line: `Production approval for ${r2.id} (${waited(r2.last_edited_time, now)})`
+    });
+  }
+  const dq = digestQuestions(projectDir, { max: 1e3, now });
+  const qState = readQuestions(projectDir);
+  for (const q of dq.shown) {
+    const created = qState[q.id]?.created_at;
+    const h2 = hoursSince(created, now);
+    if (q.hardStop !== void 0) noteHardStop(h2);
+    awaiting.push({
+      weight: (q.blocking ? 2e6 : 15e5) + (h2 ?? 0),
+      line: `${q.blocking ? "Blocking q" : "Q"}uestion ${q.id}${q.item !== "none" ? ` (${q.item})` : ""}: ${quote(q.question)}${q.hardStop ? ` [hard stop: ${q.hardStop}]` : ""} (${waited(created, now)})`
+    });
+  }
+  for (const s of mirrorOf("stories").filter((r2) => r2.properties["Status"] === "In QA")) {
+    const pr = [...events].reverse().find((e) => e.type === "pr.published" && e.item === s.id)?.data?.["pr"];
+    const qa = verdictAfterLastPush(projectDir, s.id, "qa", "qa");
+    const qaAt = [...events].reverse().find(
+      (e) => e.type === "report.accepted" && e.item === s.id && e.data?.["role"] === "qa"
+    )?.ts;
+    awaiting.push({
+      weight: 1e6 + (hoursSince(qaAt, now) ?? 0),
+      line: `PR${typeof pr === "number" ? ` #${pr}` : ""} for ${s.id} awaits your approval: QA ${qa ?? "not yet reported"}; preview link not available yet (${waited(qaAt, now)})`
+    });
+  }
+  for (const c of mirrorOf("change_requests").filter((x) => x.properties["Decision"] === "Pending"))
+    awaiting.push({
+      weight: 5e5,
+      line: `Change request ${c.id} awaits a decision (${waited(c.last_edited_time, now)})`
+    });
+  const shipped = [];
+  const reached = /* @__PURE__ */ new Map();
+  for (const e of events)
+    if (e.type === "item.status" && e.ts >= since && ["PO Acceptance", "Released"].includes(String(e.data?.["to"])) && e.item)
+      reached.set(e.item, e);
+  for (const [id, e] of reached) {
+    const pr = [...events].reverse().find((x) => x.type === "pr.published" && x.item === id)?.data?.["pr"];
+    shipped.push({
+      weight: Date.parse(e.ts),
+      line: `${id} reached ${String(e.data?.["to"])}${typeof pr === "number" ? ` (PR #${pr})` : ""}`
+    });
+  }
+  const decisions = decisionsToVeto(projectDir, { sinceDate }).map((d, i) => ({
+    weight: Date.parse(d.date || since) || i,
+    line: `[ ] veto ${d.id}${d.item ? ` (${d.item})` : ""}: ${quote(d.summary)} -> ${quote(d.chosen)}`
+  }));
+  const blockers = [];
+  let oldestBlocker;
+  for (const s of mirrorOf("stories").filter((r2) => r2.properties["Status"] === "Blocked")) {
+    const at = [...events].reverse().find((e) => e.type === "item.status" && e.item === s.id && e.data?.["to"] === "Blocked")?.ts ?? s.last_edited_time;
+    const h2 = hoursSince(at, now);
+    if (h2 !== void 0 && (oldestBlocker === void 0 || h2 > oldestBlocker)) oldestBlocker = h2;
+    blockers.push({
+      weight: h2 ?? 0,
+      line: `${s.id} blocked: ${quote(String(s.properties["Blocked reason"] ?? "no reason recorded"))} (${waited(at, now)})`
+    });
+  }
+  const risks = mirrorOf("risks").filter((r2) => r2.properties["Status"] === "Open" || r2.properties["Status"] === "Mitigating").map((r2) => ({
+    weight: Date.parse(r2.last_edited_time) || 0,
+    line: `Risk ${r2.id}: ${quote(String(r2.properties["Title"] ?? ""))} (${String(r2.properties["Status"])})`
+  }));
+  const incidents = mirrorOf("incidents").filter(
+    (r2) => ["P1", "P2"].includes(String(r2.properties["Priority"])) && ["Open", "Mitigated"].includes(String(r2.properties["Status"]))
+  );
+  for (const inc of incidents)
+    blockers.push({
+      weight: 9e6,
+      line: `Incident ${inc.id} (${String(inc.properties["Priority"])}) is ${String(inc.properties["Status"])}`
+    });
+  if (stagingFailing(projectDir))
+    blockers.push({
+      weight: 8e6,
+      line: "The last staging rebuild failed; a devops diagnosis is planned"
+    });
+  const b = status.budget;
+  const h = health({
+    hardStopWaitHours: hardStopWait,
+    openP1P2: incidents.length > 0,
+    dayPct: b.dailyCap > 0 ? b.daySpent / b.dailyCap : 0,
+    projectPct: b.projectCap > 0 ? b.projectSpent / b.projectCap : 0,
+    oldestBlockerHours: oldestBlocker
+  });
+  const month = date2.slice(0, 7);
+  const monthSpent = Math.round(
+    ledger.filter((r2) => r2.date.startsWith(month)).reduce((n, r2) => n + r2.cost_usd, 0) * 1e6
+  ) / 1e6;
+  const daySpent = Math.round(todayRows.reduce((n, r2) => n + r2.cost_usd, 0) * 1e6) / 1e6;
+  const r = rollup(ledger);
+  const top = [...r.byItem.entries()].sort((a, c) => c[1].cost_micro - a[1].cost_micro).slice(0, 3);
+  const rework = r.total.cost_micro > 0 ? Math.round(r.total.rework_micro / r.total.cost_micro * 100) : 0;
+  const del = delivery({ events, rows: ledger, now, projectCap: b.projectCap });
+  const waitMs = del.items.reduce((n, i) => n + i.humanWaitMs, 0) + del.gateWaitMs;
+  const waitH = del.items.length === 0 ? "not available yet" : `${Math.round(waitMs / H)} h`;
+  const cost = [
+    `Today ${usd(Math.round(daySpent * 1e6))} of the ${b.dailyCap} USD daily budget (${b.dailyCap > 0 ? Math.round(daySpent / b.dailyCap * 100) : 0}%).`,
+    `Month to date ${monthSpent} USD; lifetime ${b.projectSpent} USD of the ${b.projectCap} USD project cap (${b.projectCap > 0 ? Math.round(b.projectSpent / b.projectCap * 100) : 0}%).`,
+    top.length === 0 ? "Most expensive items: no runs yet." : `Most expensive items: ${top.map(([id, t3]) => `${id} ${usd(t3.cost_micro)} USD`).join(", ")}.`,
+    `Rework share ${rework}% of the cost.`,
+    `Time spent waiting on humans: ${waitH}.`,
+    "All amounts are estimated consumption on the seat, not money spent."
+  ];
+  const facts = storiesFromMirror(projectDir, {
+    perStoryDefault: cfg.budget.per_story_default,
+    ...cfg.budget.by_size ? { bySize: cfg.budget.by_size } : {},
+    perRunCap: cfg.budget.per_run_cap
+  });
+  const plan = planDay(
+    { stories: facts, stagingSmokeFailing: stagingFailing(projectDir) !== void 0 },
+    {
+      maxDevelopers: Math.max(1, cfg.parallelism?.max_developer_agents ?? 1),
+      maxPrsAwaitingHuman: cfg.review?.max_prs_awaiting_human ?? 5,
+      prsAwaitingHuman: awaiting.filter((a) => a.line.startsWith("PR")).length,
+      reviewers: 1
+    }
+  );
+  const tomorrow = plan.units.map((u, i) => ({
+    weight: 1e3 - i,
+    line: `${u.kind} for ${u.item} (${u.role}): ${u.why}`
+  }));
+  warnings.push(
+    "Tomorrow's plan does not know the state of the pull requests on GitHub; the run reads it."
+  );
+  const retried = events.filter(
+    (e) => e.type === "unit.retried" && e.ts.slice(0, 10) === date2
+  ).length;
+  const runHealth = [
+    `Runs started ${todayRows.length}, succeeded ${todayRows.filter((x) => x.result === "pass").length}, failed ${todayRows.filter((x) => x.result === "fail").length}, blocked ${todayRows.filter((x) => x.result === "blocked").length}, retried ${retried}.`
+  ];
+  const ms = milestoneProgress(projectDir);
+  const headline = `${status.phase}; ${ms}; health ${h.health}${h.reasons.length ? ` (${h.reasons.join("; ")})` : ""}.`;
+  void PHASE_AFTER_GATE;
+  return {
+    date: date2,
+    builtAt: now.toISOString(),
+    health: h.health,
+    healthReasons: h.reasons,
+    headline,
+    numbers: { spendToday: daySpent, monthToDate: monthSpent },
+    warnings,
+    sections: {
+      Headline: [headline],
+      "Awaiting you": awaiting.length ? capList(awaiting) : ["Nothing waits for you."],
+      Shipped: shipped.length ? capList(shipped) : ["Nothing reached staging since the last digest."],
+      "Decisions made": decisions.length ? capList(decisions) : ["No autonomous decision since the last digest."],
+      "Blockers and risks": blockers.length + risks.length ? [
+        ...blockers.length ? ["Blocked:", ...capList(blockers)] : [],
+        ...risks.length ? ["Risks:", ...capList(risks)] : []
+      ] : ["No blocker and no open risk."],
+      "Cost and time": cost,
+      "Tomorrow's plan": tomorrow.length ? capList(tomorrow) : ["Nothing is planned yet."],
+      "Run health": runHealth
+    }
+  };
+}
+function milestoneProgress(projectDir) {
+  const ms = (readMirror(projectDir, "milestones")?.rows ?? []).filter(
+    (m) => m.properties["Status"] !== "Done"
+  );
+  const active = ms.find((m) => m.properties["Status"] === "Active") ?? ms[0];
+  if (active === void 0) return "no milestone planned yet";
+  const names = /* @__PURE__ */ new Map();
+  for (const m of readMirror(projectDir, "milestones")?.rows ?? []) names.set(m.page_id, m.id);
+  let total = 0;
+  let done = 0;
+  for (const s of readMirror(projectDir, "stories")?.rows ?? []) {
+    const rel2 = s.properties["Milestone"];
+    const mine = Array.isArray(rel2) && rel2.some((x) => x === active.id || names.get(String(x)) === active.id);
+    if (!mine) continue;
+    const size = s.properties["Complexity"];
+    const pts = size === "S" || size === "M" || size === "L" ? SIZE_POINTS[size] : 0;
+    total += pts;
+    if (["Done", "Released", "PO Acceptance"].includes(String(s.properties["Status"]))) done += pts;
+  }
+  return `${active.id}: ${done} of ${total} points done`;
+}
+
+// plugins/arima/scripts/src/notify.ts
+import { existsSync as existsSync15, readFileSync as readFileSync15 } from "node:fs";
+import path20 from "node:path";
+var URGENT_PAGE = "Urgent";
+var MAX_PER_RUN = 20;
+var UUID2 = /^[0-9a-f]{8}-?[0-9a-f]{4}-?[0-9a-f]{4}-?[0-9a-f]{4}-?[0-9a-f]{12}$/i;
+var stateFile2 = (projectDir) => path20.join(projectDir, ".arima", "state", "notifications.json");
+function readSent(projectDir) {
+  const f = stateFile2(projectDir);
+  if (!existsSync15(f)) return {};
+  const data = JSON.parse(readFileSync15(f, "utf8"));
+  if (!getValidator("notifications-state")(data))
+    throw new Error(`${f} is not a valid notifications file`);
+  return data.sent;
+}
+function writeSent(projectDir, sent) {
+  const s = { schema_version: 1, sent };
+  if (!getValidator("notifications-state")(s))
+    throw new Error("refusing to write an invalid notifications file");
+  writeFileAtomic(stateFile2(projectDir), `${JSON.stringify(s, null, 2)}
+`);
+}
+function ownersOf(projectDir) {
+  const team = validateProject(projectDir).team;
+  const idOf = (role) => {
+    const r = team?.roles[role];
+    if (r?.type !== "human" || r.person === void 0) return void 0;
+    const id = team?.people[r.person]?.notion_user;
+    return id !== void 0 && UUID2.test(id) ? id : void 0;
+  };
+  const po = idOf("po");
+  const sponsor = idOf("sponsor");
+  return {
+    po: po ? [po] : [],
+    both: [...new Set([po, sponsor].filter((x) => x !== void 0))]
+  };
+}
+var quote2 = (s) => s.replace(/\s+/g, " ").trim().slice(0, 100);
+var waitedSince = (ts) => ts;
+function collectNotices(i) {
+  const o = ownersOf(i.projectDir);
+  const out = [];
+  const rows = (db) => readMirror(i.projectDir, db)?.rows ?? [];
+  const add2 = (n) => void out.push(n);
+  for (const g of rows("gates").filter((r) => r.properties["Status"] === "Ready for review"))
+    add2({
+      key: `gate:${g.id}:${waitedSince(g.last_edited_time)}`,
+      pageId: g.page_id,
+      kind: "awaiting",
+      who: o.both,
+      text: `Gate ${g.id} is ready for your decision.`
+    });
+  for (const r of rows("releases").filter((x) => x.properties["Status"] === "Awaiting approval"))
+    add2({
+      key: `release:${r.id}:${r.last_edited_time}`,
+      pageId: r.page_id,
+      kind: "awaiting",
+      who: o.both,
+      text: `Production approval for ${r.id} is waiting for you.`
+    });
+  for (const c of rows("change_requests").filter((x) => x.properties["Decision"] === "Pending"))
+    add2({
+      key: `cr:${c.id}:${c.last_edited_time}`,
+      pageId: c.page_id,
+      kind: "awaiting",
+      who: o.po,
+      text: `Change request ${c.id} awaits your decision.`
+    });
+  for (const q of digestQuestions(i.projectDir, { max: 1e3 }).shown) {
+    const row = findRow(readMirror(i.projectDir, "questions"), q.id);
+    if (row === void 0) continue;
+    add2({
+      key: `question:${q.id}`,
+      pageId: row.page_id,
+      kind: "awaiting",
+      who: q.hardStop ? o.both : o.po,
+      text: `${q.blocking ? "Blocking q" : "Q"}uestion ${q.id} needs your answer: ${quote2(q.question)}${q.hardStop ? ` [hard stop: ${q.hardStop}]` : ""}`
+    });
+  }
+  const events = readEvents(i.projectDir);
+  for (const s of rows("stories").filter((x) => x.properties["Status"] === "In QA")) {
+    if (verdictAfterLastPush(i.projectDir, s.id, "qa", "qa") !== "pass") continue;
+    const pr = [...events].reverse().find((e) => e.type === "pr.published" && e.item === s.id)?.data?.["pr"];
+    const qaAt = [...events].reverse().find((e) => e.type === "report.accepted" && e.item === s.id && e.data?.["role"] === "qa")?.ts ?? "";
+    if (typeof pr !== "number") continue;
+    add2({
+      key: `pr:${s.id}:${pr}:${qaAt}`,
+      pageId: s.page_id,
+      kind: "awaiting",
+      who: o.po,
+      text: `Pull request #${pr} for ${s.id} passed QA and awaits your approval.`
+    });
+  }
+  const incidents = rows("incidents").filter(
+    (x) => ["P1", "P2"].includes(String(x.properties["Priority"])) && ["Open", "Mitigated"].includes(String(x.properties["Status"]))
+  );
+  for (const inc of incidents)
+    add2({
+      key: `urgent:incident:${inc.id}:${String(inc.properties["Status"])}`,
+      pageId: i.urgentPageId,
+      kind: "urgent",
+      who: o.both,
+      text: `URGENT: incident ${inc.id} (${String(inc.properties["Priority"])}) is ${String(inc.properties["Status"])}.`
+    });
+  if (incidents.length > 0)
+    for (const r of rows("releases").filter((x) => x.properties["Status"] === "Awaiting approval"))
+      add2({
+        key: `urgent:hotfix:${r.id}:${r.last_edited_time}`,
+        pageId: i.urgentPageId,
+        kind: "urgent",
+        who: o.both,
+        text: `URGENT: the production approval for ${r.id} is waiting while an incident is open (hotfix).`
+      });
+  if (i.redHealth)
+    add2({
+      key: `urgent:health:${i.redHealth.date}`,
+      pageId: i.urgentPageId,
+      kind: "urgent",
+      who: o.both,
+      text: `URGENT: health is red on ${i.redHealth.date}: ${quote2(i.redHealth.reasons.join("; "))}.`
+    });
+  return out;
+}
+var mention = (userId) => ({
+  type: "mention",
+  mention: { type: "user", user: { id: userId } }
+});
+async function sendNotifications(o) {
+  const res = { sent: [], skipped: [], failed: [] };
+  const sent = readSent(o.projectDir);
+  const needsUrgent = true;
+  let urgentPageId = "";
+  const cheap = collectNotices({
+    projectDir: o.projectDir,
+    urgentPageId: "pending",
+    ...o.redHealth ? { redHealth: o.redHealth } : {}
+  });
+  const fresh = cheap.filter((n2) => sent[n2.key] === void 0);
+  if (fresh.length === 0) return res;
+  if (fresh.some((n2) => n2.kind === "urgent") && needsUrgent && o.dryRun !== true)
+    urgentPageId = await o.port.findOrCreateChildPage(o.rootPageId, URGENT_PAGE);
+  let n = 0;
+  for (const notice of fresh) {
+    if (notice.who.length === 0) {
+      res.skipped.push(`${notice.key}: no Notion user id for po or sponsor in team.yaml`);
+      continue;
+    }
+    if (n >= MAX_PER_RUN) {
+      res.skipped.push(`${notice.key}: over ${MAX_PER_RUN} for this run, next run`);
+      continue;
+    }
+    if (findSecrets(notice.text).length > 0) {
+      res.skipped.push(`${notice.key}: the text looks like a secret`);
+      continue;
+    }
+    if (o.dryRun === true) {
+      res.sent.push({ key: notice.key, kind: notice.kind, via: "comment" });
+      n += 1;
+      continue;
+    }
+    const pageId = notice.kind === "urgent" ? urgentPageId : notice.pageId;
+    const rich2 = [
+      ...notice.who.flatMap((id) => [mention(id), { type: "text", text: { content: " " } }]),
+      { type: "text", text: { content: notice.text } }
+    ];
+    try {
+      let via = "comment";
+      try {
+        await o.port.createComment(pageId, rich2);
+      } catch {
+        via = "page";
+        await o.port.appendChildren(pageId, [
+          { object: "block", type: "paragraph", paragraph: { rich_text: rich2 } }
+        ]);
+      }
+      sent[notice.key] = (o.now ?? /* @__PURE__ */ new Date()).toISOString();
+      writeSent(o.projectDir, sent);
+      res.sent.push({ key: notice.key, kind: notice.kind, via });
+      n += 1;
+    } catch (e) {
+      res.failed.push({
+        key: notice.key,
+        reason: e instanceof Error ? e.message.slice(0, 160) : String(e)
+      });
+    }
+  }
+  return res;
+}
+
 // plugins/arima/scripts/src/cli/notion-cli.ts
 var USAGE = `Usage: arima-notion bootstrap --parent <page-id> [--token-env NAME]
        arima-notion map [--root <page-id>] [--migrate] [--project <dir>] [--token-env NAME]
        arima-notion pull [--project <dir>]     mirror every mapped database to .arima/mirror/
        arima-notion push [--project <dir>] [--allow-status-writes] [--as-run <run-id>]
                                                apply .arima/outbox/ to Notion (orchestrator only)
+       arima-notion views [--project <dir>]    create the Board, Approval inbox, RTM, Milestone burn and Open bugs views (idempotent)
+       arima-notion notify [--dry-run] [--project <dir>]
+                                               @mention the owner on each item awaiting them, and on the Urgent page when urgent
 bootstrap builds the 19 ARIMA databases under a page (run once, to build the public template).
 map finds them under a duplicated template, verifies every property, writes .arima/notion-map.json.
 The Notion integration token is read from the environment (default ARIMA_NOTION_TOKEN); it is never printed.
 Exit codes: 0 ok, 1 verification failed, Notion error, or outbox entries rejected/in conflict/deferred, 2 usage`;
 function rootFromConfig(projectDir) {
-  const file = path14.join(projectDir, "arima.yaml");
-  if (!existsSync11(file)) return {};
+  const file = path21.join(projectDir, "arima.yaml");
+  if (!existsSync16(file)) return {};
   try {
-    const doc = (0, import_yaml2.parse)(readFileSync11(file, "utf8"));
+    const doc = (0, import_yaml5.parse)(readFileSync16(file, "utf8"));
     return {
       ...doc.notion?.root_page_id && !doc.notion.root_page_id.startsWith("<") ? { root: doc.notion.root_page_id } : {},
       ...doc.notion?.token_env ? { tokenEnv: doc.notion.token_env } : {}
@@ -20842,7 +22595,7 @@ function rootFromConfig(projectDir) {
 }
 async function runNotionCli(argv, io, deps = {}) {
   const [command, ...rest] = argv;
-  if (command !== "bootstrap" && command !== "map" && command !== "pull" && command !== "push") {
+  if (command !== "bootstrap" && command !== "map" && command !== "pull" && command !== "push" && command !== "views" && command !== "notify") {
     io.err(`${USAGE}
 `);
     return 2;
@@ -20859,7 +22612,8 @@ async function runNotionCli(argv, io, deps = {}) {
         project: { type: "string" },
         "token-env": { type: "string" },
         "allow-status-writes": { type: "boolean" },
-        "as-run": { type: "string" }
+        "as-run": { type: "string" },
+        "dry-run": { type: "boolean" }
       }
     }).values;
   } catch (e) {
@@ -20868,7 +22622,7 @@ ${USAGE}
 `);
     return 2;
   }
-  const projectDir = path14.resolve(io.cwd, values.project ?? ".");
+  const projectDir = path21.resolve(io.cwd, values.project ?? ".");
   const cfg = rootFromConfig(projectDir);
   const tokenEnv = values["token-env"] ?? cfg.tokenEnv ?? "ARIMA_NOTION_TOKEN";
   const token = (deps.env ?? process.env)[tokenEnv];
@@ -20878,7 +22632,7 @@ ${USAGE}
     return 2;
   }
   const port = (deps.portFactory ?? createNotionPortFromToken)(token);
-  if (command === "pull" || command === "push") {
+  if (command === "pull" || command === "push" || command === "views" || command === "notify") {
     const stop = await guardInteractive({
       projectDir,
       command: `arima-notion ${command}`,
@@ -20923,7 +22677,7 @@ ${USAGE}
           );
       }
       io.out(
-        "views are not created by the API; set them up as described in docs/NOTION-TEMPLATE.md\n"
+        "run arima-notion views to create the human views (Board, Approval inbox, RTM, Milestone burn, Open bugs)\n"
       );
       return 0;
     }
@@ -20960,6 +22714,49 @@ ${USAGE}
 `);
       return report.rejected.length + report.conflicts.length + report.deferred.length > 0 ? 1 : 0;
     }
+    if (command === "views") {
+      const r = await ensureViews(port, readNotionMap(projectDir));
+      for (const c of r.created) io.out(`created  ${c.db}: ${c.name}
+`);
+      for (const e of r.existing) io.out(`exists   ${e.db}: ${e.name}
+`);
+      for (const f of r.failed) io.out(`FAILED   ${f.db}: ${f.name}: ${f.reason}
+`);
+      io.out(
+        `views: ${r.created.length} created, ${r.existing.length} already there, ${r.failed.length} failed
+`
+      );
+      return r.failed.length > 0 ? 1 : 0;
+    }
+    if (command === "notify") {
+      if (cfg.root === void 0) {
+        io.err("notion.root_page_id is not set in arima.yaml\n");
+        return 2;
+      }
+      const digest = buildDigest(projectDir, deps.now ?? /* @__PURE__ */ new Date());
+      const r = await sendNotifications({
+        projectDir,
+        port,
+        rootPageId: cfg.root,
+        ...deps.now ? { now: deps.now } : {},
+        ...digest.health === "red" ? { redHealth: { date: digest.date, reasons: digest.healthReasons } } : {},
+        ...values["dry-run"] === true ? { dryRun: true } : {}
+      });
+      for (const x of r.sent)
+        io.out(
+          `${values["dry-run"] === true ? "would send" : "sent"} ${x.kind} ${x.key}${values["dry-run"] === true ? "" : ` (${x.via})`}
+`
+        );
+      for (const x of r.skipped) io.out(`skipped ${x}
+`);
+      for (const x of r.failed) io.err(`failed ${x.key}: ${x.reason}
+`);
+      io.out(
+        `notifications: ${r.sent.length} ${values["dry-run"] === true ? "to send" : "sent"}, ${r.skipped.length} skipped, ${r.failed.length} failed
+`
+      );
+      return r.failed.length > 0 ? 1 : 0;
+    }
     const root = values.root ?? cfg.root;
     if (root === void 0) {
       io.err(`--root is required (or set notion.root_page_id in arima.yaml)
@@ -20993,11 +22790,11 @@ ${USAGE}
       return 1;
     }
     const file = notionMapFile(projectDir);
-    mkdirSync9(path14.dirname(file), { recursive: true });
+    mkdirSync11(path21.dirname(file), { recursive: true });
     writeFileAtomic(file, `${JSON.stringify(result.map, null, 2)}
 `);
     io.out(
-      `wrote ${path14.relative(io.cwd, file) || file} (${Object.keys(result.map.databases).length} databases)
+      `wrote ${path21.relative(io.cwd, file) || file} (${Object.keys(result.map.databases).length} databases)
 `
     );
     return 0;

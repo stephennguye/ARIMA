@@ -18656,6 +18656,8 @@ function createNotionPort(client, throttle = new Throttle(), backoff = {}) {
           });
         } else if (raw.type === "paragraph") {
           out.push({ id: raw.id, type: "paragraph", text: plain(raw.paragraph?.rich_text) });
+        } else if (raw.type === "child_page") {
+          out.push({ id: raw.id, type: "child_page", text: raw.child_page?.title ?? "" });
         } else if (raw.type === "child_database") {
           out.push({ id: raw.id, type: "child_database", text: raw.child_database?.title ?? "" });
         } else {
@@ -18806,6 +18808,70 @@ function createNotionPort(client, throttle = new Throttle(), backoff = {}) {
         lastEdited: raw.last_edited_time,
         ...raw.properties ? { properties: raw.properties } : {}
       };
+    },
+    async listViews(databaseId) {
+      if (client.views === void 0) throw new Error("this Notion client has no views API");
+      const v = client.views;
+      const out = [];
+      let cursor;
+      for (; ; ) {
+        const page = await callRead(
+          () => v.list({
+            database_id: databaseId,
+            ...cursor !== void 0 ? { start_cursor: cursor } : {}
+          })
+        );
+        for (const r of page.results) {
+          if (r.id === void 0) continue;
+          const full = await callRead(() => v.retrieve({ view_id: r.id }));
+          out.push({ id: r.id, name: full.name ?? "" });
+        }
+        if (!page.has_more || page.next_cursor === null) return out;
+        cursor = page.next_cursor;
+      }
+    },
+    async createView(i) {
+      if (client.views === void 0) throw new Error("this Notion client has no views API");
+      const v = client.views;
+      const raw = await call(
+        () => v.create({
+          database_id: i.databaseId,
+          data_source_id: i.dataSourceId,
+          name: i.name,
+          type: i.type,
+          ...i.filter ? { filter: i.filter } : {},
+          ...i.sorts ? { sorts: i.sorts } : {},
+          ...i.groupBy ? {
+            configuration: {
+              type: i.type,
+              group_by: {
+                type: i.groupBy.type,
+                property_id: i.groupBy.propertyId,
+                sort: { type: "manual" }
+              }
+            }
+          } : {}
+        })
+      );
+      return raw.id;
+    },
+    async createComment(pageId, richText) {
+      if (client.comments === void 0) throw new Error("this Notion client has no comments API");
+      const c = client.comments;
+      await call(() => c.create({ parent: { page_id: pageId }, rich_text: richText }));
+    },
+    async findOrCreateChildPage(parentPageId, title) {
+      const have = (await listChildren(parentPageId)).find(
+        (b) => b.type === "child_page" && b.text === title
+      );
+      if (have !== void 0) return have.id;
+      const raw = await call(
+        () => client.pages.create({
+          parent: { type: "page_id", page_id: parentPageId },
+          properties: { title: { title: [{ type: "text", text: { content: title } }] } }
+        })
+      );
+      return raw.id;
     },
     async appendChildren(pageId, blocks) {
       for (let i = 0; i < blocks.length; i += 100) {

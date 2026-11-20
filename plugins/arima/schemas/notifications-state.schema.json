@@ -1,0 +1,16 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/stephennguye/ARIMA/schemas/notifications-state.schema.json",
+  "title": "Notifications state",
+  "description": ".arima/state/notifications.json: which @mentions were already posted in Notion (key to time), so an item is announced once per state it waits in (WP-142). Written only by the notification module.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "sent"],
+  "properties": {
+    "schema_version": { "const": 1 },
+    "sent": {
+      "type": "object",
+      "additionalProperties": { "type": "string", "format": "date-time" }
+    }
+  }
+}

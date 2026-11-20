@@ -410,12 +410,12 @@ describe('arima-notion CLI', () => {
     return { code, out, err };
   };
 
-  it('bootstrap builds the template and prints the manual-view reminder', async () => {
+  it('bootstrap builds the template and points to arima-notion views', async () => {
     const fake = new FakeNotion();
     const r = await run(['bootstrap', '--parent', fake.rootId], tempDir(), fake);
     expect(r.code).toBe(0);
     expect(r.out).toContain('19 created');
-    expect(r.out).toContain('views are not created');
+    expect(r.out).toContain('arima-notion views');
   });
 
   it('map writes a valid .arima/notion-map.json', async () => {

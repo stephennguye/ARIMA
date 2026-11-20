@@ -14,6 +14,9 @@ import type { PauseSwitchPort } from '../notion/port.js';
 import { remotePauseFlag } from '../state.js';
 import { notionMapFile, pullMirror, readNotionMap } from '../notion/mirror.js';
 import { pushOutbox } from '../notion/outbox.js';
+import { ensureViews } from '../notion/views.js';
+import { buildDigest } from '../digest.js';
+import { sendNotifications } from '../notify.js';
 import { createNotionPortFromToken } from '../notion/port.js';
 import type { NotionPort } from '../notion/port.js';
 import type { Io } from './config-cli.js';
@@ -23,6 +26,9 @@ export const USAGE = `Usage: arima-notion bootstrap --parent <page-id> [--token-
        arima-notion pull [--project <dir>]     mirror every mapped database to .arima/mirror/
        arima-notion push [--project <dir>] [--allow-status-writes] [--as-run <run-id>]
                                                apply .arima/outbox/ to Notion (orchestrator only)
+       arima-notion views [--project <dir>]    create the Board, Approval inbox, RTM, Milestone burn and Open bugs views (idempotent)
+       arima-notion notify [--dry-run] [--project <dir>]
+                                               @mention the owner on each item awaiting them, and on the Urgent page when urgent
 bootstrap builds the 19 ARIMA databases under a page (run once, to build the public template).
 map finds them under a duplicated template, verifies every property, writes .arima/notion-map.json.
 The Notion integration token is read from the environment (default ARIMA_NOTION_TOKEN); it is never printed.
@@ -62,7 +68,14 @@ export async function runNotionCli(
   deps: NotionCliDeps = {},
 ): Promise<number> {
   const [command, ...rest] = argv;
-  if (command !== 'bootstrap' && command !== 'map' && command !== 'pull' && command !== 'push') {
+  if (
+    command !== 'bootstrap' &&
+    command !== 'map' &&
+    command !== 'pull' &&
+    command !== 'push' &&
+    command !== 'views' &&
+    command !== 'notify'
+  ) {
     io.err(`${USAGE}\n`);
     return 2;
   }
@@ -74,6 +87,7 @@ export async function runNotionCli(
     'token-env'?: string;
     'allow-status-writes'?: boolean;
     'as-run'?: string;
+    'dry-run'?: boolean;
   };
   try {
     values = parseArgs({
@@ -87,6 +101,7 @@ export async function runNotionCli(
         'token-env': { type: 'string' },
         'allow-status-writes': { type: 'boolean' },
         'as-run': { type: 'string' },
+        'dry-run': { type: 'boolean' },
       },
     }).values;
   } catch (e) {
@@ -104,7 +119,7 @@ export async function runNotionCli(
   }
   const port = (deps.portFactory ?? createNotionPortFromToken)(token);
 
-  if (command === 'pull' || command === 'push') {
+  if (command === 'pull' || command === 'push' || command === 'views' || command === 'notify') {
     // Spec 12.4: wait for a live run (exit 11); push also refuses while paused (exit 12), pull never does.
     const stop = await guardInteractive({
       projectDir,
@@ -153,7 +168,7 @@ export async function runNotionCli(
           );
       }
       io.out(
-        'views are not created by the API; set them up as described in docs/NOTION-TEMPLATE.md\n',
+        'run arima-notion views to create the human views (Board, Approval inbox, RTM, Milestone burn, Open bugs)\n',
       );
       return 0;
     }
@@ -187,6 +202,45 @@ export async function runNotionCli(
         );
       for (const d of report.deferred) io.out(`deferred ${d}: will be retried next run\n`);
       return report.rejected.length + report.conflicts.length + report.deferred.length > 0 ? 1 : 0;
+    }
+
+    if (command === 'views') {
+      const r = await ensureViews(port, readNotionMap(projectDir));
+      for (const c of r.created) io.out(`created  ${c.db}: ${c.name}\n`);
+      for (const e of r.existing) io.out(`exists   ${e.db}: ${e.name}\n`);
+      for (const f of r.failed) io.out(`FAILED   ${f.db}: ${f.name}: ${f.reason}\n`);
+      io.out(
+        `views: ${r.created.length} created, ${r.existing.length} already there, ${r.failed.length} failed\n`,
+      );
+      return r.failed.length > 0 ? 1 : 0;
+    }
+
+    if (command === 'notify') {
+      if (cfg.root === undefined) {
+        io.err('notion.root_page_id is not set in arima.yaml\n');
+        return 2;
+      }
+      const digest = buildDigest(projectDir, deps.now ?? new Date());
+      const r = await sendNotifications({
+        projectDir,
+        port,
+        rootPageId: cfg.root,
+        ...(deps.now ? { now: deps.now } : {}),
+        ...(digest.health === 'red'
+          ? { redHealth: { date: digest.date, reasons: digest.healthReasons } }
+          : {}),
+        ...(values['dry-run'] === true ? { dryRun: true } : {}),
+      });
+      for (const x of r.sent)
+        io.out(
+          `${values['dry-run'] === true ? 'would send' : 'sent'} ${x.kind} ${x.key}${values['dry-run'] === true ? '' : ` (${x.via})`}\n`,
+        );
+      for (const x of r.skipped) io.out(`skipped ${x}\n`);
+      for (const x of r.failed) io.err(`failed ${x.key}: ${x.reason}\n`);
+      io.out(
+        `notifications: ${r.sent.length} ${values['dry-run'] === true ? 'to send' : 'sent'}, ${r.skipped.length} skipped, ${r.failed.length} failed\n`,
+      );
+      return r.failed.length > 0 ? 1 : 0;
     }
 
     const root = values.root ?? cfg.root;

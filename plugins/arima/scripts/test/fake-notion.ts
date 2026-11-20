@@ -48,6 +48,15 @@ export class FakeNotion {
   readonly databases = new Map<string, { id: string; title: string; dataSourceId: string }>();
   readonly sources = new Map<string, DataSource>();
   readonly calls: string[] = [];
+  /** Views created through `views.create`, per database id (WP-142). */
+  readonly views: {
+    id: string;
+    databaseId: string;
+    name: string;
+    body: Record<string, unknown>;
+  }[] = [];
+  /** Comments created through `comments.create`. */
+  readonly comments: { pageId: string; rich_text: unknown[] }[] = [];
   /** Return a message to make the API reject adding this property name. */
   rejectProperty: (
     dsTitle: string,
@@ -214,8 +223,8 @@ export class FakeNotion {
           if (!blocks) return Promise.reject(new Error(`no page ${block_id}`));
           const created = (children as Record<string, unknown>[]).map((c) => {
             const type = String(c['type']);
-            const body = c[type] as { rich_text?: { text: { content: string } }[] };
-            const rich = (body.rich_text ?? []).map((t) => ({ plain_text: t.text.content }));
+            const body = c[type] as { rich_text?: { text?: { content: string } }[] };
+            const rich = (body.rich_text ?? []).map((t) => ({ plain_text: t.text?.content ?? '' }));
             return { id: this.id('b'), type, [type]: { ...body, rich_text: rich } } as Block;
           });
           blocks.push(...created);
@@ -320,6 +329,53 @@ export class FakeNotion {
         return Promise.resolve({ results, has_more: false, next_cursor: null });
       },
     },
+    views: {
+      list: ({ database_id }) => {
+        this.calls.push('views.list');
+        return Promise.resolve({
+          results: this.views
+            .filter((v) => v.databaseId === database_id)
+            .map((v) => ({ id: v.id })),
+          has_more: false,
+          next_cursor: null,
+        });
+      },
+      retrieve: ({ view_id }) => {
+        this.calls.push('views.retrieve');
+        const v = this.views.find((x) => x.id === view_id);
+        return v
+          ? Promise.resolve({ id: v.id, name: v.name })
+          : Promise.reject(new ApiError('no view', 404));
+      },
+      create: (args) => {
+        this.calls.push('views.create');
+        try {
+          this.maybeFail('views.create');
+        } catch (e) {
+          return Promise.reject(e as Error);
+        }
+        const v = {
+          id: this.id('vw'),
+          databaseId: String(args['database_id']),
+          name: String(args['name']),
+          body: args,
+        };
+        this.views.push(v);
+        return Promise.resolve({ id: v.id });
+      },
+    },
+    comments: {
+      create: ({ parent, rich_text }) => {
+        this.calls.push('comments.create');
+        try {
+          this.maybeFail('comments.create');
+        } catch (e) {
+          return Promise.reject(e as Error);
+        }
+        this.comments.push({ pageId: parent.page_id, rich_text });
+        return Promise.resolve({ id: this.id('cm') });
+      },
+    },
     pages: {
       retrieve: ({ page_id }) => {
         this.calls.push('pages.retrieve');
@@ -335,6 +391,17 @@ export class FakeNotion {
         this.calls.push('pages.create');
         try {
           this.maybeFail('pages.create');
+          if (parent.type === 'page_id') {
+            const under = this.pages.get(parent.page_id);
+            if (!under) throw new ApiError('no page ' + parent.page_id, 404);
+            const id = this.id('pg');
+            const t = (properties['title'] as { title: { text: { content: string } }[] }).title
+              .map((x) => x.text.content)
+              .join('');
+            under.push({ id, type: 'child_page', child_page: { title: t } } as Block);
+            this.pages.set(id, []);
+            return Promise.resolve({ id, last_edited_time: this.tick(), properties: {} });
+          }
           const ds = this.sources.get(parent.data_source_id);
           if (!ds) throw new ApiError('no data source ' + parent.data_source_id, 404);
           const row: Row = {

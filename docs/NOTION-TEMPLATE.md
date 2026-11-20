@@ -79,18 +79,18 @@ A formula that reads a rollup of a select property sees text, so the Coverage fo
 
 Then run `arima-notion map` again.
 
-## Views (set up by hand)
+## Views
 
-ARIMA does not create views. Add these once, on the database named; they are what you look at day to day (spec §9.2).
+Run `arima-notion views` once: it creates these through the Notion API, skips any view that already has the name, and never changes or deletes one (spec §9.2, WP-142). They are what you look at day to day. The table says what each one is; adjust a view in Notion as you like, ARIMA will not touch it again.
 
 | View | Database | Setup |
 | --- | --- | --- |
-| Board | Stories | Board layout grouped by Status; filter Milestone is the current milestone |
-| Approval inbox | Gates | Filter Status is Ready for review. Add the same filter on Questions (Blocking is checked and Status is Open), Releases (Prod deploy approval is Pending), Change Requests (Decision is Pending) and Decisions (Date in the past day), and put the linked views on one page |
+| Board | Stories | Board layout grouped by Status, Cancelled hidden, sorted by Priority; add a Milestone filter for the current milestone yourself |
+| Approval inbox | Gates, Questions, Releases, Change Requests, Decisions | One view of this name in each database: Gates Status is Ready for review; Questions Status is Open and Blocking is checked; Releases Status is Awaiting approval; Change Requests Decision is Pending; Decisions Date in the past week (the API has no "past day"), newest first. Put the linked views on one page if you want one inbox |
 | RTM | Requirements | Table showing Stories, Test Cases and Coverage |
-| Milestone burn | Milestones | Table with Budget USD and Cost USD; add a sub-group by story on Stories |
-| Open bugs | Bugs | Filter Status is not Closed or Cancelled; group by Severity |
-| Portfolio | (page) | A public page with the overview, digests and selected documents |
+| Milestone burn | Milestones and Stories | Table with Budget USD and Cost USD per milestone; on Stories, sorted by Cost USD |
+| Open bugs | Bugs | Status is Open, In progress or Fixed; sorted by Severity |
+| Portfolio | (page) | By hand: a public page with the overview, digests and selected documents (not created by ARIMA) |
 
 For client projects, share only a **Client portal** page with client guests: gate pages awaiting them, approved documents, milestone reviews, UAT runs and release notes. Keep the decision log, cost log, ledger and agent questions off it.
 

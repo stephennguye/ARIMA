@@ -31,6 +31,9 @@ Every interface between components. If code crosses a boundary in a way this fil
 | `state/engine-entries.json` | `registerEngineEntry` (init, the state machine) | no | Outbox entry ids made by the engine; only these may carry `Status` at push (WP-108) |
 | `manual-costs.json` | a human | **never** | Infrastructure bills and human hours with an hourly rate, for the total cost of ownership (`manual-costs.schema.json`, WP-131) |
 | `state/questions.json` | the question protocol (`questions.ts`, WP-141) | no | What the engine knows about each question beyond its Notion row: route (owner or consult), forced blocking, hard-stop id, topic, default, expiry, status, linked DEC (`questions-state.schema.json`) |
+| `state/environments.json` | `arima-env` (`env.ts`, WP-213) | no | What was last deployed to staging and to each preview (ref, port, time, result) and the last failed staging deploy (`environments-state.schema.json`) |
+| `state/reviews.json` | the milestone review (`milestone-review.ts`, WP-217) | no | Which milestone reviews are open or closed, their stories and the Decisions row of each veto box (`reviews-state.schema.json`) |
+| `state/notifications.json` | `notify.ts` (WP-142) | no | Keys of the @mentions already posted in Notion, so an item is announced once per state (`notifications-state.schema.json`) |
 | `state/allocations.json` | `allocateId` (`notion/allocations.ts`) | no | Issued id -> run id. Push accepts a created id-titled row only if its id was issued to the entry's run (WP-104) |
 | `items/<id>.json` | the state machine only `[BUILT]` WP-106 | never | Item counters and blocked-from (section 9a); `[BUILT]` WP-106 |
 | `PAUSE` | `arima-pause` only | **never** | Kill switch file; first line is the reason |

@@ -23,6 +23,7 @@ import { mergePr, summariseChecks, verdictAfterLastPush } from './merge.js';
 import { buildDigest, publishDigest } from './digest.js';
 import { applyApprovedLessons, overrideConditions } from './lessons.js';
 import { heldForReview, reviewTick } from './milestone-review.js';
+import { sendNotifications } from './notify.js';
 import { enqueue } from './notion/outbox.js';
 import { enqueueReportRecords } from './notion/proposals.js';
 import { findRow, pullMirror, readMirror, readNotionMap } from './notion/mirror.js';
@@ -1141,11 +1142,13 @@ export async function runDispatch(o: DispatchOptions): Promise<DispatchResult> {
     );
     // The digest of the day (spec 12.1, WP-130): on demand until Gate U, so each attended run writes it.
     let digestNote = 'not written';
+    let red: { date: string; reasons: string[] } | undefined;
     if (!dry) {
       try {
         const model = buildDigest(o.projectDir, now);
         const pub = await publishDigest({ projectDir: o.projectDir, runId, model, now });
         digestNote = `${model.health}; ${path.relative(o.projectDir, pub.file)}`;
+        if (model.health === 'red') red = { date: model.date, reasons: model.healthReasons };
       } catch (e) {
         res.warnings.push(
           `the digest was not written: ${e instanceof Error ? e.message.slice(0, 160) : String(e)}`,
@@ -1169,6 +1172,34 @@ export async function runDispatch(o: DispatchOptions): Promise<DispatchResult> {
         res.warnings.push(`the outbox push failed: ${e instanceof Error ? e.message : String(e)}`);
       }
     } else syncFailed = d.notion !== undefined && d.notion !== null;
+
+    // @mentions (spec 12.3, WP-142): each item awaiting a person, and the Urgent page. Append-only, once per state;
+    // a failure is a warning, never a failed run.
+    if (
+      !dry &&
+      d.notion !== undefined &&
+      d.notion !== null &&
+      !res.degraded &&
+      cfg.notion?.root_page_id
+    ) {
+      try {
+        const n = await sendNotifications({
+          projectDir: o.projectDir,
+          port: d.notion.port,
+          rootPageId: cfg.notion.root_page_id,
+          now,
+          ...(red ? { redHealth: red } : {}),
+        });
+        if (n.failed.length > 0)
+          res.warnings.push(
+            `${n.failed.length} notification(s) failed: ${n.failed[0]?.reason ?? ''}`,
+          );
+      } catch (e) {
+        res.warnings.push(
+          `notifications failed: ${e instanceof Error ? e.message.slice(0, 160) : String(e)}`,
+        );
+      }
+    }
     await step(9);
 
     // ---- 10. Close -------------------------------------------------------------------------------------------------------
