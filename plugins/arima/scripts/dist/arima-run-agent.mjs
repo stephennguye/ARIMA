@@ -18705,7 +18705,11 @@ var GIT_READ = [
 var NPM_TEST = [...bash("npm test"), ...bash("npm run"), ...bash("npm ci")];
 function allowedTools(role, scriptsDir) {
   const read = ["Read", "Glob", "Grep"];
-  const script = (name) => bash(`node ${scriptsDir}/${name}.mjs`);
+  const nodeScript = (name, rest = "") => [
+    ...bash(`node ${scriptsDir}/${name}.mjs${rest}`),
+    ...bash(`node "${scriptsDir}/${name}.mjs"${rest}`)
+  ];
+  const script = (name) => nodeScript(name);
   switch (role) {
     case "orchestrator":
       return [
@@ -18804,10 +18808,10 @@ function allowedTools(role, scriptsDir) {
         // arima-env, which knows staging and preview and nothing else. `docker inspect` on a
         // production container would read its environment, so the read-only Docker commands the
         // card listed are not granted. backup and restore-test are host jobs.
-        ...bash(`node ${scriptsDir}/arima-env.mjs check`),
+        ...nodeScript("arima-env", " check"),
         ...["status", "logs", "smoke", "up", "down"].flatMap((sub) => [
-          ...bash(`node ${scriptsDir}/arima-env.mjs ${sub} staging`),
-          ...bash(`node ${scriptsDir}/arima-env.mjs ${sub} preview-*`)
+          ...nodeScript("arima-env", ` ${sub} staging`),
+          ...nodeScript("arima-env", ` ${sub} preview-*`)
         ]),
         "WebFetch"
       ];

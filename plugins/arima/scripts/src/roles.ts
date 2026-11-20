@@ -55,7 +55,13 @@ const NPM_TEST = [...bash('npm test'), ...bash('npm run'), ...bash('npm ci')];
  */
 export function allowedTools(role: Role, scriptsDir: string): string[] {
   const read = ['Read', 'Glob', 'Grep'];
-  const script = (name: string): string[] => bash(`node ${scriptsDir}/${name}.mjs`);
+  // The agent files quote the path (`node "${CLAUDE_PLUGIN_ROOT}/..."`), which a rule matches only if it
+  // is spelled the same way, so both spellings are granted (found by the devops real-agent evals).
+  const nodeScript = (name: string, rest = ''): string[] => [
+    ...bash(`node ${scriptsDir}/${name}.mjs${rest}`),
+    ...bash(`node "${scriptsDir}/${name}.mjs"${rest}`),
+  ];
+  const script = (name: string): string[] => nodeScript(name);
   switch (role) {
     case 'orchestrator':
       return [
@@ -154,10 +160,10 @@ export function allowedTools(role: Role, scriptsDir: string): string[] {
         // arima-env, which knows staging and preview and nothing else. `docker inspect` on a
         // production container would read its environment, so the read-only Docker commands the
         // card listed are not granted. backup and restore-test are host jobs.
-        ...bash(`node ${scriptsDir}/arima-env.mjs check`),
+        ...nodeScript('arima-env', ' check'),
         ...['status', 'logs', 'smoke', 'up', 'down'].flatMap((sub) => [
-          ...bash(`node ${scriptsDir}/arima-env.mjs ${sub} staging`),
-          ...bash(`node ${scriptsDir}/arima-env.mjs ${sub} preview-*`),
+          ...nodeScript('arima-env', ` ${sub} staging`),
+          ...nodeScript('arima-env', ` ${sub} preview-*`),
         ]),
         'WebFetch',
       ];

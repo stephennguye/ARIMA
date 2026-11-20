@@ -88,6 +88,11 @@ describe('agents/devops.md (spec §5.10, card, ADR-0008)', () => {
   const { front, body } = loadAgent('devops');
   const text = readFileSync(path.join(PLUGIN_ROOT, 'agents', 'devops.md'), 'utf8');
 
+  it('says a missing credential is a blocking missing_credential question and that blocking means needs_input', () => {
+    expect(text).toContain('raise a blocking question with `hard_stop` `missing_credential`');
+    expect(text).toContain('`status` `needs_input`, never `done`');
+  });
+
   it('has valid frontmatter, a model of inherit and fits the 10,000-character cap', () => {
     expect(front['name']).toBe('devops');
     expect(String(front['description']).length).toBeGreaterThan(20);

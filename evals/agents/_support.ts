@@ -24,7 +24,11 @@ export const git = (cwd: string, ...a: string[]): string =>
   execFileSync('git', a, { cwd, encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] }).trim();
 
 /** A scratch app repo with the example config, a branch to work on, and the given files committed. */
-export function scratchProject(files: Record<string, string>, branch = 'chore/eval'): { dir: string; base: string } {
+export function scratchProject(
+  files: Record<string, string>,
+  branch = 'chore/eval',
+  o: { key?: string; stagingPort?: number } = {},
+): { dir: string; base: string } {
   const dir = path.join(mkdtempSync(path.join(tmpdir(), 'arima-real-eval-')), 'app');
   mkdirSync(dir, { recursive: true });
   git(dir, 'init', '-q', '-b', 'main');
@@ -32,7 +36,9 @@ export function scratchProject(files: Record<string, string>, branch = 'chore/ev
     git(dir, 'config', k, v);
   writeFileSync(
     path.join(dir, 'arima.yaml'),
-    readFileSync(path.join(ROOT, 'examples/arima.yaml'), 'utf8').replace('https://staging.example.com', 'http://localhost:3000'),
+    readFileSync(path.join(ROOT, 'examples/arima.yaml'), 'utf8')
+      .replace('https://staging.example.com', `http://localhost:${o.stagingPort ?? 3000}`)
+      .replace('key: TAS', `key: ${o.key ?? 'TAS'}`),
   );
   copyFileSync(path.join(ROOT, 'examples/team.yaml'), path.join(dir, 'team.yaml'));
   writeFileSync(path.join(dir, '.gitignore'), '.arima/\n');
@@ -59,12 +65,16 @@ export interface RealUnit {
   maxTurns: number;
   runId?: string;
   untrusted?: { label: string; source: string; text: string }[];
+  /** Replaces the dispatcher's task text for the kind (a scenario that needs a different ask). */
+  task?: string;
 }
 
 export interface RealResult {
   exit: number;
   costUsd: number;
   packetRunId: string;
+  /** The id the engine gave the run (the ledger's), which tags its events. */
+  runId: string;
   /** The final message of the run (an `arima-report` block is at its end). */
   message: string;
 }
@@ -93,7 +103,7 @@ export function runRealUnit(u: RealUnit): RealResult {
     },
     inputs: u.inputs,
     conditions: u.conditions ?? ['The profile is solo-lite'],
-    task: taskFor({ kind: u.kind, role: u.role, item: u.item, why: 'real-agent eval' }),
+    task: u.task ?? taskFor({ kind: u.kind, role: u.role, item: u.item, why: 'real-agent eval' }),
     output_contract: outputContractFor(u.kind),
     web: { hosts: [], local_origins: [] },
     untrusted: u.untrusted ?? [],
@@ -114,8 +124,9 @@ export function runRealUnit(u: RealUnit): RealResult {
   const runsDir = path.join(u.dir, '.arima', 'runs');
   const last = readdirSync(runsDir).filter((f) => f.endsWith('.json')).sort().at(-1);
   const rec = JSON.parse(readFileSync(path.join(runsDir, last as string), 'utf8')) as { result_text?: string };
-  const ledger = readFileSync(path.join(u.dir, '.arima', 'ledger.jsonl'), 'utf8').trim().split('\n').map((l) => JSON.parse(l) as { cost_usd: number });
+  const ledger = readFileSync(path.join(u.dir, '.arima', 'ledger.jsonl'), 'utf8').trim().split('\n').map((l) => JSON.parse(l) as { cost_usd: number; run_id: string });
   const costUsd = ledger.at(-1)?.cost_usd ?? 0;
+  const runId = ledger.at(-1)?.run_id ?? '';
   spent += costUsd;
-  return { exit, costUsd, packetRunId, message: rec.result_text ?? '' };
+  return { exit, costUsd, packetRunId, runId, message: rec.result_text ?? '' };
 }

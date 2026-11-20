@@ -47,12 +47,26 @@ describe('devops allow-list (card section 6, as narrowed by WP-213)', () => {
     expect(env.length).toBeGreaterThan(0);
     for (const t of env) {
       expect(t).toMatch(
-        /arima-env\.mjs (check|(status|logs|smoke|up|down) (staging|preview-\*))( \*)?\)$/,
+        /arima-env\.mjs"? (check|(status|logs|smoke|up|down) (staging|preview-\*))( \*)?\)$/,
       );
       expect(t).not.toMatch(/backup|restore-test|production/);
     }
     for (const sub of ['status', 'logs', 'smoke', 'up', 'down'])
       expect(env.some((t) => t.includes(` ${sub} staging`))).toBe(true);
+    // The agent file quotes the path, and a rule matches only the spelling it was written in.
+    expect(env.some((t) => t.includes('arima-env.mjs" status staging'))).toBe(true);
+    expect(env.some((t) => t.includes('mjs status staging'))).toBe(true);
+  });
+
+  it('grants every subcommand and target in both path spellings (a missing one denies the call)', () => {
+    const want: string[] = ['check'];
+    for (const sub of ['status', 'logs', 'smoke', 'up', 'down'])
+      for (const target of ['staging', 'preview-*']) want.push(`${sub} ${target}`);
+    for (const w of want) {
+      const quoted = allowed.some((t) => t.includes(`arima-env.mjs" ${w}`));
+      const plain = allowed.some((t) => t.includes(`arima-env.mjs ${w}`));
+      expect({ w, quoted, plain }).toEqual({ w, quoted: true, plain: true });
+    }
   });
 
   it('no other role may run arima-env', () => {

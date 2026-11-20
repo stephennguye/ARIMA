@@ -94,7 +94,7 @@ const TASKS: Partial<Record<UnitKind, string>> = {
   'env-plan':
     'Write docs/ops/env-matrix.md from its template: the local Compose projects (preview-<pr>, staging, production), ports, volumes, capacity limits, the backup and restore plan and the pipeline design (GitHub Actions: ci.yml and security-weekly.yml only). Hosting is the owner machine with Docker Compose; no cloud account or paid service. Cite the SAD and ADRs, and mark guesses as guesses.',
   'deploy-staging':
-    'The host rebuilt staging after a merge and the smoke test failed (the script result is in the packet; the previous version was restored when there was one). Find the cause with arima-env status and logs, and report it with evidence. Do not edit files and do not start or stop anything: propose the fix as a finding or a question.',
+    'The host rebuilt staging after a merge; its result is in the packet. Verify it: run `arima-env status staging` and `arima-env smoke staging`, and report with evidence whether staging is healthy. If it is not, or the result says the smoke test failed, find the cause with `arima-env logs staging` and the Compose file and Dockerfile in the repository (the previous version was restored when there was one) and report it. Do not edit files and do not start or stop anything: propose the fix as a finding or a question.',
   author:
     'Write the one artifact named in the packet from its template, citing sources, and mark guesses as guesses. Propose Notion records through `records` and ask only critical questions.',
   triage:
@@ -122,10 +122,10 @@ export function outputContractFor(kind: UnitKind): string {
       : '';
   return [
     'End your final message with exactly one fenced block whose info string is `arima-report`, containing JSON:',
-    '`schema_version` 1, `run_id` (the id in the title of this packet), `role`, `item`, `status` (`done`, `blocked`, `failed` or `needs_input`), `summary` (at most 600 characters), and as needed `artifacts`, `findings`, `questions`, `decisions`, `assumptions`, `records`.' +
+    '`schema_version` 1, `run_id` (the id in the title of this packet), `role`, `item`, `status` (`done`, `blocked`, `failed` or `needs_input`; when any question has `blocking` true the status MUST be `needs_input` or `blocked`, never `done`),`summary` (at most 600 characters), and as needed `artifacts`, `findings`, `questions`, `decisions`, `assumptions`, `records`.' +
       criteria +
       verdict,
-    'Each of these is a list of objects, never plain strings: `artifacts` {path, kind (code|test|doc|design|api|infra), artifact_id?}; `findings` {severity (blocker|major|minor|nit), location (file:line), claim, evidence, recommendation}; `questions` {question, options [{label, recommendation (true|false)}] (1 to 6), blocking (true|false)}; `decisions` {summary, options_considered [strings], chosen, reversible (true|false), rationale}; `assumptions` {text, basis}.',
+    'Each of these is a list of objects, never plain strings: `artifacts` {path, kind (code|test|doc|design|api|infra), artifact_id?}; `findings` {severity (blocker|major|minor|nit), location (file:line), claim, evidence, recommendation}; `questions` {question, options [{label, recommendation (true|false)}] (1 to 6), blocking (true|false), hard_stop? (one of G0-G4, prod_deploy, secrets_change, budget_exceeded, story_budget, notion_delete, prod_data_migration, new_paid_service, licence, critical_finding, kill_switch, missing_credential: set it when the matter is one of these, with blocking true and no default), default? (what happens if nobody answers: required when blocking is false)}; `decisions` {summary, options_considered [strings], chosen, reversible (true|false), rationale}; `assumptions` {text, basis}. Use exactly the keys listed for each object and no others (an unknown key makes the whole report invalid).',
     'Propose records without ids (use `NEW-1`, `NEW-2` ... to refer between them); the engine issues every id. Ask a question only for a hard-stop matter or a critical blocker; decide everything else and log it as a decision.',
   ].join('\n');
 }
