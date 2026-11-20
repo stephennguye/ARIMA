@@ -555,10 +555,31 @@ function guardQaTests(command: string): Guard | undefined {
   return undefined;
 }
 
+/** Runs that read and report and change nothing (a deploy-staging diagnosis, a tech-lead review). */
+export const isReadOnlyKind = (ctx: GuardContext): boolean =>
+  (ctx.role === 'devops' && ctx.kind === 'deploy-staging') ||
+  (ctx.role === 'tech-lead' && ctx.kind === 'review');
+
+/**
+ * Roles that never read ARIMA's own state: the packet carries what they need, and for QA the run
+ * reports, transcripts and notes of the developer are exactly what independence forbids it to see
+ * (spec 5.8); a review reads the diff, not the author's reasoning.
+ */
+const NO_STATE_READ: ReadonlySet<string> = new Set(['developer', 'qa', 'tech-lead']);
+const stateReadReason = (role: string): string =>
+  `a ${role} run reads nothing under .arima/: the run packet carries every input it needs`;
+
 export function guardBash(command: string, ctx: GuardContext = {}): Guard | undefined {
   const c = withoutMessages(command);
   const lc = c.toLowerCase();
-  if (ctx.role === 'devops' && ctx.kind === 'deploy-staging') {
+  if (ctx.role !== undefined && NO_STATE_READ.has(ctx.role) && /\.arima(?![A-Za-z0-9_])/i.test(c))
+    return { rule: 'protected-state', reason: stateReadReason(ctx.role) };
+  if (ctx.role === 'tech-lead' && ctx.kind === 'review' && WRITE_VERBS.test(c))
+    return {
+      rule: 'read-only-kind',
+      reason: 'a review changes no file; its verdict and findings are in the report',
+    };
+  if (isReadOnlyKind(ctx)) {
     // Read-only kind (judge J-agent:devops, blocker 2): no git command that changes the tree or a ref.
     const WRITING = new Set([
       'add',
@@ -586,7 +607,7 @@ export function guardBash(command: string, ctx: GuardContext = {}): Guard | unde
         return {
           rule: 'read-only-kind',
           reason:
-            'a deploy-staging run changes no file and makes no commit; put the proposed fix in findings',
+            'this kind of run changes no file and makes no commit; put the proposed change in findings',
         };
     }
   }
@@ -749,6 +770,20 @@ export function guardTool(
       rule: 'no-outbox',
       reason: 'a developer run proposes through its report; the engine writes the outbox entries',
     };
+  if (ctx.role === 'tech-lead' && ctx.kind === 'review' && WRITE_TOOLS.has(tool))
+    return {
+      rule: 'read-only-kind',
+      reason: 'a review edits no file; its verdict and findings are in the report',
+    };
+  if (
+    ctx.role !== undefined &&
+    NO_STATE_READ.has(ctx.role) &&
+    ['Read', 'Glob', 'Grep'].includes(tool) &&
+    ['path', 'file_path', 'glob', 'pattern'].some(
+      (k) => typeof input[k] === 'string' && /(^|\/)\.arima(\/|$)/.test(canon(input[k] as string)),
+    )
+  )
+    return { rule: 'protected-state', reason: stateReadReason(ctx.role) };
   if (FILE_TOOLS.has(tool)) {
     for (const p of pathsOf(input)) {
       if (isSecretPath(p)) {

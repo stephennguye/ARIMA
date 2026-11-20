@@ -67,7 +67,8 @@ describe('output contract and task for a develop unit', () => {
   const text = outputContractFor('develop');
   it('asks for criteria_map with evidence and never a verdict', () => {
     expect(text).toContain('criteria_map');
-    expect(text).toContain('`met` needs evidence');
+    expect(text).toContain('`met` needs at least one');
+    expect(text).toContain('criterion (the criterion id and its text');
     expect(text).not.toContain('Include `verdict`');
   });
   it('lets a question be addressed to a role (a consult) and names the hard-stop ids a developer meets', () => {

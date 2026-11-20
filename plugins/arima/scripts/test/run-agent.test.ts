@@ -131,7 +131,8 @@ describe('runAgent: a normal run', () => {
 
   it('omits --model for a placeholder and --agent when no agent file exists', async () => {
     const s = setup();
-    await go(s, 'success');
+    // A role whose agent file does not exist yet (the developer's does since WP-210).
+    await go(s, 'success', { role: 'security' });
     const argv = recorded(s).argv;
     expect(argv).not.toContain('--model');
     expect(argv).not.toContain('--agent');

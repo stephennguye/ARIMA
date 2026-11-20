@@ -1,6 +1,6 @@
 # Agent card: developer
 
-> Status: planned; all open decisions resolved (section 12, under `09-owner-decisions.md`). Work packages: WP-210 (develop kinds), WP-219 (walking-skeleton kind), WP-403 (hotfix flow). Spec: 5.7, 6.3 step 3, 6.4, 7.1, 7.7, 10.2. Contracts: `03-contracts.md` sections 3 (packet, report, records), 4 (outbox), 7 (environment), 9 (state machine), 10. The spec gives mission, triggers, reads, writes, tools, must-nots, done-when and escalation; this card adds the exact inputs, handling, validation, conditions and evals.
+> Status: WP-210 in progress (develop kind: card review, fixtures, envelope tests, agent file done; evals in section 10); all open decisions resolved (section 12, under `09-owner-decisions.md`). Work packages: WP-210 (develop kinds), WP-219 (walking-skeleton kind), WP-403 (hotfix flow). Spec: 5.7, 6.3 step 3, 6.4, 7.1, 7.7, 10.2. Contracts: `03-contracts.md` sections 3 (packet, report, records), 4 (outbox), 7 (environment), 9 (state machine), 10. The spec gives mission, triggers, reads, writes, tools, must-nots, done-when and escalation; this card adds the exact inputs, handling, validation, conditions and evals.
 
 ## 1. Identity and purpose
 
@@ -57,7 +57,9 @@ IF the item is not Ready THEN the dispatcher never creates the unit. IF attempt 
 
 ## 6. Tools and permissions
 
-Allow-list = `allowedTools('developer')` after WP-111 and WP-210: Read, Glob, Grep, Edit, Write (inside the worktree; **not** `./tests/e2e/**`), read-only git, `git add/commit/switch/checkout`, `gh pr view`, `npm test|run|ci`, WebFetch. **Dropped by WP-111:** `git push` and `gh pr create` (the host publishes) and the GitHub token (D-37); the guard still blocks pushes to the default branch. No `npx`, no `docker`, no outbox write.
+Allow-list = `allowedTools('developer')` after WP-111 and WP-210: Read, Glob, Grep, Edit, Write (inside the worktree; **not** `./tests/e2e/**`), read-only git, `git add/commit/switch/checkout`, `npm test|run|ci`, WebFetch. **Dropped by WP-111 (D-49):** `git push`, every `gh` command (including `gh pr view`: the host reads the PR, CI and review threads into the packet) and the GitHub token; the guard blocks any push in a role context. No `npx`, no `docker`, no outbox write (a guard rule `no-outbox` repeats it for the file tools).
+
+**Known residual risk (R-01, accepted in the spec):** `npm test` and `npm run` run code the developer wrote. The devops judge rule "no role runs code it can write" cannot hold for the one role whose job is to write and run the app's tests; the compensating controls are: the child environment carries no token, the guard blocks secret files, secret variables, `--node-options`, `--prefix`/`-C`, `--script-shell`, push and `gh` in any command, the host publish script refuses `tests/e2e/**`, workflows and protected paths in the diff, CI re-runs everything on the host's pull request, and the Docker sandbox (WP-190, ADR-0006) contains it once `runtime.sandbox: docker` is the default (after Stage 5, D-51).
 
 **Running the app's tests with a database (local Docker, D-47):** the developer never runs Docker. For stories that need PostgreSQL, the host creates a throwaway Compose project `test-<unit_id>` (database only, own named volume) before the run, passes its URL as the env variable `ARIMA_TEST_DATABASE_URL`, and removes the project afterwards; `npm run test:integration` reads that variable. Unit tests need no service. This keeps containers outside the agent's reach and is portable to K3s later (configuration by environment variables).
 
@@ -68,7 +70,7 @@ Allow-list = `allowedTools('developer')` after WP-111 and WP-210: Read, Glob, Gr
 | Read or set secrets | deny rules, guard, env allow-list | Enforced for tools; advisory via scripts until sandbox |
 | Touch another worktree or `main` | worktree cwd + guard path rules | Partly enforced |
 | Add a paid service or non-approved licence | CI licence check, packet condition, report review | CI enforced (WP-404 for the hard stop) |
-| Weaken or edit the QA e2e tests | deny `Write` and `Edit` on `./tests/e2e/**` for the role | Enforced for file tools (WP-210); CI runs QA's tests unchanged |
+| Weaken or edit the QA e2e tests | deny `Write`, `Edit` and `MultiEdit` on `./tests/e2e/**` for the role; guard rule `protected-tests` (file tools and shell commands that write, move, delete, add or restore a path under `tests/e2e`); the host publish script refuses such a diff | Enforced for file tools and direct shell commands (WP-210); an indirect shell write (a script the agent writes) is caught at publish; CI runs QA's tests unchanged |
 | Run Docker, `npx`, or any command outside the list | not in the allow-list; guard | Enforced |
 | Add an AI attribution line to a commit, PR or comment | commit hook and PR template validator (D-48) | Enforced (WP-113) |
 
@@ -93,7 +95,7 @@ Allow-list = `allowedTools('developer')` after WP-111 and WP-210: Read, Glob, Gr
 
 ## 9. Budget and cost
 
-Run cap: min(`budget.per_run_cap`, remaining story budget); expected $0.50 (S) to $2.00 (L) per run. Turn cap: 40 (S) / 60 (M) / 80 (L). Both are **adopted defaults** held in the dispatcher's size table (WP-105) and tuned from the ledger by the estimate-accuracy metric (WP-131); measured values go into the results table below.
+Run cap: min(`budget.per_run_cap`, remaining story budget); expected $0.50 (S) to $2.00 (L) per run. Turn cap: the `TURN_CAPS` table in `dispatch-units.ts` (develop S 30, M 50, L 80; the one table, this card keeps no numbers of its own). Both are **adopted defaults** and tuned from the ledger by the estimate-accuracy metric (WP-131); measured values go into the results table below.
 
 ## 10. Test and eval plan
 

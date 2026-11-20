@@ -53,7 +53,7 @@ const NPM_TEST = [...bash('npm test'), ...bash('npm run'), ...bash('npm ci')];
  * Merging and pushing to the default branch are not here on purpose: they belong to one merge
  * script (v0.2, step 1.7) and the guard hook blocks them for every agent.
  */
-export function allowedTools(role: Role, scriptsDir: string): string[] {
+export function allowedTools(role: Role, scriptsDir: string, kind?: string): string[] {
   const read = ['Read', 'Glob', 'Grep'];
   // The agent files quote the path (`node "${CLAUDE_PLUGIN_ROOT}/..."`), which a rule matches only if it
   // is spelled the same way, so both spellings are granted (found by the devops real-agent evals).
@@ -110,8 +110,29 @@ export function allowedTools(role: Role, scriptsDir: string): string[] {
         OUTBOX,
         'WebFetch',
       ];
-    case 'tech-lead':
-      return [...read, OUTBOX, ...GIT_READ, ...NPM_TEST, 'WebFetch'];
+    case 'tech-lead': {
+      // A review reads a diff and writes nothing: the verdict and findings are in its report and the
+      // host posts them (D-49). No outbox (proposals travel in the report) and no `npm`: a review does
+      // not run the author's code, CI does (WP-212, judge rule "no role runs code from another role").
+      const base = [...read, ...GIT_READ, 'WebFetch'];
+      // Scoped grants for the kinds that edit a document (WP-212 acceptance; their agent sections are WP-312 and WP-219).
+      if (kind === 'adr-review')
+        return [
+          ...base,
+          'Edit(./docs/architecture/adr/**)',
+          ...bash('git add'),
+          ...bash('git commit'),
+        ];
+      if (kind === 'conventions')
+        return [
+          ...base,
+          'Write(./docs/engineering/**)',
+          'Edit(./docs/engineering/**)',
+          ...bash('git add'),
+          ...bash('git commit'),
+        ];
+      return base;
+    }
     case 'developer':
       return [
         ...read,
@@ -178,7 +199,8 @@ export function allowedTools(role: Role, scriptsDir: string): string[] {
  * the hooks do, and none of the GitHub commands that merge, publish or change settings. The guard
  * hook repeats these as a second layer because rule matching is only as good as its patterns.
  */
-export function deniedTools(role?: Role): string[] {
+export function deniedTools(role?: Role, kind?: string): string[] {
+  void kind;
   const out = [
     'mcp__*notion*',
     'Read(./.env)',

@@ -19639,7 +19639,7 @@ var GIT_READ = [
   ...bash("git fetch")
 ];
 var NPM_TEST = [...bash("npm test"), ...bash("npm run"), ...bash("npm ci")];
-function allowedTools(role, scriptsDir) {
+function allowedTools(role, scriptsDir, kind) {
   const read = ["Read", "Glob", "Grep"];
   const nodeScript = (name, rest = "") => [
     ...bash(`node ${scriptsDir}/${name}.mjs${rest}`),
@@ -19694,8 +19694,25 @@ function allowedTools(role, scriptsDir) {
         OUTBOX,
         "WebFetch"
       ];
-    case "tech-lead":
-      return [...read, OUTBOX, ...GIT_READ, ...NPM_TEST, "WebFetch"];
+    case "tech-lead": {
+      const base = [...read, ...GIT_READ, "WebFetch"];
+      if (kind === "adr-review")
+        return [
+          ...base,
+          "Edit(./docs/architecture/adr/**)",
+          ...bash("git add"),
+          ...bash("git commit")
+        ];
+      if (kind === "conventions")
+        return [
+          ...base,
+          "Write(./docs/engineering/**)",
+          "Edit(./docs/engineering/**)",
+          ...bash("git add"),
+          ...bash("git commit")
+        ];
+      return base;
+    }
     case "developer":
       return [
         ...read,
@@ -19755,7 +19772,8 @@ function allowedTools(role, scriptsDir) {
       ];
   }
 }
-function deniedTools(role) {
+function deniedTools(role, kind) {
+  void kind;
   const out = [
     "mcp__*notion*",
     "Read(./.env)",
@@ -22024,7 +22042,7 @@ ${extra}` : ""}`;
 }
 function outputContractFor(kind) {
   const verdict = REVIEW_KINDS.has(kind) ? " Include `verdict` (`result` and `reasons`)." : "";
-  const criteria = kind === "develop" || kind === "qa" ? " Include `criteria_map` (every criterion with `met`, `unmet` or `unclear` and evidence as `file:line` or a test case id; `met` needs evidence)." : "";
+  const criteria = kind === "develop" || kind === "qa" ? ' Include `criteria_map`: a list of objects {criterion (the criterion id and its text, for example "AC-1: the total is the sum of the lines"), status (`met`, `unmet` or `unclear`), evidence (a list of strings, each `file:line` or a test case id; `met` needs at least one)}, one for every acceptance criterion.' : "";
   return [
     "End your final message with exactly one fenced block whose info string is `arima-report`, containing JSON:",
     "`schema_version` 1, `run_id` (the id in the title of this packet), `role`, `item`, `status` (`done`, `blocked`, `failed` or `needs_input`; when any question has `blocking` true the status MUST be `needs_input` or `blocked`, never `done`),`summary` (at most 600 characters), and as needed `artifacts`, `findings`, `questions`, `decisions`, `assumptions`, `records`." + criteria + verdict,
@@ -23891,9 +23909,9 @@ function buildClaudeArgs(o, agentName, scriptsGlob, pluginDir = pluginRoot()) {
     "--permission-mode",
     "dontAsk",
     "--allowedTools",
-    allowedTools(o.role, scriptsGlob).join(","),
+    allowedTools(o.role, scriptsGlob, o.kind).join(","),
     "--disallowedTools",
-    deniedTools(o.role).join(",")
+    deniedTools(o.role, o.kind).join(",")
   ];
   args.push("--plugin-dir", pluginDir);
   if (o.config.isolateUserSettings !== false) args.push(...ISOLATION_FLAGS);

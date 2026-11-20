@@ -18703,7 +18703,7 @@ var GIT_READ = [
   ...bash("git fetch")
 ];
 var NPM_TEST = [...bash("npm test"), ...bash("npm run"), ...bash("npm ci")];
-function allowedTools(role, scriptsDir) {
+function allowedTools(role, scriptsDir, kind) {
   const read = ["Read", "Glob", "Grep"];
   const nodeScript = (name, rest = "") => [
     ...bash(`node ${scriptsDir}/${name}.mjs${rest}`),
@@ -18758,8 +18758,25 @@ function allowedTools(role, scriptsDir) {
         OUTBOX,
         "WebFetch"
       ];
-    case "tech-lead":
-      return [...read, OUTBOX, ...GIT_READ, ...NPM_TEST, "WebFetch"];
+    case "tech-lead": {
+      const base = [...read, ...GIT_READ, "WebFetch"];
+      if (kind === "adr-review")
+        return [
+          ...base,
+          "Edit(./docs/architecture/adr/**)",
+          ...bash("git add"),
+          ...bash("git commit")
+        ];
+      if (kind === "conventions")
+        return [
+          ...base,
+          "Write(./docs/engineering/**)",
+          "Edit(./docs/engineering/**)",
+          ...bash("git add"),
+          ...bash("git commit")
+        ];
+      return base;
+    }
     case "developer":
       return [
         ...read,
@@ -18819,7 +18836,8 @@ function allowedTools(role, scriptsDir) {
       ];
   }
 }
-function deniedTools(role) {
+function deniedTools(role, kind) {
+  void kind;
   const out = [
     "mcp__*notion*",
     "Read(./.env)",
@@ -20939,9 +20957,9 @@ function buildClaudeArgs(o, agentName, scriptsGlob, pluginDir = pluginRoot()) {
     "--permission-mode",
     "dontAsk",
     "--allowedTools",
-    allowedTools(o.role, scriptsGlob).join(","),
+    allowedTools(o.role, scriptsGlob, o.kind).join(","),
     "--disallowedTools",
-    deniedTools(o.role).join(",")
+    deniedTools(o.role, o.kind).join(",")
   ];
   args.push("--plugin-dir", pluginDir);
   if (o.config.isolateUserSettings !== false) args.push(...ISOLATION_FLAGS);

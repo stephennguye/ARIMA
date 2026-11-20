@@ -16057,10 +16057,20 @@ function guardQaTests(command) {
   }
   return void 0;
 }
+var isReadOnlyKind = (ctx) => ctx.role === "devops" && ctx.kind === "deploy-staging" || ctx.role === "tech-lead" && ctx.kind === "review";
+var NO_STATE_READ = /* @__PURE__ */ new Set(["developer", "qa", "tech-lead"]);
+var stateReadReason = (role) => `a ${role} run reads nothing under .arima/: the run packet carries every input it needs`;
 function guardBash(command, ctx = {}) {
   const c = withoutMessages(command);
   const lc = c.toLowerCase();
-  if (ctx.role === "devops" && ctx.kind === "deploy-staging") {
+  if (ctx.role !== void 0 && NO_STATE_READ.has(ctx.role) && /\.arima(?![A-Za-z0-9_])/i.test(c))
+    return { rule: "protected-state", reason: stateReadReason(ctx.role) };
+  if (ctx.role === "tech-lead" && ctx.kind === "review" && WRITE_VERBS.test(c))
+    return {
+      rule: "read-only-kind",
+      reason: "a review changes no file; its verdict and findings are in the report"
+    };
+  if (isReadOnlyKind(ctx)) {
     const WRITING = /* @__PURE__ */ new Set([
       "add",
       "commit",
@@ -16086,7 +16096,7 @@ function guardBash(command, ctx = {}) {
       if (h?.head === "git" && WRITING.has(h.rest.find((a) => !a.startsWith("-")) ?? ""))
         return {
           rule: "read-only-kind",
-          reason: "a deploy-staging run changes no file and makes no commit; put the proposed fix in findings"
+          reason: "this kind of run changes no file and makes no commit; put the proposed change in findings"
         };
     }
   }
@@ -16190,6 +16200,15 @@ function guardTool(tool, input, ctx = {}) {
       rule: "no-outbox",
       reason: "a developer run proposes through its report; the engine writes the outbox entries"
     };
+  if (ctx.role === "tech-lead" && ctx.kind === "review" && WRITE_TOOLS.has(tool))
+    return {
+      rule: "read-only-kind",
+      reason: "a review edits no file; its verdict and findings are in the report"
+    };
+  if (ctx.role !== void 0 && NO_STATE_READ.has(ctx.role) && ["Read", "Glob", "Grep"].includes(tool) && ["path", "file_path", "glob", "pattern"].some(
+    (k) => typeof input[k] === "string" && /(^|\/)\.arima(\/|$)/.test(canon(input[k]))
+  ))
+    return { rule: "protected-state", reason: stateReadReason(ctx.role) };
   if (FILE_TOOLS.has(tool)) {
     for (const p of pathsOf(input)) {
       if (isSecretPath(p)) {
