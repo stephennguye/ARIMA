@@ -20,7 +20,7 @@ const binNames = readdirSync(path.join(PLUGIN_ROOT, 'scripts', 'src', 'bin'))
   .map((f) => f.replace(/\.ts$/, ''));
 
 describe('skills (spec §14)', () => {
-  it.each(['init', 'status', 'pause', 'cost', 'plan', 'digest'])(
+  it.each(['init', 'status', 'pause', 'cost', 'plan', 'digest', 'review'])(
     '%s has valid frontmatter',
     (name) => {
       const { front } = skill(name);
@@ -40,7 +40,7 @@ describe('skills (spec §14)', () => {
   });
 
   it('only reference scripts that exist (src/bin), and none grants unrestricted Bash', () => {
-    for (const name of ['init', 'status', 'pause', 'cost', 'plan', 'digest']) {
+    for (const name of ['init', 'status', 'pause', 'cost', 'plan', 'digest', 'review']) {
       const { front, body } = skill(name);
       const refs = [
         ...`${String(front['allowed-tools'])}\n${body}`.matchAll(

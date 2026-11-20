@@ -829,7 +829,7 @@ packages:
   - id: WP-217
     stage: 2
     track: skill
-    status: planned
+    status: done
     title: "Milestone review and the learning loop: review page, human veto reopens a story with a BUG, retro inputs from ledger and findings, lessons and project overrides"
     deps:
       - WP-140

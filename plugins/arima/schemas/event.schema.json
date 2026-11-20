@@ -25,7 +25,8 @@
         "deploy.staging", "deploy.preview", "deploy.production", "deploy.rollback",
         "probe.recorded", "meeting.held", "digest.published",
         "phase.step_done", "phase.pilot_failed", "team.changed",
-        "release.rc_tagged", "incident.opened", "incident.closed", "cr.decided", "lesson.applied"
+        "release.rc_tagged", "incident.opened", "incident.closed", "cr.decided", "lesson.applied",
+        "milestone.review_opened", "milestone.review_closed"
       ]
     },
     "actor": { "type": "string", "description": "Role name, \"human:<person>\" or \"system\"" },

@@ -10126,11 +10126,11 @@ var require_validate = __commonJS({
         jsonPointer = $data;
         data = names_1.default.rootData;
       } else {
-        const matches = RELATIVE_JSON_POINTER.exec($data);
-        if (!matches)
+        const matches2 = RELATIVE_JSON_POINTER.exec($data);
+        if (!matches2)
           throw new Error(`Invalid JSON-pointer: ${$data}`);
-        const up = +matches[1];
-        jsonPointer = matches[2];
+        const up = +matches2[1];
+        jsonPointer = matches2[2];
         if (jsonPointer === "#") {
           if (up >= dataLevel)
             throw new Error(errorMsg("property/index", up));
@@ -11049,11 +11049,11 @@ var require_schemes = __commonJS({
         urnComponent.error = "URN can not be parsed";
         return urnComponent;
       }
-      const matches = urnComponent.path.match(URN_REG);
-      if (matches && matches[0] === urnComponent.path) {
+      const matches2 = urnComponent.path.match(URN_REG);
+      if (matches2 && matches2[0] === urnComponent.path) {
         const scheme = options2.scheme || urnComponent.scheme || "urn";
-        urnComponent.nid = matches[1].toLowerCase();
-        urnComponent.nss = matches[2];
+        urnComponent.nid = matches2[1].toLowerCase();
+        urnComponent.nss = matches2[2];
         const urnScheme = `${scheme}:${options2.nid || urnComponent.nid}`;
         const schemeHandler = getSchemeHandler(urnScheme);
         urnComponent.path = void 0;
@@ -11374,8 +11374,8 @@ var require_fast_uri = __commonJS({
     var URI_PARSE = /^(?:([^#/:?]+):)?(?:\/\/((?:([^#/?@]*)@)?(\[[^#/?\]]+\]|[^#/:?]*)(?::(\d*))?))?([^#?]*)(?:\?([^#]*))?(?:#((?:.|[\n\r])*))?/u;
     var AUTHORITY_PREFIX = /^(?:[^#/:?]+:)?\/\/([^/?#]*)/;
     var AUTHORITY_INTRODUCER_REGION = /^(?:[^#/:?]+:)?([/\\\t\n\r]*)/;
-    function getParseError(parsed, matches) {
-      if (matches[2] !== void 0 && parsed.path && parsed.path[0] !== "/") {
+    function getParseError(parsed, matches2) {
+      if (matches2[2] !== void 0 && parsed.path && parsed.path[0] !== "/") {
         return 'URI path must start with "/" when authority is present.';
       }
       if (typeof parsed.port === "number" && (parsed.port < 0 || parsed.port > 65535)) {
@@ -11397,9 +11397,9 @@ var require_fast_uri = __commonJS({
     function isIPLiteral(host) {
       return host[0] === "[" && host[host.length - 1] === "]";
     }
-    function hasMalformedComponentPercentEncoding(matches) {
-      const host = matches[4];
-      return hasMalformedPercentEncoding(matches[3]) || host !== void 0 && !isIPLiteral(host) && hasMalformedPercentEncoding(host) || hasMalformedPercentEncoding(matches[6]) || hasMalformedPercentEncoding(matches[7]) || hasMalformedPercentEncoding(matches[8]);
+    function hasMalformedComponentPercentEncoding(matches2) {
+      const host = matches2[4];
+      return hasMalformedPercentEncoding(matches2[3]) || host !== void 0 && !isIPLiteral(host) && hasMalformedPercentEncoding(host) || hasMalformedPercentEncoding(matches2[6]) || hasMalformedPercentEncoding(matches2[7]) || hasMalformedPercentEncoding(matches2[8]);
     }
     function canonicalizeHost(parsed, options2, schemeHandler, isIP) {
       if (hasForbiddenDomainHost(parsed, options2, schemeHandler, isIP)) {
@@ -11474,15 +11474,15 @@ var require_fast_uri = __commonJS({
           }
         }
       }
-      const matches = uri.match(URI_PARSE);
-      if (matches) {
-        parsed.scheme = matches[1];
-        parsed.userinfo = matches[3];
-        parsed.host = matches[4];
-        parsed.port = parseInt(matches[5], 10);
-        parsed.path = matches[6] || "";
-        parsed.query = matches[7];
-        parsed.fragment = matches[8];
+      const matches2 = uri.match(URI_PARSE);
+      if (matches2) {
+        parsed.scheme = matches2[1];
+        parsed.userinfo = matches2[3];
+        parsed.host = matches2[4];
+        parsed.port = parseInt(matches2[5], 10);
+        parsed.path = matches2[6] || "";
+        parsed.query = matches2[7];
+        parsed.fragment = matches2[8];
         if (parsed.scheme !== void 0) {
           if (VALID_SCHEME.test(parsed.scheme)) {
             parsed.scheme = parsed.scheme.toLowerCase();
@@ -11491,14 +11491,14 @@ var require_fast_uri = __commonJS({
             malformedScheme = true;
           }
         }
-        malformedPercentEncoding = hasMalformedComponentPercentEncoding(matches);
+        malformedPercentEncoding = hasMalformedComponentPercentEncoding(matches2);
         if (malformedPercentEncoding) {
           parsed.error = parsed.error || "URI contains malformed percent-encoding.";
         }
         if (isNaN(parsed.port)) {
-          parsed.port = matches[5];
+          parsed.port = matches2[5];
         }
-        const parseError = getParseError(parsed, matches);
+        const parseError = getParseError(parsed, matches2);
         if (parseError !== void 0) {
           parsed.error = parsed.error || parseError;
           malformedAuthorityOrPort = true;
@@ -14923,12 +14923,12 @@ var require_formats = __commonJS({
     var DATE = /^(\d\d\d\d)-(\d\d)-(\d\d)$/;
     var DAYS = [0, 31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
     function date2(str) {
-      const matches = DATE.exec(str);
-      if (!matches)
+      const matches2 = DATE.exec(str);
+      if (!matches2)
         return false;
-      const year = +matches[1];
-      const month = +matches[2];
-      const day = +matches[3];
+      const year = +matches2[1];
+      const month = +matches2[2];
+      const day = +matches2[3];
       return month >= 1 && month <= 12 && day >= 1 && day <= (month === 2 && isLeapYear(year) ? 29 : DAYS[month]);
     }
     function compareDate(d1, d2) {
@@ -14943,16 +14943,16 @@ var require_formats = __commonJS({
     var TIME = /^(\d\d):(\d\d):(\d\d(?:\.\d+)?)(z|([+-])(\d\d)(?::?(\d\d))?)?$/i;
     function getTime(strictTimeZone) {
       return function time(str) {
-        const matches = TIME.exec(str);
-        if (!matches)
+        const matches2 = TIME.exec(str);
+        if (!matches2)
           return false;
-        const hr = +matches[1];
-        const min = +matches[2];
-        const sec = +matches[3];
-        const tz = matches[4];
-        const tzSign = matches[5] === "-" ? -1 : 1;
-        const tzH = +(matches[6] || 0);
-        const tzM = +(matches[7] || 0);
+        const hr = +matches2[1];
+        const min = +matches2[2];
+        const sec = +matches2[3];
+        const tz = matches2[4];
+        const tzSign = matches2[5] === "-" ? -1 : 1;
+        const tzH = +(matches2[6] || 0);
+        const tzM = +(matches2[7] || 0);
         if (tzH > 23 || tzM > 59 || strictTimeZone && !tz)
           return false;
         if (hr <= 23 && min <= 59 && sec < 60)
@@ -19869,97 +19869,9 @@ async function guardInteractive(o) {
   return void 0;
 }
 
-// plugins/arima/scripts/src/state.ts
-import { execFileSync } from "node:child_process";
-import {
-  appendFileSync as appendFileSync2,
-  cpSync,
-  existsSync as existsSync7,
-  mkdirSync as mkdirSync5,
-  mkdtempSync,
-  readFileSync as readFileSync7,
-  realpathSync,
-  readdirSync as readdirSync2,
-  rmSync as rmSync3,
-  statSync as statSync2,
-  writeFileSync as writeFileSync4
-} from "node:fs";
-import path10 from "node:path";
-var StateError = class extends Error {
-};
-var DEFAULT_BRANCH = "arima-state";
-var MAX_SCAN_BYTES = 64 * 1024 * 1024;
-function git(cwd, args, input) {
-  try {
-    return execFileSync("git", args, {
-      cwd,
-      encoding: "utf8",
-      input,
-      stdio: ["pipe", "pipe", "pipe"]
-    }).trimEnd();
-  } catch (e) {
-    const err = e;
-    const detail = (err.stderr ? String(err.stderr) : err.message).trim();
-    throw new StateError(`git ${args.join(" ")} failed: ${detail}`, { cause: e });
-  }
-}
-function gitOk(cwd, args) {
-  try {
-    execFileSync("git", args, { cwd, stdio: "ignore" });
-    return true;
-  } catch {
-    return false;
-  }
-}
-function resolve(o) {
-  const repo = path10.resolve(o.projectDir);
-  if (!existsSync7(repo) || !gitOk(repo, ["rev-parse", "--git-dir"])) {
-    throw new StateError(`${repo} is not a git repository`);
-  }
-  const norm = (p) => {
-    const real = realpathSync.native(p);
-    return process.platform === "win32" ? real.toLowerCase() : real;
-  };
-  if (norm(git(repo, ["rev-parse", "--show-toplevel"])) !== norm(repo)) {
-    throw new StateError(`${repo} is not the root of a git repository`);
-  }
-  const branch = o.branch ?? DEFAULT_BRANCH;
-  if (branch === (o.defaultBranch ?? "main") || branch === "main" || branch === "master") {
-    throw new StateError(
-      `refusing to use "${branch}" as the state branch; ARIMA never touches the default branch`
-    );
-  }
-  const remote = o.remote ?? "origin";
-  const hasRemote = git(repo, ["remote"]).split("\n").includes(remote);
-  return { repo, stateDir: path10.join(repo, ".arima"), branch, remote, hasRemote };
-}
-function remotePauseFlag(o) {
-  let r;
-  try {
-    r = resolve(o);
-  } catch {
-    return void 0;
-  }
-  if (!r.hasRemote) return void 0;
-  const ref = `refs/remotes/${r.remote}/${r.branch}`;
-  try {
-    execFileSync("git", ["fetch", "--quiet", r.remote, `+refs/heads/${r.branch}:${ref}`], {
-      cwd: r.repo,
-      stdio: ["ignore", "ignore", "pipe"],
-      timeout: 15e3,
-      env: { ...process.env, GIT_TERMINAL_PROMPT: "0" }
-    });
-  } catch (e) {
-    const msg = String(e.stderr ?? "");
-    if (!/couldn't find remote ref/i.test(msg)) return void 0;
-    return false;
-  }
-  return gitOk(r.repo, ["cat-file", "-e", `${ref}:PAUSE`]);
-}
-
 // plugins/arima/scripts/src/notion/mirror.ts
-import { existsSync as existsSync8, mkdirSync as mkdirSync6, readFileSync as readFileSync8 } from "node:fs";
-import path11 from "node:path";
+import { existsSync as existsSync7, mkdirSync as mkdirSync5, readFileSync as readFileSync7 } from "node:fs";
+import path10 from "node:path";
 
 // plugins/arima/scripts/src/notion/values.ts
 var CHUNK = 2e3;
@@ -20093,13 +20005,13 @@ function markdownToBlocks(markdown) {
 }
 
 // plugins/arima/scripts/src/notion/mirror.ts
-var mirrorDir = (projectDir) => path11.join(projectDir, ".arima", "mirror");
-var mirrorFile = (projectDir, db) => path11.join(mirrorDir(projectDir), `${db}.json`);
-var notionMapFile = (projectDir) => path11.join(projectDir, ".arima", "notion-map.json");
+var mirrorDir = (projectDir) => path10.join(projectDir, ".arima", "mirror");
+var mirrorFile = (projectDir, db) => path10.join(mirrorDir(projectDir), `${db}.json`);
+var notionMapFile = (projectDir) => path10.join(projectDir, ".arima", "notion-map.json");
 function readNotionMap(projectDir) {
   const file = notionMapFile(projectDir);
-  if (!existsSync8(file)) throw new Error(`${file} not found; run arima-notion map first`);
-  const data = JSON.parse(readFileSync8(file, "utf8"));
+  if (!existsSync7(file)) throw new Error(`${file} not found; run arima-notion map first`);
+  const data = JSON.parse(readFileSync7(file, "utf8"));
   const validate = getValidator("notion-map");
   if (!validate(data)) {
     throw new Error(`Invalid ${file}: ${(validate.errors ?? []).map(describeError).join("; ")}`);
@@ -20117,11 +20029,11 @@ function toMirrorRow(raw) {
 }
 function readMirror(projectDir, db) {
   const file = mirrorFile(projectDir, db);
-  if (!existsSync8(file)) return void 0;
-  return JSON.parse(readFileSync8(file, "utf8"));
+  if (!existsSync7(file)) return void 0;
+  return JSON.parse(readFileSync7(file, "utf8"));
 }
 function writeMirror(projectDir, m) {
-  mkdirSync6(mirrorDir(projectDir), { recursive: true });
+  mkdirSync5(mirrorDir(projectDir), { recursive: true });
   writeFileAtomic(mirrorFile(projectDir, m.database), `${JSON.stringify(m, null, 2)}
 `);
 }
@@ -20150,16 +20062,72 @@ function findRow(m, id) {
   return m.rows.find((r) => r.page_id === id);
 }
 
+// plugins/arima/scripts/src/notion/allocations.ts
+import { existsSync as existsSync8, mkdirSync as mkdirSync6, readFileSync as readFileSync8 } from "node:fs";
+import path11 from "node:path";
+
+// plugins/arima/scripts/src/ids.ts
+var ID_WIDTHS = {
+  REQ: 3,
+  NFR: 3,
+  EP: 2,
+  US: 3,
+  TC: 4,
+  BUG: 3,
+  ADR: 4,
+  RISK: 3,
+  DEC: 4,
+  Q: 3,
+  MS: 2,
+  CR: 3,
+  INC: 3,
+  LES: 3
+};
+var ID_PREFIXES = Object.keys(ID_WIDTHS);
+
+// plugins/arima/scripts/src/notion/allocations.ts
+var ID_PREFIX_BY_DB = {
+  requirements: "REQ",
+  epics: "EP",
+  stories: "US",
+  test_cases: "TC",
+  bugs: "BUG",
+  milestones: "MS",
+  decisions: "DEC",
+  questions: "Q",
+  change_requests: "CR",
+  incidents: "INC",
+  risks: "RISK",
+  lessons: "LES"
+};
+var allocationsFile = (projectDir) => path11.join(projectDir, ".arima", "state", "allocations.json");
+function readAllocations(projectDir) {
+  const file = allocationsFile(projectDir);
+  if (!existsSync8(file)) return {};
+  return JSON.parse(readFileSync8(file, "utf8"));
+}
+function allocatedTo(projectDir, id) {
+  return readAllocations(projectDir)[id];
+}
+var titleProperty = (db) => dbByKey(db).props.find((p) => p.type === "title")?.name;
+var engineEntriesFile = (projectDir) => path11.join(projectDir, ".arima", "state", "engine-entries.json");
+function readEngineEntries(projectDir) {
+  const file = engineEntriesFile(projectDir);
+  if (!existsSync8(file)) return [];
+  return JSON.parse(readFileSync8(file, "utf8"));
+}
+var isEngineEntry = (projectDir, id) => readEngineEntries(projectDir).includes(id);
+
 // plugins/arima/scripts/src/notion/outbox.ts
 import {
-  existsSync as existsSync10,
-  mkdirSync as mkdirSync8,
-  readFileSync as readFileSync10,
-  readdirSync as readdirSync3,
+  existsSync as existsSync9,
+  mkdirSync as mkdirSync7,
+  readFileSync as readFileSync9,
+  readdirSync as readdirSync2,
   renameSync as renameSync2,
-  writeFileSync as writeFileSync5
+  writeFileSync as writeFileSync4
 } from "node:fs";
-import path13 from "node:path";
+import path12 from "node:path";
 
 // plugins/arima/scripts/src/roles.ts
 var ROLES = [
@@ -20221,64 +20189,8 @@ var OUTBOX_FORBIDDEN_PROPERTIES = {
   ux: ["Priority"]
 };
 
-// plugins/arima/scripts/src/notion/allocations.ts
-import { existsSync as existsSync9, mkdirSync as mkdirSync7, readFileSync as readFileSync9 } from "node:fs";
-import path12 from "node:path";
-
-// plugins/arima/scripts/src/ids.ts
-var ID_WIDTHS = {
-  REQ: 3,
-  NFR: 3,
-  EP: 2,
-  US: 3,
-  TC: 4,
-  BUG: 3,
-  ADR: 4,
-  RISK: 3,
-  DEC: 4,
-  Q: 3,
-  MS: 2,
-  CR: 3,
-  INC: 3,
-  LES: 3
-};
-var ID_PREFIXES = Object.keys(ID_WIDTHS);
-
-// plugins/arima/scripts/src/notion/allocations.ts
-var ID_PREFIX_BY_DB = {
-  requirements: "REQ",
-  epics: "EP",
-  stories: "US",
-  test_cases: "TC",
-  bugs: "BUG",
-  milestones: "MS",
-  decisions: "DEC",
-  questions: "Q",
-  change_requests: "CR",
-  incidents: "INC",
-  risks: "RISK",
-  lessons: "LES"
-};
-var allocationsFile = (projectDir) => path12.join(projectDir, ".arima", "state", "allocations.json");
-function readAllocations(projectDir) {
-  const file = allocationsFile(projectDir);
-  if (!existsSync9(file)) return {};
-  return JSON.parse(readFileSync9(file, "utf8"));
-}
-function allocatedTo(projectDir, id) {
-  return readAllocations(projectDir)[id];
-}
-var titleProperty = (db) => dbByKey(db).props.find((p) => p.type === "title")?.name;
-var engineEntriesFile = (projectDir) => path12.join(projectDir, ".arima", "state", "engine-entries.json");
-function readEngineEntries(projectDir) {
-  const file = engineEntriesFile(projectDir);
-  if (!existsSync9(file)) return [];
-  return JSON.parse(readFileSync9(file, "utf8"));
-}
-var isEngineEntry = (projectDir, id) => readEngineEntries(projectDir).includes(id);
-
 // plugins/arima/scripts/src/notion/outbox.ts
-var outboxDir = (projectDir) => path13.join(projectDir, ".arima", "outbox");
+var outboxDir = (projectDir) => path12.join(projectDir, ".arima", "outbox");
 function secretsIn(entry, allowed = /* @__PURE__ */ new Set()) {
   return findSecrets(
     JSON.stringify({ p: entry.properties ?? {}, c: entry.content_markdown ?? "" }),
@@ -20288,14 +20200,14 @@ function secretsIn(entry, allowed = /* @__PURE__ */ new Set()) {
 var UUID = /^[0-9a-f]{8}-?[0-9a-f]{4}-?[0-9a-f]{4}-?[0-9a-f]{4}-?[0-9a-f]{12}$/i;
 function listPending(projectDir, report) {
   const dir = outboxDir(projectDir);
-  if (!existsSync10(dir)) return [];
+  if (!existsSync9(dir)) return [];
   const validate = getValidator("outbox");
   const out = [];
-  for (const name of readdirSync3(dir).filter((f) => f.endsWith(".json")).sort()) {
-    const file = path13.join(dir, name);
+  for (const name of readdirSync2(dir).filter((f) => f.endsWith(".json")).sort()) {
+    const file = path12.join(dir, name);
     let data;
     try {
-      data = JSON.parse(readFileSync10(file, "utf8"));
+      data = JSON.parse(readFileSync9(file, "utf8"));
     } catch {
       settle(
         projectDir,
@@ -20341,11 +20253,11 @@ function settle(projectDir, file, id, result, report) {
     });
   else report.deferred.push(id);
   if (bucket === void 0) return;
-  const dir = path13.join(outboxDir(projectDir), bucket);
-  mkdirSync8(dir, { recursive: true });
-  renameSync2(file, path13.join(dir, `${id}.json`));
-  writeFileSync5(
-    path13.join(dir, `${id}.result.json`),
+  const dir = path12.join(outboxDir(projectDir), bucket);
+  mkdirSync7(dir, { recursive: true });
+  renameSync2(file, path12.join(dir, `${id}.json`));
+  writeFileSync4(
+    path12.join(dir, `${id}.result.json`),
     `${JSON.stringify({ ...result, at: (/* @__PURE__ */ new Date()).toISOString() }, null, 2)}
 `
   );
@@ -20648,6 +20560,263 @@ async function pushOutbox(projectDir, port, map, opts = {}) {
 }
 var errText2 = (e) => e instanceof Error ? e.message : String(e);
 
+// plugins/arima/scripts/src/state-machine.ts
+var ACTORS = [...ROLES, "po", "sponsor", "engine", "merge-script"];
+var OPEN = [
+  "Backlog",
+  "Ready",
+  "In Progress",
+  "In Review",
+  "In QA",
+  "PO Acceptance"
+];
+var BEFORE_DONE = [...OPEN, "Blocked"];
+var AGENTS = [...ROLES, "engine"];
+var TRANSITIONS = [
+  { from: "Backlog", to: "Ready", actors: ["ba"], guards: ["dor_met", "priority_set"] },
+  {
+    from: "Ready",
+    to: "In Progress",
+    actors: ["orchestrator"],
+    guards: ["test_cases_exist", "story_budget_available", "wip_ok"]
+  },
+  {
+    from: "In Progress",
+    to: "In Review",
+    actors: ["developer"],
+    guards: ["pr_open", "ci_green", "criteria_mapped"]
+  },
+  {
+    from: "In Review",
+    to: "In Progress",
+    actors: ["tech-lead"],
+    guards: ["changes_requested"],
+    rework: true
+  },
+  {
+    from: "In Review",
+    to: "In QA",
+    actors: ["tech-lead"],
+    guards: ["review_approved", "preview_deployed"]
+  },
+  {
+    from: "In QA",
+    to: "In Progress",
+    actors: ["qa"],
+    guards: ["test_failed", "bug_linked"],
+    rework: true
+  },
+  {
+    from: "In QA",
+    to: "PO Acceptance",
+    actors: ["merge-script"],
+    guards: ["all_tests_passed", "design_qa_ok", "human_pr_approved"]
+  },
+  { from: "PO Acceptance", to: "Done", actors: ["orchestrator"], guards: ["qa_passed"] },
+  {
+    from: "PO Acceptance",
+    to: "In Progress",
+    actors: ["po", "sponsor"],
+    guards: ["vetoed", "bug_with_reason"]
+  },
+  { from: "Done", to: "Released", actors: ["engine"], guards: ["production_deploy_recorded"] },
+  { from: "open", to: "Blocked", actors: AGENTS, guards: ["reason_recorded"] },
+  { from: "Blocked", to: "previous", actors: ["orchestrator"], guards: ["cause_resolved"] },
+  { from: "before_done", to: "Cancelled", actors: ["po"], guards: ["reason_recorded"] }
+];
+var MAX_FAILED_ATTEMPTS = 3;
+var SPENDING = ["In Progress", "In Review", "In QA"];
+var refuse = (code2, message, failed) => ({
+  ok: false,
+  code: code2,
+  message,
+  ...failed ? { failed } : {}
+});
+var matches = (t2, from) => t2.from === from || t2.from === "open" && OPEN.includes(from) || t2.from === "before_done" && BEFORE_DONE.includes(from);
+function createMachine(table = TRANSITIONS) {
+  const edges = (from) => table.filter((t2) => matches(t2, from));
+  const transition2 = (state, req) => {
+    const { to, actor, facts } = req;
+    const edge = edges(state.status).find(
+      (t2) => t2.to === "previous" ? to === state.blocked_from : t2.to === to
+    );
+    if (edge === void 0) {
+      if (state.status === "Blocked" && to !== "Blocked" && to !== "Cancelled")
+        return refuse(
+          "wrong_return",
+          `a Blocked item returns only to ${state.blocked_from ?? "its previous status"}, not ${to}`
+        );
+      return refuse("no_such_edge", `${state.status} -> ${to} is not a transition`);
+    }
+    if (!edge.actors.includes(actor))
+      return refuse(
+        "actor_not_allowed",
+        `${actor} may not move ${state.status} -> ${to} (allowed: ${edge.actors.join(", ")})`
+      );
+    const failed = edge.guards.filter((g) => facts.guards[g] !== true);
+    if (failed.length > 0)
+      return refuse(
+        "guard_failed",
+        `${state.status} -> ${to}: ${failed.join(", ")} not satisfied`,
+        [...failed]
+      );
+    if (facts.hard_stop === true && to !== "Blocked" && to !== "Cancelled")
+      return refuse(
+        "hard_stop",
+        `${state.status} -> ${to} is a hard-stop matter; only a human decision moves it`
+      );
+    if (SPENDING.includes(to) && facts.budget_available !== true)
+      return refuse("no_budget", `no budget left for a run in ${to}`);
+    const base = { ...state, run_failures: 0 };
+    const finish = (next, redirected, question) => ({
+      ok: true,
+      next,
+      redirected,
+      event: {
+        type: "item.status",
+        actor,
+        data: {
+          from: state.status,
+          to: next.status,
+          attempt: next.attempt,
+          ...redirected ? { requested: to } : {},
+          ...facts.reason ? { reason: facts.reason } : {}
+        }
+      },
+      notion: { property: "Status", value: next.status, by: "engine" },
+      ...question ? { question } : {}
+    });
+    if (edge.rework === true) {
+      const attempt = state.attempt + 1;
+      if (attempt > MAX_FAILED_ATTEMPTS) {
+        const reason = `failed review or QA ${MAX_FAILED_ATTEMPTS} times`;
+        return finish(
+          {
+            ...base,
+            attempt,
+            status: "Blocked",
+            blocked_from: state.status,
+            blocked_reason: reason
+          },
+          true,
+          {
+            reason: "attempt_limit",
+            summary: `${reason}; options: re-scope the story, change the approach, or cancel it`
+          }
+        );
+      }
+      return finish(
+        { ...base, attempt, status: to, blocked_from: null, blocked_reason: null },
+        false
+      );
+    }
+    if (to === "Blocked") {
+      const reason = facts.reason ?? "";
+      return finish(
+        { ...base, status: "Blocked", blocked_from: state.status, blocked_reason: reason },
+        false,
+        { reason: "blocked", summary: reason }
+      );
+    }
+    return finish({ ...base, status: to, blocked_from: null, blocked_reason: null }, false);
+  };
+  return { transition: transition2, edges };
+}
+var machine = createMachine();
+var transition = machine.transition;
+var edgesFrom = machine.edges;
+
+// plugins/arima/scripts/src/item-status.ts
+var ENGINE_STATUS_PREFIX = "st-";
+
+// plugins/arima/scripts/src/state.ts
+import { execFileSync } from "node:child_process";
+import {
+  appendFileSync as appendFileSync2,
+  cpSync,
+  existsSync as existsSync10,
+  mkdirSync as mkdirSync8,
+  mkdtempSync,
+  readFileSync as readFileSync10,
+  realpathSync,
+  readdirSync as readdirSync3,
+  rmSync as rmSync3,
+  statSync as statSync2,
+  writeFileSync as writeFileSync5
+} from "node:fs";
+import path13 from "node:path";
+var StateError = class extends Error {
+};
+var DEFAULT_BRANCH = "arima-state";
+var MAX_SCAN_BYTES = 64 * 1024 * 1024;
+function git(cwd, args, input) {
+  try {
+    return execFileSync("git", args, {
+      cwd,
+      encoding: "utf8",
+      input,
+      stdio: ["pipe", "pipe", "pipe"]
+    }).trimEnd();
+  } catch (e) {
+    const err = e;
+    const detail = (err.stderr ? String(err.stderr) : err.message).trim();
+    throw new StateError(`git ${args.join(" ")} failed: ${detail}`, { cause: e });
+  }
+}
+function gitOk(cwd, args) {
+  try {
+    execFileSync("git", args, { cwd, stdio: "ignore" });
+    return true;
+  } catch {
+    return false;
+  }
+}
+function resolve(o) {
+  const repo = path13.resolve(o.projectDir);
+  if (!existsSync10(repo) || !gitOk(repo, ["rev-parse", "--git-dir"])) {
+    throw new StateError(`${repo} is not a git repository`);
+  }
+  const norm = (p) => {
+    const real = realpathSync.native(p);
+    return process.platform === "win32" ? real.toLowerCase() : real;
+  };
+  if (norm(git(repo, ["rev-parse", "--show-toplevel"])) !== norm(repo)) {
+    throw new StateError(`${repo} is not the root of a git repository`);
+  }
+  const branch = o.branch ?? DEFAULT_BRANCH;
+  if (branch === (o.defaultBranch ?? "main") || branch === "main" || branch === "master") {
+    throw new StateError(
+      `refusing to use "${branch}" as the state branch; ARIMA never touches the default branch`
+    );
+  }
+  const remote = o.remote ?? "origin";
+  const hasRemote = git(repo, ["remote"]).split("\n").includes(remote);
+  return { repo, stateDir: path13.join(repo, ".arima"), branch, remote, hasRemote };
+}
+function remotePauseFlag(o) {
+  let r;
+  try {
+    r = resolve(o);
+  } catch {
+    return void 0;
+  }
+  if (!r.hasRemote) return void 0;
+  const ref = `refs/remotes/${r.remote}/${r.branch}`;
+  try {
+    execFileSync("git", ["fetch", "--quiet", r.remote, `+refs/heads/${r.branch}:${ref}`], {
+      cwd: r.repo,
+      stdio: ["ignore", "ignore", "pipe"],
+      timeout: 15e3,
+      env: { ...process.env, GIT_TERMINAL_PROMPT: "0" }
+    });
+  } catch (e) {
+    const msg = String(e.stderr ?? "");
+    if (!/couldn't find remote ref/i.test(msg)) return void 0;
+    return false;
+  }
+  return gitOk(r.repo, ["cat-file", "-e", `${ref}:PAUSE`]);
+}
+
 // plugins/arima/scripts/src/cli/notion-cli.ts
 var USAGE = `Usage: arima-notion bootstrap --parent <page-id> [--token-env NAME]
        arima-notion map [--root <page-id>] [--migrate] [--project <dir>] [--token-env NAME]
@@ -20771,7 +20940,10 @@ ${USAGE}
     if (command === "push") {
       const report = await pushOutbox(projectDir, port, readNotionMap(projectDir), {
         ...deps.now ? { now: deps.now } : {},
-        ...values["allow-status-writes"] === true ? { allowStatusWrites: true } : {}
+        // The engine's own Status writes (queued by the dispatcher and the interactive commands) carry the st- prefix AND are
+        // registered in the protected engine-entry registry: both are required, so an agent cannot forge one. A human may force
+        // anything with --allow-status-writes.
+        allowStatusWrites: values["allow-status-writes"] === true ? true : { idPrefix: ENGINE_STATUS_PREFIX }
       });
       io.out(
         `outbox: ${report.applied.length} applied, ${report.rejected.length} rejected, ${report.conflicts.length} in conflict (human edit kept), ${report.deferred.length} deferred

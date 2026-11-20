@@ -8,6 +8,7 @@ import { bootstrapTemplate } from '../notion/build.js';
 import { mapWorkspace } from '../notion/mapper.js';
 import { guardInteractive } from '../interactive.js';
 import type { WaitOptions } from '../interactive.js';
+import { ENGINE_STATUS_PREFIX } from '../item-status.js';
 import { checkKillSwitch } from '../killswitch.js';
 import type { PauseSwitchPort } from '../notion/port.js';
 import { remotePauseFlag } from '../state.js';
@@ -170,7 +171,11 @@ export async function runNotionCli(
     if (command === 'push') {
       const report = await pushOutbox(projectDir, port, readNotionMap(projectDir), {
         ...(deps.now ? { now: deps.now } : {}),
-        ...(values['allow-status-writes'] === true ? { allowStatusWrites: true } : {}),
+        // The engine's own Status writes (queued by the dispatcher and the interactive commands) carry the st- prefix AND are
+        // registered in the protected engine-entry registry: both are required, so an agent cannot forge one. A human may force
+        // anything with --allow-status-writes.
+        allowStatusWrites:
+          values['allow-status-writes'] === true ? true : { idPrefix: ENGINE_STATUS_PREFIX },
       });
       io.out(
         `outbox: ${report.applied.length} applied, ${report.rejected.length} rejected, ${report.conflicts.length} in conflict (human edit kept), ${report.deferred.length} deferred\n`,

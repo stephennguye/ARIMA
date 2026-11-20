@@ -122,7 +122,7 @@ Applied by `arima-notion push` in `created_at` order. Per entry, in this order: 
 
 ## 5. Events `[BUILT]` frozen
 
-Types: `run.start run.end run.paused preflight.fail killswitch.on killswitch.off id.issued notion.pull notion.push notion.conflict notion.refused item.status gate.opened gate.decided question.raised question.answered decision.made decision.vetoed tool.used tool.blocked state.push state.pull budget.alert hardstop.hit agent.stop report.accepted report.rejected unit.dispatched unit.retried merge.done merge.refused pr.published deploy.staging deploy.preview deploy.production deploy.rollback probe.recorded meeting.held digest.published phase.step_done phase.pilot_failed team.changed release.rc_tagged incident.opened incident.closed cr.decided lesson.applied sandbox.finished` (the 23 before `sandbox.finished` were added by WP-101, `sandbox.finished` by WP-190; `events.ts`, `event.schema.json` and this list are kept equal by `contracts.test.ts`). Shape: `{ ts, type, actor, run_id?, item?, data? }`. Actor is the role, `system`, `human`, or `unknown` (a headless run whose role variable was lost is **never** `human`). A new event type is added here first, then to `events.ts` and the schema in the same change.
+Types: `run.start run.end run.paused preflight.fail killswitch.on killswitch.off id.issued notion.pull notion.push notion.conflict notion.refused item.status gate.opened gate.decided question.raised question.answered decision.made decision.vetoed tool.used tool.blocked state.push state.pull budget.alert hardstop.hit agent.stop report.accepted report.rejected unit.dispatched unit.retried merge.done merge.refused pr.published deploy.staging deploy.preview deploy.production deploy.rollback probe.recorded meeting.held digest.published phase.step_done phase.pilot_failed team.changed release.rc_tagged incident.opened incident.closed cr.decided lesson.applied sandbox.finished milestone.review_opened milestone.review_closed` (the 23 before `sandbox.finished` were added by WP-101, `sandbox.finished` by WP-190, the two `milestone.review_*` by WP-217; `events.ts`, `event.schema.json` and this list are kept equal by `contracts.test.ts`). Shape: `{ ts, type, actor, run_id?, item?, data? }`. Actor is the role, `system`, `human`, or `unknown` (a headless run whose role variable was lost is **never** `human`). A new event type is added here first, then to `events.ts` and the schema in the same change.
 
 ## 6. Ledger row `[BUILT]` frozen
 
@@ -155,6 +155,8 @@ Types: `run.start run.end run.paused preflight.fail killswitch.on killswitch.off
 | `arima-plan` | 0 ok (or shown with `--dry-run`), 1 failed (for example the milestone to revise is not in the mirror), 2 usage, 4 nothing to plan, 10 config invalid, 11 a run holds the lock (after waiting 60 s), 12 kill switch is on, 13 the story budgets exceed the remaining project budget |
 | `arima-digest` | 0 ok (written, and queued unless `--no-push`), 1 not published (the page looked like it holds a secret), 2 usage (bad or future date), 10 config invalid, 11 a run holds the lock (after waiting 60 s) |
 | `arima-judge` | 0 proceed, 1 proceed after fixes, 2 usage (unknown checkpoint, a brief that states a conclusion, a budget above 5 USD, a missing path), 3 the judge failed or its report is not in the required shape (nothing saved), 20 stop (the builder halts until the owner has read it) |
+| `arima-review` | 0 ok, 1 failed (no open review for that milestone), 2 usage, 10 config invalid, 11 a run holds the lock (after waiting 60 s), 12 kill switch is on |
+| `arima-lessons` | 0 ok, 1 failed, 2 usage, 10 config invalid, 11 a run holds the lock (after waiting 60 s), 62 at least one approved lesson was refused by the validator |
 | `arima-egress-proxy` | 0 stopped by a signal, 2 usage (bad `--port`); runs inside the sandbox sidecar only; allow-listed HTTPS hosts tunnelled, everything else refused with 403 |
 | `arima-status` | 0 ok, 1 other error, 2 usage, 10 invalid config |
 
@@ -166,7 +168,7 @@ Planned scripts reserve these codes (final values are fixed by the package that 
 | `arima-gate` | 0, 2, 40 to 43 criteria unmet, 10-14 |
 | `arima-meeting` | 0, 2, 3, 10-14 |
 | `arima-release` (RC tag, version tag with SBOM, production deploy, rollback; human-run) | 0, 2, 12, 14, 40, 50 to 54 |
-| `arima-phase`, `arima-assign`, `arima-hypercare`, `arima-incident`, `arima-cr`, `arima-lessons` | fixed by WP-320, WP-216, WP-232, WP-403, WP-336, WP-217, WP-150 |
+| `arima-phase`, `arima-assign`, `arima-hypercare`, `arima-incident`, `arima-cr` | fixed by WP-320, WP-216, WP-232, WP-403, WP-336, WP-217, WP-150 |
 
 ## 9. Ticket state machine `[SPEC]` 7.1, `[BUILT]` by WP-107 (`src/state-machine.ts`; table-driven, exhaustively tested)
 

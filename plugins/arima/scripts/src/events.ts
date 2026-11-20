@@ -49,7 +49,9 @@ export type EventType =
   | 'incident.opened'
   | 'incident.closed'
   | 'cr.decided'
-  | 'lesson.applied';
+  | 'lesson.applied'
+  | 'milestone.review_opened'
+  | 'milestone.review_closed';
 
 export interface ArimaEvent {
   /** Absent on events written before the field existed; means 1 (WP-195). */

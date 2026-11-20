@@ -3264,8 +3264,8 @@ var require_utils = __commonJS({
       }
       return ind;
     }
-    function removeDotSegments(path37) {
-      let input = path37;
+    function removeDotSegments(path39) {
+      let input = path39;
       const output = [];
       let nextSlash = -1;
       let len = 0;
@@ -3339,11 +3339,11 @@ var require_utils = __commonJS({
       }
       return output.join("");
     }
-    function removeDotSegmentsRelative(path37) {
-      if (path37 === "" || path37[0] === "/") {
-        return removeDotSegments(path37);
+    function removeDotSegmentsRelative(path39) {
+      if (path39 === "" || path39[0] === "/") {
+        return removeDotSegments(path39);
       }
-      const segments = path37.split("/");
+      const segments = path39.split("/");
       const last = segments.length - 1;
       const output = [];
       let trailingDirectory = false;
@@ -3706,8 +3706,8 @@ var require_schemes = __commonJS({
       }
       if (wsComponent.resourceName) {
         const queryIndex = wsComponent.resourceName.indexOf("?");
-        const path37 = queryIndex === -1 ? wsComponent.resourceName : wsComponent.resourceName.slice(0, queryIndex);
-        wsComponent.path = path37 && path37 !== "/" ? path37 : void 0;
+        const path39 = queryIndex === -1 ? wsComponent.resourceName : wsComponent.resourceName.slice(0, queryIndex);
+        wsComponent.path = path39 && path39 !== "/" ? path39 : void 0;
         wsComponent.query = queryIndex === -1 ? void 0 : wsComponent.resourceName.slice(queryIndex + 1);
         wsComponent.resourceName = void 0;
       }
@@ -8158,17 +8158,17 @@ var require_visit = __commonJS({
     visit.BREAK = BREAK;
     visit.SKIP = SKIP;
     visit.REMOVE = REMOVE;
-    function visit_(key, node, visitor, path37) {
-      const ctrl = callVisitor(key, node, visitor, path37);
+    function visit_(key, node, visitor, path39) {
+      const ctrl = callVisitor(key, node, visitor, path39);
       if (identity.isNode(ctrl) || identity.isPair(ctrl)) {
-        replaceNode(key, path37, ctrl);
-        return visit_(key, ctrl, visitor, path37);
+        replaceNode(key, path39, ctrl);
+        return visit_(key, ctrl, visitor, path39);
       }
       if (typeof ctrl !== "symbol") {
         if (identity.isCollection(node)) {
-          path37 = Object.freeze(path37.concat(node));
+          path39 = Object.freeze(path39.concat(node));
           for (let i = 0; i < node.items.length; ++i) {
-            const ci = visit_(i, node.items[i], visitor, path37);
+            const ci = visit_(i, node.items[i], visitor, path39);
             if (typeof ci === "number")
               i = ci - 1;
             else if (ci === BREAK)
@@ -8179,13 +8179,13 @@ var require_visit = __commonJS({
             }
           }
         } else if (identity.isPair(node)) {
-          path37 = Object.freeze(path37.concat(node));
-          const ck = visit_("key", node.key, visitor, path37);
+          path39 = Object.freeze(path39.concat(node));
+          const ck = visit_("key", node.key, visitor, path39);
           if (ck === BREAK)
             return BREAK;
           else if (ck === REMOVE)
             node.key = null;
-          const cv = visit_("value", node.value, visitor, path37);
+          const cv = visit_("value", node.value, visitor, path39);
           if (cv === BREAK)
             return BREAK;
           else if (cv === REMOVE)
@@ -8206,17 +8206,17 @@ var require_visit = __commonJS({
     visitAsync.BREAK = BREAK;
     visitAsync.SKIP = SKIP;
     visitAsync.REMOVE = REMOVE;
-    async function visitAsync_(key, node, visitor, path37) {
-      const ctrl = await callVisitor(key, node, visitor, path37);
+    async function visitAsync_(key, node, visitor, path39) {
+      const ctrl = await callVisitor(key, node, visitor, path39);
       if (identity.isNode(ctrl) || identity.isPair(ctrl)) {
-        replaceNode(key, path37, ctrl);
-        return visitAsync_(key, ctrl, visitor, path37);
+        replaceNode(key, path39, ctrl);
+        return visitAsync_(key, ctrl, visitor, path39);
       }
       if (typeof ctrl !== "symbol") {
         if (identity.isCollection(node)) {
-          path37 = Object.freeze(path37.concat(node));
+          path39 = Object.freeze(path39.concat(node));
           for (let i = 0; i < node.items.length; ++i) {
-            const ci = await visitAsync_(i, node.items[i], visitor, path37);
+            const ci = await visitAsync_(i, node.items[i], visitor, path39);
             if (typeof ci === "number")
               i = ci - 1;
             else if (ci === BREAK)
@@ -8227,13 +8227,13 @@ var require_visit = __commonJS({
             }
           }
         } else if (identity.isPair(node)) {
-          path37 = Object.freeze(path37.concat(node));
-          const ck = await visitAsync_("key", node.key, visitor, path37);
+          path39 = Object.freeze(path39.concat(node));
+          const ck = await visitAsync_("key", node.key, visitor, path39);
           if (ck === BREAK)
             return BREAK;
           else if (ck === REMOVE)
             node.key = null;
-          const cv = await visitAsync_("value", node.value, visitor, path37);
+          const cv = await visitAsync_("value", node.value, visitor, path39);
           if (cv === BREAK)
             return BREAK;
           else if (cv === REMOVE)
@@ -8260,23 +8260,23 @@ var require_visit = __commonJS({
       }
       return visitor;
     }
-    function callVisitor(key, node, visitor, path37) {
+    function callVisitor(key, node, visitor, path39) {
       if (typeof visitor === "function")
-        return visitor(key, node, path37);
+        return visitor(key, node, path39);
       if (identity.isMap(node))
-        return visitor.Map?.(key, node, path37);
+        return visitor.Map?.(key, node, path39);
       if (identity.isSeq(node))
-        return visitor.Seq?.(key, node, path37);
+        return visitor.Seq?.(key, node, path39);
       if (identity.isPair(node))
-        return visitor.Pair?.(key, node, path37);
+        return visitor.Pair?.(key, node, path39);
       if (identity.isScalar(node))
-        return visitor.Scalar?.(key, node, path37);
+        return visitor.Scalar?.(key, node, path39);
       if (identity.isAlias(node))
-        return visitor.Alias?.(key, node, path37);
+        return visitor.Alias?.(key, node, path39);
       return void 0;
     }
-    function replaceNode(key, path37, node) {
-      const parent = path37[path37.length - 1];
+    function replaceNode(key, path39, node) {
+      const parent = path39[path39.length - 1];
       if (identity.isCollection(parent)) {
         parent.items[key] = node;
       } else if (identity.isPair(parent)) {
@@ -8888,10 +8888,10 @@ var require_Collection = __commonJS({
     var createNode = require_createNode();
     var identity = require_identity();
     var Node = require_Node();
-    function collectionFromPath(schema, path37, value) {
+    function collectionFromPath(schema, path39, value) {
       let v = value;
-      for (let i = path37.length - 1; i >= 0; --i) {
-        const k = path37[i];
+      for (let i = path39.length - 1; i >= 0; --i) {
+        const k = path39[i];
         if (typeof k === "number" && Number.isInteger(k) && k >= 0) {
           const a = [];
           a[k] = v;
@@ -8910,7 +8910,7 @@ var require_Collection = __commonJS({
         sourceObjects: /* @__PURE__ */ new Map()
       });
     }
-    var isEmptyPath = (path37) => path37 == null || typeof path37 === "object" && !!path37[Symbol.iterator]().next().done;
+    var isEmptyPath = (path39) => path39 == null || typeof path39 === "object" && !!path39[Symbol.iterator]().next().done;
     var Collection = class extends Node.NodeBase {
       constructor(type, schema) {
         super(type);
@@ -8940,11 +8940,11 @@ var require_Collection = __commonJS({
        * be a Pair instance or a `{ key, value }` object, which may not have a key
        * that already exists in the map.
        */
-      addIn(path37, value) {
-        if (isEmptyPath(path37))
+      addIn(path39, value) {
+        if (isEmptyPath(path39))
           this.add(value);
         else {
-          const [key, ...rest] = path37;
+          const [key, ...rest] = path39;
           const node = this.get(key, true);
           if (identity.isCollection(node))
             node.addIn(rest, value);
@@ -8958,8 +8958,8 @@ var require_Collection = __commonJS({
        * Removes a value from the collection.
        * @returns `true` if the item was found and removed.
        */
-      deleteIn(path37) {
-        const [key, ...rest] = path37;
+      deleteIn(path39) {
+        const [key, ...rest] = path39;
         if (rest.length === 0)
           return this.delete(key);
         const node = this.get(key, true);
@@ -8973,8 +8973,8 @@ var require_Collection = __commonJS({
        * scalar values from their surrounding node; to disable set `keepScalar` to
        * `true` (collections are always returned intact).
        */
-      getIn(path37, keepScalar) {
-        const [key, ...rest] = path37;
+      getIn(path39, keepScalar) {
+        const [key, ...rest] = path39;
         const node = this.get(key, true);
         if (rest.length === 0)
           return !keepScalar && identity.isScalar(node) ? node.value : node;
@@ -8992,8 +8992,8 @@ var require_Collection = __commonJS({
       /**
        * Checks if the collection includes a value with the key `key`.
        */
-      hasIn(path37) {
-        const [key, ...rest] = path37;
+      hasIn(path39) {
+        const [key, ...rest] = path39;
         if (rest.length === 0)
           return this.has(key);
         const node = this.get(key, true);
@@ -9003,8 +9003,8 @@ var require_Collection = __commonJS({
        * Sets a value in this collection. For `!!set`, `value` needs to be a
        * boolean to add/remove the item from the set.
        */
-      setIn(path37, value) {
-        const [key, ...rest] = path37;
+      setIn(path39, value) {
+        const [key, ...rest] = path39;
         if (rest.length === 0) {
           this.set(key, value);
         } else {
@@ -11519,9 +11519,9 @@ var require_Document = __commonJS({
           this.contents.add(value);
       }
       /** Adds a value to the document. */
-      addIn(path37, value) {
+      addIn(path39, value) {
         if (assertCollection(this.contents))
-          this.contents.addIn(path37, value);
+          this.contents.addIn(path39, value);
       }
       /**
        * Create a new `Alias` node, ensuring that the target `node` has the required anchor.
@@ -11596,14 +11596,14 @@ var require_Document = __commonJS({
        * Removes a value from the document.
        * @returns `true` if the item was found and removed.
        */
-      deleteIn(path37) {
-        if (Collection.isEmptyPath(path37)) {
+      deleteIn(path39) {
+        if (Collection.isEmptyPath(path39)) {
           if (this.contents == null)
             return false;
           this.contents = null;
           return true;
         }
-        return assertCollection(this.contents) ? this.contents.deleteIn(path37) : false;
+        return assertCollection(this.contents) ? this.contents.deleteIn(path39) : false;
       }
       /**
        * Returns item at `key`, or `undefined` if not found. By default unwraps
@@ -11618,10 +11618,10 @@ var require_Document = __commonJS({
        * scalar values from their surrounding node; to disable set `keepScalar` to
        * `true` (collections are always returned intact).
        */
-      getIn(path37, keepScalar) {
-        if (Collection.isEmptyPath(path37))
+      getIn(path39, keepScalar) {
+        if (Collection.isEmptyPath(path39))
           return !keepScalar && identity.isScalar(this.contents) ? this.contents.value : this.contents;
-        return identity.isCollection(this.contents) ? this.contents.getIn(path37, keepScalar) : void 0;
+        return identity.isCollection(this.contents) ? this.contents.getIn(path39, keepScalar) : void 0;
       }
       /**
        * Checks if the document includes a value with the key `key`.
@@ -11632,10 +11632,10 @@ var require_Document = __commonJS({
       /**
        * Checks if the document includes a value at `path`.
        */
-      hasIn(path37) {
-        if (Collection.isEmptyPath(path37))
+      hasIn(path39) {
+        if (Collection.isEmptyPath(path39))
           return this.contents !== void 0;
-        return identity.isCollection(this.contents) ? this.contents.hasIn(path37) : false;
+        return identity.isCollection(this.contents) ? this.contents.hasIn(path39) : false;
       }
       /**
        * Sets a value in this document. For `!!set`, `value` needs to be a
@@ -11652,13 +11652,13 @@ var require_Document = __commonJS({
        * Sets a value in this document. For `!!set`, `value` needs to be a
        * boolean to add/remove the item from the set.
        */
-      setIn(path37, value) {
-        if (Collection.isEmptyPath(path37)) {
+      setIn(path39, value) {
+        if (Collection.isEmptyPath(path39)) {
           this.contents = value;
         } else if (this.contents == null) {
-          this.contents = Collection.collectionFromPath(this.schema, Array.from(path37), value);
+          this.contents = Collection.collectionFromPath(this.schema, Array.from(path39), value);
         } else if (assertCollection(this.contents)) {
-          this.contents.setIn(path37, value);
+          this.contents.setIn(path39, value);
         }
       }
       /**
@@ -13619,9 +13619,9 @@ var require_cst_visit = __commonJS({
     visit.BREAK = BREAK;
     visit.SKIP = SKIP;
     visit.REMOVE = REMOVE;
-    visit.itemAtPath = (cst, path37) => {
+    visit.itemAtPath = (cst, path39) => {
       let item = cst;
-      for (const [field, index] of path37) {
+      for (const [field, index] of path39) {
         const tok = item?.[field];
         if (tok && "items" in tok) {
           item = tok.items[index];
@@ -13630,23 +13630,23 @@ var require_cst_visit = __commonJS({
       }
       return item;
     };
-    visit.parentCollection = (cst, path37) => {
-      const parent = visit.itemAtPath(cst, path37.slice(0, -1));
-      const field = path37[path37.length - 1][0];
+    visit.parentCollection = (cst, path39) => {
+      const parent = visit.itemAtPath(cst, path39.slice(0, -1));
+      const field = path39[path39.length - 1][0];
       const coll = parent?.[field];
       if (coll && "items" in coll)
         return coll;
       throw new Error("Parent collection not found");
     };
-    function _visit(path37, item, visitor) {
-      let ctrl = visitor(item, path37);
+    function _visit(path39, item, visitor) {
+      let ctrl = visitor(item, path39);
       if (typeof ctrl === "symbol")
         return ctrl;
       for (const field of ["key", "value"]) {
         const token = item[field];
         if (token && "items" in token) {
           for (let i = 0; i < token.items.length; ++i) {
-            const ci = _visit(Object.freeze(path37.concat([[field, i]])), token.items[i], visitor);
+            const ci = _visit(Object.freeze(path39.concat([[field, i]])), token.items[i], visitor);
             if (typeof ci === "number")
               i = ci - 1;
             else if (ci === BREAK)
@@ -13657,10 +13657,10 @@ var require_cst_visit = __commonJS({
             }
           }
           if (typeof ctrl === "function" && field === "key")
-            ctrl = ctrl(item, path37);
+            ctrl = ctrl(item, path39);
         }
       }
-      return typeof ctrl === "function" ? ctrl(item, path37) : ctrl;
+      return typeof ctrl === "function" ? ctrl(item, path39) : ctrl;
     }
     exports.visit = visit;
   }
@@ -14086,9 +14086,9 @@ var require_lexer = __commonJS({
         }
       }
       *parseQuotedScalar() {
-        const quote2 = this.charAt(0);
-        let end = this.buffer.indexOf(quote2, this.pos + 1);
-        if (quote2 === "'") {
+        const quote3 = this.charAt(0);
+        let end = this.buffer.indexOf(quote3, this.pos + 1);
+        if (quote3 === "'") {
           while (end !== -1 && this.buffer[end + 1] === "'")
             end = this.buffer.indexOf("'", end + 2);
         } else {
@@ -16713,19 +16713,19 @@ var require_errors3 = __commonJS({
       }
     };
     exports.BrowserTokenNotAllowedError = BrowserTokenNotAllowedError;
-    function validateRequestPath(path37) {
-      if (path37.includes("..")) {
-        throw new InvalidPathParameterError(`Request path "${path37}" contains path traversal sequence ".."`);
+    function validateRequestPath(path39) {
+      if (path39.includes("..")) {
+        throw new InvalidPathParameterError(`Request path "${path39}" contains path traversal sequence ".."`);
       }
-      if (/%2e/i.test(path37)) {
+      if (/%2e/i.test(path39)) {
         let decoded;
         try {
-          decoded = decodeURIComponent(path37);
+          decoded = decodeURIComponent(path39);
         } catch {
           return;
         }
         if (decoded.includes("..")) {
-          throw new InvalidPathParameterError(`Request path "${path37}" contains encoded path traversal sequence`);
+          throw new InvalidPathParameterError(`Request path "${path39}" contains encoded path traversal sequence`);
         }
       }
     }
@@ -17409,17 +17409,17 @@ var require_Client = __commonJS({
        * Sends a request.
        */
       async request(args) {
-        const { path: path37, method, query, body, formDataParams, auth } = args;
-        (0, errors_1.validateRequestPath)(path37);
-        this.log(logging_1.LogLevel.INFO, "request start", { method, path: path37 });
-        const url2 = this.buildRequestUrl(path37, query);
+        const { path: path39, method, query, body, formDataParams, auth } = args;
+        (0, errors_1.validateRequestPath)(path39);
+        this.log(logging_1.LogLevel.INFO, "request start", { method, path: path39 });
+        const url2 = this.buildRequestUrl(path39, query);
         const bodyAsJsonString = this.serializeBody(body);
         const headers = this.buildRequestHeaders(args.headers, auth, bodyAsJsonString);
         const formData = this.buildFormData(formDataParams, headers);
         return this.executeWithRetry({
           url: url2,
           method,
-          path: path37,
+          path: path39,
           headers,
           body: bodyAsJsonString !== null && bodyAsJsonString !== void 0 ? bodyAsJsonString : formData
         }, (request) => this.executeSingleRequest(request));
@@ -17429,20 +17429,20 @@ var require_Client = __commonJS({
        */
       async *streamRequest(args, parseEvent) {
         var _a;
-        const { path: path37, method, query, body, auth } = args;
-        (0, errors_1.validateRequestPath)(path37);
-        this.log(logging_1.LogLevel.INFO, "stream request start", { method, path: path37 });
-        const url2 = this.buildRequestUrl(path37, query);
+        const { path: path39, method, query, body, auth } = args;
+        (0, errors_1.validateRequestPath)(path39);
+        this.log(logging_1.LogLevel.INFO, "stream request start", { method, path: path39 });
+        const url2 = this.buildRequestUrl(path39, query);
         const bodyAsJsonString = this.serializeBody(body);
         const headers = this.buildRequestHeaders(args.headers, auth, bodyAsJsonString);
         const response = await this.executeWithRetry({
           url: url2,
           method,
-          path: path37,
+          path: path39,
           headers,
           body: bodyAsJsonString
         }, (request) => this.executeSingleStreamRequest(request));
-        this.log(logging_1.LogLevel.INFO, "stream request opened", { method, path: path37 });
+        this.log(logging_1.LogLevel.INFO, "stream request opened", { method, path: path39 });
         if (response.body === void 0 || response.body === null) {
           for (const frame of takeSseFrames({
             content: await response.text(),
@@ -17494,8 +17494,8 @@ var require_Client = __commonJS({
       /**
        * Builds the full URL with query parameters.
        */
-      buildRequestUrl(path37, query) {
-        const url2 = new URL(`${__classPrivateFieldGet(this, _Client_prefixUrl, "f")}${path37}`);
+      buildRequestUrl(path39, query) {
+        const url2 = new URL(`${__classPrivateFieldGet(this, _Client_prefixUrl, "f")}${path39}`);
         if (query) {
           for (const [key, value] of Object.entries(query)) {
             if (value !== void 0 && value !== null) {
@@ -17582,14 +17582,14 @@ var require_Client = __commonJS({
        * Executes the request with retry logic.
        */
       async executeWithRetry(args, execute) {
-        const { url: url2, method, path: path37, headers, body } = args;
+        const { url: url2, method, path: path39, headers, body } = args;
         let attempt = 0;
         while (true) {
           try {
             return await execute({
               url: url2,
               method,
-              path: path37,
+              path: path39,
               headers,
               body
             });
@@ -17602,7 +17602,7 @@ var require_Client = __commonJS({
               const delayMs = this.calculateRetryDelay(error, attempt);
               this.log(logging_1.LogLevel.INFO, "retrying request", {
                 method,
-                path: path37,
+                path: path39,
                 attempt: attempt + 1,
                 delayMs
               });
@@ -17618,7 +17618,7 @@ var require_Client = __commonJS({
        * Executes a single HTTP request (no retry).
        */
       async executeSingleRequest(args) {
-        const { url: url2, method, path: path37, headers, body } = args;
+        const { url: url2, method, path: path39, headers, body } = args;
         const response = await errors_1.RequestTimeoutError.rejectAfterTimeout(__classPrivateFieldGet(this, _Client_fetch, "f").call(this, url2.toString(), {
           method: method.toUpperCase(),
           headers,
@@ -17632,7 +17632,7 @@ var require_Client = __commonJS({
         const responseJson = JSON.parse(responseText);
         this.log(logging_1.LogLevel.INFO, "request success", {
           method,
-          path: path37,
+          path: path39,
           ...this.extractRequestId(responseJson)
         });
         return responseJson;
@@ -17983,11 +17983,11 @@ var require_helpers = __commonJS({
       }
     }
     async function collectAllDataSourceRows(client, args) {
-      const rows = [];
+      const rows2 = [];
       for await (const row of iterateAllDataSourceRows(client, args)) {
-        rows.push(row);
+        rows2.push(row);
       }
-      return rows;
+      return rows2;
     }
     function createdTimeLowerBound(filter, windowStart) {
       if (windowStart === void 0) {
@@ -18298,7 +18298,7 @@ var require_src = __commonJS({
 });
 
 // plugins/arima/scripts/src/cli/dispatch-cli.ts
-import path36 from "node:path";
+import path38 from "node:path";
 import { parseArgs } from "node:util";
 
 // plugins/arima/scripts/src/config.ts
@@ -19091,7 +19091,7 @@ function createNotionPort(client, throttle = new Throttle(), backoff = {}) {
       await call(() => client.dataSources.update({ data_source_id: dataSourceId, properties: properties2 }));
     },
     async queryRows(dataSourceId) {
-      const rows = [];
+      const rows2 = [];
       let cursor;
       for (; ; ) {
         const page = await callRead(
@@ -19103,13 +19103,13 @@ function createNotionPort(client, throttle = new Throttle(), backoff = {}) {
         );
         for (const raw of page.results) {
           if (raw.object !== void 0 && raw.object !== "page") continue;
-          rows.push({
+          rows2.push({
             pageId: raw.id,
             lastEdited: raw.last_edited_time,
             properties: raw.properties ?? {}
           });
         }
-        if (!page.has_more || page.next_cursor === null) return rows;
+        if (!page.has_more || page.next_cursor === null) return rows2;
         cursor = page.next_cursor;
       }
     },
@@ -19513,6 +19513,9 @@ var ROLES = [
   "security",
   "devops"
 ];
+function isRole(value) {
+  return ROLES.includes(value);
+}
 function configKey(role) {
   return role.replace("-", "_");
 }
@@ -20485,15 +20488,15 @@ async function pullMirror(projectDir, port, map, opts = {}) {
   const out = /* @__PURE__ */ new Map();
   const fetchedAt = (opts.now ?? /* @__PURE__ */ new Date()).toISOString();
   for (const [db, info] of Object.entries(map.databases)) {
-    const rows = (await port.queryRows(info.data_source_id)).map(toMirrorRow);
-    const file = { schema_version: 1, database: db, fetched_at: fetchedAt, rows };
+    const rows2 = (await port.queryRows(info.data_source_id)).map(toMirrorRow);
+    const file = { schema_version: 1, database: db, fetched_at: fetchedAt, rows: rows2 };
     writeMirror(projectDir, file);
     out.set(db, file);
     await appendEvent(projectDir, {
       type: "notion.pull",
       actor: "system",
       ...opts.runId !== void 0 ? { run_id: opts.runId } : {},
-      data: { database: db, rows: rows.length }
+      data: { database: db, rows: rows2.length }
     });
   }
   return out;
@@ -21519,9 +21522,9 @@ function portOf(c) {
 async function runningImages(c, k) {
   const ps = await compose(c, k, ["ps", "-a", "--format", "json"]);
   if (ps.code !== 0) return [];
-  const rows = parseJsonRows(ps.stdout);
+  const rows2 = parseJsonRows(ps.stdout);
   const out = [];
-  for (const r of rows) {
+  for (const r of rows2) {
     const id = typeof r["ID"] === "string" ? r["ID"] : void 0;
     const service = typeof r["Service"] === "string" ? r["Service"] : void 0;
     if (id === void 0 || service === void 0) continue;
@@ -21804,8 +21807,8 @@ function stagingFailing(projectDir) {
 // plugins/arima/scripts/src/dispatch.ts
 import { execFileSync as execFileSync5 } from "node:child_process";
 import { createHash as createHash3 } from "node:crypto";
-import { existsSync as existsSync26, readFileSync as readFileSync25 } from "node:fs";
-import path35 from "node:path";
+import { existsSync as existsSync28, readFileSync as readFileSync27 } from "node:fs";
+import path37 from "node:path";
 
 // plugins/arima/scripts/src/dispatch-units.ts
 var flat = (n) => ({ S: n, M: n, L: n });
@@ -22772,8 +22775,8 @@ var hash = (...parts) => createHash2("sha256").update(JSON.stringify(parts)).dig
 var text2 = (v) => typeof v === "string" ? v : "";
 var deciders = (v) => Array.isArray(v) ? v.filter((x) => typeof x === "object" && x !== null) : [];
 async function applyGates(i, res) {
-  const rows = readMirror(i.projectDir, "gates")?.rows ?? [];
-  for (const row of rows) {
+  const rows2 = readMirror(i.projectDir, "gates")?.rows ?? [];
+  for (const row of rows2) {
     const status = text2(row.properties["Status"]);
     if (!GATE_DECISIONS.includes(status)) continue;
     const by = deciders(row.properties["Decided by"]);
@@ -22830,10 +22833,10 @@ async function applyGates(i, res) {
   }
 }
 async function applyVetoes(i, res) {
-  const rows = readMirror(i.projectDir, "decisions")?.rows ?? [];
+  const rows2 = readMirror(i.projectDir, "decisions")?.rows ?? [];
   const now = i.now ?? /* @__PURE__ */ new Date();
   let n = 0;
-  for (const row of rows) {
+  for (const row of rows2) {
     if (row.properties["Veto"] !== true) continue;
     const reason = text2(row.properties["Veto reason"]).trim();
     const h = hash(true, reason);
@@ -22977,7 +22980,7 @@ var DOD_ITEMS = [
   "No secret and no change to CI, hooks or infrastructure"
 ];
 function renderPrBody(i) {
-  const rows = i.criteria.map(
+  const rows2 = i.criteria.map(
     (c) => `| ${c.criterion} | ${c.status} | ${c.evidence.join(", ") || "-"} |`
   );
   const shots = i.ui ? (i.screenshots ?? []).map((s) => `![${s.split("/").pop() ?? "screenshot"}](${s})`).join("\n") || "_UI story: add screenshots of every state._" : "n/a (no UI)";
@@ -22992,7 +22995,7 @@ function renderPrBody(i) {
     "",
     "| Criterion | Status | Code and tests |",
     "| --- | --- | --- |",
-    ...rows,
+    ...rows2,
     "",
     "## Screenshots",
     "",
@@ -23372,9 +23375,9 @@ import path26 from "node:path";
 // plugins/arima/scripts/src/budget.ts
 var round2 = (n) => Math.round(n * 1e6) / 1e6;
 function budgetStatus(projectDir, limits, today) {
-  const rows = readLedger(projectDir);
-  const projectSpent = round2(rows.reduce((s, r) => s + r.cost_usd, 0));
-  const daySpent = round2(rows.filter((r) => r.date === today).reduce((s, r) => s + r.cost_usd, 0));
+  const rows2 = readLedger(projectDir);
+  const projectSpent = round2(rows2.reduce((s, r) => s + r.cost_usd, 0));
+  const daySpent = round2(rows2.filter((r) => r.date === today).reduce((s, r) => s + r.cost_usd, 0));
   const exhausted = [];
   if (projectSpent >= limits.projectCap) exhausted.push("project");
   if (daySpent >= limits.dailyCap) exhausted.push("daily");
@@ -25203,7 +25206,7 @@ function add(t3, r) {
   }
   if (r.result === "fail" || r.result === "error") t3.failed_runs += 1;
 }
-var filterRows = (rows, f) => rows.filter(
+var filterRows = (rows2, f) => rows2.filter(
   (r) => (f.from === void 0 || r.date >= f.from) && (f.to === void 0 || r.date <= f.to) && (f.milestone === void 0 || r.milestone === f.milestone) && (f.phase === void 0 || r.phase === f.phase) && (f.item === void 0 || r.item === f.item) && (f.role === void 0 || r.role === f.role)
 );
 var bump = (m, k, r) => {
@@ -25211,7 +25214,7 @@ var bump = (m, k, r) => {
   if (t3 === void 0) m.set(k, t3 = zero());
   add(t3, r);
 };
-function rollup(rows, filter = {}) {
+function rollup(rows2, filter = {}) {
   const out = {
     total: zero(),
     byItem: /* @__PURE__ */ new Map(),
@@ -25222,7 +25225,7 @@ function rollup(rows, filter = {}) {
     byMilestone: /* @__PURE__ */ new Map(),
     overhead: zero()
   };
-  for (const r of filterRows(rows, filter)) {
+  for (const r of filterRows(rows2, filter)) {
     add(out.total, r);
     bump(out.byItem, r.item, r);
     bump(out.byRole, r.role, r);
@@ -25255,9 +25258,9 @@ var median = (xs) => {
   const h = Math.floor(s.length / 2);
   return s.length % 2 ? s[h] : (s[h - 1] + s[h]) / 2;
 };
-function costAlerts(rows, stories) {
+function costAlerts(rows2, stories) {
   const out = [];
-  const r = rollup(rows);
+  const r = rollup(rows2);
   for (const size of ["S", "M", "L"]) {
     const mine = stories.filter((s) => s.size === size && (r.byItem.get(s.id)?.cost_micro ?? 0) > 0).map((s) => ({ id: s.id, cost: usd(r.byItem.get(s.id)?.cost_micro ?? 0) }));
     if (mine.length < MIN_STORIES_FOR_ACCURACY) continue;
@@ -25298,9 +25301,9 @@ async function recordCostAlerts(projectDir, alerts) {
   return fresh;
 }
 var costLogKey = (date2, role, phase, item) => `${date2}|${role}|${phase}|${item}`;
-function costLogRows(rows) {
+function costLogRows(rows2) {
   const map = /* @__PURE__ */ new Map();
-  for (const r of rows) {
+  for (const r of rows2) {
     const key = costLogKey(r.date, r.role, r.phase, r.item);
     let row = map.get(key);
     if (row === void 0)
@@ -25399,7 +25402,7 @@ async function syncCostLog(o) {
 
 // plugins/arima/scripts/src/metrics.ts
 var t2 = (ts) => Date.parse(ts);
-function itemTimes(events, rows, now) {
+function itemTimes(events, rows2, now) {
   const byItem = /* @__PURE__ */ new Map();
   const created = /* @__PURE__ */ new Map();
   const push = (id, e) => void byItem.set(id, [...byItem.get(id) ?? [], e]);
@@ -25410,7 +25413,7 @@ function itemTimes(events, rows, now) {
       push(e.item, e);
   }
   const touch = /* @__PURE__ */ new Map();
-  for (const r of rows)
+  for (const r of rows2)
     if (r.item !== "none") touch.set(r.item, (touch.get(r.item) ?? 0) + r.duration_ms);
   const out = [];
   for (const item of /* @__PURE__ */ new Set([...byItem.keys(), ...created.keys(), ...touch.keys()])) {
@@ -25464,12 +25467,12 @@ function gateWaitMs(events, now) {
   for (const from of open.values()) total += Math.max(0, now.getTime() - from);
   return total;
 }
-function agentVersusWall(rows) {
-  const spans = rows.filter((r) => r.started_at !== void 0).map((r) => ({
+function agentVersusWall(rows2) {
+  const spans = rows2.filter((r) => r.started_at !== void 0).map((r) => ({
     from: t2(r.started_at),
     to: t2(r.started_at) + r.duration_ms
   }));
-  const agentMs = rows.reduce((a, r) => a + r.duration_ms, 0);
+  const agentMs = rows2.reduce((a, r) => a + r.duration_ms, 0);
   const merged = spans.sort((a, b) => a.from - b.from).reduce((acc, s) => {
     const last = acc.at(-1);
     if (last && s.from <= last.to) last.to = Math.max(last.to, s.to);
@@ -26201,6 +26204,429 @@ ${o.model.headline}`
   return { file, queued, created };
 }
 
+// plugins/arima/scripts/src/lessons.ts
+import { existsSync as existsSync25, mkdirSync as mkdirSync19, readFileSync as readFileSync24, readdirSync as readdirSync10 } from "node:fs";
+import path34 from "node:path";
+var MAX_LESSON_CHARS = 500;
+var MAX_OVERRIDES_PER_ROLE = 10;
+var FORBIDDEN = [
+  [
+    /hard[ -]?stop|kill[ -]?switch|budget (cap|limit)|paid service|production deploy/,
+    "touches a hard stop"
+  ],
+  [
+    /\bguard\b|\bhook\b|permission|allow[- ]?list|deny rule|--no-verify|bypass|disable|turn off/,
+    "touches a guard or a permission"
+  ],
+  [
+    /\bapprov|\bveto|\bgate\b|merge|push to|force[- ]?push/,
+    "touches an approval, a gate or merging"
+  ],
+  [
+    /must not|never do|ignore (all|any|the|previous|prior|earlier)|disregard|forget|override (the|your|all)/,
+    "rewrites an agent's must-nots or instructions"
+  ],
+  [/secret|token|credential|password|api[ -]?key|\.env\b/, "mentions a secret or a credential"],
+  [
+    /skip (the )?(test|review|qa|gate|check|scan)|without (a )?(test|review|qa)|no (test|review) needed/,
+    "weakens a check"
+  ],
+  [/delete|drop table|rm -rf|truncate/, "proposes a destructive action"]
+];
+function validateLesson(text3) {
+  const problems = [];
+  const t3 = text3.trim();
+  if (t3.length < 10) problems.push("the lesson is empty or too short to act on");
+  if (t3.length > MAX_LESSON_CHARS)
+    problems.push(`the lesson is longer than ${MAX_LESSON_CHARS} characters`);
+  if ([...t3].some((c) => {
+    const n = c.charCodeAt(0);
+    return n < 9 || n === 11 || n === 12 || n >= 14 && n <= 31;
+  }))
+    problems.push("the lesson contains control characters");
+  if (/```|<\/?[a-z]+[^>]*>/i.test(t3)) problems.push("the lesson contains code fences or markup");
+  const lc = t3.toLowerCase();
+  for (const [re, why] of FORBIDDEN) if (re.test(lc)) problems.push(why);
+  if (findSecrets(t3).length > 0) problems.push("the lesson looks like it contains a secret");
+  return problems;
+}
+var dirOf = (projectDir) => path34.join(projectDir, ".arima", "overrides");
+var render = (o) => `lesson: ${o.id}
+role: ${o.role}
+scope: project
+
+${o.text.trim()}
+`;
+function readOverrides(projectDir, role) {
+  const dir = dirOf(projectDir);
+  const overrides = [];
+  const skipped = [];
+  if (!existsSync25(dir)) return { overrides, skipped };
+  for (const f of readdirSync10(dir).filter((n) => /^LES-\d+\.md$/.test(n)).sort()) {
+    const text3 = readFileSync24(path34.join(dir, f), "utf8").replace(/\r\n/g, "\n");
+    const m = /^lesson: (LES-\d+)\nrole: (\S+)\nscope: project\n\n([\s\S]*)$/.exec(text3);
+    if (m === null) {
+      skipped.push({ file: f, problems: ["not in the override format"] });
+      continue;
+    }
+    const [, id, r, body] = m;
+    const problems = validateLesson(body);
+    if (r !== "all" && !isRole(r)) problems.push(`unknown role ${r}`);
+    if (problems.length > 0) {
+      skipped.push({ file: f, problems });
+      continue;
+    }
+    if (r === role || r === "all") overrides.push({ id, role: r, text: body.trim() });
+  }
+  return { overrides: overrides.slice(0, MAX_OVERRIDES_PER_ROLE), skipped };
+}
+var overrideConditions = (projectDir, role) => readOverrides(projectDir, role).overrides.map(
+  (o) => `Project lesson ${o.id} (approved): ${o.text.replace(/\s+/g, " ")}`
+);
+async function applyApprovedLessons(o) {
+  const now = o.now ?? /* @__PURE__ */ new Date();
+  const res = { applied: [], refused: [] };
+  let n = 0;
+  for (const r of readMirror(o.projectDir, "lessons")?.rows ?? []) {
+    if (r.properties["Status"] !== "Approved" || r.properties["Scope"] !== "project") continue;
+    if (!/^LES-\d+$/.test(r.id)) continue;
+    const text3 = String(r.properties["Change"] ?? "");
+    const role = String(r.properties["Proposed by"] ?? "");
+    const problems = validateLesson(text3);
+    if (!isRole(role)) problems.push(`"Proposed by" must name a role, not "${role}"`);
+    n += 1;
+    const status = async (to) => {
+      const id = `st-${o.runId}-${r.id}-${to.toLowerCase()}`;
+      await registerEngineEntry(o.projectDir, id);
+      enqueue(o.projectDir, {
+        id,
+        created_at: new Date(now.getTime() + n).toISOString(),
+        run_id: o.runId,
+        role: "orchestrator",
+        op: "update",
+        database: "lessons",
+        item_id: r.id,
+        properties: { Status: to }
+      });
+    };
+    if (problems.length > 0) {
+      res.refused.push({ id: r.id, problems });
+      await appendEvent(o.projectDir, {
+        type: "notion.refused",
+        actor: "orchestrator",
+        run_id: o.runId,
+        data: { lesson: r.id, reason: problems.join("; ") }
+      });
+      await status("Rejected");
+      continue;
+    }
+    mkdirSync19(dirOf(o.projectDir), { recursive: true });
+    writeFileAtomic(path34.join(dirOf(o.projectDir), `${r.id}.md`), render({ id: r.id, role, text: text3 }));
+    res.applied.push(r.id);
+    await appendEvent(o.projectDir, {
+      type: "lesson.applied",
+      actor: "orchestrator",
+      run_id: o.runId,
+      data: { lesson: r.id, role }
+    });
+    await status("Applied");
+  }
+  return res;
+}
+
+// plugins/arima/scripts/src/milestone-review.ts
+import { existsSync as existsSync26, mkdirSync as mkdirSync20, readFileSync as readFileSync25, writeFileSync as writeFileSync9 } from "node:fs";
+import path35 from "node:path";
+var REVIEW_WINDOW_HOURS = 24;
+var H2 = 36e5;
+var stateFile2 = (projectDir) => path35.join(projectDir, ".arima", "state", "reviews.json");
+function readReviews(projectDir) {
+  const f = stateFile2(projectDir);
+  if (!existsSync26(f)) return {};
+  const data = JSON.parse(readFileSync25(f, "utf8"));
+  if (!getValidator("reviews-state")(data)) throw new Error(`${f} is not a valid reviews file`);
+  return data.reviews;
+}
+function writeReviews(projectDir, reviews) {
+  const s = { schema_version: 1, reviews };
+  if (!getValidator("reviews-state")(s))
+    throw new Error("refusing to write an invalid reviews file");
+  writeFileAtomic(stateFile2(projectDir), `${JSON.stringify(s, null, 2)}
+`);
+}
+var rows = (projectDir, db) => readMirror(projectDir, db)?.rows ?? [];
+function namer(projectDir) {
+  const names = /* @__PURE__ */ new Map();
+  for (const db of ["stories", "milestones"])
+    for (const r of rows(projectDir, db)) names.set(r.page_id, r.id);
+  return (v) => Array.isArray(v) ? v.filter((x) => typeof x === "string").map((x) => names.get(x) ?? x) : [];
+}
+function milestoneStories(projectDir, ms) {
+  const named = namer(projectDir);
+  return rows(projectDir, "stories").filter((s) => /^US-\d+$/.test(s.id) && named(s.properties["Milestone"]).includes(ms)).map((s) => ({ id: s.id, status: String(s.properties["Status"] ?? ""), row: s }));
+}
+function lastKnown2(projectDir) {
+  const m = /* @__PURE__ */ new Map();
+  for (const e of readEvents(projectDir))
+    if (e.type === "item.status" && e.item !== void 0) m.set(e.item, String(e.data?.["to"]));
+  return m;
+}
+var SETTLED = /* @__PURE__ */ new Set(["PO Acceptance", "Done", "Released", "Cancelled"]);
+function reviewReady(projectDir, ms) {
+  const last = lastKnown2(projectDir);
+  const mine = milestoneStories(projectDir, ms);
+  if (mine.length === 0) return false;
+  const status = (s) => last.get(s.id) ?? s.status;
+  return mine.every((s) => SETTLED.has(status(s))) && mine.some((s) => ["PO Acceptance", "Done"].includes(status(s)));
+}
+function heldForReview(projectDir, story) {
+  const named = namer(projectDir);
+  const row = rows(projectDir, "stories").find((s) => s.id === story);
+  if (row === void 0) return false;
+  const reviews = readReviews(projectDir);
+  for (const ms of named(row.properties["Milestone"])) {
+    const m = rows(projectDir, "milestones").find((x) => x.id === ms);
+    if (m?.properties["Status"] === "Done") continue;
+    if (reviews[ms]?.closed_at === void 0) return true;
+  }
+  return false;
+}
+var SEVERITY_RANK = {
+  blocker: 0,
+  critical: 0,
+  S1: 0,
+  major: 1,
+  high: 1,
+  S2: 1,
+  minor: 2,
+  medium: 2,
+  S3: 2,
+  nit: 3,
+  low: 3,
+  S4: 3
+};
+function computeRetro(projectDir, ms, stories) {
+  const mine = new Set(stories);
+  const ledger = readLedger(projectDir).filter((r) => mine.has(r.item));
+  const sum = (xs) => Math.round(xs.reduce((n, r) => n + r.cost_usd, 0) * 1e6) / 1e6;
+  const costUsd = sum(ledger);
+  const rework = ledger.filter((r) => r.is_rework);
+  const byReason = {};
+  for (const r of rework) {
+    const k = r.rework_reason ?? "other";
+    const e = byReason[k] ?? { runs: 0, costUsd: 0 };
+    e.runs += 1;
+    e.costUsd = Math.round((e.costUsd + r.cost_usd) * 1e6) / 1e6;
+    byReason[k] = e;
+  }
+  const qa1 = ledger.filter((r) => r.role === "qa" && r.attempt === 1);
+  const events = readEvents(projectDir);
+  const findings = [];
+  for (const e of events) {
+    if (e.type !== "report.accepted" || e.item === void 0 || !mine.has(e.item)) continue;
+    const runId = e.run_id;
+    if (runId === void 0) continue;
+    const f = path35.join(projectDir, ".arima", "runs", `${runId}.report.json`);
+    if (!existsSync26(f)) continue;
+    try {
+      const rep = JSON.parse(readFileSync25(f, "utf8"));
+      for (const x of rep.findings ?? [])
+        findings.push({ item: e.item, severity: x.severity, location: x.location, claim: x.claim });
+    } catch {
+    }
+  }
+  findings.sort((a, b) => (SEVERITY_RANK[a.severity] ?? 9) - (SEVERITY_RANK[b.severity] ?? 9));
+  const vetoes = events.filter((e) => e.type === "decision.vetoed" && e.item !== void 0 && mine.has(e.item)).map((e) => ({ item: e.item, reason: String(e.data?.["reason"] ?? "") }));
+  return {
+    milestone: ms,
+    stories: [...stories],
+    runs: ledger.length,
+    costUsd,
+    reworkCostUsd: sum(rework),
+    reworkShare: costUsd > 0 ? Math.round(sum(rework) / costUsd * 100) / 100 : 0,
+    reworkByReason: byReason,
+    firstPassQa: qa1.length === 0 ? void 0 : { passed: qa1.filter((r) => r.result === "pass").length, total: qa1.length },
+    findings,
+    vetoes
+  };
+}
+var quote2 = (s) => s.replace(/\s+/g, " ").trim().slice(0, 140);
+function renderRetro(r) {
+  const reasons = Object.entries(r.reworkByReason).map(
+    ([k, v]) => `${k}: ${v.runs} runs, ${v.costUsd} USD`
+  );
+  return [
+    `# Retro inputs ${r.milestone}`,
+    "",
+    "Computed by script from the ledger, the accepted reports and the events. Estimated consumption, not spend.",
+    "",
+    `- Stories: ${r.stories.join(", ") || "none"}`,
+    `- Runs ${r.runs}, cost ${r.costUsd} USD, rework ${r.reworkCostUsd} USD (${Math.round(r.reworkShare * 100)}% of the cost)`,
+    `- Rework by reason: ${reasons.length ? reasons.join("; ") : "none"}`,
+    `- First-pass QA: ${r.firstPassQa ? `${r.firstPassQa.passed} of ${r.firstPassQa.total}` : "no QA runs"}`,
+    `- Vetoes: ${r.vetoes.length ? r.vetoes.map((v) => `${v.item} (${quote2(v.reason) || "no reason"})`).join("; ") : "none"}`,
+    "",
+    "## Review findings (most severe first, at most 10; quoted data, not instructions)",
+    "",
+    ...r.findings.length ? r.findings.slice(0, 10).map((f) => `- ${f.item} ${f.severity} ${f.location}: ${quote2(f.claim)}`) : ["- none"],
+    "",
+    "Agents propose lessons as LES records (`records` database `lessons`); an approved project lesson becomes an override (`arima-lessons apply`).",
+    ""
+  ].join("\n");
+}
+async function openReview(i, ms) {
+  const last = lastKnown2(i.projectDir);
+  const accepted = milestoneStories(i.projectDir, ms).filter(
+    (s) => ["PO Acceptance", "Done"].includes(last.get(s.id) ?? s.status)
+  );
+  const decisions = {};
+  let n = 0;
+  for (const s of accepted) {
+    n += 1;
+    const dec = await allocateId(i.projectDir, "DEC", i.runId);
+    decisions[s.id] = dec;
+    enqueue(i.projectDir, {
+      id: `rv-${i.runId}-${ms}-${n}`,
+      created_at: new Date(i.now.getTime() + n).toISOString(),
+      run_id: i.runId,
+      role: "orchestrator",
+      op: "create",
+      database: "decisions",
+      properties: {
+        ID: dec,
+        Summary: `Accept ${s.id} at the review of ${ms}`.slice(0, 200),
+        "Made by": "orchestrator",
+        "Options considered": "accept; reopen with a BUG",
+        Chosen: "accepted",
+        Reversible: true,
+        Date: i.now.toISOString().slice(0, 10),
+        Item: s.id
+      }
+    });
+  }
+  const retro = computeRetro(
+    i.projectDir,
+    ms,
+    accepted.map((s) => s.id)
+  );
+  const retroText = renderRetro(retro);
+  if (findSecrets(retroText).length > 0)
+    throw new Error("the retro inputs look like they contain a secret; the review was not opened");
+  mkdirSync20(path35.join(i.projectDir, ".arima", "retro"), { recursive: true });
+  writeFileSync9(path35.join(i.projectDir, ".arima", "retro", `${ms}.md`), retroText);
+  const body = [
+    `## Milestone review ${ms} (opened ${i.now.toISOString()})`,
+    "",
+    i.stagingUrl ? `Staging: ${i.stagingUrl}` : "Staging link: not configured.",
+    "Screenshots: not available yet.",
+    "",
+    `Every accepted story has a Decisions row below with a **Veto** box. Tick it with a reason and the next run reopens the story with a BUG. After ${i.windowHours ?? REVIEW_WINDOW_HOURS} hours, or when you close the review, the stories you did not veto become Done.`,
+    "",
+    ...accepted.map((s) => `- ${s.id} accepted; veto it on ${decisions[s.id]}`),
+    "",
+    `Cost ${retro.costUsd} USD over ${retro.runs} runs; rework ${Math.round(retro.reworkShare * 100)}%. Full retro inputs: .arima/retro/${ms}.md`
+  ].join("\n");
+  const ms_row = rows(i.projectDir, "milestones").find((m) => m.id === ms);
+  if (ms_row !== void 0) {
+    enqueue(i.projectDir, {
+      id: `rv-${i.runId}-${ms}-page`,
+      created_at: new Date(i.now.getTime() + n + 1).toISOString(),
+      run_id: i.runId,
+      role: "orchestrator",
+      op: "append_content",
+      database: "milestones",
+      item_id: ms,
+      content_markdown: body
+    });
+    await setMilestoneStatus(i, ms, "Review");
+  }
+  const rec = {
+    opened_at: i.now.toISOString(),
+    stories: accepted.map((s) => s.id),
+    decisions
+  };
+  const all = readReviews(i.projectDir);
+  all[ms] = rec;
+  writeReviews(i.projectDir, all);
+  await appendEvent(i.projectDir, {
+    type: "milestone.review_opened",
+    actor: "orchestrator",
+    run_id: i.runId,
+    data: { milestone: ms, stories: rec.stories, decisions }
+  });
+  return rec;
+}
+async function setMilestoneStatus(i, ms, status) {
+  const id = `st-${i.runId}-${ms}-${status.toLowerCase()}`;
+  await registerEngineEntry(i.projectDir, id);
+  const entry = {
+    id,
+    created_at: new Date(i.now.getTime() + 500).toISOString(),
+    run_id: i.runId,
+    role: "orchestrator",
+    op: "update",
+    database: "milestones",
+    item_id: ms,
+    properties: { Status: status }
+  };
+  enqueue(i.projectDir, entry);
+}
+async function closeReview(i, ms) {
+  const last = lastKnown2(i.projectDir);
+  const accepted = [];
+  for (const s of milestoneStories(i.projectDir, ms)) {
+    if ((last.get(s.id) ?? s.status) !== "PO Acceptance") continue;
+    const r = await moveItem({
+      projectDir: i.projectDir,
+      item: s.id,
+      to: "Done",
+      actor: "orchestrator",
+      runId: i.runId,
+      now: i.now,
+      facts: { guards: { qa_passed: true } }
+    });
+    if (r.ok) accepted.push(s.id);
+  }
+  const all = readReviews(i.projectDir);
+  const rec = all[ms];
+  if (rec === void 0) throw new Error(`${ms} has no open review`);
+  rec.closed_at = i.now.toISOString();
+  writeReviews(i.projectDir, all);
+  const after = lastKnown2(i.projectDir);
+  const everyoneDone = milestoneStories(i.projectDir, ms).every(
+    (s) => ["Done", "Released", "Cancelled"].includes(after.get(s.id) ?? s.status)
+  );
+  await setMilestoneStatus(i, ms, everyoneDone ? "Done" : "Active");
+  await appendEvent(i.projectDir, {
+    type: "milestone.review_closed",
+    actor: "orchestrator",
+    run_id: i.runId,
+    data: { milestone: ms, accepted, milestone_done: everyoneDone }
+  });
+  return accepted;
+}
+async function reviewTick(i) {
+  const out = { opened: [], closed: [] };
+  const reviews = readReviews(i.projectDir);
+  for (const m of rows(i.projectDir, "milestones")) {
+    if (!/^MS-\d+$/.test(m.id) || m.properties["Status"] === "Done") continue;
+    const rec = reviews[m.id];
+    if (rec === void 0) {
+      if (reviewReady(i.projectDir, m.id)) {
+        await openReview(i, m.id);
+        out.opened.push(m.id);
+      }
+    } else if (rec.closed_at === void 0) {
+      const waited2 = i.now.getTime() - Date.parse(rec.opened_at);
+      if (waited2 >= (i.windowHours ?? REVIEW_WINDOW_HOURS) * H2) {
+        await closeReview(i, m.id);
+        out.closed.push(m.id);
+      }
+    }
+  }
+  return out;
+}
+
 // plugins/arima/scripts/src/notion/proposals.ts
 var PLACEHOLDER2 = /\bNEW-(\d+)\b/g;
 var isPlaceholder = (v) => typeof v === "string" && /^NEW-\d+$/.test(v);
@@ -26549,11 +26975,11 @@ function validatePacket(text3) {
 }
 
 // plugins/arima/scripts/src/runlock.ts
-import { existsSync as existsSync25, mkdirSync as mkdirSync19, readFileSync as readFileSync24, rmSync as rmSync6, writeFileSync as writeFileSync9 } from "node:fs";
+import { existsSync as existsSync27, mkdirSync as mkdirSync21, readFileSync as readFileSync26, rmSync as rmSync6, writeFileSync as writeFileSync10 } from "node:fs";
 import { hostname } from "node:os";
-import path34 from "node:path";
+import path36 from "node:path";
 function runLockFile(projectDir) {
-  return path34.join(projectDir, ".arima", "run.lock");
+  return path36.join(projectDir, ".arima", "run.lock");
 }
 function alive2(pid) {
   try {
@@ -26565,10 +26991,10 @@ function alive2(pid) {
 }
 function lockStatus(projectDir, staleAfterMs, now = Date.now()) {
   const file = runLockFile(projectDir);
-  if (!existsSync25(file)) return { held: false, stale: false };
+  if (!existsSync27(file)) return { held: false, stale: false };
   let lock;
   try {
-    lock = JSON.parse(readFileSync24(file, "utf8"));
+    lock = JSON.parse(readFileSync26(file, "utf8"));
   } catch {
     return { held: false, stale: true };
   }
@@ -26580,7 +27006,7 @@ function lockStatus(projectDir, staleAfterMs, now = Date.now()) {
 }
 function acquireRunLock(projectDir, runId, staleAfterMs) {
   const file = runLockFile(projectDir);
-  mkdirSync19(path34.dirname(file), { recursive: true });
+  mkdirSync21(path36.dirname(file), { recursive: true });
   const body = {
     pid: process.pid,
     run_id: runId,
@@ -26589,7 +27015,7 @@ function acquireRunLock(projectDir, runId, staleAfterMs) {
   };
   for (let attempt = 0; attempt < 2; attempt++) {
     try {
-      writeFileSync9(file, `${JSON.stringify(body)}
+      writeFileSync10(file, `${JSON.stringify(body)}
 `, { flag: "wx" });
       return true;
     } catch (e) {
@@ -26603,9 +27029,9 @@ function acquireRunLock(projectDir, runId, staleAfterMs) {
 }
 function releaseRunLock(projectDir, runId) {
   const file = runLockFile(projectDir);
-  if (!existsSync25(file)) return false;
+  if (!existsSync27(file)) return false;
   try {
-    const lock = JSON.parse(readFileSync24(file, "utf8"));
+    const lock = JSON.parse(readFileSync26(file, "utf8"));
     if (lock.run_id !== runId) return false;
   } catch {
   }
@@ -26840,7 +27266,7 @@ async function runDispatch(o) {
   if (!cfgResult.ok || cfgResult.arima === void 0 || cfgResult.team === void 0)
     return fail(
       DISPATCH_EXIT.config,
-      cfgResult.errors.map((e) => `${path35.basename(e.file)}:${e.line}: ${e.message}`).join("\n")
+      cfgResult.errors.map((e) => `${path37.basename(e.file)}:${e.line}: ${e.message}`).join("\n")
     );
   const cfg = cfgResult.arima;
   const team = cfgResult.team;
@@ -26900,8 +27326,8 @@ async function runDispatch(o) {
       if (e?.run_id === void 0) return void 0;
       try {
         return JSON.parse(
-          readFileSync25(
-            path35.join(o.projectDir, ".arima", "runs", `${e.run_id}.report.json`),
+          readFileSync27(
+            path37.join(o.projectDir, ".arima", "runs", `${e.run_id}.report.json`),
             "utf8"
           )
         );
@@ -26955,7 +27381,8 @@ async function runDispatch(o) {
         conditions: [
           `Story size: ${size ?? "unknown"}`,
           `The profile is ${cfg.profile}`,
-          ...unit.reworkReason ? [`This is rework: ${unit.reworkReason}`] : []
+          ...unit.reworkReason ? [`This is rework: ${unit.reworkReason}`] : [],
+          ...overrideConditions(o.projectDir, unit.role)
         ],
         task: taskFor(unit),
         output_contract: outputContractFor(unit.kind),
@@ -27046,6 +27473,19 @@ async function runDispatch(o) {
     } else await step(3, { skipped: dry ? "dry run" : "degraded" });
     if (!dry && !res.degraded) {
       await advanceByFacts();
+      try {
+        await applyApprovedLessons({ projectDir: o.projectDir, runId, now });
+        await reviewTick({
+          projectDir: o.projectDir,
+          runId,
+          now,
+          ...cfg.environments?.staging?.url ? { stagingUrl: cfg.environments.staging.url } : {}
+        });
+      } catch (e) {
+        res.warnings.push(
+          `the milestone review step failed: ${e instanceof Error ? e.message.slice(0, 160) : String(e)}`
+        );
+      }
       await autoAccept();
     }
     const stories = storiesFromMirror(o.projectDir, {
@@ -27274,6 +27714,7 @@ async function runDispatch(o) {
       for (const row of readMirror(o.projectDir, "stories")?.rows ?? []) {
         if (!/^US-\d+$/.test(row.id) || row.properties["Status"] !== "PO Acceptance") continue;
         if ((last.get(row.id) ?? "PO Acceptance") !== "PO Acceptance") continue;
+        if (heldForReview(o.projectDir, row.id)) continue;
         await moveItem({
           projectDir: o.projectDir,
           item: row.id,
@@ -27406,7 +27847,7 @@ async function runDispatch(o) {
     }
     async function publishDevelop(unit, report, branch) {
       const criteria = report.criteria_map ?? [];
-      const ui = existsSync26(path35.join(o.projectDir, "design", "screens", unit.item));
+      const ui = existsSync28(path37.join(o.projectDir, "design", "screens", unit.item));
       const body = renderPrBody({
         items: [unit.item],
         summary: report.summary,
@@ -27565,12 +28006,12 @@ async function runDispatch(o) {
     ).length;
     await step(8, { hard_stops_in_log: hardStops });
     let syncFailed = false;
-    const rows = readLedger(o.projectDir);
-    await syncCostLog({ projectDir: o.projectDir, runId, rows, now });
+    const rows2 = readLedger(o.projectDir);
+    await syncCostLog({ projectDir: o.projectDir, runId, rows: rows2, now });
     await recordCostAlerts(
       o.projectDir,
       costAlerts(
-        rows,
+        rows2,
         storyMetas(o.projectDir, {
           perStoryDefault: cfg.budget.per_story_default,
           ...cfg.budget.by_size ? { bySize: cfg.budget.by_size } : {}
@@ -27582,7 +28023,7 @@ async function runDispatch(o) {
       try {
         const model = buildDigest(o.projectDir, now);
         const pub = await publishDigest({ projectDir: o.projectDir, runId, model, now });
-        digestNote = `${model.health}; ${path35.relative(o.projectDir, pub.file)}`;
+        digestNote = `${model.health}; ${path37.relative(o.projectDir, pub.file)}`;
       } catch (e) {
         res.warnings.push(
           `the digest was not written: ${e instanceof Error ? e.message.slice(0, 160) : String(e)}`
@@ -27644,7 +28085,7 @@ async function runDispatch(o) {
   }
 }
 function branchExists(projectDir, branch) {
-  return existsSync26(worktreePath(projectDir, branch)) ? true : gitHasBranch(projectDir, branch);
+  return existsSync28(worktreePath(projectDir, branch)) ? true : gitHasBranch(projectDir, branch);
 }
 function gitHasBranch(projectDir, branch) {
   try {
@@ -27703,7 +28144,7 @@ var DISPATCH_USAGE = `Usage: arima-dispatch [--dry-run] [--only <ID>] [--yes-pla
   --only      limit the plan to one item (US-, BUG-, INC-, CR-, MS-); every guard still applies
   --yes-plan  assisted mode: the plan hash the human confirmed
 Exit codes: 0 ok, 1 run done but sync out or state push failed, 2 usage, 4 nothing to do, 5 phase refusal (not Phase 4 or operations), 10 config invalid, 11 a run holds the lock, 12 kill switch on, 13 budget used up, 14 environment variable missing, 75 usage limit reached`;
-function render(r, dry) {
+function render2(r, dry) {
   const L = [];
   if (r.message) L.push(r.message);
   if (r.plan.length > 0 || dry) {
@@ -27746,7 +28187,7 @@ ${DISPATCH_USAGE}
 `);
     return DISPATCH_EXIT.usage;
   }
-  const projectDir = path36.resolve(io.cwd, v.project ?? ".");
+  const projectDir = path38.resolve(io.cwd, v.project ?? ".");
   const env = deps.env ?? process.env;
   let wired = deps;
   if (deps.wired !== true) {
@@ -27790,7 +28231,7 @@ ${DISPATCH_USAGE}
     );
   else
     (r.exitCode !== 0 && r.exitCode !== 4 && !r.plan.length ? io.err : io.out)(
-      render(r, v["dry-run"] === true)
+      render2(r, v["dry-run"] === true)
     );
   return r.exitCode;
 }

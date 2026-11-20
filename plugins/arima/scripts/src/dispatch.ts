@@ -21,6 +21,8 @@ import { checkKillSwitch } from './killswitch.js';
 import type { Role } from './ledger.js';
 import { mergePr, summariseChecks, verdictAfterLastPush } from './merge.js';
 import { buildDigest, publishDigest } from './digest.js';
+import { applyApprovedLessons, overrideConditions } from './lessons.js';
+import { heldForReview, reviewTick } from './milestone-review.js';
 import { enqueue } from './notion/outbox.js';
 import { enqueueReportRecords } from './notion/proposals.js';
 import { findRow, pullMirror, readMirror, readNotionMap } from './notion/mirror.js';
@@ -172,6 +174,7 @@ type Cfg = {
   autonomy: { mode: 'assisted' | 'gated' | 'autonomous'; question_policy: QuestionPolicy };
   parallelism?: { max_developer_agents?: number };
   review?: { max_prs_awaiting_human?: number };
+  environments?: { staging?: { url?: string } };
   budget: {
     per_story_default: number;
     by_size?: { S?: number; M?: number; L?: number };
@@ -404,6 +407,21 @@ export async function runDispatch(o: DispatchOptions): Promise<DispatchResult> {
 
     if (!dry && !res.degraded) {
       await advanceByFacts();
+      // WP-217: approved lessons become overrides; a milestone whose stories are all accepted gets its review
+      // (a veto row per story), and an open one closes after its window. Then what is not held is accepted.
+      try {
+        await applyApprovedLessons({ projectDir: o.projectDir, runId, now });
+        await reviewTick({
+          projectDir: o.projectDir,
+          runId,
+          now,
+          ...(cfg.environments?.staging?.url ? { stagingUrl: cfg.environments.staging.url } : {}),
+        });
+      } catch (e) {
+        res.warnings.push(
+          `the milestone review step failed: ${e instanceof Error ? e.message.slice(0, 160) : String(e)}`,
+        );
+      }
       await autoAccept();
     }
 
@@ -694,6 +712,7 @@ export async function runDispatch(o: DispatchOptions): Promise<DispatchResult> {
       for (const row of readMirror(o.projectDir, 'stories')?.rows ?? []) {
         if (!/^US-\d+$/.test(row.id) || row.properties['Status'] !== 'PO Acceptance') continue;
         if ((last.get(row.id) ?? 'PO Acceptance') !== 'PO Acceptance') continue;
+        if (heldForReview(o.projectDir, row.id)) continue; // its milestone review decides (WP-217)
         await moveItem({
           projectDir: o.projectDir,
           item: row.id,
@@ -793,6 +812,7 @@ export async function runDispatch(o: DispatchOptions): Promise<DispatchResult> {
           `Story size: ${size ?? 'unknown'}`,
           `The profile is ${cfg.profile}`,
           ...(unit.reworkReason ? [`This is rework: ${unit.reworkReason}`] : []),
+          ...overrideConditions(o.projectDir, unit.role),
         ],
         task: taskFor(unit),
         output_contract: outputContractFor(unit.kind),
