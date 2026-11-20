@@ -86,6 +86,46 @@ function lineOf(e: unknown): string {
   return typeof l === 'number' ? ` at line ${l}` : '';
 }
 
+/** The Dockerfiles a Compose file builds (paths inside the repository only; others are refused by the lint). */
+export function dockerfilesOf(text: string, o: LintOptions): string[] {
+  let doc: unknown;
+  try {
+    doc = parse(text, { merge: true });
+  } catch {
+    return [];
+  }
+  const out: string[] = [];
+  const services = isObj(doc) && isObj(doc['services']) ? doc['services'] : {};
+  for (const raw of Object.values(services)) {
+    if (!isObj(raw)) continue;
+    const b = raw['build'];
+    const ctx = typeof b === 'string' ? b : isObj(b) ? b['context'] : undefined;
+    const base = typeof ctx === 'string' ? path.resolve(o.composeDir, ctx) : o.composeDir;
+    const df = isObj(b) && typeof b['dockerfile'] === 'string' ? b['dockerfile'] : 'Dockerfile';
+    if (typeof b === 'undefined' || path.isAbsolute(df) || !insideRepo(df, base, o.repoRoot))
+      continue;
+    out.push(path.resolve(base, df));
+  }
+  return [...new Set(out)];
+}
+
+/** A Dockerfile may not widen the build: `RUN --network` and bind, secret or ssh mounts reach the host or its network. */
+export function lintDockerfile(text: string, file: string): Violation[] {
+  const out: Violation[] = [];
+  text.split(/\r?\n/).forEach((line, i) => {
+    if (!/^\s*RUN\b/i.test(line)) return;
+    if (/--network(=|\s)/i.test(line))
+      out.push({ rule: 'unsafe-option', where: `${file}:${i + 1}`, detail: 'RUN --network' });
+    if (/--mount(=|\s)[^\s]*type=(bind|secret|ssh)/i.test(line))
+      out.push({
+        rule: 'unsafe-option',
+        where: `${file}:${i + 1}`,
+        detail: 'RUN --mount bind, secret or ssh',
+      });
+  });
+  return out;
+}
+
 export function lintCompose(text: string, o: LintOptions): Violation[] {
   const out: Violation[] = [];
   const add = (rule: ComposeRule, where: string, detail: string): void => {
@@ -257,7 +297,13 @@ export function lintCompose(text: string, o: LintOptions): Violation[] {
       if (path.isAbsolute(b['dockerfile']) || !insideRepo(b['dockerfile'], base, o.repoRoot))
         add('build-outside-repo', at('build.dockerfile'), `dockerfile ${b['dockerfile']}`);
     }
+    // extra_hosts (host-gateway) opens a name for the host's loopback, where other projects publish ports.
+    if (asList(s['extra_hosts']).length > 0 || isObj(s['extra_hosts']))
+      add('unsafe-option', at('extra_hosts'), 'extra_hosts can name the host machine');
     if (isObj(b)) {
+      for (const k of ['network', 'privileged', 'entitlements', 'secrets', 'extra_hosts'])
+        if (b[k] !== undefined)
+          add('unsafe-option', at(`build.${k}`), `build.${k} widens what the build can reach`);
       if (b['ssh'] !== undefined)
         add('build-outside-repo', at('build.ssh'), 'ssh agent forwarding');
       if (isObj(b['additional_contexts']))

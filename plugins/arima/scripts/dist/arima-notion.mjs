@@ -20288,7 +20288,17 @@ var OUTBOX_DATABASES = {
   developer: ["stories", "bugs", "questions", "decisions"],
   qa: ["test_cases", "bugs", "documents", "questions", "decisions"],
   security: ["risks", "documents", "questions", "decisions"],
-  devops: ["documents", "releases", "incidents", "risks", "human_tasks", "questions", "decisions"]
+  devops: [
+    "documents",
+    "releases",
+    "incidents",
+    "bugs",
+    "lessons",
+    "risks",
+    "human_tasks",
+    "questions",
+    "decisions"
+  ]
 };
 var OUTBOX_FORBIDDEN_PROPERTIES = {
   ba: ["Priority"],

@@ -18900,6 +18900,42 @@ function lineOf(e) {
   const l = e.linePos?.[0]?.line;
   return typeof l === "number" ? ` at line ${l}` : "";
 }
+function dockerfilesOf(text2, o) {
+  let doc;
+  try {
+    doc = (0, import_yaml3.parse)(text2, { merge: true });
+  } catch {
+    return [];
+  }
+  const out = [];
+  const services = isObj(doc) && isObj(doc["services"]) ? doc["services"] : {};
+  for (const raw of Object.values(services)) {
+    if (!isObj(raw)) continue;
+    const b = raw["build"];
+    const ctx = typeof b === "string" ? b : isObj(b) ? b["context"] : void 0;
+    const base = typeof ctx === "string" ? path8.resolve(o.composeDir, ctx) : o.composeDir;
+    const df = isObj(b) && typeof b["dockerfile"] === "string" ? b["dockerfile"] : "Dockerfile";
+    if (typeof b === "undefined" || path8.isAbsolute(df) || !insideRepo(df, base, o.repoRoot))
+      continue;
+    out.push(path8.resolve(base, df));
+  }
+  return [...new Set(out)];
+}
+function lintDockerfile(text2, file) {
+  const out = [];
+  text2.split(/\r?\n/).forEach((line, i) => {
+    if (!/^\s*RUN\b/i.test(line)) return;
+    if (/--network(=|\s)/i.test(line))
+      out.push({ rule: "unsafe-option", where: `${file}:${i + 1}`, detail: "RUN --network" });
+    if (/--mount(=|\s)[^\s]*type=(bind|secret|ssh)/i.test(line))
+      out.push({
+        rule: "unsafe-option",
+        where: `${file}:${i + 1}`,
+        detail: "RUN --mount bind, secret or ssh"
+      });
+  });
+  return out;
+}
 function lintCompose(text2, o) {
   const out = [];
   const add = (rule, where, detail) => {
@@ -19057,7 +19093,12 @@ function lintCompose(text2, o) {
       if (path8.isAbsolute(b["dockerfile"]) || !insideRepo(b["dockerfile"], base, o.repoRoot))
         add("build-outside-repo", at("build.dockerfile"), `dockerfile ${b["dockerfile"]}`);
     }
+    if (asList(s["extra_hosts"]).length > 0 || isObj(s["extra_hosts"]))
+      add("unsafe-option", at("extra_hosts"), "extra_hosts can name the host machine");
     if (isObj(b)) {
+      for (const k of ["network", "privileged", "entitlements", "secrets", "extra_hosts"])
+        if (b[k] !== void 0)
+          add("unsafe-option", at(`build.${k}`), `build.${k} widens what the build can reach`);
       if (b["ssh"] !== void 0)
         add("build-outside-repo", at("build.ssh"), "ssh agent forwarding");
       if (isObj(b["additional_contexts"])) {
@@ -19822,7 +19863,13 @@ function neutralDir() {
 }
 function lintFile(file, repoRoot) {
   const text2 = readFileSync6(file, "utf8");
-  return lintCompose(text2, { composeDir: path10.dirname(file), repoRoot });
+  const o = { composeDir: path10.dirname(file), repoRoot };
+  const out = lintCompose(text2, o);
+  for (const df of dockerfilesOf(text2, o)) {
+    if (!existsSync5(df)) continue;
+    out.push(...lintDockerfile(readFileSync6(df, "utf8"), path10.relative(repoRoot, df)));
+  }
+  return out;
 }
 async function checkCompose(s, file, deps = {}) {
   const abs = path10.resolve(s.projectDir, file ?? s.composeFile);

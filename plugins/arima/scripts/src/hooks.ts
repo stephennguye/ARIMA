@@ -33,6 +33,8 @@ export interface Guard {
 export interface GuardContext {
   role?: string | undefined;
   defaultBranch?: string | undefined;
+  /** The unit kind (from ARIMA_KIND), when the run was started with one. */
+  kind?: string | undefined;
 }
 
 // ---------------------------------------------------------------------------------------------
@@ -458,7 +460,7 @@ function guardContainers(command: string): Guard | undefined {
     if (
       h.head === 'npm' &&
       h.rest.some((a) =>
-        /^(--prefix|-C|--workspaces?|-w|--script-shell|--userconfig|--globalconfig|--cache)(=|$)/.test(
+        /^(--prefix|-C|--workspaces?|-w|--script-shell|--userconfig|--globalconfig|--cache|--node-options)(=|$)/.test(
           a,
         ),
       )
@@ -524,6 +526,12 @@ function guardContainers(command: string): Guard | undefined {
           reason: 'arima-env takes only staging or preview-<pr> in an agent run',
         };
     }
+    // Last, so that production and odd arguments keep their own reasons: a run reads, the host deploys.
+    if (sub === 'up' || sub === 'down')
+      return {
+        rule: 'host-script',
+        reason: `arima-env ${sub} is run by the host after a merge, never by an agent (it would deploy or remove unreviewed work)`,
+      };
   }
   return undefined;
 }
@@ -531,6 +539,38 @@ function guardContainers(command: string): Guard | undefined {
 export function guardBash(command: string, ctx: GuardContext = {}): Guard | undefined {
   const c = withoutMessages(command);
   const lc = c.toLowerCase();
+  if (ctx.role === 'devops' && ctx.kind === 'deploy-staging') {
+    // Read-only kind (judge J-agent:devops, blocker 2): no git command that changes the tree or a ref.
+    const WRITING = new Set([
+      'add',
+      'commit',
+      'rm',
+      'mv',
+      'restore',
+      'checkout',
+      'switch',
+      'reset',
+      'stash',
+      'merge',
+      'rebase',
+      'cherry-pick',
+      'apply',
+      'am',
+      'tag',
+      'branch',
+      'clean',
+      'revert',
+    ]);
+    for (const s of expandCommands(c)) {
+      const h = headOf(s.words);
+      if (h?.head === 'git' && WRITING.has(h.rest.find((a) => !a.startsWith('-')) ?? ''))
+        return {
+          rule: 'read-only-kind',
+          reason:
+            'a deploy-staging run changes no file and makes no commit; put the proposed fix in findings',
+        };
+    }
+  }
   if (
     /(^|[\s"'=:/\\])\.env(\.(?!example\b|sample\b|template\b|dist\b)[a-z0-9_-]+)?(?=$|[\s"';|&)<>])/i.test(
       c,
@@ -663,6 +703,18 @@ export function guardTool(
         };
     }
   }
+  // A deploy-staging run verifies and diagnoses in the owner's own tree: it changes no file (its only
+  // write is a proposal in the outbox) and commits nothing (judge J-agent:devops, blocker 2).
+  if (
+    ctx.role === 'devops' &&
+    ctx.kind === 'deploy-staging' &&
+    WRITE_TOOLS.has(tool) &&
+    pathsOf(input).some((p) => !/(^|\/)\.arima\/outbox\/[^/]+\.json$/.test(canon(p)))
+  )
+    return {
+      rule: 'read-only-kind',
+      reason: 'a deploy-staging run edits no file; put the proposed fix in findings',
+    };
   if (FILE_TOOLS.has(tool)) {
     for (const p of pathsOf(input)) {
       if (isSecretPath(p)) {
@@ -831,6 +883,7 @@ export async function handleHook(
       }
       const ctx: GuardContext = {
         role: env['ARIMA_ROLE'],
+        kind: env['ARIMA_KIND'],
         defaultBranch: defaultBranchOf(projectDir),
       };
       const hit = guardTool(tool, toolInput, ctx);

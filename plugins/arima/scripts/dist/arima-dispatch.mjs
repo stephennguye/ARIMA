@@ -19304,6 +19304,42 @@ function lineOf(e) {
   const l = e.linePos?.[0]?.line;
   return typeof l === "number" ? ` at line ${l}` : "";
 }
+function dockerfilesOf(text3, o) {
+  let doc;
+  try {
+    doc = (0, import_yaml3.parse)(text3, { merge: true });
+  } catch {
+    return [];
+  }
+  const out = [];
+  const services = isObj(doc) && isObj(doc["services"]) ? doc["services"] : {};
+  for (const raw of Object.values(services)) {
+    if (!isObj(raw)) continue;
+    const b = raw["build"];
+    const ctx = typeof b === "string" ? b : isObj(b) ? b["context"] : void 0;
+    const base = typeof ctx === "string" ? path9.resolve(o.composeDir, ctx) : o.composeDir;
+    const df = isObj(b) && typeof b["dockerfile"] === "string" ? b["dockerfile"] : "Dockerfile";
+    if (typeof b === "undefined" || path9.isAbsolute(df) || !insideRepo(df, base, o.repoRoot))
+      continue;
+    out.push(path9.resolve(base, df));
+  }
+  return [...new Set(out)];
+}
+function lintDockerfile(text3, file) {
+  const out = [];
+  text3.split(/\r?\n/).forEach((line, i) => {
+    if (!/^\s*RUN\b/i.test(line)) return;
+    if (/--network(=|\s)/i.test(line))
+      out.push({ rule: "unsafe-option", where: `${file}:${i + 1}`, detail: "RUN --network" });
+    if (/--mount(=|\s)[^\s]*type=(bind|secret|ssh)/i.test(line))
+      out.push({
+        rule: "unsafe-option",
+        where: `${file}:${i + 1}`,
+        detail: "RUN --mount bind, secret or ssh"
+      });
+  });
+  return out;
+}
 function lintCompose(text3, o) {
   const out = [];
   const add2 = (rule, where, detail) => {
@@ -19461,7 +19497,12 @@ function lintCompose(text3, o) {
       if (path9.isAbsolute(b["dockerfile"]) || !insideRepo(b["dockerfile"], base, o.repoRoot))
         add2("build-outside-repo", at("build.dockerfile"), `dockerfile ${b["dockerfile"]}`);
     }
+    if (asList(s["extra_hosts"]).length > 0 || isObj(s["extra_hosts"]))
+      add2("unsafe-option", at("extra_hosts"), "extra_hosts can name the host machine");
     if (isObj(b)) {
+      for (const k of ["network", "privileged", "entitlements", "secrets", "extra_hosts"])
+        if (b[k] !== void 0)
+          add2("unsafe-option", at(`build.${k}`), `build.${k} widens what the build can reach`);
       if (b["ssh"] !== void 0)
         add2("build-outside-repo", at("build.ssh"), "ssh agent forwarding");
       if (isObj(b["additional_contexts"])) {
@@ -19693,9 +19734,9 @@ function allowedTools(role, scriptsDir) {
         ...GIT_READ,
         ...bash("git add"),
         ...bash("git commit"),
-        // `npm run` and `npm ci` are not granted: they run scripts, and a devops run writes files
-        // (infra/**) that package scripts could point at.
-        ...bash("npm test"),
+        // `npm test`, `npm run` and `npm ci` are not granted: they run code (a test runner config, a
+        // --node-options require, a package script), and a devops run writes files (infra/**) that such
+        // code could be pointed at (judge J-agent:devops, blocker 1). outdated, audit and sbom run none.
         ...bash("npm outdated"),
         ...bash("npm audit"),
         ...bash("npm sbom"),
@@ -19704,7 +19745,9 @@ function allowedTools(role, scriptsDir) {
         // production container would read its environment, so the read-only Docker commands the
         // card listed are not granted. backup and restore-test are host jobs.
         ...nodeScript("arima-env", " check"),
-        ...["status", "logs", "smoke", "up", "down"].flatMap((sub) => [
+        // Only the read-side subcommands: the host runs `up` and `down` (judge blocker 2 and major 1: a
+        // run that could `up` could deploy its own unreviewed files; `down` clears the failure record).
+        ...["status", "logs", "smoke"].flatMap((sub) => [
           ...nodeScript("arima-env", ` ${sub} staging`),
           ...nodeScript("arima-env", ` ${sub} preview-*`)
         ]),
@@ -19790,7 +19833,17 @@ var OUTBOX_DATABASES = {
   developer: ["stories", "bugs", "questions", "decisions"],
   qa: ["test_cases", "bugs", "documents", "questions", "decisions"],
   security: ["risks", "documents", "questions", "decisions"],
-  devops: ["documents", "releases", "incidents", "risks", "human_tasks", "questions", "decisions"]
+  devops: [
+    "documents",
+    "releases",
+    "incidents",
+    "bugs",
+    "lessons",
+    "risks",
+    "human_tasks",
+    "questions",
+    "decisions"
+  ]
 };
 var OUTBOX_FORBIDDEN_PROPERTIES = {
   ba: ["Priority"],
@@ -21502,7 +21555,13 @@ function neutralDir() {
 }
 function lintFile(file, repoRoot) {
   const text3 = readFileSync12(file, "utf8");
-  return lintCompose(text3, { composeDir: path16.dirname(file), repoRoot });
+  const o = { composeDir: path16.dirname(file), repoRoot };
+  const out = lintCompose(text3, o);
+  for (const df of dockerfilesOf(text3, o)) {
+    if (!existsSync11(df)) continue;
+    out.push(...lintDockerfile(readFileSync12(df, "utf8"), path16.relative(repoRoot, df)));
+  }
+  return out;
 }
 function findSymlink(dir) {
   for (const e of readdirSync5(dir)) {
@@ -21834,33 +21893,35 @@ async function rebuildStagingAfterMerge(s, deps = {}) {
   const exec = deps.exec ?? realExec;
   const on = deps.isPaused ? await deps.isPaused() : (await checkKillSwitch(s.projectDir, null)).on;
   if (on) return "skipped";
-  const fetchOk = await exec("git", ["fetch", "origin", s.defaultBranch], {
-    cwd: s.projectDir,
-    timeoutMs: 12e4
-  });
-  const ref = fetchOk.code === 0 ? `origin/${s.defaultBranch}` : s.defaultBranch;
-  const have = await exec("git", ["cat-file", "-e", `${ref}:${s.composeFile}`], {
-    cwd: s.projectDir
-  });
-  if (have.code !== 0) return "skipped";
+  let ref = s.defaultBranch;
   try {
+    const fetchOk = await exec("git", ["fetch", "origin", s.defaultBranch], {
+      cwd: s.projectDir,
+      timeoutMs: 12e4
+    });
+    ref = fetchOk.code === 0 ? `origin/${s.defaultBranch}` : s.defaultBranch;
+    const have = await exec("git", ["cat-file", "-e", `${ref}:${s.composeFile}`], {
+      cwd: s.projectDir
+    });
+    if (have.code !== 0) return "skipped";
     await upEnv(s, "staging", { ...deps, ref });
     return "deployed";
   } catch (e) {
-    if (!(e instanceof EnvError)) throw e;
+    const message = e instanceof Error ? e.message : String(e);
+    const exit = e instanceof EnvError ? e.exit : void 0;
     const st = readEnvState(s.projectDir);
-    if (st.staging_failed === void 0 || e.exit !== ENV_EXIT.smokeFailed) {
+    if (st.staging_failed === void 0 || exit !== ENV_EXIT.smokeFailed) {
       st.staging_failed = {
         ref,
         at: (deps.now?.() ?? /* @__PURE__ */ new Date()).toISOString(),
-        error: e.message.slice(0, 600),
+        error: message.slice(0, 600),
         restored: false
       };
       writeEnvState(s.projectDir, st);
       await appendEvent(s.projectDir, {
         type: "deploy.staging",
         actor: "system",
-        data: { environment: "staging", ok: false, error: e.message.slice(0, 600) }
+        data: { environment: "staging", ok: false, error: message.slice(0, 600) }
       });
     }
     return "failed";

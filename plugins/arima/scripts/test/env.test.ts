@@ -710,6 +710,27 @@ describe('rebuildStagingAfterMerge (the dispatcher hook, D-47, G-28)', () => {
   });
 });
 
+describe('judge J-agent:devops, major 2: a rebuild that throws is a failed rebuild', () => {
+  it('an error that is not an EnvError reaches staging_failed and the event log instead of the merge', async () => {
+    const dir = app();
+    const s = settingsFrom(dir, validateProject(dir).arima);
+    const d = deps(fake());
+    const inner = d.exec as NonNullable<typeof d.exec>;
+    const throwing = {
+      ...d,
+      exec: (async (cmd: string, args: string[], o: never) => {
+        if (cmd === 'git' && args[0] === 'cat-file') throw new Error('git exec exploded');
+        return inner(cmd, args, o);
+      }) as typeof inner,
+    };
+    expect(await rebuildStagingAfterMerge(s, throwing)).toBe('failed');
+    expect(stagingFailing(dir)?.error).toContain('git exec exploded');
+    expect(
+      readEvents(dir).filter((e) => e.type === 'deploy.staging' && e.data?.['ok'] === false),
+    ).toHaveLength(1);
+  });
+});
+
 describe('found by the independent attack (WP-213 review, section 7)', () => {
   it('--run-id must look like a run id', async () => {
     const dir = app();

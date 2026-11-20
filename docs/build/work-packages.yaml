@@ -734,7 +734,7 @@ packages:
       - production refused under every condition
       - smoke test verified
       - arima-env (check, status, logs, smoke, up, down for staging and preview; backup, restore-test) exists; it refuses production with exit 70
-      - devops has no Docker daemon access, no gh, no git push; CI is GitHub Actions only (ci.yml and security-weekly.yml)
+      - devops has no Docker daemon access, no gh, no git push, no npm test or run, and may only read staging and preview through arima-env (status, logs, smoke); the host runs up and down; no deploy workflow exists (CI is GitHub Actions only; the files ci.yml and security-weekly.yml are delivered by WP-219)
       - devops authors docs/ops/env-matrix.md in the env-plan kind
     tests:
       - evals/devops
@@ -754,6 +754,7 @@ packages:
       - the URL appears in the QA packet and in the digest next to the PR
       - a preview that does not answer keeps the item In Review and raises a question
       - preview-<pr> projects use a free port from a configured range; max_previews default 3; teardown on merge or close
+      - the preview-diagnose kind exists and the card's scenario 9 (a failing preview is diagnosed) passes 4 of 5 with a real agent; only the host runs arima-env up and down for previews
     tests:
       - preview.test.ts
       - real check on the dev project
@@ -777,6 +778,7 @@ packages:
       - CI runs static analysis, dependency audit and secret scan and fails on a planted finding
       - the developer skeleton kind produces a thin slice through UI, API and database deployed to staging
       - CI checks are lint, types, tests, build, static analysis, dependency audit, secret scan, licence check, image build and smoke, e2e on an ephemeral stack, changed-line coverage
+      - ci.yml and security-weekly.yml exist as templates; every workflow sets read-only default permissions, and a workflow a devops PR changes cannot reach repository secrets or a write token before the tech-lead has reviewed it (judge J-agent:devops, major 8)
     tests:
       - evals/phase3
   - id: WP-214
@@ -810,6 +812,7 @@ packages:
       - "7.12"
     acceptance:
       - failure-loop scenarios pass with real agents
+      - "a failed staging rebuild: the deploy-staging unit is capped (attempts) and escalated with arima:needs-human, its finding can start a fix unit, and a rebuild skipped by the kill switch is redone on resume (judge J-agent:devops, major 2)"
     tests:
       - evals/run
   - id: WP-216
@@ -1225,6 +1228,7 @@ packages:
       - production deploys only through arima-release deploy <version>, with the approval read live from Notion and bound to version and RC commit, no override flag, health-gated replacement with automatic rollback
       - the version tag carries the SBOM; rollback is run by the human only
       - a pre-deploy backup of the production volumes is taken
+      - production publishes no port a staging or preview container can reach through host.docker.internal, or the reachable ports are listed and accepted (judge J-agent:devops, major 6)
     tests:
       - deploy.test.ts
   - id: WP-403

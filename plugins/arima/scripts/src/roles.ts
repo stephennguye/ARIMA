@@ -150,9 +150,9 @@ export function allowedTools(role: Role, scriptsDir: string): string[] {
         ...GIT_READ,
         ...bash('git add'),
         ...bash('git commit'),
-        // `npm run` and `npm ci` are not granted: they run scripts, and a devops run writes files
-        // (infra/**) that package scripts could point at.
-        ...bash('npm test'),
+        // `npm test`, `npm run` and `npm ci` are not granted: they run code (a test runner config, a
+        // --node-options require, a package script), and a devops run writes files (infra/**) that such
+        // code could be pointed at (judge J-agent:devops, blocker 1). outdated, audit and sbom run none.
         ...bash('npm outdated'),
         ...bash('npm audit'),
         ...bash('npm sbom'),
@@ -161,7 +161,9 @@ export function allowedTools(role: Role, scriptsDir: string): string[] {
         // production container would read its environment, so the read-only Docker commands the
         // card listed are not granted. backup and restore-test are host jobs.
         ...nodeScript('arima-env', ' check'),
-        ...['status', 'logs', 'smoke', 'up', 'down'].flatMap((sub) => [
+        // Only the read-side subcommands: the host runs `up` and `down` (judge blocker 2 and major 1: a
+        // run that could `up` could deploy its own unreviewed files; `down` clears the failure record).
+        ...['status', 'logs', 'smoke'].flatMap((sub) => [
           ...nodeScript('arima-env', ` ${sub} staging`),
           ...nodeScript('arima-env', ` ${sub} preview-*`),
         ]),
@@ -271,7 +273,17 @@ export const OUTBOX_DATABASES: Record<Role, readonly DbKey[]> = {
   developer: ['stories', 'bugs', 'questions', 'decisions'],
   qa: ['test_cases', 'bugs', 'documents', 'questions', 'decisions'],
   security: ['risks', 'documents', 'questions', 'decisions'],
-  devops: ['documents', 'releases', 'incidents', 'risks', 'human_tasks', 'questions', 'decisions'],
+  devops: [
+    'documents',
+    'releases',
+    'incidents',
+    'bugs',
+    'lessons',
+    'risks',
+    'human_tasks',
+    'questions',
+    'decisions',
+  ],
 };
 
 /** Properties a role may not write even in a database it may write (priority is the PO's call). */

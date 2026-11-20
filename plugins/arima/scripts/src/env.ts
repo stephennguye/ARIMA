@@ -14,7 +14,7 @@ import { homedir, tmpdir } from 'node:os';
 import path from 'node:path';
 import { appendEvent } from './events.js';
 import { checkKillSwitch } from './killswitch.js';
-import { lintCompose, mentionsProduction } from './compose-lint.js';
+import { dockerfilesOf, lintCompose, lintDockerfile, mentionsProduction } from './compose-lint.js';
 import type { Violation } from './compose-lint.js';
 import { writeFileAtomic } from './lib/atomic-file.js';
 import { findSecrets } from './lib/secrets.js';
@@ -343,7 +343,13 @@ export interface CheckResult {
 
 export function lintFile(file: string, repoRoot: string): Violation[] {
   const text = readFileSync(file, 'utf8');
-  return lintCompose(text, { composeDir: path.dirname(file), repoRoot });
+  const o = { composeDir: path.dirname(file), repoRoot };
+  const out = lintCompose(text, o);
+  for (const df of dockerfilesOf(text, o)) {
+    if (!existsSync(df)) continue;
+    out.push(...lintDockerfile(readFileSync(df, 'utf8'), path.relative(repoRoot, df)));
+  }
+  return out;
 }
 
 /** `arima-env check`: lint, then `docker compose config` when Docker answers (it needs no daemon, only the CLI). */
@@ -1041,34 +1047,37 @@ export async function rebuildStagingAfterMerge(
   const exec = deps.exec ?? realExec;
   const on = deps.isPaused ? await deps.isPaused() : (await checkKillSwitch(s.projectDir, null)).on;
   if (on) return 'skipped';
-  const fetchOk = await exec('git', ['fetch', 'origin', s.defaultBranch], {
-    cwd: s.projectDir,
-    timeoutMs: 120_000,
-  });
-  const ref = fetchOk.code === 0 ? `origin/${s.defaultBranch}` : s.defaultBranch;
-  const have = await exec('git', ['cat-file', '-e', `${ref}:${s.composeFile}`], {
-    cwd: s.projectDir,
-  });
-  if (have.code !== 0) return 'skipped';
+  let ref = s.defaultBranch;
   try {
+    const fetchOk = await exec('git', ['fetch', 'origin', s.defaultBranch], {
+      cwd: s.projectDir,
+      timeoutMs: 120_000,
+    });
+    ref = fetchOk.code === 0 ? `origin/${s.defaultBranch}` : s.defaultBranch;
+    const have = await exec('git', ['cat-file', '-e', `${ref}:${s.composeFile}`], {
+      cwd: s.projectDir,
+    });
+    if (have.code !== 0) return 'skipped';
     await upEnv(s, 'staging', { ...deps, ref });
     return 'deployed';
   } catch (e) {
-    if (!(e instanceof EnvError)) throw e;
+    // Any other error (git or fs throwing, say) is a failed rebuild too: it must reach the plan, not look like a failed merge.
+    const message = e instanceof Error ? e.message : String(e);
+    const exit = e instanceof EnvError ? e.exit : undefined;
     // upEnv already wrote the event and the state for a failed deploy; a refusal before that needs them here.
     const st = readEnvState(s.projectDir);
-    if (st.staging_failed === undefined || e.exit !== ENV_EXIT.smokeFailed) {
+    if (st.staging_failed === undefined || exit !== ENV_EXIT.smokeFailed) {
       st.staging_failed = {
         ref,
         at: (deps.now?.() ?? new Date()).toISOString(),
-        error: e.message.slice(0, 600),
+        error: message.slice(0, 600),
         restored: false,
       };
       writeEnvState(s.projectDir, st);
       await appendEvent(s.projectDir, {
         type: 'deploy.staging',
         actor: 'system',
-        data: { environment: 'staging', ok: false, error: e.message.slice(0, 600) },
+        data: { environment: 'staging', ok: false, error: message.slice(0, 600) },
       });
     }
     return 'failed';

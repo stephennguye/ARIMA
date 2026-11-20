@@ -7,7 +7,7 @@ import { execFileSync } from 'node:child_process';
 import { copyFileSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
-import { outputContractFor, taskFor } from '../../plugins/arima/scripts/src/dispatch-units.js';
+import { needsWorktree, outputContractFor, taskFor } from '../../plugins/arima/scripts/src/dispatch-units.js';
 import type { UnitKind } from '../../plugins/arima/scripts/src/kinds.js';
 import type { Role } from '../../plugins/arima/scripts/src/ledger.js';
 import { renderPacket } from '../../plugins/arima/scripts/src/packet.js';
@@ -96,8 +96,10 @@ export function runRealUnit(u: RealUnit): RealResult {
       attempt: 1,
       budget_usd: u.budgetUsd,
       max_turns: u.maxTurns,
-      worktree: u.dir,
-      branch: git(u.dir, 'rev-parse', '--abbrev-ref', 'HEAD'),
+      // Like the dispatcher: a unit that runs in the owner's tree (no worktree kind) carries neither.
+      ...(needsWorktree(u.kind, u.role)
+        ? { worktree: u.dir, branch: git(u.dir, 'rev-parse', '--abbrev-ref', 'HEAD') }
+        : {}),
       inputs: u.inputs.map((i) => i.ref),
       profile: 'solo-lite',
     },

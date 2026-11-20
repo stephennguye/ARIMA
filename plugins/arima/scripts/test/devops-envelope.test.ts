@@ -2,7 +2,7 @@
 // card has a test that tries it. Deny rules and the guard are two layers; both are checked.
 import { describe, expect, it } from 'vitest';
 import { guardBash, guardTool } from '../src/hooks.js';
-import { ROLES, allowedTools, deniedTools } from '../src/roles.js';
+import { OUTBOX_DATABASES, ROLES, allowedTools, deniedTools } from '../src/roles.js';
 
 const DIR = '/p/scripts/dist';
 const allowed = allowedTools('devops', DIR);
@@ -19,7 +19,6 @@ describe('devops allow-list (card section 6, as narrowed by WP-213)', () => {
       'Bash(git commit *)',
       'Bash(git add *)',
       'Bash(git diff *)',
-      'Bash(npm test)',
       'Bash(npm audit)',
       'Bash(npm sbom *)',
       'Bash(npm outdated)',
@@ -42,16 +41,16 @@ describe('devops allow-list (card section 6, as narrowed by WP-213)', () => {
     expect(allowed.filter((t) => /\bgh\b/.test(t))).toEqual([]);
   });
 
-  it('may run arima-env check, and status/logs/smoke/up/down for staging and preview-* only', () => {
+  it('may run arima-env check, and status/logs/smoke for staging and preview-* only', () => {
     const env = allowed.filter((t) => t.includes('arima-env.mjs'));
     expect(env.length).toBeGreaterThan(0);
     for (const t of env) {
       expect(t).toMatch(
-        /arima-env\.mjs"? (check|(status|logs|smoke|up|down) (staging|preview-\*))( \*)?\)$/,
+        /arima-env\.mjs"? (check|(status|logs|smoke) (staging|preview-\*))( \*)?\)$/,
       );
-      expect(t).not.toMatch(/backup|restore-test|production/);
+      expect(t).not.toMatch(/backup|restore-test|production|\b(up|down)\b/);
     }
-    for (const sub of ['status', 'logs', 'smoke', 'up', 'down'])
+    for (const sub of ['status', 'logs', 'smoke'])
       expect(env.some((t) => t.includes(` ${sub} staging`))).toBe(true);
     // The agent file quotes the path, and a rule matches only the spelling it was written in.
     expect(env.some((t) => t.includes('arima-env.mjs" status staging'))).toBe(true);
@@ -60,13 +59,22 @@ describe('devops allow-list (card section 6, as narrowed by WP-213)', () => {
 
   it('grants every subcommand and target in both path spellings (a missing one denies the call)', () => {
     const want: string[] = ['check'];
-    for (const sub of ['status', 'logs', 'smoke', 'up', 'down'])
+    for (const sub of ['status', 'logs', 'smoke'])
       for (const target of ['staging', 'preview-*']) want.push(`${sub} ${target}`);
     for (const w of want) {
       const quoted = allowed.some((t) => t.includes(`arima-env.mjs" ${w}`));
       const plain = allowed.some((t) => t.includes(`arima-env.mjs ${w}`));
       expect({ w, quoted, plain }).toEqual({ w, quoted: true, plain: true });
     }
+  });
+
+  it('cannot run npm test, npm run or npm ci (they execute files a devops run can write)', () => {
+    expect(allowed.filter((t) => /npm (test|run|ci|exec|start)/.test(t))).toEqual([]);
+    expect(allowed.some((t) => t.includes('npm audit'))).toBe(true);
+  });
+
+  it('may propose bugs and lessons to the outbox, as the card says', () => {
+    expect(OUTBOX_DATABASES.devops).toEqual(expect.arrayContaining(['bugs', 'lessons']));
   });
 
   it('no other role may run arima-env', () => {
@@ -117,6 +125,14 @@ describe('the guard in a devops run: forbidden actions are blocked (card section
     ['node /p/scripts/dist/arima-env.mjs up $(echo production)', 'production-barrier'],
     ['node /p/scripts/dist/arima-env.mjs up preview-0', 'production-barrier'],
     ['bash -c "node /p/scripts/dist/arima-env.mjs up production"', 'production-barrier'],
+    // up and down are the host's: a run could deploy its own files or erase the failure record
+    ['node /p/scripts/dist/arima-env.mjs up staging', 'host-script'],
+    ['node /p/scripts/dist/arima-env.mjs up preview-12', 'host-script'],
+    ['node /p/scripts/dist/arima-env.mjs down staging', 'host-script'],
+    ['node /p/scripts/dist/arima-env.mjs down preview-3', 'host-script'],
+    // npm options that load code
+    ['npm audit --node-options=--require=./infra/x.cjs', 'vcs'],
+    ['npm test --node-options=--require=./infra/x.cjs', 'vcs'],
     // host-run subcommands and scripts
     ['node /p/scripts/dist/arima-env.mjs backup staging', 'host-script'],
     ['node /p/scripts/dist/arima-env.mjs restore-test staging', 'host-script'],
@@ -160,8 +176,6 @@ describe('the guard in a devops run: forbidden actions are blocked (card section
   it('what a devops run is meant to do passes the guard', () => {
     for (const cmd of [
       'node /p/scripts/dist/arima-env.mjs check',
-      'node /p/scripts/dist/arima-env.mjs up staging',
-      'node /p/scripts/dist/arima-env.mjs up preview-12',
       'node /p/scripts/dist/arima-env.mjs logs staging --tail 100',
       'node /p/scripts/dist/arima-env.mjs smoke preview-3',
       'node /p/scripts/dist/arima-env.mjs status staging --json',
@@ -184,5 +198,42 @@ describe('the guard in a devops run: forbidden actions are blocked (card section
 
   it('a human (no role) may still run docker', () => {
     expect(guardBash('docker ps', {})).toBeUndefined();
+  });
+});
+
+describe('a deploy-staging run is read-only (judge J-agent:devops, blocker 2)', () => {
+  const ro = { role: 'devops', kind: 'deploy-staging', defaultBranch: 'main' };
+  it.each([
+    ['Write', { file_path: 'infra/compose.yaml', content: 'x' }],
+    ['Edit', { file_path: 'Dockerfile', old_string: 'a', new_string: 'b' }],
+    ['Write', { file_path: 'docs/ops/runbook.md', content: 'x' }],
+    ['Write', { file_path: '.arima/outbox/x/y.json', content: '{}' }],
+  ])('%s %j is blocked', (tool, input) => {
+    expect(guardTool(tool, input, ro)?.rule).toBe('read-only-kind');
+  });
+  it('may still propose in the outbox', () => {
+    expect(
+      guardTool('Write', { file_path: '.arima/outbox/q1.json', content: '{}' }, ro),
+    ).toBeUndefined();
+  });
+  it.each([
+    'git add -A',
+    'git commit -m x',
+    'git checkout -- .',
+    'git reset --hard',
+    'git stash',
+    'git tag v1',
+  ])('%s is blocked', (cmd) => expect(guardBash(cmd, ro)?.rule).toBe('read-only-kind'));
+  it('reading git is fine, and other kinds of devops runs may still commit', () => {
+    for (const cmd of ['git status', 'git log --oneline -3', 'git diff HEAD~1'])
+      expect(guardBash(cmd, ro), cmd).toBeUndefined();
+    expect(guardBash('git commit -m x', { ...ro, kind: 'env-plan' })).toBeUndefined();
+    expect(
+      guardTool(
+        'Write',
+        { file_path: 'infra/compose.yaml', content: 'x' },
+        { ...ro, kind: 'env-plan' },
+      ),
+    ).toBeUndefined();
   });
 });

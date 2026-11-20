@@ -15976,7 +15976,7 @@ function guardContainers(command) {
         };
     }
     if (h.head === "npm" && h.rest.some(
-      (a) => /^(--prefix|-C|--workspaces?|-w|--script-shell|--userconfig|--globalconfig|--cache)(=|$)/.test(
+      (a) => /^(--prefix|-C|--workspaces?|-w|--script-shell|--userconfig|--globalconfig|--cache|--node-options)(=|$)/.test(
         a
       )
     ))
@@ -16035,12 +16035,47 @@ function guardContainers(command) {
           reason: "arima-env takes only staging or preview-<pr> in an agent run"
         };
     }
+    if (sub === "up" || sub === "down")
+      return {
+        rule: "host-script",
+        reason: `arima-env ${sub} is run by the host after a merge, never by an agent (it would deploy or remove unreviewed work)`
+      };
   }
   return void 0;
 }
 function guardBash(command, ctx = {}) {
   const c = withoutMessages(command);
   const lc = c.toLowerCase();
+  if (ctx.role === "devops" && ctx.kind === "deploy-staging") {
+    const WRITING = /* @__PURE__ */ new Set([
+      "add",
+      "commit",
+      "rm",
+      "mv",
+      "restore",
+      "checkout",
+      "switch",
+      "reset",
+      "stash",
+      "merge",
+      "rebase",
+      "cherry-pick",
+      "apply",
+      "am",
+      "tag",
+      "branch",
+      "clean",
+      "revert"
+    ]);
+    for (const s of expandCommands(c)) {
+      const h = headOf(s.words);
+      if (h?.head === "git" && WRITING.has(h.rest.find((a) => !a.startsWith("-")) ?? ""))
+        return {
+          rule: "read-only-kind",
+          reason: "a deploy-staging run changes no file and makes no commit; put the proposed fix in findings"
+        };
+    }
+  }
   if (/(^|[\s"'=:/\\])\.env(\.(?!example\b|sample\b|template\b|dist\b)[a-z0-9_-]+)?(?=$|[\s"';|&)<>])/i.test(
     c
   )) {
@@ -16127,6 +16162,11 @@ function guardTool(tool, input, ctx = {}) {
         };
     }
   }
+  if (ctx.role === "devops" && ctx.kind === "deploy-staging" && WRITE_TOOLS.has(tool) && pathsOf(input).some((p) => !/(^|\/)\.arima\/outbox\/[^/]+\.json$/.test(canon(p))))
+    return {
+      rule: "read-only-kind",
+      reason: "a deploy-staging run edits no file; put the proposed fix in findings"
+    };
   if (FILE_TOOLS.has(tool)) {
     for (const p of pathsOf(input)) {
       if (isSecretPath(p)) {
@@ -16254,6 +16294,7 @@ async function handleHook(kind2, input, env = process.env) {
       }
       const ctx = {
         role: env["ARIMA_ROLE"],
+        kind: env["ARIMA_KIND"],
         defaultBranch: defaultBranchOf(projectDir)
       };
       const hit = guardTool(tool, toolInput, ctx);
