@@ -31,6 +31,7 @@ import type { NotionPort } from './notion/port.js';
 import { pushOutbox } from './notion/outbox.js';
 import { stagingFailing } from './env.js';
 import { renderPacket } from './packet.js';
+import { reviewContext } from './review-context.js';
 import type { PacketInput } from './packet.js';
 import { PREFLIGHT_EXIT, runPreflight } from './preflight.js';
 import { loadProfile } from './profiles.js';
@@ -680,10 +681,11 @@ export async function runDispatch(o: DispatchOptions): Promise<DispatchResult> {
       return attemptOf(item);
     }
     function lastDevelopReport(item: string): AgentReport | undefined {
+      return lastReportOf(item, 'develop');
+    }
+    function lastReportOf(item: string, kind: string): AgentReport | undefined {
       const e = readEvents(o.projectDir)
-        .filter(
-          (x) => x.type === 'report.accepted' && x.item === item && x.data?.['kind'] === 'develop',
-        )
+        .filter((x) => x.type === 'report.accepted' && x.item === item && x.data?.['kind'] === kind)
         .at(-1);
       if (e?.run_id === undefined) return undefined;
       try {
@@ -764,7 +766,8 @@ export async function runDispatch(o: DispatchOptions): Promise<DispatchResult> {
 
     /** The repo files a developer unit works from (card section 3), only those that exist in its tree. */
     function readsFor(unit: PlannedUnit, cwd: string): { ref: string; why: string }[] {
-      if (unit.role !== 'developer') return [];
+      if (unit.role !== 'developer' && !(unit.role === 'tech-lead' && unit.kind === 'review'))
+        return [];
       const out: { ref: string; why: string }[] = [];
       const add = (ref: string, why: string): void => {
         if (existsSync(path.join(cwd, ref))) out.push({ ref, why });
@@ -809,6 +812,19 @@ export async function runDispatch(o: DispatchOptions): Promise<DispatchResult> {
           text: `ref ${failed.ref}; previous version restored: ${failed.restored}; ${failed.error}`,
         });
       const inputs = readsFor(unit, cwd);
+      const review =
+        unit.kind === 'review' && unit.item !== 'none'
+          ? reviewContext({
+              projectDir: o.projectDir,
+              defaultBranch: cfg.github.default_branch,
+              branch,
+              size,
+              developerReport: lastDevelopReport(unit.item),
+              priorFindings: lastReportOf(unit.item, 'review')?.findings,
+              attempt: attemptOf(unit.item),
+            })
+          : undefined;
+      if (review) untrusted.push(...review.untrusted);
       return {
         run_id: rid,
         max_minutes: cfg.schedule.max_run_minutes,
@@ -831,6 +847,7 @@ export async function runDispatch(o: DispatchOptions): Promise<DispatchResult> {
           `Story size: ${size ?? 'unknown'}`,
           `The profile is ${cfg.profile}`,
           ...(unit.reworkReason ? [`This is rework: ${unit.reworkReason}`] : []),
+          ...(review ? review.conditions : []),
           ...overrideConditions(o.projectDir, unit.role),
         ],
         task: taskFor(unit),

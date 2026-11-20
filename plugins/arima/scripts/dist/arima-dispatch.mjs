@@ -21956,7 +21956,7 @@ function stagingFailing(projectDir) {
 }
 
 // plugins/arima/scripts/src/dispatch.ts
-import { execFileSync as execFileSync5 } from "node:child_process";
+import { execFileSync as execFileSync6 } from "node:child_process";
 import { createHash as createHash3 } from "node:crypto";
 import { existsSync as existsSync29, readFileSync as readFileSync28 } from "node:fs";
 import path38 from "node:path";
@@ -23639,6 +23639,15 @@ function checkReport(report, ctx) {
       );
     }
   }
+  if (ctx.kind === "review" && r.verdict !== void 0) {
+    const stops = (r.findings ?? []).some(
+      (f) => f["severity"] === "blocker" || f["severity"] === "major"
+    );
+    if (r.verdict.result === "approve" && stops)
+      errors.push("verdict: approve is not allowed while a blocker or major finding stands");
+    if (r.verdict.result === "changes_requested" && !stops)
+      errors.push("verdict: changes_requested needs at least one blocker or major finding");
+  }
   const questions = r.questions ?? [];
   const blockingOpen = questions.some((q) => q.blocking);
   if (r.status === "done" && blockingOpen) {
@@ -23986,6 +23995,13 @@ function exitFor(result) {
       return EXIT.failed;
   }
 }
+function summariseDenials(denials) {
+  if (!Array.isArray(denials) || denials.length === 0) return void 0;
+  return denials.slice(0, 10).map((d) => ({
+    tool: String(d.tool_name ?? "?"),
+    input: JSON.stringify(d.tool_input ?? {}).slice(0, 300)
+  }));
+}
 function writeRunReport(projectDir, runId, body) {
   const dir = path26.join(projectDir, ".arima", "runs");
   mkdirSync16(dir, { recursive: true });
@@ -24245,6 +24261,7 @@ async function runAgent(o) {
     result_text: parsed?.result,
     errors: parsed?.errors,
     terminal_reason: parsed?.terminal_reason,
+    permission_denials: summariseDenials(parsed?.permission_denials),
     reason: row.reason,
     report_errors: collected?.ok === false ? collected.errors : void 0,
     stderr_tail: spawned.stderr.slice(-2e3)
@@ -26970,6 +26987,17 @@ async function sendNotifications(o) {
 // plugins/arima/scripts/src/notion/proposals.ts
 var PLACEHOLDER2 = /\bNEW-(\d+)\b/g;
 var isPlaceholder = (v) => typeof v === "string" && /^NEW-\d+$/.test(v);
+function bugSeverityRule(role, database, properties2, reproductions) {
+  const sev = properties2["Severity"];
+  if (role !== "qa" || database !== "bugs" || sev !== "S1" && sev !== "S2") return properties2;
+  if (typeof reproductions === "number" && reproductions >= 2) return properties2;
+  const actual = typeof properties2["Actual"] === "string" ? `${properties2["Actual"]} ` : "";
+  return {
+    ...properties2,
+    Severity: "S3",
+    Actual: `${actual}[severity lowered from ${sev} to S3 by the engine: not reproduced in two runs (spec 7.12); the PO may change it]`
+  };
+}
 function fromReport(r, role, today) {
   const out = [];
   const item = r.item === "none" ? void 0 : r.item;
@@ -26992,7 +27020,12 @@ function fromReport(r, role, today) {
     out.push({
       database,
       ...typeof rec["ref"] === "string" ? { ref: rec["ref"] } : {},
-      properties: { ...rec["properties"] },
+      properties: bugSeverityRule(
+        role,
+        database,
+        { ...rec["properties"] },
+        rec["reproductions"]
+      ),
       ...typeof rec["content_markdown"] === "string" ? { content_markdown: rec["content_markdown"] } : {}
     });
   }
@@ -27312,6 +27345,75 @@ function validatePacket(text3) {
   if (body("Task").length === 0) errors.push("task: empty");
   if (body("Output contract").length === 0) errors.push("output contract: empty");
   return { ok: errors.length === 0, errors };
+}
+
+// plugins/arima/scripts/src/review-context.ts
+import { execFileSync as execFileSync5 } from "node:child_process";
+var DIFF_CAP = 22e3;
+function branchDiff(projectDir, base, branch, cap = DIFF_CAP) {
+  const run = (...a) => execFileSync5("git", a, {
+    cwd: projectDir,
+    encoding: "utf8",
+    maxBuffer: 32 * 1024 * 1024,
+    stdio: ["ignore", "pipe", "pipe"]
+  });
+  const range = `${base}...${branch}`;
+  const full = run("diff", "--no-color", "--no-ext-diff", range);
+  let changed = 0;
+  for (const l of run("diff", "--numstat", range).split("\n").filter(Boolean)) {
+    const [a, d] = l.split("	");
+    changed += (Number(a) || 0) + (Number(d) || 0);
+  }
+  return full.length > cap ? { text: full.slice(0, cap), truncated: true, changedLines: changed } : { text: full, truncated: false, changedLines: changed };
+}
+var SIZE_LIMIT_LINES = { S: 200, M: 400, L: 800 };
+function reviewContext(o) {
+  const untrusted = [];
+  const conditions = [];
+  const limit = SIZE_LIMIT_LINES[o.size ?? "M"];
+  try {
+    const d = branchDiff(o.projectDir, o.defaultBranch, o.branch);
+    untrusted.push({
+      label: `Pull request diff (git diff ${o.defaultBranch}...${o.branch})`,
+      source: "git",
+      text: d.truncated ? `${d.text}
+[diff truncated at ${DIFF_CAP} characters; read the rest with git diff ${o.defaultBranch}...${o.branch} -- <path>]` : d.text === "" ? "(the branch has no changes against the default branch)" : d.text
+    });
+    conditions.push(
+      `The diff changes ${d.changedLines} lines; the size limit of this story is about ${limit}${d.changedLines > limit ? " (over the limit: raise a major sizing finding)" : ""}`
+    );
+  } catch (e) {
+    untrusted.push({
+      label: "Pull request diff",
+      source: "git",
+      text: `(the host could not read the diff: ${e instanceof Error ? e.message.slice(0, 200) : String(e)}. Say so and give verdict changes_requested with a blocker finding)`
+    });
+  }
+  if (o.developerReport !== void 0) {
+    const r = o.developerReport;
+    untrusted.push({
+      label: "Developer's report (criteria map and summary, the author's claims to check)",
+      source: "report",
+      text: JSON.stringify({ summary: r.summary, criteria_map: r.criteria_map ?? [] }, null, 2)
+    });
+  } else {
+    untrusted.push({
+      label: "Developer's report",
+      source: "report",
+      text: "(no developer report with a criteria map exists for this item: that is a blocker finding)"
+    });
+  }
+  if (o.priorFindings !== void 0 && o.priorFindings.length > 0)
+    untrusted.push({
+      label: `Findings of the previous review (attempt ${o.attempt - 1})`,
+      source: "report",
+      text: JSON.stringify(o.priorFindings, null, 2)
+    });
+  conditions.push(
+    "CI is green (the item reached In Review because the checks passed)",
+    `Review attempt ${o.attempt}`
+  );
+  return { untrusted, conditions };
 }
 
 // plugins/arima/scripts/src/runlock.ts
@@ -27660,9 +27762,9 @@ async function runDispatch(o) {
     }, readAttempt2 = function(item) {
       return attemptOf2(item);
     }, lastDevelopReport2 = function(item) {
-      const e = readEvents(o.projectDir).filter(
-        (x) => x.type === "report.accepted" && x.item === item && x.data?.["kind"] === "develop"
-      ).at(-1);
+      return lastReportOf2(item, "develop");
+    }, lastReportOf2 = function(item, kind) {
+      const e = readEvents(o.projectDir).filter((x) => x.type === "report.accepted" && x.item === item && x.data?.["kind"] === kind).at(-1);
       if (e?.run_id === void 0) return void 0;
       try {
         return JSON.parse(
@@ -27680,7 +27782,8 @@ async function runDispatch(o) {
       const b = branchFor(item, titleOf2(item));
       return branchExists(o.projectDir, b) ? b : void 0;
     }, readsFor2 = function(unit, cwd) {
-      if (unit.role !== "developer") return [];
+      if (unit.role !== "developer" && !(unit.role === "tech-lead" && unit.kind === "review"))
+        return [];
       const out = [];
       const add2 = (ref, why) => {
         if (existsSync29(path38.join(cwd, ref))) out.push({ ref, why });
@@ -27715,6 +27818,16 @@ async function runDispatch(o) {
           text: `ref ${failed.ref}; previous version restored: ${failed.restored}; ${failed.error}`
         });
       const inputs = readsFor2(unit, cwd);
+      const review = unit.kind === "review" && unit.item !== "none" ? reviewContext({
+        projectDir: o.projectDir,
+        defaultBranch: cfg.github.default_branch,
+        branch,
+        size,
+        developerReport: lastDevelopReport2(unit.item),
+        priorFindings: lastReportOf2(unit.item, "review")?.findings,
+        attempt: attemptOf2(unit.item)
+      }) : void 0;
+      if (review) untrusted.push(...review.untrusted);
       return {
         run_id: rid,
         max_minutes: cfg.schedule.max_run_minutes,
@@ -27737,6 +27850,7 @@ async function runDispatch(o) {
           `Story size: ${size ?? "unknown"}`,
           `The profile is ${cfg.profile}`,
           ...unit.reworkReason ? [`This is rework: ${unit.reworkReason}`] : [],
+          ...review ? review.conditions : [],
           ...overrideConditions(o.projectDir, unit.role)
         ],
         task: taskFor(unit),
@@ -27748,7 +27862,7 @@ async function runDispatch(o) {
       const e = readEvents(o.projectDir).filter((x) => x.type === "pr.published" && x.item === item).at(-1);
       return typeof e?.data?.["pr"] === "number" ? e.data["pr"] : void 0;
     };
-    var mirrorStatusOf = mirrorStatusOf2, attemptOf = attemptOf2, readAttempt = readAttempt2, lastDevelopReport = lastDevelopReport2, titleOf = titleOf2, storyBranchOf = storyBranchOf2, readsFor = readsFor2, packetFor = packetFor2, prNumber = prNumber2;
+    var mirrorStatusOf = mirrorStatusOf2, attemptOf = attemptOf2, readAttempt = readAttempt2, lastDevelopReport = lastDevelopReport2, lastReportOf = lastReportOf2, titleOf = titleOf2, storyBranchOf = storyBranchOf2, readsFor = readsFor2, packetFor = packetFor2, prNumber = prNumber2;
     const setup = d.setupCheck?.() ?? {
       green: true,
       detail: "arima-setup is not built yet; the Phase 3 checklist was not checked"
@@ -28465,7 +28579,7 @@ function branchExists(projectDir, branch) {
 }
 function gitHasBranch(projectDir, branch) {
   try {
-    execFileSync5("git", ["show-ref", "--verify", "--quiet", `refs/heads/${branch}`], {
+    execFileSync6("git", ["show-ref", "--verify", "--quiet", `refs/heads/${branch}`], {
       cwd: projectDir,
       stdio: "ignore"
     });

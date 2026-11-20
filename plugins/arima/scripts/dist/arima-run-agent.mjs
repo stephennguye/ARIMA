@@ -19856,6 +19856,15 @@ function checkReport(report, ctx) {
       );
     }
   }
+  if (ctx.kind === "review" && r.verdict !== void 0) {
+    const stops = (r.findings ?? []).some(
+      (f) => f["severity"] === "blocker" || f["severity"] === "major"
+    );
+    if (r.verdict.result === "approve" && stops)
+      errors.push("verdict: approve is not allowed while a blocker or major finding stands");
+    if (r.verdict.result === "changes_requested" && !stops)
+      errors.push("verdict: changes_requested needs at least one blocker or major finding");
+  }
   const questions = r.questions ?? [];
   const blockingOpen = questions.some((q) => q.blocking);
   if (r.status === "done" && blockingOpen) {
@@ -21034,6 +21043,13 @@ function exitFor(result) {
       return EXIT.failed;
   }
 }
+function summariseDenials(denials) {
+  if (!Array.isArray(denials) || denials.length === 0) return void 0;
+  return denials.slice(0, 10).map((d) => ({
+    tool: String(d.tool_name ?? "?"),
+    input: JSON.stringify(d.tool_input ?? {}).slice(0, 300)
+  }));
+}
 function writeRunReport(projectDir, runId, body) {
   const dir = path17.join(projectDir, ".arima", "runs");
   mkdirSync10(dir, { recursive: true });
@@ -21293,6 +21309,7 @@ async function runAgent(o) {
     result_text: parsed?.result,
     errors: parsed?.errors,
     terminal_reason: parsed?.terminal_reason,
+    permission_denials: summariseDenials(parsed?.permission_denials),
     reason: row.reason,
     report_errors: collected?.ok === false ? collected.errors : void 0,
     stderr_tail: spawned.stderr.slice(-2e3)

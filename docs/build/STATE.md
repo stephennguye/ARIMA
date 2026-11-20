@@ -1,6 +1,14 @@
 # STATE (living snapshot; update before ending every session)
 
-Last updated: 2026-11-20. Verify these claims against git before relying on them (`00-handoff.md` section 1).
+Last updated: 2026-11-21. Verify these claims against git before relying on them (`00-handoff.md` section 1).
+
+## Where we stopped (2026-11-21, Stage 2 session A, branch `feat/stage-2-build-loop`)
+
+**WP-210 developer agent: protocol steps 1 to 5 done, step 6 and 7 in progress, not judged, status stays `ready`.** **WP-212 tech-lead (review kind): steps 1 to 5 done, no real run yet.** **WP-211 qa: not started as a package** because its dependency WP-218 (preview) is not done (protocol precondition); only its deterministic severity rule is built. The session ended because Claude Code killed the background eval for low memory (not a test failure; nothing was retried).
+- Built: developer guards (`tests/e2e/**` deny rule and `protected-tests` guard, `no-outbox`, `.arima/` unreadable for developer, qa and tech-lead), kind-aware `allowedTools(role, dir, kind)`, read-only review guard, `src/review-context.ts` (diff, developer report, prior findings in the review packet), review verdict-versus-findings rule in `report.ts`, `reproductions` on a record and `bugSeverityRule` (S1/S2 lowered to S3 unless 2 runs), `addressed_to` and the `criteria_map` shape in the output contract, run records keep `permission_denials`, the real-eval harness now runs `runAgent` like the dispatcher (run id in the packet, `ARIMA_KIND` set: the earlier devops evals never had `ARIMA_KIND`, so their read-only guard was not exercised live), agent files `developer.md` and `tech-lead.md`, fixtures, envelope tests, graders (`evals/developer`, `evals/tech-lead`) and real scenarios (`evals/agents/developer`, `evals/agents/tech-lead`).
+- Real results so far (3 runs each, all after harness fixes): developer scenario 2 (ambiguous criterion) 3/3, scenario 7 (AGPL licence) 3/3; scenario 3 (planted instructions) 2/5: the agent chains shell commands (`;`, `&&`, `git -C`), the permission rules deny them and it gives up as `blocked`. Fix already in `developer.md` ("run each command alone"), **not yet re-verified**. Developer scenarios 1, 4, 5, 6 and all tech-lead scenarios (1 to 7) have never run for real. Seat cost so far about 2 USD estimated, mean about 0.13 per developer run.
+- **Next command** (one at a time, memory permitting): `npm run build && ARIMA_REAL_EVALS=1 ARIMA_REAL_EVALS_ONLY=3 ARIMA_REAL_EVALS_RUNS=3 ARIMA_REAL_EVALS_CAP_USD=3 npx vitest run --config vitest.agents.config.ts evals/agents/developer`, then scenarios 6, then 1,4,5 (3 runs each), then the card's 5-run pass, then `arima-judge --checkpoint J-agent:developer`. Then the same for tech-lead (`evals/agents/tech-lead`, hard ones 4,5,6 first), then its judge. Then WP-211 once WP-218 is done (or ask the owner to release that dependency).
+- Not done: card results tables, protocol ticks beyond what the cards say, `work-packages.yaml` unchanged, full `npx vitest run` not re-run after the last edits (only the 9 affected files, 296 tests, plus build, tsc, eslint, prettier green).
 
 ## Where the build is
 

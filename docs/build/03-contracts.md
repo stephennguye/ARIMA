@@ -98,6 +98,7 @@ Rules (each is a check in `checkReport()`, `src/report.ts`, on top of `agent-rep
 - Every `findings`, `questions` and `decisions` element uses the records in section 3.4.
 - Every claim needs evidence: a `file:line` or an item id. A criterion marked `met` with no evidence fails validation.
 - `status: needs_input` requires at least one question; `blocked` requires a `blocked_reason` in `summary` and a question; `done` forbids unanswered blocking questions.
+- A `records[]` element is `{ database, ref?, properties, content_markdown?, reproductions? }`. `reproductions` (WP-211) is for a QA bug: in how many independent runs the failure reproduced; the engine keeps a proposed severity S1 or S2 only when it is at least 2 and otherwise lowers it to S3 and says so in `Actual` (spec 7.7, 7.12).
 - The engine, not the agent, issues **every** id (`Q`, `DEC`, `TC`, `BUG`, `REQ`, `US`, `NFR`, `ADR`...). An agent proposes records without ids; where a draft must cross-reference new items it uses placeholders `NEW-1..n`, which the engine rewrites to issued ids when it enqueues the outbox entries.
 - Two separate counters exist: **attempt** (spec 7.1; incremented only by changes-requested and QA-failed; the third moves the item to Blocked) and **run failures** (spec 7.12; one retry of a failed run, the second failure blocks the item). Both are stored on the item and both raise a question.
 

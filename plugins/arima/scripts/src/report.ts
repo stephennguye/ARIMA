@@ -114,6 +114,18 @@ export function checkReport(report: unknown, ctx: { role: Role; kind: UnitKind }
     }
   }
 
+  // A review's verdict must agree with its own findings: nothing is approved with a blocker or a major
+  // finding standing, and a change request names what blocks (tech-lead card, section 4 step 8).
+  if (ctx.kind === 'review' && r.verdict !== undefined) {
+    const stops = (r.findings ?? []).some(
+      (f) => f['severity'] === 'blocker' || f['severity'] === 'major',
+    );
+    if (r.verdict.result === 'approve' && stops)
+      errors.push('verdict: approve is not allowed while a blocker or major finding stands');
+    if (r.verdict.result === 'changes_requested' && !stops)
+      errors.push('verdict: changes_requested needs at least one blocker or major finding');
+  }
+
   const questions = r.questions ?? [];
   const blockingOpen = questions.some((q) => q.blocking);
   if (r.status === 'done' && blockingOpen) {

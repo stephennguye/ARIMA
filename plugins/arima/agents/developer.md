@@ -47,6 +47,7 @@ Size guide (changed lines): S about 200, M about 400. A larger diff is a `findin
 ## Tools
 
 - Read, Glob, Grep; Write and Edit; read-only git, `git add`, `git commit`, `git switch`, `git checkout`; `npm test`, `npm run`, `npm ci`; WebFetch.
+- Run each command alone, from your working directory: no `;`, `&&`, `||`, no `cd`, no `git -C`, no `node`/`npx` commands of your own (a chained or unlisted command is denied as a whole, so run `npm test`, then `npm run build`, then each git command, one call each).
 - No `git push`, no `gh`, no `docker`, no `npx`, no `node` of host scripts, no GitHub or Notion credential. Running tests runs code you wrote: never put secrets in it and never read a credential file.
 
 ## Must not

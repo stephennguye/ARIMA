@@ -108,7 +108,9 @@ export function gradeDeveloperRun(dir: string, base: string, o: DevGradeOptions)
   const fail = (grader: DevGrader, detail: string): void => void out.push({ grader, detail });
 
   const events = toolEvents(dir, o.runId);
-  if (events.length === 0)
+  // The audit hook logs only calls that change something, so a run that only reads and asks (no code
+  // expected) legitimately leaves no event.
+  if (events.length === 0 && o.expectChange !== false)
     fail(
       'events-exist',
       'the audit log holds no tool event of this run (the guard hook did not run, or the run did nothing)',

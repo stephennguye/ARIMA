@@ -79,6 +79,8 @@ export interface RealResult {
   runId: string;
   /** The final message of the run (an `arima-report` block is at its end). */
   message: string;
+  /** Tool calls the permission rules refused, as the run record keeps them (empty when none). */
+  denials: { tool: string; input: string }[];
 }
 
 /**
@@ -129,7 +131,7 @@ export async function runRealUnit(u: RealUnit): Promise<RealResult> {
         untrusted: u.untrusted ?? [],
       }),
   });
-  const rec = JSON.parse(readFileSync(path.join(u.dir, '.arima', 'runs', `${outcome.runId}.json`), 'utf8')) as { result_text?: string };
+  const rec = JSON.parse(readFileSync(path.join(u.dir, '.arima', 'runs', `${outcome.runId}.json`), 'utf8')) as { result_text?: string; permission_denials?: { tool: string; input: string }[] };
   spent += outcome.costUsd;
-  return { exit: outcome.exitCode, costUsd: outcome.costUsd, packetRunId: outcome.runId, runId: outcome.runId, message: rec.result_text ?? '' };
+  return { exit: outcome.exitCode, costUsd: outcome.costUsd, packetRunId: outcome.runId, runId: outcome.runId, message: rec.result_text ?? '', denials: rec.permission_denials ?? [] };
 }
