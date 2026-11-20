@@ -762,6 +762,23 @@ export async function runDispatch(o: DispatchOptions): Promise<DispatchResult> {
       return branchExists(o.projectDir, b) ? b : undefined;
     }
 
+    /** The repo files a developer unit works from (card section 3), only those that exist in its tree. */
+    function readsFor(unit: PlannedUnit, cwd: string): { ref: string; why: string }[] {
+      if (unit.role !== 'developer') return [];
+      const out: { ref: string; why: string }[] = [];
+      const add = (ref: string, why: string): void => {
+        if (existsSync(path.join(cwd, ref))) out.push({ ref, why });
+      };
+      add(
+        'api/openapi.yaml',
+        'the API contract to implement; a criterion that contradicts it is a question',
+      );
+      add('docs/engineering/conventions.md', 'coding conventions');
+      add('docs/architecture/adr', 'architecture decisions that constrain the design');
+      add(`design/screens/${unit.item}`, 'the screens and their states for this UI story');
+      return out;
+    }
+
     function packetFor(
       unit: PlannedUnit,
       rid: string,
@@ -791,6 +808,7 @@ export async function runDispatch(o: DispatchOptions): Promise<DispatchResult> {
           source: 'arima-env',
           text: `ref ${failed.ref}; previous version restored: ${failed.restored}; ${failed.error}`,
         });
+      const inputs = readsFor(unit, cwd);
       return {
         run_id: rid,
         max_minutes: cfg.schedule.max_run_minutes,
@@ -805,10 +823,10 @@ export async function runDispatch(o: DispatchOptions): Promise<DispatchResult> {
           max_turns: cap,
           ...(unit.reworkReason ? { rework_reason: unit.reworkReason } : {}),
           ...(cwd !== o.projectDir ? { worktree: cwd, branch } : {}),
-          inputs: [],
+          inputs: inputs.map((i) => i.ref),
           profile: profileName,
         },
-        inputs: [],
+        inputs,
         conditions: [
           `Story size: ${size ?? 'unknown'}`,
           `The profile is ${cfg.profile}`,

@@ -217,6 +217,9 @@ export function deniedTools(role?: Role): string[] {
     'Read(~/.config/arima/**)',
   ];
   if (role !== 'devops') out.push('Edit(./.github/**)', 'Write(./.github/**)');
+  // QA's end-to-end tests are not the developer's to weaken (card decision 7, WP-210).
+  if (role === 'developer')
+    out.push('Edit(./tests/e2e/**)', 'Write(./tests/e2e/**)', 'MultiEdit(./tests/e2e/**)');
   return out;
 }
 

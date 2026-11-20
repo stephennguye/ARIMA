@@ -18858,6 +18858,8 @@ function deniedTools(role) {
     "Read(~/.config/arima/**)"
   ];
   if (role !== "devops") out.push("Edit(./.github/**)", "Write(./.github/**)");
+  if (role === "developer")
+    out.push("Edit(./tests/e2e/**)", "Write(./tests/e2e/**)", "MultiEdit(./tests/e2e/**)");
   return out;
 }
 var githubTokenScope = () => "none";

@@ -433,6 +433,23 @@ describe('a day, in the order of the ten steps', () => {
     expect(readEvents(w2.dir).some((e) => e.type === 'question.raised')).toBe(true);
   });
 
+  it('a criterion met without evidence is rejected (evidence_missing), retried once, and a developer that repeats it blocks the story (WP-210)', async () => {
+    const w = await world();
+    writeFileSync(
+      path.join(w.stub, 'developer-develop.txt'),
+      report({ criteria_map: [{ criterion: 'AC-1', status: 'met', evidence: [] }] }),
+    );
+    writeFileSync(path.join(w.stub, 'developer-develop.commit'), '');
+    const r = await runDispatch(w.opts());
+    expect(r.dispatched[0]).toMatchObject({ blocked: true });
+    const rows = readLedger(w.dir).filter((x) => x.role === 'developer');
+    expect(rows.map((x) => [x.result, x.reason])).toEqual([
+      ['fail', 'evidence_missing'],
+      ['fail', 'evidence_missing'],
+    ]);
+    expect(readEvents(w.dir).some((e) => e.type === 'report.rejected')).toBe(true);
+  });
+
   it('a usage-limit stop ends the dispatch for the day (exit 75), later units are not started, steps 8 to 10 still run', async () => {
     const w = await world({ stories: 2 });
     writeFileSync(path.join(w.stub, 'developer-develop.usage'), '');

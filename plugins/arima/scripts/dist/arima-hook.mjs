@@ -16043,6 +16043,20 @@ function guardContainers(command) {
   }
   return void 0;
 }
+var isQaTestPath = (p) => /(^|\/)tests\/e2e(\/|$)/.test(canon(p));
+function guardQaTests(command) {
+  const GIT_CHANGES = /* @__PURE__ */ new Set(["add", "rm", "mv", "restore", "checkout", "apply", "stash", "am"]);
+  const mentions = (c) => /tests[/\\]+e2e/i.test(c);
+  const reason = "tests/e2e belongs to QA; a wrong end-to-end test is a finding addressed to QA, never an edit (card decision 7)";
+  if (mentions(command) && WRITE_VERBS.test(command)) return { rule: "protected-tests", reason };
+  for (const s of expandCommands(command)) {
+    const h = headOf(s.words);
+    if (h === void 0 || !mentions(s.words.join(" "))) continue;
+    const git = gitCommand(h);
+    if (git !== void 0 && GIT_CHANGES.has(git.sub)) return { rule: "protected-tests", reason };
+  }
+  return void 0;
+}
 function guardBash(command, ctx = {}) {
   const c = withoutMessages(command);
   const lc = c.toLowerCase();
@@ -16132,6 +16146,10 @@ function guardBash(command, ctx = {}) {
       reason: "only a human may let the outbox write Status fields; agents propose, the state machine decides"
     };
   }
+  if (ctx.role === "developer") {
+    const hit = guardQaTests(command);
+    if (hit !== void 0) return hit;
+  }
   if (ctx.role !== void 0) {
     const hit = guardContainers(command);
     if (hit !== void 0) return hit;
@@ -16167,6 +16185,11 @@ function guardTool(tool, input, ctx = {}) {
       rule: "read-only-kind",
       reason: "a deploy-staging run edits no file; put the proposed fix in findings"
     };
+  if (ctx.role === "developer" && WRITE_TOOLS.has(tool) && pathsOf(input).some((p) => /(^|\/)\.arima\/outbox(\/|$)/.test(canon(p))))
+    return {
+      rule: "no-outbox",
+      reason: "a developer run proposes through its report; the engine writes the outbox entries"
+    };
   if (FILE_TOOLS.has(tool)) {
     for (const p of pathsOf(input)) {
       if (isSecretPath(p)) {
@@ -16179,6 +16202,12 @@ function guardTool(tool, input, ctx = {}) {
         return {
           rule: "protected-state",
           reason: `${canon(p)} is written only by ARIMA scripts; propose Notion changes through .arima/outbox/ instead`
+        };
+      }
+      if (WRITE_TOOLS.has(tool) && ctx.role === "developer" && isQaTestPath(p)) {
+        return {
+          rule: "protected-tests",
+          reason: `${canon(p)} belongs to QA; a wrong end-to-end test is a finding addressed to QA, never an edit (card decision 7)`
         };
       }
       if (WRITE_TOOLS.has(tool) && ctx.role !== void 0 && isProtectedConfigPath(p, ctx.role)) {

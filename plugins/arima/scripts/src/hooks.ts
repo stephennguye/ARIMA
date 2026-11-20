@@ -536,6 +536,25 @@ function guardContainers(command: string): Guard | undefined {
   return undefined;
 }
 
+/** QA's end-to-end tests: nobody who is judged by them edits them. */
+export const isQaTestPath = (p: string): boolean => /(^|\/)tests\/e2e(\/|$)/.test(canon(p));
+
+/** A developer command that would change, add, move, delete or restore a file under tests/e2e/. */
+function guardQaTests(command: string): Guard | undefined {
+  const GIT_CHANGES = new Set(['add', 'rm', 'mv', 'restore', 'checkout', 'apply', 'stash', 'am']);
+  const mentions = (c: string): boolean => /tests[/\\]+e2e/i.test(c);
+  const reason =
+    'tests/e2e belongs to QA; a wrong end-to-end test is a finding addressed to QA, never an edit (card decision 7)';
+  if (mentions(command) && WRITE_VERBS.test(command)) return { rule: 'protected-tests', reason };
+  for (const s of expandCommands(command)) {
+    const h = headOf(s.words);
+    if (h === undefined || !mentions(s.words.join(' '))) continue;
+    const git = gitCommand(h);
+    if (git !== undefined && GIT_CHANGES.has(git.sub)) return { rule: 'protected-tests', reason };
+  }
+  return undefined;
+}
+
 export function guardBash(command: string, ctx: GuardContext = {}): Guard | undefined {
   const c = withoutMessages(command);
   const lc = c.toLowerCase();
@@ -666,6 +685,10 @@ export function guardBash(command: string, ctx: GuardContext = {}): Guard | unde
         'only a human may let the outbox write Status fields; agents propose, the state machine decides',
     };
   }
+  if (ctx.role === 'developer') {
+    const hit = guardQaTests(command);
+    if (hit !== undefined) return hit;
+  }
   if (ctx.role !== undefined) {
     const hit = guardContainers(command);
     if (hit !== undefined) return hit;
@@ -715,6 +738,17 @@ export function guardTool(
       rule: 'read-only-kind',
       reason: 'a deploy-staging run edits no file; put the proposed fix in findings',
     };
+  // The developer proposes through its report (questions, findings, assumptions); the engine enqueues
+  // them with ids and role binding. It has no outbox write (card decision 1), here as a second layer.
+  if (
+    ctx.role === 'developer' &&
+    WRITE_TOOLS.has(tool) &&
+    pathsOf(input).some((p) => /(^|\/)\.arima\/outbox(\/|$)/.test(canon(p)))
+  )
+    return {
+      rule: 'no-outbox',
+      reason: 'a developer run proposes through its report; the engine writes the outbox entries',
+    };
   if (FILE_TOOLS.has(tool)) {
     for (const p of pathsOf(input)) {
       if (isSecretPath(p)) {
@@ -727,6 +761,12 @@ export function guardTool(
         return {
           rule: 'protected-state',
           reason: `${canon(p)} is written only by ARIMA scripts; propose Notion changes through .arima/outbox/ instead`,
+        };
+      }
+      if (WRITE_TOOLS.has(tool) && ctx.role === 'developer' && isQaTestPath(p)) {
+        return {
+          rule: 'protected-tests',
+          reason: `${canon(p)} belongs to QA; a wrong end-to-end test is a finding addressed to QA, never an edit (card decision 7)`,
         };
       }
       if (WRITE_TOOLS.has(tool) && ctx.role !== undefined && isProtectedConfigPath(p, ctx.role)) {

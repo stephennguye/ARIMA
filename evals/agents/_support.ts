@@ -117,7 +117,7 @@ export function runRealUnit(u: RealUnit): RealResult {
   try {
     execFileSync(
       process.execPath,
-      [cli, '--role', u.role, '--item', u.item, '--budget', String(u.budgetUsd), '--max-turns', String(u.maxTurns), '--phase', String(u.phase), '--prompt-file', promptFile, '--cwd', u.dir, '--project', u.dir],
+      [cli, '--role', u.role, '--kind', u.kind, '--item', u.item, '--budget', String(u.budgetUsd), '--max-turns', String(u.maxTurns), '--phase', String(u.phase), '--prompt-file', promptFile, '--cwd', u.dir, '--project', u.dir],
       { stdio: 'pipe', timeout: 20 * 60_000 },
     );
   } catch (e) {

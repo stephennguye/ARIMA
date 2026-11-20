@@ -19794,6 +19794,8 @@ function deniedTools(role) {
     "Read(~/.config/arima/**)"
   ];
   if (role !== "devops") out.push("Edit(./.github/**)", "Write(./.github/**)");
+  if (role === "developer")
+    out.push("Edit(./tests/e2e/**)", "Write(./tests/e2e/**)", "MultiEdit(./tests/e2e/**)");
   return out;
 }
 var githubTokenScope = () => "none";
@@ -21999,7 +22001,7 @@ var REVIEW_KINDS = /* @__PURE__ */ new Set([
   "security-scan"
 ]);
 var TASKS = {
-  develop: "Implement exactly this one item on the branch in your worktree, to the Definition of Done. Write the code and its unit tests, commit with Conventional Commits using the item id as scope, and map every acceptance criterion to code and a test in `criteria_map` with evidence. Do not push and do not open a pull request: the host does that after you finish.",
+  develop: "Implement exactly this one item on the branch in your worktree, to the Definition of Done. First restate the acceptance criteria as AC-1..n; if one is ambiguous, untestable or contradicts the API spec, stop and ask (a question addressed to the ba or the architect) instead of guessing, and write no code. Otherwise write the code and its unit tests (tests first where there is logic), run the build, lint and tests, commit with Conventional Commits using the item id as scope, and map every acceptance criterion to code and a test in `criteria_map` with evidence. Never edit tests/e2e (QA owns it). Do not push and do not open a pull request: the host does that after you finish.",
   hotfix: "Fix this incident with the smallest safe change on the branch in your worktree, with a test that reproduces it. Commit with the item id as scope. The host pushes and opens the pull request.",
   fix: "Repair the broken build on the branch in your worktree with the smallest safe change. Commit with a conventional message that carries a task or run id.",
   "test-write": "Write the test cases and end-to-end tests for this story from its acceptance criteria, in `tests/` of your worktree, before any development. Propose each test case as a record in `records` (database `test_cases`); the engine issues the ids.",
@@ -22026,7 +22028,7 @@ function outputContractFor(kind) {
   return [
     "End your final message with exactly one fenced block whose info string is `arima-report`, containing JSON:",
     "`schema_version` 1, `run_id` (the id in the title of this packet), `role`, `item`, `status` (`done`, `blocked`, `failed` or `needs_input`; when any question has `blocking` true the status MUST be `needs_input` or `blocked`, never `done`),`summary` (at most 600 characters), and as needed `artifacts`, `findings`, `questions`, `decisions`, `assumptions`, `records`." + criteria + verdict,
-    "Each of these is a list of objects, never plain strings: `artifacts` {path, kind (code|test|doc|design|api|infra), artifact_id?}; `findings` {severity (blocker|major|minor|nit), location (file:line), claim, evidence, recommendation}; `questions` {question, options [{label, recommendation (true|false)}] (1 to 6), blocking (true|false), hard_stop? (one of G0-G4, prod_deploy, secrets_change, budget_exceeded, story_budget, notion_delete, prod_data_migration, new_paid_service, licence, critical_finding, kill_switch, missing_credential: set it when the matter is one of these, with blocking true and no default), default? (what happens if nobody answers: required when blocking is false)}; `decisions` {summary, options_considered [strings], chosen, reversible (true|false), rationale}; `assumptions` {text, basis}. Use exactly the keys listed for each object and no others (an unknown key makes the whole report invalid).",
+    "Each of these is a list of objects, never plain strings: `artifacts` {path, kind (code|test|doc|design|api|infra), artifact_id?}; `findings` {severity (blocker|major|minor|nit), location (file:line), claim, evidence, recommendation}; `questions` {addressed_to? (a role: ba, architect, ux, tech-lead, qa, security or devops, for a consult between roles; leave it out to ask the owner), question, options [{label, recommendation (true|false)}] (1 to 6), blocking (true|false), hard_stop? (one of G0-G4, prod_deploy, secrets_change, budget_exceeded, story_budget, notion_delete, prod_data_migration, new_paid_service, licence, critical_finding, kill_switch, missing_credential: set it when the matter is one of these, with blocking true and no default), default? (what happens if nobody answers: required when blocking is false)}; `decisions` {summary, options_considered [strings], chosen, reversible (true|false), rationale}; `assumptions` {text, basis}. Use exactly the keys listed for each object and no others (an unknown key makes the whole report invalid).",
     "Propose records without ids (use `NEW-1`, `NEW-2` ... to refer between them); the engine issues every id. Ask a question only for a hard-stop matter or a critical blocker; decide everything else and log it as a decision."
   ].join("\n");
 }
@@ -27659,6 +27661,20 @@ async function runDispatch(o) {
     }, storyBranchOf2 = function(item) {
       const b = branchFor(item, titleOf2(item));
       return branchExists(o.projectDir, b) ? b : void 0;
+    }, readsFor2 = function(unit, cwd) {
+      if (unit.role !== "developer") return [];
+      const out = [];
+      const add2 = (ref, why) => {
+        if (existsSync29(path38.join(cwd, ref))) out.push({ ref, why });
+      };
+      add2(
+        "api/openapi.yaml",
+        "the API contract to implement; a criterion that contradicts it is a question"
+      );
+      add2("docs/engineering/conventions.md", "coding conventions");
+      add2("docs/architecture/adr", "architecture decisions that constrain the design");
+      add2(`design/screens/${unit.item}`, "the screens and their states for this UI story");
+      return out;
     }, packetFor2 = function(unit, rid, size, cap, budgetUsd, cwd, branch) {
       const row = findRow(readMirror(o.projectDir, "stories"), unit.item);
       const profileName = cfg.profile;
@@ -27680,6 +27696,7 @@ async function runDispatch(o) {
           source: "arima-env",
           text: `ref ${failed.ref}; previous version restored: ${failed.restored}; ${failed.error}`
         });
+      const inputs = readsFor2(unit, cwd);
       return {
         run_id: rid,
         max_minutes: cfg.schedule.max_run_minutes,
@@ -27694,10 +27711,10 @@ async function runDispatch(o) {
           max_turns: cap,
           ...unit.reworkReason ? { rework_reason: unit.reworkReason } : {},
           ...cwd !== o.projectDir ? { worktree: cwd, branch } : {},
-          inputs: [],
+          inputs: inputs.map((i) => i.ref),
           profile: profileName
         },
-        inputs: [],
+        inputs,
         conditions: [
           `Story size: ${size ?? "unknown"}`,
           `The profile is ${cfg.profile}`,
@@ -27713,7 +27730,7 @@ async function runDispatch(o) {
       const e = readEvents(o.projectDir).filter((x) => x.type === "pr.published" && x.item === item).at(-1);
       return typeof e?.data?.["pr"] === "number" ? e.data["pr"] : void 0;
     };
-    var mirrorStatusOf = mirrorStatusOf2, attemptOf = attemptOf2, readAttempt = readAttempt2, lastDevelopReport = lastDevelopReport2, titleOf = titleOf2, storyBranchOf = storyBranchOf2, packetFor = packetFor2, prNumber = prNumber2;
+    var mirrorStatusOf = mirrorStatusOf2, attemptOf = attemptOf2, readAttempt = readAttempt2, lastDevelopReport = lastDevelopReport2, titleOf = titleOf2, storyBranchOf = storyBranchOf2, readsFor = readsFor2, packetFor = packetFor2, prNumber = prNumber2;
     const setup = d.setupCheck?.() ?? {
       green: true,
       detail: "arima-setup is not built yet; the Phase 3 checklist was not checked"
