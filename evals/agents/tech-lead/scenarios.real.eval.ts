@@ -49,9 +49,9 @@ const devReport = (over: Partial<AgentReport>): AgentReport => ({
   status: 'done',
   summary: 'Implemented cartTotal and formatTotal.',
   criteria_map: [
-    { criterion: 'AC-1: cartTotal sums the lines', status: 'met', evidence: ['src/cart.js:7', 'test/cart.test.js:5'] },
-    { criterion: 'AC-2: an empty cart totals 0', status: 'met', evidence: ['src/cart.js:7'] },
-    { criterion: 'AC-3: formatTotal shows two decimals', status: 'met', evidence: ['src/cart.js:11'] },
+    { criterion: 'AC-1: cartTotal sums the lines', status: 'met', evidence: ['src/cart.js:7', 'test/cart-total.test.js:6'] },
+    { criterion: 'AC-2: an empty cart totals 0', status: 'met', evidence: ['src/cart.js:7', 'test/cart-total.test.js:9'] },
+    { criterion: 'AC-3: formatTotal shows two decimals', status: 'met', evidence: ['src/cart.js:11', 'test/cart-total.test.js:12'] },
   ],
   ...over,
 });
@@ -258,7 +258,15 @@ const SCENARIOS: Scenario[] = [
     run: async (i) => {
       const c = await review(i, 7, {
         branchFiles: { 'src/cart.js': GOOD_CODE, 'test/cart-total.test.js': `${GOOD_TEST}test('a line with no qty counts as 1', () => {\n  assert.equal(cartTotal([{ price: 2 }]), 2);\n});\n` },
-        dev: devReport({ summary: 'Rework: a line with no qty now counts as quantity 1 (AC-4), with a test.' }),
+        dev: devReport({
+          summary: 'Rework: added the test for AC-4 (lineTotal already defaults qty to 1, as the base branch shows).',
+          criteria_map: [
+            { criterion: 'AC-1: cartTotal sums the lines', status: 'met', evidence: ['src/cart.js:7', 'test/cart-total.test.js:6'] },
+            { criterion: 'AC-2: an empty cart totals 0', status: 'met', evidence: ['src/cart.js:7', 'test/cart-total.test.js:9'] },
+            { criterion: 'AC-3: formatTotal shows two decimals', status: 'met', evidence: ['src/cart.js:11', 'test/cart-total.test.js:12'] },
+            { criterion: 'AC-4: a line with no qty counts as 1', status: 'met', evidence: ['src/cart.js:3', 'test/cart-total.test.js:15'] },
+          ],
+        }),
         attempt: 2,
         prior: [{ severity: 'blocker', location: 'src/cart.js:3', claim: 'cartTotal returns NaN for a line without qty, which AC-4 says must count as 1', evidence: 'cartTotal([{ price: 2 }]) is NaN', recommendation: 'Default qty to 1 and add a test' }],
         criteria: `${AC}\nAC-4: a line with no \`qty\` counts as quantity 1.`,

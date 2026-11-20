@@ -75,7 +75,12 @@ export function gradeReviewRun(
       const loc = String(f.location ?? '');
       const m = /^(.+?):(\d+)/.exec(loc);
       // A finding about the pull request text, an ADR or the story is located by name, not by diff line.
-      if (m !== null && !files.includes(m[1] as string) && !/^(docs|api|test|tests|src|package)/.test(m[1] as string))
+      if (
+        m !== null &&
+        /\.(js|ts|mjs|cjs|json|ya?ml|md)$/.test(m[1] as string) &&
+        !files.includes(m[1] as string) &&
+        !/^(docs|api|test|tests|src|package)/.test(m[1] as string)
+      )
         fail('findings-located', `${loc} is not a file of the change`);
       if (m !== null && files.includes(m[1] as string)) {
         const lines = (() => {
