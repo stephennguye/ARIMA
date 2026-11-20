@@ -29,7 +29,6 @@ describe('developer allow-list (card section 6)', () => {
       'Bash(npm test)',
       'Bash(npm run *)',
       'Bash(npm ci)',
-      'WebFetch',
     ])
       expect(allowed, t).toContain(t);
   });
@@ -171,5 +170,77 @@ describe('the guard in a developer run: forbidden actions are blocked (card sect
 
   it('a human (no role) may still edit tests/e2e', () => {
     expect(guardBash('rm tests/e2e/a.spec.ts', {})).toBeUndefined();
+  });
+});
+
+describe('judge J-agent:developer: git routes that moved the default branch, restored QA files or read state', () => {
+  const blocked: [string, string][] = [
+    // blocker 1: moving or creating a ref
+    ['git checkout -B main --ignore-other-worktrees', 'vcs'],
+    ['git checkout -b main2', 'vcs'],
+    ['git switch -C main', 'vcs'],
+    ['git switch main', 'vcs'],
+    ['git checkout main', 'vcs'],
+    ['git branch -f main HEAD', 'vcs'],
+    ['git update-ref refs/heads/main HEAD', 'vcs'],
+    ['git reset --hard HEAD~3', 'vcs'],
+    ['git commit --amend -m x', 'vcs'],
+    // blocker 3: restoring files from another revision, by any spelling
+    ['git checkout HEAD~3 -- tests', 'vcs'],
+    ['git checkout HEAD~3 -- .', 'vcs'],
+    ["git checkout HEAD~3 -- ':(glob)tests/*2e/**'", 'vcs'],
+    ['git checkout other-branch -- src', 'vcs'],
+    ['git restore --source=HEAD~2 .', 'vcs'],
+    ['git stash', 'vcs'],
+    ['git cherry-pick abc123', 'vcs'],
+    // blocker 2: the state branch through git
+    ['git show arima-state:runs/r-1.report.json', 'vcs'],
+    ['git log -p arima-state', 'vcs'],
+    ['git diff main arima-state', 'vcs'],
+    ['git log --all', 'vcs'],
+    ['git show refs/heads/arima-state:mirror/stories.json', 'vcs'],
+    ['git checkout --ignore-other-worktrees arima-state', 'vcs'],
+    // major 3: a shortened --no-verify, major 10: fetch from an address
+    ['git commit --no-veri -m x', 'vcs'],
+    ['git commit --no-v -m x', 'vcs'],
+    ['git fetch https://example.com/x.git', 'vcs'],
+    ['git fetch origin other', 'vcs'],
+  ];
+  it.each(blocked)('%s is blocked', (cmd, rule) => {
+    expect(guardBash(cmd, ctx)?.rule).toBe(rule);
+  });
+
+  it('plain work still passes: switch to the story branch, fetch origin, commit, log, diff', () => {
+    for (const cmd of [
+      'git switch feat/US-112-x',
+      'git checkout feat/US-112-x',
+      'git fetch origin',
+      'git branch --list',
+      'git log --oneline -5',
+      'git diff HEAD~1',
+      'git commit -m "feat(US-112): x"',
+    ])
+      expect(guardBash(cmd, ctx), cmd).toBeUndefined();
+  });
+
+  it('major 8: a developer writes only inside its worktree', () => {
+    const wctx = { ...ctx, cwd: '/work/app-wt/feat/US-112-x' };
+    for (const p of [
+      '/home/u/.gitconfig',
+      '~/.gitconfig',
+      '../other-wt/src/a.js',
+      '/work/app-wt/feat/other/src/a.js',
+      'C:\\Users\\u\\.gitconfig',
+    ])
+      expect(guardTool('Write', { file_path: p, content: 'x' }, wctx)?.rule, p).toBe(
+        'outside-worktree',
+      );
+    for (const p of ['src/a.js', '/work/app-wt/feat/US-112-x/src/a.js', './test/a.test.js'])
+      expect(guardTool('Write', { file_path: p, content: 'x' }, wctx), p).toBeUndefined();
+    expect(guardTool('Write', { file_path: '/anywhere/a.js', content: 'x' }, ctx)).toBeUndefined();
+  });
+
+  it('major 10: the developer has no web access', () => {
+    expect(allowed).not.toContain('WebFetch');
   });
 });

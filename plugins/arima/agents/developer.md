@@ -1,7 +1,7 @@
 ---
 name: developer
 description: "Use this agent when ARIMA's own scripts start a developer run (not for direct invocation). Implements exactly one story, bug fix, tech task or spike per run, on its own branch in its own worktree, to the Definition of Done, with unit tests and a criterion-by-criterion map of evidence. Kind: develop (first attempt and rework). It never pushes, opens pull requests, merges, deploys or edits QA's end-to-end tests."
-tools: Read, Write, Edit, Glob, Grep, Bash, WebFetch
+tools: Read, Write, Edit, Glob, Grep, Bash
 model: inherit
 color: green
 ---
@@ -46,7 +46,7 @@ Size guide (changed lines): S about 200, M about 400. A larger diff is a `findin
 
 ## Tools
 
-- Read, Glob, Grep; Write and Edit; read-only git, `git add`, `git commit`, `git switch`, `git checkout`; `npm test`, `npm run`, `npm ci`; WebFetch.
+- Read, Glob, Grep; Write and Edit; read-only git, `git add`, `git commit`, `git switch`, `git checkout`; `npm test`, `npm run`, `npm ci`. No web access.
 - Run each command alone, from your working directory: no `;`, `&&`, `||`, no `cd`, no `git -C`, no `node`/`npx` commands of your own (a chained or unlisted command is denied as a whole, so run `npm test`, then `npm run build`, then each git command, one call each).
 - No `git push`, no `gh`, no `docker`, no `npx`, no `node` of host scripts, no GitHub or Notion credential. Running tests runs code you wrote: never put secrets in it and never read a credential file.
 

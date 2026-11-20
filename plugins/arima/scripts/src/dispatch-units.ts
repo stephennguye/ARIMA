@@ -126,7 +126,7 @@ export function outputContractFor(kind: UnitKind): string {
       criteria +
       verdict,
     'Each of these is a list of objects, never plain strings: `artifacts` {path, kind (code|test|doc|design|api|infra), artifact_id?}; `findings` {severity (blocker|major|minor|nit), location (file:line), claim, evidence, recommendation}; `questions` {addressed_to? (a role: ba, architect, ux, tech-lead, qa, security or devops, for a consult between roles; leave it out to ask the owner), question, options [{label, recommendation (true|false)}] (1 to 6), blocking (true|false), hard_stop? (one of G0-G4, prod_deploy, secrets_change, budget_exceeded, story_budget, notion_delete, prod_data_migration, new_paid_service, licence, critical_finding, kill_switch, missing_credential: set it when the matter is one of these, with blocking true and no default), default? (what happens if nobody answers: required when blocking is false)}; `decisions` {summary, options_considered [strings], chosen, reversible (true|false), rationale}; `assumptions` {text, basis}. Use exactly the keys listed for each object and no others (an unknown key makes the whole report invalid).',
-    'Propose records without ids (use `NEW-1`, `NEW-2` ... to refer between them); the engine issues every id. Ask a question only for a hard-stop matter or a critical blocker; decide everything else and log it as a decision.',
+    'Propose records without ids (use `NEW-1`, `NEW-2` ... to refer between them); the engine issues every id. Ask a question only for a hard-stop matter or a critical blocker (a criterion you cannot test, or that contradicts the API spec, is one); decide everything else and log it as a decision.',
   ].join('\n');
 }
 

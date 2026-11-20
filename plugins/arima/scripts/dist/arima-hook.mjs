@@ -15833,6 +15833,51 @@ function gitCommand(h) {
   return sub === void 0 ? void 0 : { sub, args: w.slice(i + 1), globalC };
 }
 var DANGEROUS_GIT_KEY = /^(core\.(hookspath|sshcommand|fsmonitor|editor|pager|askpass)|alias\.|credential\.|url\..*insteadof|remote\..*\.(url|pushurl|push)|safe\.)/i;
+var STATE_REF = /(^|[\s:/])arima-state(?![A-Za-z0-9_-])|^--(all|branches|glob|remotes|tags|exclude|alternate-refs)\b|^refs\//i;
+function guardRoleGit(g, vcs) {
+  const flags = g.args.filter((a) => a.startsWith("-"));
+  const plain = g.args.filter((a) => !a.startsWith("-"));
+  if (g.args.some((a) => STATE_REF.test(a)))
+    return vcs("a role reads nothing from the ARIMA state branch or from all refs through git");
+  switch (g.sub) {
+    case "checkout":
+    case "switch":
+      if (flags.length === 1 && (flags[0] === "-b" || flags[0] === "-c") && plain.length === 1)
+        return AGENT_BRANCH.test(plain[0] ?? "") ? void 0 : vcs("a new branch is named feat/..., fix/..., hotfix/..., chore/... or docs/...");
+      if (g.args.includes("--") || plain.includes(".") || flags.length > 0 || plain.length !== 1)
+        return vcs(
+          "a role may only switch to an existing branch by name (no flags, no paths, no new or forced branch, no restoring files from another revision)"
+        );
+      if (["main", "master", "trunk"].includes(plain[0] ?? ""))
+        return vcs("a role never switches to the default branch");
+      return void 0;
+    case "branch":
+      return g.args.some((a) => a === "--list" || a === "-l" || a === "--show-current") ? void 0 : vcs("a role does not create, move, rename or delete branches");
+    case "update-ref":
+    case "reset":
+    case "restore":
+    case "rm":
+    case "mv":
+    case "stash":
+    case "merge":
+    case "rebase":
+    case "cherry-pick":
+    case "revert":
+    case "apply":
+    case "am":
+    case "tag":
+    case "clean":
+    case "worktree":
+    case "symbolic-ref":
+      return vcs(`git ${g.sub} changes refs or files outside a plain commit and is not a role's`);
+    case "commit":
+      return flags.some((a) => /^--am/.test(a)) ? vcs("a role does not rewrite history (--amend)") : void 0;
+    case "fetch":
+      return plain.length > 1 || plain.some((a) => !/^[A-Za-z0-9_.-]+$/.test(a)) ? vcs("a role may only fetch a named remote, never an address") : void 0;
+    default:
+      return void 0;
+  }
+}
 function guardGit(g, dynamic, ctx) {
   const vcs = (reason) => ({ rule: "vcs", reason });
   if (g.globalC.some((kv) => DANGEROUS_GIT_KEY.test(kv.split("=")[0] ?? ""))) {
@@ -15840,7 +15885,12 @@ function guardGit(g, dynamic, ctx) {
       "overriding git settings on the command line (hooks, aliases, credentials, remotes) is not allowed"
     );
   }
-  if (g.args.includes("--no-verify")) return vcs("skipping git hooks (--no-verify) is not allowed");
+  if (g.args.some((a) => /^--no-v/.test(a)))
+    return vcs("skipping git hooks (--no-verify, or a shortened form) is not allowed");
+  if (ctx.role !== void 0) {
+    const hit = guardRoleGit(g, vcs);
+    if (hit !== void 0) return hit;
+  }
   if (g.args.some((a) => a === "--output" || a.startsWith("--output="))) {
     return vcs("git options that write to an arbitrary file (--output) are not allowed");
   }
@@ -16043,6 +16093,13 @@ function guardContainers(command) {
   }
   return void 0;
 }
+function insideDir(p, dir) {
+  const root = canon(dir);
+  if (p.startsWith("~")) return false;
+  const absolute = path5.isAbsolute(p) || /^[A-Za-z]:[\\/]/.test(p) || p.startsWith("/");
+  const abs = canon(absolute ? p : path5.join(dir, p));
+  return abs === root || abs.startsWith(root.endsWith("/") ? root : `${root}/`);
+}
 var isQaTestPath = (p) => /(^|\/)tests\/e2e(\/|$)/.test(canon(p));
 function guardQaTests(command) {
   const GIT_CHANGES = /* @__PURE__ */ new Set(["add", "rm", "mv", "restore", "checkout", "apply", "stash", "am"]);
@@ -16209,6 +16266,11 @@ function guardTool(tool, input, ctx = {}) {
     (k) => typeof input[k] === "string" && /(^|\/)\.arima(\/|$)/.test(canon(input[k]))
   ))
     return { rule: "protected-state", reason: stateReadReason(ctx.role) };
+  if (ctx.role === "developer" && ctx.cwd !== void 0 && WRITE_TOOLS.has(tool) && pathsOf(input).some((p) => !insideDir(p, ctx.cwd)))
+    return {
+      rule: "outside-worktree",
+      reason: "a developer run writes only inside its own worktree"
+    };
   if (FILE_TOOLS.has(tool)) {
     for (const p of pathsOf(input)) {
       if (isSecretPath(p)) {
@@ -16341,6 +16403,7 @@ async function handleHook(kind2, input, env = process.env) {
         };
       }
       const ctx = {
+        cwd: input.cwd,
         role: env["ARIMA_ROLE"],
         kind: env["ARIMA_KIND"],
         defaultBranch: defaultBranchOf(projectDir)

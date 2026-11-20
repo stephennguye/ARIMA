@@ -144,7 +144,7 @@ export function allowedTools(role: Role, scriptsDir: string, kind?: string): str
         ...bash('git switch'),
         ...bash('git checkout'),
         ...NPM_TEST,
-        'WebFetch',
+        // No WebFetch: spec 5.7 grants the developer no web access, and a fetch is an exfiltration channel.
       ];
     case 'qa':
       return [

@@ -181,10 +181,33 @@ export function checkBranch(i: PublishInput): { dir: string; sha: string; files:
   if (head !== i.branch) refuse(`the worktree is on "${head}", not ${i.branch}`);
   if (git(dir, ['status', '--porcelain']) !== '')
     refuse('the worktree has uncommitted changes: agents commit; this script does not');
-  const files = git(dir, ['diff', '--name-only', `${i.defaultBranch}...${i.branch}`])
+  // The base is the remote default branch when the repository has one (a role cannot move a remote ref),
+  // and a local default branch that is ahead of it is refused: moving it would hide a commit from this check.
+  const remoteRef = `origin/${i.defaultBranch}`;
+  const hasRemote = (() => {
+    try {
+      git(dir, ['rev-parse', '--verify', '--quiet', `refs/remotes/${remoteRef}`]);
+      return true;
+    } catch {
+      return false;
+    }
+  })();
+  if (hasRemote && git(dir, ['rev-list', '--count', `${remoteRef}..${i.defaultBranch}`]) !== '0')
+    refuse(
+      `the local ${i.defaultBranch} has commits that ${remoteRef} does not: it was moved, so the branch cannot be checked against it`,
+      'guard_blocked',
+    );
+  const base = hasRemote ? remoteRef : i.defaultBranch;
+  const files = git(dir, [
+    '-c',
+    'core.quotePath=false',
+    'diff',
+    '--name-only',
+    `${base}...${i.branch}`,
+  ])
     .split('\n')
     .filter(Boolean);
-  if (files.length === 0) refuse(`${i.branch} has no changes against ${i.defaultBranch}`);
+  if (files.length === 0) refuse(`${i.branch} has no changes against ${base}`);
 
   const bad = files.filter((f) => isProtectedConfigPath(f, i.role) || isProtectedStatePath(f));
   if (bad.length > 0)
@@ -201,7 +224,7 @@ export function checkBranch(i: PublishInput): { dir: string; sha: string; files:
       );
   }
   if (i.role === 'developer') {
-    const e2e = files.filter((f) => f.startsWith('tests/e2e/'));
+    const e2e = files.filter((f) => f.toLowerCase().startsWith('tests/e2e/'));
     if (e2e.length > 0)
       refuse(
         `the developer may not change tests/e2e/** (QA's): ${e2e.join(', ')}`,
@@ -209,7 +232,7 @@ export function checkBranch(i: PublishInput): { dir: string; sha: string; files:
       );
   }
 
-  const diff = git(dir, ['diff', `${i.defaultBranch}...${i.branch}`]).slice(0, MAX_DIFF);
+  const diff = git(dir, ['diff', `${base}...${i.branch}`]).slice(0, MAX_DIFF);
   const added = diff
     .split('\n')
     .filter((l) => l.startsWith('+') && !l.startsWith('+++'))
@@ -221,7 +244,7 @@ export function checkBranch(i: PublishInput): { dir: string; sha: string; files:
       'secret_in_output',
     );
 
-  const messages = git(dir, ['log', `${i.defaultBranch}..${i.branch}`, '--format=%B']);
+  const messages = git(dir, ['log', `${base}..${i.branch}`, '--format=%B']);
   const attr = findAttribution(messages);
   if (attr.length > 0)
     refuse(

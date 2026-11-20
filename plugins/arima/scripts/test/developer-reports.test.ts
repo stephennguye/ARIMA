@@ -81,3 +81,53 @@ describe('output contract and task for a develop unit', () => {
       expect(t).toContain(w);
   });
 });
+
+describe('judge J-agent:developer, majors 1 and 2: a done report must be backed, a needs_input needs a question', () => {
+  const base = fixtures[0] as Fixture;
+  const withReport = (over: Record<string, unknown>) => ({
+    ...base,
+    report: { ...base.report, ...over },
+  });
+  it('done with an unmet or unclear criterion is refused', async () => {
+    for (const status of ['unmet', 'unclear']) {
+      const f = withReport({ criteria_map: [{ criterion: 'AC-1: x', status, evidence: [] }] });
+      const r = await run(f, wrap(f.report));
+      expect(r.errors.join(' '), status).toContain('the status cannot be done');
+    }
+  });
+  it('evidence that is not file:line, a test case id or a bug id is refused; the real shapes pass', async () => {
+    for (const ev of ['see code', 'the cart module', 'src/a.js', 'src/a.js:x'])
+      expect(
+        (
+          await run(
+            withReport({ criteria_map: [{ criterion: 'AC-1: x', status: 'met', evidence: [ev] }] }),
+            wrap(
+              withReport({
+                criteria_map: [{ criterion: 'AC-1: x', status: 'met', evidence: [ev] }],
+              }).report,
+            ),
+          )
+        ).ok,
+        ev,
+      ).toBe(false);
+    for (const ev of [
+      'src/a.js:3',
+      'test/a.test.js:10-14',
+      'TC-12',
+      'BUG-5',
+      'C:/x/a.js:2'.slice(3),
+    ]) {
+      const f = withReport({
+        criteria_map: [{ criterion: 'AC-1: x', status: 'met', evidence: [ev] }],
+      });
+      expect((await run(f, wrap(f.report))).ok, ev).toBe(true);
+    }
+  });
+  it('needs_input with no question is refused', async () => {
+    const f = withReport({
+      status: 'needs_input',
+      criteria_map: [{ criterion: 'AC-1: x', status: 'unclear', evidence: [] }],
+    });
+    expect((await run(f, wrap(f.report))).errors.join(' ')).toContain('missing required property');
+  });
+});

@@ -18787,8 +18787,8 @@ function allowedTools(role, scriptsDir, kind) {
         ...bash("git commit"),
         ...bash("git switch"),
         ...bash("git checkout"),
-        ...NPM_TEST,
-        "WebFetch"
+        ...NPM_TEST
+        // No WebFetch: spec 5.7 grants the developer no web access, and a fetch is an exfiltration channel.
       ];
     case "qa":
       return [
@@ -19810,6 +19810,7 @@ var VERDICT_OPTIONAL = {
   "preview-diagnose": ["pass", "fail"],
   "uat-script": ["pass", "fail"]
 };
+var EVIDENCE_SHAPE = /^((?:[\w.@/-]+\/)?[\w.@-]+\.[A-Za-z0-9]+:\d+(?:-\d+)?|(?:TC|BUG)-\d+)$/;
 function checkReport(report, ctx) {
   const errors = [];
   let evidenceMissing = false;
@@ -19856,6 +19857,21 @@ function checkReport(report, ctx) {
       );
     }
   }
+  if (ctx.role === "developer" && ctx.kind === "develop" && r.status === "done") {
+    for (const c of r.criteria_map ?? []) {
+      if (c.status !== "met")
+        errors.push(
+          `criteria_map: "${c.criterion.slice(0, 40)}" is ${c.status}, so the status cannot be done`
+        );
+      for (const ev of c.evidence)
+        if (!EVIDENCE_SHAPE.test(ev.trim()))
+          errors.push(
+            `criteria_map: evidence "${ev.slice(0, 40)}" is not file:line, a test case id or a bug id`
+          );
+    }
+  }
+  if (r.status === "needs_input" && (r.questions ?? []).length === 0)
+    errors.push("status: needs_input needs at least one question");
   if (ctx.kind === "review" && r.verdict !== void 0) {
     const stops = (r.findings ?? []).some(
       (f) => f["severity"] === "blocker" || f["severity"] === "major"

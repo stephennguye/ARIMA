@@ -178,7 +178,7 @@ describe('agents/developer.md (spec §5.7, card)', () => {
       String(front['tools'])
         .split(',')
         .map((t) => t.trim()),
-    ).toEqual(['Read', 'Write', 'Edit', 'Glob', 'Grep', 'Bash', 'WebFetch']);
+    ).toEqual(['Read', 'Write', 'Edit', 'Glob', 'Grep', 'Bash']);
   });
 
   it('states the must-nots of the card and the exact hard-stop ids and status rule', () => {

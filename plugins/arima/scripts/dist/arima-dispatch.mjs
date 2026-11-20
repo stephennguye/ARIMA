@@ -19723,8 +19723,8 @@ function allowedTools(role, scriptsDir, kind) {
         ...bash("git commit"),
         ...bash("git switch"),
         ...bash("git checkout"),
-        ...NPM_TEST,
-        "WebFetch"
+        ...NPM_TEST
+        // No WebFetch: spec 5.7 grants the developer no web access, and a fetch is an exfiltration channel.
       ];
     case "qa":
       return [
@@ -22047,7 +22047,7 @@ function outputContractFor(kind) {
     "End your final message with exactly one fenced block whose info string is `arima-report`, containing JSON:",
     "`schema_version` 1, `run_id` (the id in the title of this packet), `role`, `item`, `status` (`done`, `blocked`, `failed` or `needs_input`; when any question has `blocking` true the status MUST be `needs_input` or `blocked`, never `done`),`summary` (at most 600 characters), and as needed `artifacts`, `findings`, `questions`, `decisions`, `assumptions`, `records`." + criteria + verdict,
     "Each of these is a list of objects, never plain strings: `artifacts` {path, kind (code|test|doc|design|api|infra), artifact_id?}; `findings` {severity (blocker|major|minor|nit), location (file:line), claim, evidence, recommendation}; `questions` {addressed_to? (a role: ba, architect, ux, tech-lead, qa, security or devops, for a consult between roles; leave it out to ask the owner), question, options [{label, recommendation (true|false)}] (1 to 6), blocking (true|false), hard_stop? (one of G0-G4, prod_deploy, secrets_change, budget_exceeded, story_budget, notion_delete, prod_data_migration, new_paid_service, licence, critical_finding, kill_switch, missing_credential: set it when the matter is one of these, with blocking true and no default), default? (what happens if nobody answers: required when blocking is false)}; `decisions` {summary, options_considered [strings], chosen, reversible (true|false), rationale}; `assumptions` {text, basis}. Use exactly the keys listed for each object and no others (an unknown key makes the whole report invalid).",
-    "Propose records without ids (use `NEW-1`, `NEW-2` ... to refer between them); the engine issues every id. Ask a question only for a hard-stop matter or a critical blocker; decide everything else and log it as a decision."
+    "Propose records without ids (use `NEW-1`, `NEW-2` ... to refer between them); the engine issues every id. Ask a question only for a hard-stop matter or a critical blocker (a criterion you cannot test, or that contradicts the API spec, is one); decide everything else and log it as a decision."
   ].join("\n");
 }
 
@@ -23593,6 +23593,7 @@ var VERDICT_OPTIONAL = {
   "preview-diagnose": ["pass", "fail"],
   "uat-script": ["pass", "fail"]
 };
+var EVIDENCE_SHAPE = /^((?:[\w.@/-]+\/)?[\w.@-]+\.[A-Za-z0-9]+:\d+(?:-\d+)?|(?:TC|BUG)-\d+)$/;
 function checkReport(report, ctx) {
   const errors = [];
   let evidenceMissing = false;
@@ -23639,6 +23640,21 @@ function checkReport(report, ctx) {
       );
     }
   }
+  if (ctx.role === "developer" && ctx.kind === "develop" && r.status === "done") {
+    for (const c of r.criteria_map ?? []) {
+      if (c.status !== "met")
+        errors.push(
+          `criteria_map: "${c.criterion.slice(0, 40)}" is ${c.status}, so the status cannot be done`
+        );
+      for (const ev of c.evidence)
+        if (!EVIDENCE_SHAPE.test(ev.trim()))
+          errors.push(
+            `criteria_map: evidence "${ev.slice(0, 40)}" is not file:line, a test case id or a bug id`
+          );
+    }
+  }
+  if (r.status === "needs_input" && (r.questions ?? []).length === 0)
+    errors.push("status: needs_input needs at least one question");
   if (ctx.kind === "review" && r.verdict !== void 0) {
     const stops = (r.findings ?? []).some(
       (f) => f["severity"] === "blocker" || f["severity"] === "major"
@@ -24642,8 +24658,29 @@ function checkBranch(i) {
   if (head !== i.branch) refuse2(`the worktree is on "${head}", not ${i.branch}`);
   if (git3(dir, ["status", "--porcelain"]) !== "")
     refuse2("the worktree has uncommitted changes: agents commit; this script does not");
-  const files = git3(dir, ["diff", "--name-only", `${i.defaultBranch}...${i.branch}`]).split("\n").filter(Boolean);
-  if (files.length === 0) refuse2(`${i.branch} has no changes against ${i.defaultBranch}`);
+  const remoteRef = `origin/${i.defaultBranch}`;
+  const hasRemote = (() => {
+    try {
+      git3(dir, ["rev-parse", "--verify", "--quiet", `refs/remotes/${remoteRef}`]);
+      return true;
+    } catch {
+      return false;
+    }
+  })();
+  if (hasRemote && git3(dir, ["rev-list", "--count", `${remoteRef}..${i.defaultBranch}`]) !== "0")
+    refuse2(
+      `the local ${i.defaultBranch} has commits that ${remoteRef} does not: it was moved, so the branch cannot be checked against it`,
+      "guard_blocked"
+    );
+  const base = hasRemote ? remoteRef : i.defaultBranch;
+  const files = git3(dir, [
+    "-c",
+    "core.quotePath=false",
+    "diff",
+    "--name-only",
+    `${base}...${i.branch}`
+  ]).split("\n").filter(Boolean);
+  if (files.length === 0) refuse2(`${i.branch} has no changes against ${base}`);
   const bad = files.filter((f) => isProtectedConfigPath(f, i.role) || isProtectedStatePath(f));
   if (bad.length > 0)
     refuse2(
@@ -24659,14 +24696,14 @@ function checkBranch(i) {
       );
   }
   if (i.role === "developer") {
-    const e2e = files.filter((f) => f.startsWith("tests/e2e/"));
+    const e2e = files.filter((f) => f.toLowerCase().startsWith("tests/e2e/"));
     if (e2e.length > 0)
       refuse2(
         `the developer may not change tests/e2e/** (QA's): ${e2e.join(", ")}`,
         "protected_path"
       );
   }
-  const diff = git3(dir, ["diff", `${i.defaultBranch}...${i.branch}`]).slice(0, MAX_DIFF);
+  const diff = git3(dir, ["diff", `${base}...${i.branch}`]).slice(0, MAX_DIFF);
   const added = diff.split("\n").filter((l) => l.startsWith("+") && !l.startsWith("+++")).join("\n");
   const leaked = findSecrets(added, loadSecretAllowlist(i.projectDir));
   if (leaked.length > 0)
@@ -24674,7 +24711,7 @@ function checkBranch(i) {
       `the branch adds something that looks like a secret (${leaked.join(", ")})`,
       "secret_in_output"
     );
-  const messages = git3(dir, ["log", `${i.defaultBranch}..${i.branch}`, "--format=%B"]);
+  const messages = git3(dir, ["log", `${base}..${i.branch}`, "--format=%B"]);
   const attr = findAttribution(messages);
   if (attr.length > 0)
     refuse2(
