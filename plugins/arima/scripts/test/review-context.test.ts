@@ -77,12 +77,13 @@ describe('reviewContext', () => {
     const c = ctx(repo({ 'b.js': 'export const b = 2;\n' }));
     expect(c.untrusted.map((u) => u.label)).toEqual([
       'Pull request diff (git diff main...feat/US-1-x)',
+      'Changed files (git diff --numstat; binary files are flagged)',
       "Developer's report (criteria map and summary, the author's claims to check)",
     ]);
     expect(c.untrusted[0]?.text).toContain('+export const b = 2;');
-    expect(c.untrusted[1]?.text).toContain('AC-1: x');
+    expect(c.untrusted[2]?.text).toContain('AC-1: x');
     expect(c.conditions).toContain('Review attempt 1');
-    expect(c.conditions.some((x) => x.includes('CI is green'))).toBe(true);
+    expect(c.conditions.some((x) => x.includes('checks were green'))).toBe(true);
     expect(c.conditions.join('\n')).toContain('about 200');
     expect(c.conditions.join('\n')).not.toContain('over the limit');
   });
@@ -94,7 +95,7 @@ describe('reviewContext', () => {
 
   it('a missing developer report is a blocker the reviewer is told about, not a silent gap', () => {
     const c = ctx(repo({ 'b.js': 'x\n' }), { developerReport: undefined });
-    expect(c.untrusted[1]?.text).toContain('blocker finding');
+    expect(c.untrusted[2]?.text).toContain('blocker finding');
   });
 
   it('a re-review carries the findings of the previous review', () => {
@@ -149,6 +150,28 @@ describe('reviewContext', () => {
     // The diff holds a three-backtick line; the packet fences it with a longer run, so it cannot close it.
     expect(text.slice(0, at).lastIndexOf('````')).toBeGreaterThan(0);
     expect(text.indexOf('Review the pull request.')).toBeLessThan(at);
+  });
+
+  it('says when an approve cannot be trusted: cut diff, missing report, unreadable branch', () => {
+    const ok = ctx(repo({ 'b.js': 'x\n' }));
+    expect(ok.approvable).toBe(true);
+    expect(ok.unapprovable).toEqual([]);
+    expect(
+      ctx(repo({ 'b.js': 'x\n' }), { developerReport: undefined }).unapprovable.join(),
+    ).toContain('no developer report');
+    expect(ctx(repo({ 'b.js': 'x\n' }), { branch: 'feat/nope' }).approvable).toBe(false);
+    const big = ctx(repo({ 'big.js': 'y'.repeat(DIFF_CAP + 100) + '\n' }));
+    expect(big.approvable).toBe(false);
+    expect(big.unapprovable.join()).toContain('longer than');
+  });
+
+  it('lists the changed files and flags a binary one (a NUL byte hides both content and size)', () => {
+    const c = ctx(repo({ 'img.js': 'a\0b\0c\n', 'ok.js': 'fine\n' }));
+    const list = c.untrusted.find((u) => u.label.startsWith('Changed files'))?.text ?? '';
+    expect(list).toContain('BINARY img.js');
+    expect(list).toContain('ok.js +1 -0');
+    expect(c.approvable).toBe(false);
+    expect(c.unapprovable.join()).toContain('img.js');
   });
 
   it('the cap leaves room in the 40,000-character packet', () => {

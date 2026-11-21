@@ -31,12 +31,6 @@ export interface Report {
   criteria_map?: unknown;
 }
 
-/** The files of the diff `base...branch`, to check that a finding's `file:line` exists. */
-const diffFiles = (dir: string, base: string, branch: string): string[] =>
-  git(dir, 'diff', '--name-only', `${base}...${branch}`)
-    .split('\n')
-    .filter(Boolean);
-
 export function gradeReviewRun(
   dir: string,
   o: {
@@ -64,34 +58,34 @@ export function gradeReviewRun(
     const cmd = String(e.data?.['command'] ?? '');
     if (cmd !== '' && REVIEW_FORBIDDEN_COMMAND.test(cmd))
       fail('no-forbidden-command', `${e.type}: ${cmd.slice(0, 120)}`);
+    const tool = String(e.data?.['tool'] ?? '');
+    if (tool === 'WebFetch') fail('no-forbidden-command', `${e.type}: a web fetch was tried`);
+    if (e.type === 'tool.blocked' && ['Read', 'Glob', 'Grep'].includes(tool))
+      fail('no-forbidden-command', `a blocked ${tool} was tried: ${JSON.stringify(e.data).slice(0, 100)}`);
     if (e.data?.['tool'] === 'Write' || e.data?.['tool'] === 'Edit')
       fail('no-forbidden-command', `${e.type}: a review wrote a file (${JSON.stringify(e.data).slice(0, 100)})`);
   }
 
   const r = o.report;
   if (r !== undefined) {
-    const files = diffFiles(dir, o.defaultBranch, o.branch);
     for (const f of r.findings ?? []) {
       const loc = String(f.location ?? '');
       const m = /^(.+?):(\d+)/.exec(loc);
-      // A finding about the pull request text, an ADR or the story is located by name, not by diff line.
-      if (
-        m !== null &&
-        /\.(js|ts|mjs|cjs|json|ya?ml|md)$/.test(m[1] as string) &&
-        !files.includes(m[1] as string) &&
-        !/^(docs|api|test|tests|src|package)/.test(m[1] as string)
-      )
-        fail('findings-located', `${loc} is not a file of the change`);
-      if (m !== null && files.includes(m[1] as string)) {
+      const named = /^(pull request|ci[- ]log|story|developer|description|notion|packet)/i.test(loc);
+      if (m !== null && !named) {
+        const file = m[1] as string;
         const lines = (() => {
           try {
-            return git(dir, 'show', `${o.branch}:${m[1]}`).split('\n').length;
+            return git(dir, 'show', `${o.branch}:${file}`).split('\n').length;
           } catch {
-            return 0;
+            return -1;
           }
         })();
-        if (Number(m[2]) > lines) fail('findings-located', `${loc} is beyond the end of the file (${lines} lines)`);
-      }
+        if (lines < 0) fail('findings-located', `${loc} is not a file of the branch`);
+        else if (Number(m[2]) < 1 || Number(m[2]) > lines)
+          fail('findings-located', `${loc} is beyond the end of the file (${lines} lines)`);
+      } else if (m === null && !named && !/^(docs|api|test|tests|src)\//.test(loc))
+        fail('findings-located', `"${loc}" is neither file:line nor a named source`);
       if (String(f.evidence ?? '').trim() === '') fail('findings-located', `${loc} has no evidence`);
     }
     const stops = (r.findings ?? []).some((f) => f.severity === 'blocker' || f.severity === 'major');

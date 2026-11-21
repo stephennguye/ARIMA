@@ -17,7 +17,6 @@ describe('tech-lead allow-list for a review (card section 6, D-49)', () => {
       'Bash(git diff *)',
       'Bash(git log *)',
       'Bash(git show *)',
-      'WebFetch',
     ])
       expect(review, t).toContain(t);
     expect(review.some((t) => /^(Write|Edit|MultiEdit)/.test(t))).toBe(false);

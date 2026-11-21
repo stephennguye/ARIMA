@@ -234,7 +234,7 @@ describe('agents/tech-lead.md (spec §5.6, card, D-49)', () => {
       String(front['tools'])
         .split(',')
         .map((t) => t.trim()),
-    ).toEqual(['Read', 'Glob', 'Grep', 'Bash', 'WebFetch']);
+    ).toEqual(['Read', 'Glob', 'Grep', 'Bash']);
     expect(/## Writes\n\n- Nothing/.test(body)).toBe(true);
   });
 

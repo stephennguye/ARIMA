@@ -114,7 +114,9 @@ export function allowedTools(role: Role, scriptsDir: string, kind?: string): str
       // A review reads a diff and writes nothing: the verdict and findings are in its report and the
       // host posts them (D-49). No outbox (proposals travel in the report) and no `npm`: a review does
       // not run the author's code, CI does (WP-212, judge rule "no role runs code from another role").
-      const base = [...read, ...GIT_READ, 'WebFetch'];
+      // No `git fetch` (it moves refs and prints the tip of the state branch) and no WebFetch (an exfiltration
+      // channel; only deprecation-check reads public end-of-life pages).
+      const base = [...read, ...GIT_READ.filter((t) => !t.includes('git fetch'))];
       // Scoped grants for the kinds that edit a document (WP-212 acceptance; their agent sections are WP-312 and WP-219).
       if (kind === 'adr-review')
         return [
@@ -131,6 +133,7 @@ export function allowedTools(role: Role, scriptsDir: string, kind?: string): str
           ...bash('git add'),
           ...bash('git commit'),
         ];
+      if (kind === 'deprecation-check') return [...base, 'WebFetch'];
       return base;
     }
     case 'developer':

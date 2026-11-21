@@ -680,6 +680,9 @@ export async function runDispatch(o: DispatchOptions): Promise<DispatchResult> {
     function readAttempt(item: string): number {
       return attemptOf(item);
     }
+    /** Per item: why an approve of the review being run cannot be trusted (empty when it can). */
+    const unapprovableReviews = new Map<string, string[]>();
+
     function lastDevelopReport(item: string): AgentReport | undefined {
       return lastReportOf(item, 'develop');
     }
@@ -825,6 +828,7 @@ export async function runDispatch(o: DispatchOptions): Promise<DispatchResult> {
             })
           : undefined;
       if (review) untrusted.push(...review.untrusted);
+      if (review) unapprovableReviews.set(unit.item, review.unapprovable);
       return {
         run_id: rid,
         max_minutes: cfg.schedule.max_run_minutes,
@@ -937,8 +941,20 @@ export async function runDispatch(o: DispatchOptions): Promise<DispatchResult> {
 
       if (unit.kind === 'develop' && report.status === 'done')
         await publishDevelop(unit, report, branch);
-      if (unit.kind === 'review' && report.status === 'done' && report.verdict)
-        await afterReview(unit, report.verdict.result);
+      if (unit.kind === 'review' && report.status === 'done' && report.verdict) {
+        // An approve is not acted on when the reviewer could not have seen the whole change: the host
+        // treats it as changes_requested so the author fixes what blocked the review (judge major 3).
+        const why = unapprovableReviews.get(unit.item) ?? [];
+        const effective =
+          report.verdict.result === 'approve' && why.length > 0
+            ? 'changes_requested'
+            : report.verdict.result;
+        if (effective !== report.verdict.result)
+          res.warnings.push(
+            `review of ${unit.item}: the approve was not acted on (${why.join('; ')})`,
+          );
+        await afterReview(unit, effective);
+      }
       if (unit.kind === 'qa' && report.status === 'done' && report.verdict?.result === 'fail')
         await afterQaFail(unit, report);
       if (unit.kind === 'qa' && report.status === 'done' && report.verdict?.result === 'pass')

@@ -413,7 +413,9 @@ describe('hooks/hooks.json', () => {
 
   it('guards every tool before it runs, and audits only state-changing tools after', () => {
     expect(json.hooks['PreToolUse']?.[0]?.matcher).toBe('*');
-    expect(json.hooks['PostToolUse']?.[0]?.matcher).toBe('Write|Edit|MultiEdit|NotebookEdit|Bash');
+    expect(json.hooks['PostToolUse']?.[0]?.matcher).toBe(
+      'Write|Edit|MultiEdit|NotebookEdit|Bash|WebFetch',
+    );
   });
 });
 
