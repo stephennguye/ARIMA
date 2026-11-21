@@ -141,4 +141,4 @@ WP-102 (packet), WP-103 (report collector), WP-104 (outbox binding), WP-106 and 
 | **Push, PR creation and the GitHub token are removed from the role**; the host publishes | D-37, G-05 | WP-111 |
 | **No AI attribution** in commits, PR bodies or code comments; Conventional Commits with the item id | D-48 | WP-113 (hook, PR template without a generated-by footer) |
 
-- Protocol checklist: [x] 1 card review · [x] 2 fixtures · [x] 3 envelope tests · [x] 4 stub (E-S1, E-S2 and a new evidence_missing dispatch test) · [x] 5 agent file · [x] 6 real smoke (scenario runs) · [x] 7 evals · [ ] 8 judge and flip.
+- Protocol checklist: [x] 1 card review · [x] 2 fixtures · [x] 3 envelope tests · [x] 4 stub (E-S1, E-S2 and a new evidence_missing dispatch test) · [x] 5 agent file · [x] 6 real smoke (scenario runs) · [x] 7 evals · [x] 8 judge `J-agent:developer` answered (flip waits for the owner, see STATE).

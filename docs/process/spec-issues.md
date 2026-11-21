@@ -30,7 +30,7 @@ Status key: **Open** (needs your decision), **Blocking** (a build step cannot be
 - **Evidence:** a run costs at least about $0.15 to $0.24 even for a trivial prompt (measured). An S story at $1 can afford about four runs; an M story at $3 is likely exhausted by development plus review.
 - **Proposed resolution:** keep the numbers as "estimated consumption" defaults, but (1) state the floor cost per run in the spec, (2) set the per-run cap to the smaller of $2 and the remaining story budget at dispatch, (3) recalibrate the S/M/L budgets after the first real milestone from the estimate-accuracy metric, as §7.1 already intends.
 
-## S4. Who is allowed to merge is described five ways (Open)
+## S4. Who is allowed to merge is described five ways (Resolved in the spec text v0.5 and built: WP-112, WP-212)
 
 - **Spec:** §5.2 orchestrator must not merge; §5.6 tech-lead "waits for your approval and is then merged automatically"; §10.3 "ARIMA merges automatically"; §11.2 "tech-lead merges after human approval"; D-29 a hook blocks pushes to main.
 - **Proposed resolution:** exactly one actor merges: a single ARIMA merge script, run by the orchestrator's session, that refuses unless CI is green, QA passed and the human's approving review exists. No agent has `gh pr merge`, `git push` to the default branch, or `gh api` writes (the role lists no longer grant these, and the guard blocks the literal forms; the second review showed the guard alone can be bypassed, so the real barrier is GitHub branch protection plus the rule below that agents never hold push credentials, S16). Reword §5.2, §5.6, §10.3 and §11.2 to say "the merge script".
