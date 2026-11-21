@@ -2,6 +2,7 @@
 // written to STUB_RECORD so tests can assert on flags, env and prompt. No network, no cost.
 import { spawn } from 'node:child_process';
 import { readFileSync, writeFileSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
 
 const mode = process.env.STUB_MODE ?? 'success';
 const chunks = [];
@@ -134,10 +135,7 @@ switch (mode) {
     }
     if (key === 'qa-qa' && !existsSync(`${dir}/${key}.no-run`)) {
       // A real QA run runs the tests and the audit hook records it; the stub does the same through the real hook.
-      const hook = new URL('../../dist/arima-hook.mjs', import.meta.url).pathname.replace(
-        /^\/([A-Za-z]:)/,
-        '$1',
-      );
+      const hook = fileURLToPath(new globalThis.URL('../../dist/arima-hook.mjs', import.meta.url));
       spawnSync(process.execPath, [hook, 'post-tool-use'], {
         input: JSON.stringify({
           tool_name: 'Bash',
