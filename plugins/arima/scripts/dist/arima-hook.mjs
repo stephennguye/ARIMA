@@ -16120,7 +16120,7 @@ function guardQaTests(command) {
   }
   return void 0;
 }
-var isReadOnlyKind = (ctx) => ctx.role === "devops" && ctx.kind === "deploy-staging" || ctx.role === "tech-lead" && ctx.kind === "review";
+var isReadOnlyKind = (ctx) => ctx.role === "devops" && (ctx.kind === "deploy-staging" || ctx.kind === "preview-diagnose") || ctx.role === "tech-lead" && ctx.kind === "review";
 var NO_STATE_READ = /* @__PURE__ */ new Set(["developer", "qa", "tech-lead"]);
 var stateReadReason = (role) => `a ${role} run reads nothing under .arima/: the run packet carries every input it needs`;
 function guardBash(command, ctx = {}) {
@@ -16270,7 +16270,7 @@ function guardTool(tool, input, ctx = {}) {
         };
     }
   }
-  if (ctx.role === "devops" && ctx.kind === "deploy-staging" && WRITE_TOOLS.has(tool) && pathsOf(input).some((p) => !/(^|\/)\.arima\/outbox\/[^/]+\.json$/.test(canon(p))))
+  if (ctx.role === "devops" && (ctx.kind === "deploy-staging" || ctx.kind === "preview-diagnose") && WRITE_TOOLS.has(tool) && pathsOf(input).some((p) => !/(^|\/)\.arima\/outbox\/[^/]+\.json$/.test(canon(p))))
     return {
       rule: "read-only-kind",
       reason: "a deploy-staging run edits no file; put the proposed fix in findings"

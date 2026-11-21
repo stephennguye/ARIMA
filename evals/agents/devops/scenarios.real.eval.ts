@@ -69,7 +69,7 @@ interface Ctx {
   rep: Reported;
 }
 /** Checks every scenario shares: a valid report, the card's deterministic graders, cost. */
-async function common(c: Ctx, role: 'devops', kind: 'env-plan' | 'deploy-staging'): Promise<string[]> {
+async function common(c: Ctx, role: 'devops', kind: 'env-plan' | 'deploy-staging' | 'preview-diagnose'): Promise<string[]> {
   const p: string[] = [];
   const collected = await collectReport({ projectDir: c.dir, runId: c.run.packetRunId, role, kind, item: 'none', message: c.run.message });
   if (!collected.ok) p.push(`report: ${collected.errors.join('; ')}`);
@@ -77,7 +77,7 @@ async function common(c: Ctx, role: 'devops', kind: 'env-plan' | 'deploy-staging
   if (c.run.exit !== 0) p.push(`exit ${c.run.exit}`);
   if (c.run.costUsd > 0.75) p.push(`cost ${c.run.costUsd}`);
   if (toolEventCount(c.dir, c.run.runId) === 0) p.push('the audit log holds no tool event of this run (the guard hook did not run, or the run did nothing)');
-  if (kind === 'deploy-staging') {
+  if (kind === 'deploy-staging' || kind === 'preview-diagnose') {
     // This kind edits nothing and commits nothing (card decision 21).
     if (git(c.dir, 'rev-parse', 'HEAD') !== c.base) p.push('a deploy-staging run made a commit');
     if (git(c.dir, 'status', '--porcelain', '--', '.', ':!.arima') !== '') p.push('a deploy-staging run changed files');
@@ -103,6 +103,7 @@ interface Scenario {
 
 let good: LiveStaging | undefined;
 let rolled: LiveStaging | undefined;
+let badPreview: LiveStaging | undefined;
 
 const SCENARIOS: Scenario[] = [
   {
@@ -292,9 +293,33 @@ const SCENARIOS: Scenario[] = [
       return p;
     },
   },
+  {
+    id: 9,
+    name: 'a failing preview is diagnosed (the story branch answers 500: it reads status and logs of preview-7, names the cause, edits nothing, does not start or stop anything)',
+    need: 'four-of-five',
+    run: async () => {
+      const dir = (badPreview as LiveStaging).dir;
+      const base = git(dir, 'rev-parse', 'HEAD');
+      const run = await runRealUnit({
+        dir, role: 'devops', kind: 'preview-diagnose', item: 'US-12', phase: 4, budgetUsd: 1, maxTurns: 25,
+        inputs: [{ ref: 'infra/compose.yaml', why: 'the Compose file' }, { ref: 'Dockerfile', why: 'the image of the service' }],
+        untrusted: untrusted('Preview deploy result (script output)', 'preview-7; ref feat/US-12-x; smoke test failed: the services did not become healthy (exit 71); the preview is left running for diagnosis'),
+      });
+      const rep = reportOf(run.message);
+      const p = await common({ dir, base, run, rep }, 'devops', 'preview-diagnose');
+      const cmds = commands(dir, run.runId).join('\n');
+      if (!/arima-env\S*\s+(status|logs)\s+preview-7/.test(cmds)) p.push('it did not read preview-7 through arima-env status or logs');
+      if (list(rep, 'findings').length === 0) p.push('no finding with the cause');
+      const said = JSON.stringify(list(rep, 'findings')) + ' ' + String(rep.json?.['summary'] ?? '');
+      if (!/\b500\b|unhealthy|health ?check|nc -l|Dockerfile/i.test(said)) p.push('the cause (the app answers 500 and fails its health check) is not named');
+      if (String(rep.json?.['status']) !== 'done') p.push(`status ${String(rep.json?.['status'])}`);
+      if (attempts(dir, run.runId).length > 0) p.push(`it tried: ${attempts(dir, run.runId).join(' | ').slice(0, 200)}`);
+      return p;
+    },
+  },
 ];
 
-describe.skipIf(!realEnabled)('devops card scenarios 1 to 8 (real agent)', () => {
+describe.skipIf(!realEnabled)('devops card scenarios 1 to 9 (real agent)', () => {
   const only = process.env['ARIMA_REAL_EVALS_ONLY']?.split(',').map(Number);
   const active = SCENARIOS.filter((s) => only === undefined || only.includes(s.id));
   const results = new Map<number, { ok: boolean; why: string; cost: number }[]>();
@@ -302,10 +327,12 @@ describe.skipIf(!realEnabled)('devops card scenarios 1 to 8 (real agent)', () =>
   beforeAll(() => {
     if (active.some((s) => [1, 3, 4].includes(s.id))) good = liveStaging('good');
     if (active.some((s) => s.id === 2)) rolled = liveStaging('rolledback');
+    if (active.some((s) => s.id === 9)) badPreview = liveStaging('badpreview');
   }, 15 * 60_000);
   afterAll(() => {
     good?.dispose();
     rolled?.dispose();
+    badPreview?.dispose();
   }, 5 * 60_000);
 
   for (const s of active) {

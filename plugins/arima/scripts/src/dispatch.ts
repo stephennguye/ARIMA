@@ -29,7 +29,19 @@ import { enqueueReportRecords } from './notion/proposals.js';
 import { findRow, pullMirror, readMirror, readNotionMap } from './notion/mirror.js';
 import type { NotionPort } from './notion/port.js';
 import { pushOutbox } from './notion/outbox.js';
-import { stagingFailing } from './env.js';
+import { settingsFrom, stagingFailing } from './env.js';
+import type { EnvDeps, EnvSettings } from './env.js';
+import {
+  branchSha,
+  ensurePreviews,
+  failedPreviews,
+  previewHealthy,
+  previewOf,
+  previewUrl,
+  previewsPossible,
+  removePreview,
+  sweepPreviews,
+} from './preview.js';
 import { renderPacket } from './packet.js';
 import { reviewContext } from './review-context.js';
 import type { PacketInput } from './packet.js';
@@ -122,8 +134,10 @@ export interface DispatchDeps {
   setupCheck?: () => { green: boolean; detail: string };
   /** After a merge: rebuild staging (arima-env, WP-213). */
   afterMerge?: (info: { item: string; sha: string }) => Promise<void>;
-  /** Whether a story's preview is up (WP-218). */
+  /** Whether a story's preview is up (WP-218). Defaults to the recorded smoke result of its preview. */
   previewReady?: (item: string) => boolean;
+  /** Dependencies of the arima-env calls (previews): a stub exec in tests. */
+  envDeps?: EnvDeps;
   skipState?: boolean;
   /** Overrides the push URL of publish (tests). */
   remoteUrl?: string;
@@ -411,6 +425,7 @@ export async function runDispatch(o: DispatchOptions): Promise<DispatchResult> {
 
     if (!dry && !res.degraded) {
       await advanceByFacts();
+      await refreshPreviews();
       // WP-217: approved lessons become overrides; a milestone whose stories are all accepted gets its review
       // (a veto row per story), and an open one closes after its window. Then what is not held is accepted.
       try {
@@ -457,6 +472,7 @@ export async function runDispatch(o: DispatchOptions): Promise<DispatchResult> {
         stories,
         ciRedOnMain: await gh.ciRedOnMain(),
         stagingSmokeFailing: stagingFailing(o.projectDir) !== undefined,
+        previewsFailing: failingPreviewItems(),
       },
       limits,
     );
@@ -682,6 +698,95 @@ export async function runDispatch(o: DispatchOptions): Promise<DispatchResult> {
     function readAttempt(item: string): number {
       return attemptOf(item);
     }
+    function envSettings(): EnvSettings | undefined {
+      try {
+        return settingsFrom(o.projectDir, cfgResult.arima);
+      } catch {
+        return undefined;
+      }
+    }
+    /** The status the engine last decided for a story (the mirror lags until the next push and pull), else the mirror's. */
+    function currentStatus(item: string): string | undefined {
+      const last = readEvents(o.projectDir)
+        .filter((e) => e.type === 'item.status' && e.item === item)
+        .at(-1);
+      return typeof last?.data?.['to'] === 'string' ? last.data['to'] : mirrorStatusOf(item);
+    }
+    function inReviewWithPr(): { item: string; pr: number; branch: string }[] {
+      const out: { item: string; pr: number; branch: string }[] = [];
+      for (const r of readMirror(o.projectDir, 'stories')?.rows ?? []) {
+        if (currentStatus(r.id) !== 'In Review') continue;
+        const pr = prNumber(r.id);
+        if (pr !== undefined) out.push({ item: r.id, pr, branch: branchFor(r.id, titleOf(r.id)) });
+      }
+      return out;
+    }
+    /** Step 3b: a story In Review gets a preview that answers its smoke request (WP-218); a failure is recorded, not thrown. */
+    async function refreshPreviews(): Promise<void> {
+      const s = envSettings();
+      if (s === undefined) return;
+      try {
+        // A merged, accepted, released or cancelled story keeps no preview.
+        const prItems: Record<number, string> = {};
+        for (const e of readEvents(o.projectDir))
+          if (
+            e.type === 'pr.published' &&
+            e.item !== undefined &&
+            typeof e.data?.['pr'] === 'number'
+          )
+            prItems[e.data['pr'] as number] = e.item;
+        await sweepPreviews(s, prItems, currentStatus, d.envDeps ?? { env });
+        for (const r of await ensurePreviews(s, inReviewWithPr(), d.envDeps ?? { env }))
+          if (r.result === 'failed')
+            res.warnings.push(
+              `preview of ${r.item} (PR #${r.pr}) failed: ${r.error ?? ''}`.slice(0, 300),
+            );
+      } catch (e) {
+        res.warnings.push(
+          `previews could not be refreshed: ${e instanceof Error ? e.message.slice(0, 160) : String(e)}`,
+        );
+      }
+    }
+    function failingPreviewItems(): { item: string; pr: number }[] {
+      const failed = failedPreviews(o.projectDir);
+      return inReviewWithPr()
+        .filter((x) => failed.some((f) => f.pr === x.pr))
+        .map((x) => ({ item: x.item, pr: x.pr }));
+    }
+    function previewFailureOf(
+      item: string,
+    ): { pr: number; ref: string; error: string } | undefined {
+      const pr = prNumber(item);
+      return failedPreviews(o.projectDir).find((f) => f.pr === pr);
+    }
+    /** The In Review to In QA guard: with a Compose file the preview must have answered its smoke request at the branch head. */
+    function previewIsReady(item: string): boolean {
+      if (d.previewReady) return d.previewReady(item);
+      const s = envSettings();
+      if (s === undefined || !previewsPossible(s)) return true;
+      const pr = prNumber(item);
+      if (pr === undefined) return false;
+      return previewHealthy(
+        o.projectDir,
+        pr,
+        branchSha(o.projectDir, branchFor(item, titleOf(item))),
+      );
+    }
+    function previewConditions(unit: PlannedUnit): string[] {
+      if (unit.kind !== 'qa') return [];
+      const pr = prNumber(unit.item);
+      const rec = pr === undefined ? undefined : previewOf(o.projectDir, pr);
+      return rec?.ok
+        ? [
+            `The preview to test is ${previewUrl(rec.port)} (its smoke request answered at ${rec.deployed_at})`,
+          ]
+        : [];
+    }
+    async function removeMergedPreview(pr: number): Promise<void> {
+      const s = envSettings();
+      if (s !== undefined) await removePreview(s, pr, d.envDeps ?? { env });
+    }
+
     function lastDevelopReport(item: string): AgentReport | undefined {
       return lastReportOf(item, 'develop');
     }
@@ -807,6 +912,13 @@ export async function runDispatch(o: DispatchOptions): Promise<DispatchResult> {
           untrusted.push({ label: 'Acceptance criteria (Notion)', source: 'notion', text: ac });
       }
       const failed = unit.kind === 'deploy-staging' ? stagingFailing(o.projectDir) : undefined;
+      const pv = unit.kind === 'preview-diagnose' ? previewFailureOf(unit.item) : undefined;
+      if (pv)
+        untrusted.push({
+          label: 'Preview deploy result (script output)',
+          source: 'arima-env',
+          text: `preview-${pv.pr}; ref ${pv.ref}; ${pv.error}`,
+        });
       if (failed)
         untrusted.push({
           label: 'Staging deploy result (script output)',
@@ -851,6 +963,7 @@ export async function runDispatch(o: DispatchOptions): Promise<DispatchResult> {
           `The profile is ${cfg.profile}`,
           ...(unit.reworkReason ? [`This is rework: ${unit.reworkReason}`] : []),
           ...(review ? review.conditions : []),
+          ...previewConditions(unit),
           ...overrideConditions(o.projectDir, unit.role),
         ],
         task: taskFor(unit),
@@ -1094,7 +1207,7 @@ export async function runDispatch(o: DispatchOptions): Promise<DispatchResult> {
           facts: {
             guards: {
               review_approved: true,
-              preview_deployed: d.previewReady?.(unit.item) ?? true,
+              preview_deployed: previewIsReady(unit.item),
             },
             budget_available: budget,
           },
@@ -1157,6 +1270,7 @@ export async function runDispatch(o: DispatchOptions): Promise<DispatchResult> {
           });
           merges.push(s.id);
           await d.afterMerge?.({ item: s.id, sha: m.sha });
+          await removeMergedPreview(pr);
         } catch (e) {
           log(
             `merge of ${s.id} not done: ${e instanceof Error ? e.message.slice(0, 120) : String(e)}`,

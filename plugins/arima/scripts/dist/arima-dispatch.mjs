@@ -21825,7 +21825,8 @@ async function upEnv(s, name, o = {}) {
       port,
       ref: snap.sha,
       deployed_at: c.deps.now().toISOString(),
-      ok: failure === void 0
+      ok: failure === void 0,
+      ...failure !== void 0 ? { error: failure.slice(0, 600) } : {}
     };
     if (failure === void 0 && smoke !== void 0) {
       const st2 = readEnvState(s.projectDir);
@@ -21957,7 +21958,7 @@ function stagingFailing(projectDir) {
 }
 
 // plugins/arima/scripts/src/dispatch.ts
-import { execFileSync as execFileSync6 } from "node:child_process";
+import { execFileSync as execFileSync7 } from "node:child_process";
 import { createHash as createHash3 } from "node:crypto";
 import { existsSync as existsSync29, readFileSync as readFileSync28 } from "node:fs";
 import path38 from "node:path";
@@ -22029,6 +22030,7 @@ var TASKS = {
   "design-qa": "Compare the preview with the story's screens, state by state (empty, loading, error, success). Record each deviation as a finding. Give a verdict: pass only if every state matches or each deviation is accepted.",
   "env-plan": "Write docs/ops/env-matrix.md from its template: the local Compose projects (preview-<pr>, staging, production), ports, volumes, capacity limits, the backup and restore plan and the pipeline design (GitHub Actions: ci.yml and security-weekly.yml only). Hosting is the owner machine with Docker Compose; no cloud account or paid service. Cite the SAD and ADRs, and mark guesses as guesses.",
   "deploy-staging": "The host rebuilt staging after a merge; its result is in the packet. Verify it: run `arima-env status staging` and `arima-env smoke staging`, and report with evidence whether staging is healthy. If it is not, or the result says the smoke test failed, find the cause with `arima-env logs staging` and the Compose file and Dockerfile in the repository (the previous version was restored when there was one) and report it. Do not edit files and do not start or stop anything: propose the fix as a finding or a question.",
+  "preview-diagnose": "The host created the preview of this story's pull request and it did not answer its smoke request; its result is in the packet. Find the cause: run `arima-env status preview-<pr>` and `arima-env logs preview-<pr>` (the number is in the result), read the Compose file and Dockerfile in the repository, and report the cause with evidence. Do not edit files and do not start or stop anything: propose the fix as a finding for the developer (the item stays In Review).",
   author: "Write the one artifact named in the packet from its template, citing sources, and mark guesses as guesses. Propose Notion records through `records` and ask only critical questions.",
   triage: "Triage this incident: establish impact and cause from the evidence in the packet, and propose a mitigation. Do not take any action yourself.",
   "security-scan": "Run the scan named in the packet and report findings with severity, location and evidence. Give a verdict: fail on any critical or high finding."
@@ -25264,6 +25266,134 @@ async function mergePr(i) {
   return { sha: pr.headRefOid, item: i.item };
 }
 
+// plugins/arima/scripts/src/preview.ts
+import { execFileSync as execFileSync5 } from "node:child_process";
+var previewName = (pr) => `preview-${pr}`;
+var previewUrl = (port) => `http://localhost:${port}`;
+function previewsPossible(s) {
+  try {
+    execFileSync5("git", ["cat-file", "-e", `${s.defaultBranch}:${s.composeFile}`], {
+      cwd: s.projectDir,
+      stdio: "ignore"
+    });
+    return true;
+  } catch {
+    return false;
+  }
+}
+function previewOf(projectDir, pr) {
+  try {
+    return readEnvState(projectDir).previews[String(pr)];
+  } catch {
+    return void 0;
+  }
+}
+function previewHealthy(projectDir, pr, sha) {
+  const r = previewOf(projectDir, pr);
+  return r !== void 0 && r.ok && (sha === void 0 || r.ref === sha);
+}
+function failedPreviews(projectDir) {
+  try {
+    return Object.entries(readEnvState(projectDir).previews).filter(([, r]) => !r.ok).map(([pr, r]) => ({
+      pr: Number(pr),
+      ref: r.ref,
+      error: r.error ?? "the preview did not answer"
+    }));
+  } catch {
+    return [];
+  }
+}
+function branchSha(projectDir, branch) {
+  try {
+    return execFileSync5("git", ["rev-parse", "--verify", "--quiet", `refs/heads/${branch}`], {
+      cwd: projectDir,
+      encoding: "utf8"
+    }).trim();
+  } catch {
+    return void 0;
+  }
+}
+async function ensurePreviews(s, items, deps = {}) {
+  const out = [];
+  if (items.length === 0) return out;
+  if (!previewsPossible(s))
+    return items.map((i) => ({ pr: i.pr, item: i.item, result: "skipped" }));
+  for (const i of items) {
+    const sha = branchSha(s.projectDir, i.branch);
+    if (sha === void 0) {
+      out.push({
+        pr: i.pr,
+        item: i.item,
+        result: "skipped",
+        error: `branch ${i.branch} does not exist here`
+      });
+      continue;
+    }
+    if (previewHealthy(s.projectDir, i.pr, sha)) {
+      out.push({
+        pr: i.pr,
+        item: i.item,
+        result: "unchanged",
+        url: previewUrl(previewOf(s.projectDir, i.pr)?.port ?? 0)
+      });
+      continue;
+    }
+    try {
+      const r = await upEnv(s, previewName(i.pr), { ...deps, ref: i.branch });
+      out.push({ pr: i.pr, item: i.item, result: "up", url: previewUrl(r.port) });
+    } catch (e) {
+      const message = e instanceof Error ? e.message : String(e);
+      const paused = e instanceof EnvError && e.exit === ENV_EXIT.killSwitch;
+      if (paused) {
+        out.push({ pr: i.pr, item: i.item, result: "skipped", error: message.slice(0, 200) });
+        continue;
+      }
+      if (!failedPreviews(s.projectDir).some((f) => f.pr === i.pr && f.ref === sha)) {
+        await appendEvent(s.projectDir, {
+          type: "deploy.preview",
+          actor: "system",
+          item: i.item,
+          data: { environment: previewName(i.pr), ok: false, error: message.slice(0, 600) }
+        });
+      }
+      out.push({ pr: i.pr, item: i.item, result: "failed", error: message.slice(0, 600) });
+    }
+  }
+  return out;
+}
+async function removePreview(s, pr, deps = {}) {
+  if (previewOf(s.projectDir, pr) === void 0) return false;
+  try {
+    await downEnv(s, previewName(pr), deps);
+    return true;
+  } catch {
+    return false;
+  }
+}
+var PREVIEW_DONE_STATUSES = /* @__PURE__ */ new Set([
+  "PO Acceptance",
+  "Done",
+  "Released",
+  "Cancelled"
+]);
+async function sweepPreviews(s, prItems, statusOf, deps = {}) {
+  const removed = [];
+  let state;
+  try {
+    state = readEnvState(s.projectDir);
+  } catch {
+    return removed;
+  }
+  for (const key of Object.keys(state.previews)) {
+    const pr = Number(key);
+    const item = prItems[pr];
+    const status = item === void 0 ? void 0 : statusOf(item);
+    if (status !== void 0 && PREVIEW_DONE_STATUSES.has(status) && await removePreview(s, pr, deps))
+      removed.push(pr);
+  }
+  return removed;
+}
+
 // plugins/arima/scripts/src/digest.ts
 import { existsSync as existsSync24, mkdirSync as mkdirSync18, readFileSync as readFileSync23, writeFileSync as writeFileSync8 } from "node:fs";
 import path33 from "node:path";
@@ -25853,6 +25983,14 @@ function planDay(input, limits, ranks = RANKS) {
             item: "none",
             why: "the staging deploy failed its smoke test"
           });
+        for (const p of input.previewsFailing ?? [])
+          out.push({
+            rankName,
+            kind: "preview-diagnose",
+            role: "devops",
+            item: p.item,
+            why: `the preview of PR #${p.pr} did not answer its smoke request`
+          });
         return out;
       case "rework":
         for (const s of stories.filter(
@@ -26101,6 +26239,10 @@ var hours = (ms) => Math.max(0, Math.floor(ms / H));
 var waited = (since, now) => since === void 0 ? "wait not recorded" : `waiting ${hours(now.getTime() - Date.parse(since))} h`;
 var hoursSince = (since, now) => since === void 0 || Number.isNaN(Date.parse(since)) ? void 0 : (now.getTime() - Date.parse(since)) / H;
 var localDate2 = (d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+function previewText(projectDir, pr) {
+  const rec = typeof pr === "number" ? previewOf(projectDir, pr) : void 0;
+  return rec?.ok ? `preview ${previewUrl(rec.port)}` : "preview link not available yet";
+}
 function buildDigest(projectDir, now = /* @__PURE__ */ new Date(), o = {}) {
   const date2 = o.date ?? localDate2(now);
   const status = buildStatus(projectDir, now);
@@ -26155,7 +26297,7 @@ function buildDigest(projectDir, now = /* @__PURE__ */ new Date(), o = {}) {
     )?.ts;
     awaiting.push({
       weight: 1e6 + (hoursSince(qaAt, now) ?? 0),
-      line: `PR${typeof pr === "number" ? ` #${pr}` : ""} for ${s.id} awaits your approval: QA ${qa ?? "not yet reported"}; preview link not available yet (${waited(qaAt, now)})`
+      line: `PR${typeof pr === "number" ? ` #${pr}` : ""} for ${s.id} awaits your approval: QA ${qa ?? "not yet reported"}; ${previewText(projectDir, pr)} (${waited(qaAt, now)})`
     });
   }
   for (const c of mirrorOf("change_requests").filter((x) => x.properties["Decision"] === "Pending"))
@@ -27386,10 +27528,10 @@ function validatePacket(text3) {
 }
 
 // plugins/arima/scripts/src/review-context.ts
-import { execFileSync as execFileSync5 } from "node:child_process";
+import { execFileSync as execFileSync6 } from "node:child_process";
 var DIFF_CAP = 22e3;
 function branchDiff(projectDir, base, branch, cap = DIFF_CAP) {
-  const run = (...a) => execFileSync5("git", a, {
+  const run = (...a) => execFileSync6("git", a, {
     cwd: projectDir,
     encoding: "utf8",
     maxBuffer: 32 * 1024 * 1024,
@@ -27820,6 +27962,47 @@ async function runDispatch(o) {
       return mirrorAttempt(o.projectDir, item);
     }, readAttempt2 = function(item) {
       return attemptOf2(item);
+    }, envSettings2 = function() {
+      try {
+        return settingsFrom(o.projectDir, cfgResult.arima);
+      } catch {
+        return void 0;
+      }
+    }, currentStatus2 = function(item) {
+      const last = readEvents(o.projectDir).filter((e) => e.type === "item.status" && e.item === item).at(-1);
+      return typeof last?.data?.["to"] === "string" ? last.data["to"] : mirrorStatusOf2(item);
+    }, inReviewWithPr2 = function() {
+      const out = [];
+      for (const r of readMirror(o.projectDir, "stories")?.rows ?? []) {
+        if (currentStatus2(r.id) !== "In Review") continue;
+        const pr = prNumber2(r.id);
+        if (pr !== void 0) out.push({ item: r.id, pr, branch: branchFor(r.id, titleOf2(r.id)) });
+      }
+      return out;
+    }, failingPreviewItems2 = function() {
+      const failed = failedPreviews(o.projectDir);
+      return inReviewWithPr2().filter((x) => failed.some((f) => f.pr === x.pr)).map((x) => ({ item: x.item, pr: x.pr }));
+    }, previewFailureOf2 = function(item) {
+      const pr = prNumber2(item);
+      return failedPreviews(o.projectDir).find((f) => f.pr === pr);
+    }, previewIsReady2 = function(item) {
+      if (d.previewReady) return d.previewReady(item);
+      const s = envSettings2();
+      if (s === void 0 || !previewsPossible(s)) return true;
+      const pr = prNumber2(item);
+      if (pr === void 0) return false;
+      return previewHealthy(
+        o.projectDir,
+        pr,
+        branchSha(o.projectDir, branchFor(item, titleOf2(item)))
+      );
+    }, previewConditions2 = function(unit) {
+      if (unit.kind !== "qa") return [];
+      const pr = prNumber2(unit.item);
+      const rec = pr === void 0 ? void 0 : previewOf(o.projectDir, pr);
+      return rec?.ok ? [
+        `The preview to test is ${previewUrl(rec.port)} (its smoke request answered at ${rec.deployed_at})`
+      ] : [];
     }, lastDevelopReport2 = function(item) {
       return lastReportOf2(item, "develop");
     }, lastReportOf2 = function(item, kind) {
@@ -27870,6 +28053,13 @@ async function runDispatch(o) {
           untrusted.push({ label: "Acceptance criteria (Notion)", source: "notion", text: ac });
       }
       const failed = unit.kind === "deploy-staging" ? stagingFailing(o.projectDir) : void 0;
+      const pv = unit.kind === "preview-diagnose" ? previewFailureOf2(unit.item) : void 0;
+      if (pv)
+        untrusted.push({
+          label: "Preview deploy result (script output)",
+          source: "arima-env",
+          text: `preview-${pv.pr}; ref ${pv.ref}; ${pv.error}`
+        });
       if (failed)
         untrusted.push({
           label: "Staging deploy result (script output)",
@@ -27911,6 +28101,7 @@ async function runDispatch(o) {
           `The profile is ${cfg.profile}`,
           ...unit.reworkReason ? [`This is rework: ${unit.reworkReason}`] : [],
           ...review ? review.conditions : [],
+          ...previewConditions2(unit),
           ...overrideConditions(o.projectDir, unit.role)
         ],
         task: taskFor(unit),
@@ -27922,7 +28113,7 @@ async function runDispatch(o) {
       const e = readEvents(o.projectDir).filter((x) => x.type === "pr.published" && x.item === item).at(-1);
       return typeof e?.data?.["pr"] === "number" ? e.data["pr"] : void 0;
     };
-    var mirrorStatusOf = mirrorStatusOf2, attemptOf = attemptOf2, readAttempt = readAttempt2, lastDevelopReport = lastDevelopReport2, lastReportOf = lastReportOf2, titleOf = titleOf2, storyBranchOf = storyBranchOf2, readsFor = readsFor2, packetFor = packetFor2, prNumber = prNumber2;
+    var mirrorStatusOf = mirrorStatusOf2, attemptOf = attemptOf2, readAttempt = readAttempt2, envSettings = envSettings2, currentStatus = currentStatus2, inReviewWithPr = inReviewWithPr2, failingPreviewItems = failingPreviewItems2, previewFailureOf = previewFailureOf2, previewIsReady = previewIsReady2, previewConditions = previewConditions2, lastDevelopReport = lastDevelopReport2, lastReportOf = lastReportOf2, titleOf = titleOf2, storyBranchOf = storyBranchOf2, readsFor = readsFor2, packetFor = packetFor2, prNumber = prNumber2;
     const setup = d.setupCheck?.() ?? {
       green: true,
       detail: "arima-setup is not built yet; the Phase 3 checklist was not checked"
@@ -28002,6 +28193,7 @@ async function runDispatch(o) {
     } else await step(3, { skipped: dry ? "dry run" : "degraded" });
     if (!dry && !res.degraded) {
       await advanceByFacts();
+      await refreshPreviews();
       try {
         await applyApprovedLessons({ projectDir: o.projectDir, runId, now });
         await reviewTick({
@@ -28042,7 +28234,8 @@ async function runDispatch(o) {
       {
         stories,
         ciRedOnMain: await gh.ciRedOnMain(),
-        stagingSmokeFailing: stagingFailing(o.projectDir) !== void 0
+        stagingSmokeFailing: stagingFailing(o.projectDir) !== void 0,
+        previewsFailing: failingPreviewItems2()
       },
       limits
     );
@@ -28234,6 +28427,30 @@ async function runDispatch(o) {
         throw e;
       }
       return handleOutcome(unit, outcome, branch);
+    }
+    async function refreshPreviews() {
+      const s = envSettings2();
+      if (s === void 0) return;
+      try {
+        const prItems = {};
+        for (const e of readEvents(o.projectDir))
+          if (e.type === "pr.published" && e.item !== void 0 && typeof e.data?.["pr"] === "number")
+            prItems[e.data["pr"]] = e.item;
+        await sweepPreviews(s, prItems, currentStatus2, d.envDeps ?? { env });
+        for (const r of await ensurePreviews(s, inReviewWithPr2(), d.envDeps ?? { env }))
+          if (r.result === "failed")
+            res.warnings.push(
+              `preview of ${r.item} (PR #${r.pr}) failed: ${r.error ?? ""}`.slice(0, 300)
+            );
+      } catch (e) {
+        res.warnings.push(
+          `previews could not be refreshed: ${e instanceof Error ? e.message.slice(0, 160) : String(e)}`
+        );
+      }
+    }
+    async function removeMergedPreview(pr) {
+      const s = envSettings2();
+      if (s !== void 0) await removePreview(s, pr, d.envDeps ?? { env });
     }
     async function autoAccept() {
       const last = /* @__PURE__ */ new Map();
@@ -28467,7 +28684,7 @@ async function runDispatch(o) {
           facts: {
             guards: {
               review_approved: true,
-              preview_deployed: d.previewReady?.(unit.item) ?? true
+              preview_deployed: previewIsReady2(unit.item)
             },
             budget_available: budget
           }
@@ -28527,6 +28744,7 @@ async function runDispatch(o) {
           });
           merges.push(s.id);
           await d.afterMerge?.({ item: s.id, sha: m.sha });
+          await removeMergedPreview(pr);
         } catch (e) {
           log(
             `merge of ${s.id} not done: ${e instanceof Error ? e.message.slice(0, 120) : String(e)}`
@@ -28646,7 +28864,7 @@ function branchExists(projectDir, branch) {
 }
 function gitHasBranch(projectDir, branch) {
   try {
-    execFileSync6("git", ["show-ref", "--verify", "--quiet", `refs/heads/${branch}`], {
+    execFileSync7("git", ["show-ref", "--verify", "--quiet", `refs/heads/${branch}`], {
       cwd: projectDir,
       stdio: "ignore"
     });

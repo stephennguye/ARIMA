@@ -95,6 +95,8 @@ const TASKS: Partial<Record<UnitKind, string>> = {
     'Write docs/ops/env-matrix.md from its template: the local Compose projects (preview-<pr>, staging, production), ports, volumes, capacity limits, the backup and restore plan and the pipeline design (GitHub Actions: ci.yml and security-weekly.yml only). Hosting is the owner machine with Docker Compose; no cloud account or paid service. Cite the SAD and ADRs, and mark guesses as guesses.',
   'deploy-staging':
     'The host rebuilt staging after a merge; its result is in the packet. Verify it: run `arima-env status staging` and `arima-env smoke staging`, and report with evidence whether staging is healthy. If it is not, or the result says the smoke test failed, find the cause with `arima-env logs staging` and the Compose file and Dockerfile in the repository (the previous version was restored when there was one) and report it. Do not edit files and do not start or stop anything: propose the fix as a finding or a question.',
+  'preview-diagnose':
+    "The host created the preview of this story's pull request and it did not answer its smoke request; its result is in the packet. Find the cause: run `arima-env status preview-<pr>` and `arima-env logs preview-<pr>` (the number is in the result), read the Compose file and Dockerfile in the repository, and report the cause with evidence. Do not edit files and do not start or stop anything: propose the fix as a finding for the developer (the item stays In Review).",
   author:
     'Write the one artifact named in the packet from its template, citing sources, and mark guesses as guesses. Propose Notion records through `records` and ask only critical questions.',
   triage:

@@ -18637,11 +18637,18 @@ function validateProject(projectDir, root = pluginRoot()) {
 }
 var REQUIRED_HARD_STOPS = HARD_STOPS;
 
-// plugins/arima/scripts/src/digest.ts
-import { existsSync as existsSync11, mkdirSync as mkdirSync8, readFileSync as readFileSync12, writeFileSync as writeFileSync4 } from "node:fs";
-import path18 from "node:path";
-
-// plugins/arima/scripts/src/status.ts
+// plugins/arima/scripts/src/env.ts
+import {
+  existsSync as existsSync7,
+  lstatSync,
+  mkdirSync as mkdirSync5,
+  realpathSync,
+  mkdtempSync,
+  readFileSync as readFileSync8,
+  readdirSync as readdirSync4,
+  rmSync,
+  writeFileSync as writeFileSync3
+} from "node:fs";
 import path12 from "node:path";
 
 // plugins/arima/scripts/src/events.ts
@@ -18881,63 +18888,25 @@ function readEvents(projectDir) {
   return readJsonl(eventsFile(projectDir), "event");
 }
 
-// plugins/arima/scripts/src/ledger.ts
-import path8 from "node:path";
-function ledgerFile(projectDir) {
-  return path8.join(projectDir, ".arima", "ledger.jsonl");
-}
-function readLedger(projectDir) {
-  return readJsonl(ledgerFile(projectDir), "ledger");
-}
-
-// plugins/arima/scripts/src/budget.ts
-var round = (n) => Math.round(n * 1e6) / 1e6;
-function budgetStatus(projectDir, limits, today) {
-  const rows = readLedger(projectDir);
-  const projectSpent = round(rows.reduce((s, r) => s + r.cost_usd, 0));
-  const daySpent = round(rows.filter((r) => r.date === today).reduce((s, r) => s + r.cost_usd, 0));
-  const exhausted = [];
-  if (projectSpent >= limits.projectCap) exhausted.push("project");
-  if (daySpent >= limits.dailyCap) exhausted.push("daily");
-  return {
-    projectSpent,
-    projectCap: limits.projectCap,
-    daySpent,
-    dailyCap: limits.dailyCap,
-    ok: exhausted.length === 0,
-    exhausted
-  };
-}
-
-// plugins/arima/scripts/src/gates.ts
-var PHASE_AFTER_GATE = {
-  G0: "1 Discovery and requirements",
-  G1: "2 Design",
-  G2: "3 Setup and 4 Build",
-  G3: "6 Release",
-  G4: "8 Operations and maintenance"
-};
-
 // plugins/arima/scripts/src/killswitch.ts
-import path9 from "node:path";
+import path8 from "node:path";
 
 // plugins/arima/scripts/src/notion/port.ts
 var import_client = __toESM(require_src(), 1);
 
 // plugins/arima/scripts/src/killswitch.ts
 function pauseFile(projectDir) {
-  return path9.join(projectDir, ".arima", "PAUSE");
+  return path8.join(projectDir, ".arima", "PAUSE");
 }
 
-// plugins/arima/scripts/src/notion/mirror.ts
-import { existsSync as existsSync5, mkdirSync as mkdirSync3, readFileSync as readFileSync6 } from "node:fs";
-import path11 from "node:path";
+// plugins/arima/scripts/src/compose-lint.ts
+var import_yaml3 = __toESM(require_dist2(), 1);
 
 // plugins/arima/scripts/src/lib/atomic-file.ts
 import { mkdirSync as mkdirSync2, renameSync, unlinkSync as unlinkSync2, writeFileSync } from "node:fs";
-import path10 from "node:path";
+import path9 from "node:path";
 function writeFileAtomic(file, content) {
-  mkdirSync2(path10.dirname(file), { recursive: true });
+  mkdirSync2(path9.dirname(file), { recursive: true });
   const tmp = `${file}.${process.pid}.tmp`;
   writeFileSync(tmp, content, "utf8");
   for (let attempt = 0; ; attempt++) {
@@ -18959,130 +18928,16 @@ function writeFileAtomic(file, content) {
   }
 }
 
-// plugins/arima/scripts/src/notion/mirror.ts
-var mirrorDir = (projectDir) => path11.join(projectDir, ".arima", "mirror");
-var mirrorFile = (projectDir, db) => path11.join(mirrorDir(projectDir), `${db}.json`);
-function readMirror(projectDir, db) {
-  const file = mirrorFile(projectDir, db);
-  if (!existsSync5(file)) return void 0;
-  return JSON.parse(readFileSync6(file, "utf8"));
-}
-function findRow(m, id) {
-  if (m === void 0) return void 0;
-  const byId = m.rows.filter((r) => r.id === id);
-  if (byId.length > 1) throw new Error(`${byId.length} rows in ${m.database} have the ID "${id}"`);
-  if (byId[0] !== void 0) return byId[0];
-  return m.rows.find((r) => r.page_id === id);
-}
-
-// plugins/arima/scripts/src/status.ts
-import { existsSync as existsSync6 } from "node:fs";
-var StatusError = class extends Error {
-  constructor(message, problems) {
-    super(message);
-    this.problems = problems;
-  }
-  problems;
-};
-var STORY_STATUSES = [
-  "Backlog",
-  "Ready",
-  "In Progress",
-  "In Review",
-  "In QA",
-  "PO Acceptance",
-  "Done",
-  "Released",
-  "Blocked",
-  "Cancelled"
-];
-var localDate = (d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
-function buildStatus(projectDir, now = /* @__PURE__ */ new Date()) {
-  const cfg = validateProject(projectDir);
-  if (!cfg.ok || cfg.arima === void 0) {
-    throw new StatusError(
-      "config is invalid",
-      cfg.errors.map((e) => `${path12.basename(e.file)}:${e.line}: ${e.message}`)
-    );
-  }
-  const a = cfg.arima;
-  const warnings = [];
-  const profile = loadProfile(a.profile);
-  const gateMirror = readMirror(projectDir, "gates");
-  const gates = enforcedGates(profile).map((gate) => {
-    const row = gateMirror?.rows.find((r) => r.id === gate);
-    return { gate, status: row ? String(row.properties["Status"] ?? "Not ready") : "no page" };
-  });
-  const approved = (s) => s === "Approved" || s === "Approved with conditions";
-  let phase = "0 Initiation";
-  if (gateMirror === void 0) {
-    phase = "unknown (no Notion mirror yet; run /arima:init or arima-notion pull)";
-    warnings.push("no Notion mirror: gates, questions and board are empty");
-  } else {
-    for (const g of gates) {
-      if (!approved(g.status)) break;
-      phase = PHASE_AFTER_GATE[g.gate];
-    }
-  }
-  const qMirror = readMirror(projectDir, "questions");
-  const open = (qMirror?.rows ?? []).filter((r) => r.properties["Status"] === "Open");
-  const top = open.map((r) => ({
-    id: r.id,
-    question: String(r.properties["Question"] ?? ""),
-    blocking: r.properties["Blocking"] === true
-  })).sort((x, y) => Number(y.blocking) - Number(x.blocking) || x.id.localeCompare(y.id)).slice(0, 10);
-  const board = {};
-  for (const s of STORY_STATUSES) board[s] = 0;
-  for (const r of readMirror(projectDir, "stories")?.rows ?? []) {
-    const s = String(r.properties["Status"] ?? "Backlog");
-    board[s] = (board[s] ?? 0) + 1;
-  }
-  const budget = budgetStatus(
-    projectDir,
-    {
-      projectCap: a.budget.project_cap,
-      dailyCap: a.budget.daily_cap,
-      alertThresholds: a.budget.alert_thresholds
-    },
-    localDate(now)
-  );
-  const ledger = readLedger(projectDir);
-  const last = ledger[ledger.length - 1];
-  const report = {
-    project: { key: a.project.key, name: a.project.name, profile: a.profile },
-    phase,
-    gates,
-    questions: {
-      open: open.length,
-      blocking: open.filter((r) => r.properties["Blocking"] === true).length,
-      top
-    },
-    board,
-    budget,
-    runs: {
-      total: ledger.length,
-      failed: ledger.filter((r) => r.result === "error").length,
-      paused: ledger.filter((r) => r.result === "paused").length,
-      ...last ? { lastRunId: last.run_id } : {}
-    },
-    paused: existsSync6(pauseFile(projectDir)),
-    warnings
-  };
-  const fetched = gateMirror?.fetched_at ?? qMirror?.fetched_at;
-  if (fetched !== void 0) report.mirrorFetchedAt = fetched;
-  return report;
-}
-
 // plugins/arima/scripts/src/notion/outbox.ts
 import {
-  existsSync as existsSync7,
+  existsSync as existsSync6,
   mkdirSync as mkdirSync4,
   readFileSync as readFileSync7,
   readdirSync as readdirSync3,
   renameSync as renameSync2,
   writeFileSync as writeFileSync2
 } from "node:fs";
-import path13 from "node:path";
+import path11 from "node:path";
 
 // plugins/arima/scripts/src/roles.ts
 var ROLES = [
@@ -19555,8 +19410,26 @@ var DATABASES = [
   }
 ];
 
+// plugins/arima/scripts/src/notion/mirror.ts
+import { existsSync as existsSync5, mkdirSync as mkdirSync3, readFileSync as readFileSync6 } from "node:fs";
+import path10 from "node:path";
+var mirrorDir = (projectDir) => path10.join(projectDir, ".arima", "mirror");
+var mirrorFile = (projectDir, db) => path10.join(mirrorDir(projectDir), `${db}.json`);
+function readMirror(projectDir, db) {
+  const file = mirrorFile(projectDir, db);
+  if (!existsSync5(file)) return void 0;
+  return JSON.parse(readFileSync6(file, "utf8"));
+}
+function findRow(m, id) {
+  if (m === void 0) return void 0;
+  const byId = m.rows.filter((r) => r.id === id);
+  if (byId.length > 1) throw new Error(`${byId.length} rows in ${m.database} have the ID "${id}"`);
+  if (byId[0] !== void 0) return byId[0];
+  return m.rows.find((r) => r.page_id === id);
+}
+
 // plugins/arima/scripts/src/notion/outbox.ts
-var outboxDir = (projectDir) => path13.join(projectDir, ".arima", "outbox");
+var outboxDir = (projectDir) => path11.join(projectDir, ".arima", "outbox");
 function secretsIn(entry, allowed = /* @__PURE__ */ new Set()) {
   return findSecrets(
     JSON.stringify({ p: entry.properties ?? {}, c: entry.content_markdown ?? "" }),
@@ -19597,11 +19470,200 @@ function enqueue(projectDir, entry, opts = {}) {
   }
   const dir = outboxDir(projectDir);
   mkdirSync4(dir, { recursive: true });
-  const file = path13.join(dir, `${entry.id}.json`);
-  if (existsSync7(file)) throw new Error(`outbox entry ${entry.id} already exists`);
+  const file = path11.join(dir, `${entry.id}.json`);
+  if (existsSync6(file)) throw new Error(`outbox entry ${entry.id} already exists`);
   writeFileAtomic(file, `${JSON.stringify(entry, null, 2)}
 `);
   return file;
+}
+
+// plugins/arima/scripts/src/env.ts
+var ENV_EXIT = {
+  ok: 0,
+  failed: 1,
+  usage: 2,
+  config: 10,
+  killSwitch: 12,
+  docker: 14,
+  refused: 70,
+  smokeFailed: 71,
+  capacity: 72
+};
+var EnvError = class extends Error {
+  constructor(message, exit) {
+    super(message);
+    this.exit = exit;
+    this.name = "EnvError";
+  }
+  exit;
+};
+var stateFile = (projectDir) => path12.join(projectDir, ".arima", "state", "environments.json");
+function readEnvState(projectDir) {
+  const f = stateFile(projectDir);
+  if (!existsSync7(f)) return { schema_version: 1, previews: {} };
+  const data = JSON.parse(readFileSync8(f, "utf8"));
+  const v = getValidator("environments-state");
+  if (!v(data)) throw new EnvError(`${f} is not a valid environments file`, ENV_EXIT.failed);
+  return data;
+}
+function stagingFailing(projectDir) {
+  try {
+    return readEnvState(projectDir).staging_failed;
+  } catch {
+    return void 0;
+  }
+}
+
+// plugins/arima/scripts/src/preview.ts
+var previewUrl = (port) => `http://localhost:${port}`;
+function previewOf(projectDir, pr) {
+  try {
+    return readEnvState(projectDir).previews[String(pr)];
+  } catch {
+    return void 0;
+  }
+}
+
+// plugins/arima/scripts/src/digest.ts
+import { existsSync as existsSync11, mkdirSync as mkdirSync8, readFileSync as readFileSync12, writeFileSync as writeFileSync4 } from "node:fs";
+import path18 from "node:path";
+
+// plugins/arima/scripts/src/status.ts
+import path14 from "node:path";
+
+// plugins/arima/scripts/src/ledger.ts
+import path13 from "node:path";
+function ledgerFile(projectDir) {
+  return path13.join(projectDir, ".arima", "ledger.jsonl");
+}
+function readLedger(projectDir) {
+  return readJsonl(ledgerFile(projectDir), "ledger");
+}
+
+// plugins/arima/scripts/src/budget.ts
+var round = (n) => Math.round(n * 1e6) / 1e6;
+function budgetStatus(projectDir, limits, today) {
+  const rows = readLedger(projectDir);
+  const projectSpent = round(rows.reduce((s, r) => s + r.cost_usd, 0));
+  const daySpent = round(rows.filter((r) => r.date === today).reduce((s, r) => s + r.cost_usd, 0));
+  const exhausted = [];
+  if (projectSpent >= limits.projectCap) exhausted.push("project");
+  if (daySpent >= limits.dailyCap) exhausted.push("daily");
+  return {
+    projectSpent,
+    projectCap: limits.projectCap,
+    daySpent,
+    dailyCap: limits.dailyCap,
+    ok: exhausted.length === 0,
+    exhausted
+  };
+}
+
+// plugins/arima/scripts/src/gates.ts
+var PHASE_AFTER_GATE = {
+  G0: "1 Discovery and requirements",
+  G1: "2 Design",
+  G2: "3 Setup and 4 Build",
+  G3: "6 Release",
+  G4: "8 Operations and maintenance"
+};
+
+// plugins/arima/scripts/src/status.ts
+import { existsSync as existsSync8 } from "node:fs";
+var StatusError = class extends Error {
+  constructor(message, problems) {
+    super(message);
+    this.problems = problems;
+  }
+  problems;
+};
+var STORY_STATUSES = [
+  "Backlog",
+  "Ready",
+  "In Progress",
+  "In Review",
+  "In QA",
+  "PO Acceptance",
+  "Done",
+  "Released",
+  "Blocked",
+  "Cancelled"
+];
+var localDate = (d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+function buildStatus(projectDir, now = /* @__PURE__ */ new Date()) {
+  const cfg = validateProject(projectDir);
+  if (!cfg.ok || cfg.arima === void 0) {
+    throw new StatusError(
+      "config is invalid",
+      cfg.errors.map((e) => `${path14.basename(e.file)}:${e.line}: ${e.message}`)
+    );
+  }
+  const a = cfg.arima;
+  const warnings = [];
+  const profile = loadProfile(a.profile);
+  const gateMirror = readMirror(projectDir, "gates");
+  const gates = enforcedGates(profile).map((gate) => {
+    const row = gateMirror?.rows.find((r) => r.id === gate);
+    return { gate, status: row ? String(row.properties["Status"] ?? "Not ready") : "no page" };
+  });
+  const approved = (s) => s === "Approved" || s === "Approved with conditions";
+  let phase = "0 Initiation";
+  if (gateMirror === void 0) {
+    phase = "unknown (no Notion mirror yet; run /arima:init or arima-notion pull)";
+    warnings.push("no Notion mirror: gates, questions and board are empty");
+  } else {
+    for (const g of gates) {
+      if (!approved(g.status)) break;
+      phase = PHASE_AFTER_GATE[g.gate];
+    }
+  }
+  const qMirror = readMirror(projectDir, "questions");
+  const open = (qMirror?.rows ?? []).filter((r) => r.properties["Status"] === "Open");
+  const top = open.map((r) => ({
+    id: r.id,
+    question: String(r.properties["Question"] ?? ""),
+    blocking: r.properties["Blocking"] === true
+  })).sort((x, y) => Number(y.blocking) - Number(x.blocking) || x.id.localeCompare(y.id)).slice(0, 10);
+  const board = {};
+  for (const s of STORY_STATUSES) board[s] = 0;
+  for (const r of readMirror(projectDir, "stories")?.rows ?? []) {
+    const s = String(r.properties["Status"] ?? "Backlog");
+    board[s] = (board[s] ?? 0) + 1;
+  }
+  const budget = budgetStatus(
+    projectDir,
+    {
+      projectCap: a.budget.project_cap,
+      dailyCap: a.budget.daily_cap,
+      alertThresholds: a.budget.alert_thresholds
+    },
+    localDate(now)
+  );
+  const ledger = readLedger(projectDir);
+  const last = ledger[ledger.length - 1];
+  const report = {
+    project: { key: a.project.key, name: a.project.name, profile: a.profile },
+    phase,
+    gates,
+    questions: {
+      open: open.length,
+      blocking: open.filter((r) => r.properties["Blocking"] === true).length,
+      top
+    },
+    board,
+    budget,
+    runs: {
+      total: ledger.length,
+      failed: ledger.filter((r) => r.result === "error").length,
+      paused: ledger.filter((r) => r.result === "paused").length,
+      ...last ? { lastRunId: last.run_id } : {}
+    },
+    paused: existsSync8(pauseFile(projectDir)),
+    warnings
+  };
+  const fetched = gateMirror?.fetched_at ?? qMirror?.fetched_at;
+  if (fetched !== void 0) report.mirrorFetchedAt = fetched;
+  return report;
 }
 
 // plugins/arima/scripts/src/story-budget.ts
@@ -19865,8 +19927,8 @@ function delivery(o) {
 }
 
 // plugins/arima/scripts/src/questions.ts
-import { mkdirSync as mkdirSync5, existsSync as existsSync8, readFileSync as readFileSync8 } from "node:fs";
-import path14 from "node:path";
+import { mkdirSync as mkdirSync6, existsSync as existsSync9, readFileSync as readFileSync9 } from "node:fs";
+import path15 from "node:path";
 
 // plugins/arima/scripts/src/item.ts
 var SIZE_POINTS = { S: 1, M: 2, L: 4 };
@@ -20039,11 +20101,11 @@ var edgesFrom = machine.edges;
 
 // plugins/arima/scripts/src/questions.ts
 var MAX_QUESTIONS_PER_DIGEST = 10;
-var questionsFile = (projectDir) => path14.join(projectDir, ".arima", "state", "questions.json");
+var questionsFile = (projectDir) => path15.join(projectDir, ".arima", "state", "questions.json");
 function readQuestions(projectDir) {
   const f = questionsFile(projectDir);
-  if (!existsSync8(f)) return {};
-  const data = JSON.parse(readFileSync8(f, "utf8"));
+  if (!existsSync9(f)) return {};
+  const data = JSON.parse(readFileSync9(f, "utf8"));
   const v = getValidator("questions-state");
   if (!v(data)) throw new Error(`Corrupt ${f}: ${(v.errors ?? []).map(describeError).join("; ")}`);
   return data.questions;
@@ -20161,6 +20223,14 @@ function planDay(input, limits, ranks = RANKS) {
             role: "devops",
             item: "none",
             why: "the staging deploy failed its smoke test"
+          });
+        for (const p of input.previewsFailing ?? [])
+          out.push({
+            rankName,
+            kind: "preview-diagnose",
+            role: "devops",
+            item: p.item,
+            why: `the preview of PR #${p.pr} did not answer its smoke request`
           });
         return out;
       case "rework":
@@ -20349,60 +20419,6 @@ function storiesFromMirror(projectDir, cfg, pr = {}) {
   return out;
 }
 
-// plugins/arima/scripts/src/env.ts
-import {
-  existsSync as existsSync9,
-  lstatSync,
-  mkdirSync as mkdirSync6,
-  realpathSync,
-  mkdtempSync,
-  readFileSync as readFileSync9,
-  readdirSync as readdirSync4,
-  rmSync,
-  writeFileSync as writeFileSync3
-} from "node:fs";
-import path15 from "node:path";
-
-// plugins/arima/scripts/src/compose-lint.ts
-var import_yaml3 = __toESM(require_dist2(), 1);
-
-// plugins/arima/scripts/src/env.ts
-var ENV_EXIT = {
-  ok: 0,
-  failed: 1,
-  usage: 2,
-  config: 10,
-  killSwitch: 12,
-  docker: 14,
-  refused: 70,
-  smokeFailed: 71,
-  capacity: 72
-};
-var EnvError = class extends Error {
-  constructor(message, exit) {
-    super(message);
-    this.exit = exit;
-    this.name = "EnvError";
-  }
-  exit;
-};
-var stateFile = (projectDir) => path15.join(projectDir, ".arima", "state", "environments.json");
-function readEnvState(projectDir) {
-  const f = stateFile(projectDir);
-  if (!existsSync9(f)) return { schema_version: 1, previews: {} };
-  const data = JSON.parse(readFileSync9(f, "utf8"));
-  const v = getValidator("environments-state");
-  if (!v(data)) throw new EnvError(`${f} is not a valid environments file`, ENV_EXIT.failed);
-  return data;
-}
-function stagingFailing(projectDir) {
-  try {
-    return readEnvState(projectDir).staging_failed;
-  } catch {
-    return void 0;
-  }
-}
-
 // plugins/arima/scripts/src/templates.ts
 import { readFileSync as readFileSync10 } from "node:fs";
 import path16 from "node:path";
@@ -20565,6 +20581,10 @@ var hours = (ms) => Math.max(0, Math.floor(ms / H));
 var waited = (since, now) => since === void 0 ? "wait not recorded" : `waiting ${hours(now.getTime() - Date.parse(since))} h`;
 var hoursSince = (since, now) => since === void 0 || Number.isNaN(Date.parse(since)) ? void 0 : (now.getTime() - Date.parse(since)) / H;
 var localDate2 = (d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+function previewText(projectDir, pr) {
+  const rec = typeof pr === "number" ? previewOf(projectDir, pr) : void 0;
+  return rec?.ok ? `preview ${previewUrl(rec.port)}` : "preview link not available yet";
+}
 function buildDigest(projectDir, now = /* @__PURE__ */ new Date(), o = {}) {
   const date2 = o.date ?? localDate2(now);
   const status = buildStatus(projectDir, now);
@@ -20619,7 +20639,7 @@ function buildDigest(projectDir, now = /* @__PURE__ */ new Date(), o = {}) {
     )?.ts;
     awaiting.push({
       weight: 1e6 + (hoursSince(qaAt, now) ?? 0),
-      line: `PR${typeof pr === "number" ? ` #${pr}` : ""} for ${s.id} awaits your approval: QA ${qa ?? "not yet reported"}; preview link not available yet (${waited(qaAt, now)})`
+      line: `PR${typeof pr === "number" ? ` #${pr}` : ""} for ${s.id} awaits your approval: QA ${qa ?? "not yet reported"}; ${previewText(projectDir, pr)} (${waited(qaAt, now)})`
     });
   }
   for (const c of mirrorOf("change_requests").filter((x) => x.properties["Decision"] === "Pending"))

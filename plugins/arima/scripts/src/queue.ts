@@ -68,6 +68,8 @@ export interface PlanInput {
   ciRedOnMain?: boolean;
   /** The staging smoke test is failing. */
   stagingSmokeFailing?: boolean;
+  /** Stories In Review whose preview failed its smoke test (WP-218): one diagnosis unit each. */
+  previewsFailing?: { item: string; pr: number }[];
   recurringDue?: RecurringJob[];
   /** Documentation and tech-debt units, already shaped. */
   docsAndDebt?: { item: string; kind: UnitKind; role: Role }[];
@@ -190,6 +192,14 @@ export function planDay(
             role: 'devops',
             item: 'none',
             why: 'the staging deploy failed its smoke test',
+          });
+        for (const p of input.previewsFailing ?? [])
+          out.push({
+            rankName,
+            kind: 'preview-diagnose',
+            role: 'devops',
+            item: p.item,
+            why: `the preview of PR #${p.pr} did not answer its smoke request`,
           });
         return out;
       case 'rework':

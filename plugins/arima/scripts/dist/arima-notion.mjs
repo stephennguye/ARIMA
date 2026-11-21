@@ -21067,8 +21067,72 @@ async function ensureViews(port, map, specs = VIEW_SPECS) {
   return res;
 }
 
+// plugins/arima/scripts/src/env.ts
+import {
+  existsSync as existsSync11,
+  lstatSync,
+  mkdirSync as mkdirSync9,
+  realpathSync as realpathSync2,
+  mkdtempSync as mkdtempSync2,
+  readFileSync as readFileSync11,
+  readdirSync as readdirSync4,
+  rmSync as rmSync4,
+  writeFileSync as writeFileSync6
+} from "node:fs";
+import path15 from "node:path";
+
+// plugins/arima/scripts/src/compose-lint.ts
+var import_yaml2 = __toESM(require_dist(), 1);
+
+// plugins/arima/scripts/src/env.ts
+var ENV_EXIT = {
+  ok: 0,
+  failed: 1,
+  usage: 2,
+  config: 10,
+  killSwitch: 12,
+  docker: 14,
+  refused: 70,
+  smokeFailed: 71,
+  capacity: 72
+};
+var EnvError = class extends Error {
+  constructor(message, exit) {
+    super(message);
+    this.exit = exit;
+    this.name = "EnvError";
+  }
+  exit;
+};
+var stateFile = (projectDir) => path15.join(projectDir, ".arima", "state", "environments.json");
+function readEnvState(projectDir) {
+  const f = stateFile(projectDir);
+  if (!existsSync11(f)) return { schema_version: 1, previews: {} };
+  const data = JSON.parse(readFileSync11(f, "utf8"));
+  const v = getValidator("environments-state");
+  if (!v(data)) throw new EnvError(`${f} is not a valid environments file`, ENV_EXIT.failed);
+  return data;
+}
+function stagingFailing(projectDir) {
+  try {
+    return readEnvState(projectDir).staging_failed;
+  } catch {
+    return void 0;
+  }
+}
+
+// plugins/arima/scripts/src/preview.ts
+var previewUrl = (port) => `http://localhost:${port}`;
+function previewOf(projectDir, pr) {
+  try {
+    return readEnvState(projectDir).previews[String(pr)];
+  } catch {
+    return void 0;
+  }
+}
+
 // plugins/arima/scripts/src/status.ts
-import path17 from "node:path";
+import path18 from "node:path";
 
 // plugins/arima/scripts/src/budget.ts
 var round2 = (n) => Math.round(n * 1e6) / 1e6;
@@ -21090,7 +21154,7 @@ function budgetStatus(projectDir, limits, today) {
 }
 
 // plugins/arima/scripts/src/config.ts
-import { existsSync as existsSync11 } from "node:fs";
+import { existsSync as existsSync12 } from "node:fs";
 
 // plugins/arima/scripts/src/hardstops.ts
 var HARD_STOPS = [
@@ -21114,19 +21178,19 @@ var HARD_STOPS = [
 var isHardStop = (id) => HARD_STOPS.includes(id);
 
 // plugins/arima/scripts/src/config.ts
-import path16 from "node:path";
+import path17 from "node:path";
 
 // plugins/arima/scripts/src/lib/yaml-source.ts
-var import_yaml2 = __toESM(require_dist(), 1);
-import { readFileSync as readFileSync11 } from "node:fs";
+var import_yaml3 = __toESM(require_dist(), 1);
+import { readFileSync as readFileSync12 } from "node:fs";
 var YamlSource = class {
   file;
   doc;
-  lines = new import_yaml2.LineCounter();
+  lines = new import_yaml3.LineCounter();
   parseErrors = [];
-  constructor(file, text2 = readFileSync11(file, "utf8")) {
+  constructor(file, text2 = readFileSync12(file, "utf8")) {
     this.file = file;
-    this.doc = (0, import_yaml2.parseDocument)(text2, { lineCounter: this.lines, prettyErrors: false });
+    this.doc = (0, import_yaml3.parseDocument)(text2, { lineCounter: this.lines, prettyErrors: false });
     for (const e of this.doc.errors) {
       this.parseErrors.push({
         line: e.linePos?.[0]?.line ?? 1,
@@ -21143,12 +21207,12 @@ var YamlSource = class {
     let node = this.doc.contents;
     let best = this.doc.contents ?? null;
     for (const part of parts) {
-      if ((0, import_yaml2.isMap)(node)) {
-        const pair = node.items.find((i) => (0, import_yaml2.isScalar)(i.key) && String(i.key.value) === part);
+      if ((0, import_yaml3.isMap)(node)) {
+        const pair = node.items.find((i) => (0, import_yaml3.isScalar)(i.key) && String(i.key.value) === part);
         if (!pair) break;
         node = pair.value;
-        if ((0, import_yaml2.isScalar)(pair.key) && pair.key.range) best = pair.key;
-      } else if ((0, import_yaml2.isSeq)(node)) {
+        if ((0, import_yaml3.isScalar)(pair.key) && pair.key.range) best = pair.key;
+      } else if ((0, import_yaml3.isSeq)(node)) {
         node = node.items[Number(part)];
         const n = node;
         if (n?.range) best = n;
@@ -21160,19 +21224,19 @@ var YamlSource = class {
 };
 
 // plugins/arima/scripts/src/profiles.ts
-var import_yaml3 = __toESM(require_dist(), 1);
-import { readdirSync as readdirSync4, readFileSync as readFileSync12 } from "node:fs";
-import path15 from "node:path";
+var import_yaml4 = __toESM(require_dist(), 1);
+import { readdirSync as readdirSync5, readFileSync as readFileSync13 } from "node:fs";
+import path16 from "node:path";
 var PROFILE_NAMES = ["solo-lite", "client-project", "regulated"];
 function profilesDir(root = pluginRoot()) {
-  return path15.join(root, "profiles");
+  return path16.join(root, "profiles");
 }
 function loadProfile(name, root = pluginRoot()) {
   if (!PROFILE_NAMES.includes(name)) {
     throw new Error(`Unknown profile "${name}". Expected one of: ${PROFILE_NAMES.join(", ")}`);
   }
-  const file = path15.join(profilesDir(root), `${name}.yaml`);
-  const data = (0, import_yaml3.parse)(readFileSync12(file, "utf8"));
+  const file = path16.join(profilesDir(root), `${name}.yaml`);
+  const data = (0, import_yaml4.parse)(readFileSync13(file, "utf8"));
   const validate = getValidator("profile", root);
   if (!validate(data)) {
     const problems = (validate.errors ?? []).map(describeError).join("; ");
@@ -21263,20 +21327,20 @@ function schemaIssues(src, schema, root) {
 function validateProject(projectDir, root = pluginRoot()) {
   const errors = [];
   const warnings = [];
-  const arimaFile = path16.join(projectDir, "arima.yaml");
-  const teamFile = path16.join(projectDir, "team.yaml");
+  const arimaFile = path17.join(projectDir, "arima.yaml");
+  const teamFile = path17.join(projectDir, "team.yaml");
   const sources = {};
   for (const [key, file] of [
     ["arima", arimaFile],
     ["team", teamFile]
   ]) {
-    if (!existsSync11(file)) {
+    if (!existsSync12(file)) {
       errors.push({
         severity: "error",
         file,
         line: 1,
         path: "(file)",
-        message: `${path16.basename(file)} not found`
+        message: `${path17.basename(file)} not found`
       });
       continue;
     }
@@ -21374,7 +21438,7 @@ var PHASE_AFTER_GATE = {
 };
 
 // plugins/arima/scripts/src/status.ts
-import { existsSync as existsSync12 } from "node:fs";
+import { existsSync as existsSync13 } from "node:fs";
 var StatusError = class extends Error {
   constructor(message, problems) {
     super(message);
@@ -21400,7 +21464,7 @@ function buildStatus(projectDir, now = /* @__PURE__ */ new Date()) {
   if (!cfg.ok || cfg.arima === void 0) {
     throw new StatusError(
       "config is invalid",
-      cfg.errors.map((e) => `${path17.basename(e.file)}:${e.line}: ${e.message}`)
+      cfg.errors.map((e) => `${path18.basename(e.file)}:${e.line}: ${e.message}`)
     );
   }
   const a = cfg.arima;
@@ -21463,7 +21527,7 @@ function buildStatus(projectDir, now = /* @__PURE__ */ new Date()) {
       paused: ledger.filter((r) => r.result === "paused").length,
       ...last ? { lastRunId: last.run_id } : {}
     },
-    paused: existsSync12(pauseFile(projectDir)),
+    paused: existsSync13(pauseFile(projectDir)),
     warnings
   };
   const fetched = gateMirror?.fetched_at ?? qMirror?.fetched_at;
@@ -21704,14 +21768,14 @@ function delivery(o) {
 }
 
 // plugins/arima/scripts/src/questions.ts
-import { mkdirSync as mkdirSync9, existsSync as existsSync13, readFileSync as readFileSync13 } from "node:fs";
-import path18 from "node:path";
+import { mkdirSync as mkdirSync10, existsSync as existsSync14, readFileSync as readFileSync14 } from "node:fs";
+import path19 from "node:path";
 var MAX_QUESTIONS_PER_DIGEST = 10;
-var questionsFile = (projectDir) => path18.join(projectDir, ".arima", "state", "questions.json");
+var questionsFile = (projectDir) => path19.join(projectDir, ".arima", "state", "questions.json");
 function readQuestions(projectDir) {
   const f = questionsFile(projectDir);
-  if (!existsSync13(f)) return {};
-  const data = JSON.parse(readFileSync13(f, "utf8"));
+  if (!existsSync14(f)) return {};
+  const data = JSON.parse(readFileSync14(f, "utf8"));
   const v = getValidator("questions-state");
   if (!v(data)) throw new Error(`Corrupt ${f}: ${(v.errors ?? []).map(describeError).join("; ")}`);
   return data.questions;
@@ -21829,6 +21893,14 @@ function planDay(input, limits, ranks = RANKS) {
             role: "devops",
             item: "none",
             why: "the staging deploy failed its smoke test"
+          });
+        for (const p of input.previewsFailing ?? [])
+          out.push({
+            rankName,
+            kind: "preview-diagnose",
+            role: "devops",
+            item: p.item,
+            why: `the preview of PR #${p.pr} did not answer its smoke request`
           });
         return out;
       case "rework":
@@ -22017,60 +22089,6 @@ function storiesFromMirror(projectDir, cfg, pr = {}) {
   return out;
 }
 
-// plugins/arima/scripts/src/env.ts
-import {
-  existsSync as existsSync14,
-  lstatSync,
-  mkdirSync as mkdirSync10,
-  realpathSync as realpathSync2,
-  mkdtempSync as mkdtempSync2,
-  readFileSync as readFileSync14,
-  readdirSync as readdirSync5,
-  rmSync as rmSync4,
-  writeFileSync as writeFileSync6
-} from "node:fs";
-import path19 from "node:path";
-
-// plugins/arima/scripts/src/compose-lint.ts
-var import_yaml4 = __toESM(require_dist(), 1);
-
-// plugins/arima/scripts/src/env.ts
-var ENV_EXIT = {
-  ok: 0,
-  failed: 1,
-  usage: 2,
-  config: 10,
-  killSwitch: 12,
-  docker: 14,
-  refused: 70,
-  smokeFailed: 71,
-  capacity: 72
-};
-var EnvError = class extends Error {
-  constructor(message, exit) {
-    super(message);
-    this.exit = exit;
-    this.name = "EnvError";
-  }
-  exit;
-};
-var stateFile = (projectDir) => path19.join(projectDir, ".arima", "state", "environments.json");
-function readEnvState(projectDir) {
-  const f = stateFile(projectDir);
-  if (!existsSync14(f)) return { schema_version: 1, previews: {} };
-  const data = JSON.parse(readFileSync14(f, "utf8"));
-  const v = getValidator("environments-state");
-  if (!v(data)) throw new EnvError(`${f} is not a valid environments file`, ENV_EXIT.failed);
-  return data;
-}
-function stagingFailing(projectDir) {
-  try {
-    return readEnvState(projectDir).staging_failed;
-  } catch {
-    return void 0;
-  }
-}
-
 // plugins/arima/scripts/src/run-agent.ts
 var PASS_THROUGH = new Set(
   [
@@ -22180,6 +22198,10 @@ var hours = (ms) => Math.max(0, Math.floor(ms / H));
 var waited = (since, now) => since === void 0 ? "wait not recorded" : `waiting ${hours(now.getTime() - Date.parse(since))} h`;
 var hoursSince = (since, now) => since === void 0 || Number.isNaN(Date.parse(since)) ? void 0 : (now.getTime() - Date.parse(since)) / H;
 var localDate2 = (d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+function previewText(projectDir, pr) {
+  const rec = typeof pr === "number" ? previewOf(projectDir, pr) : void 0;
+  return rec?.ok ? `preview ${previewUrl(rec.port)}` : "preview link not available yet";
+}
 function buildDigest(projectDir, now = /* @__PURE__ */ new Date(), o = {}) {
   const date2 = o.date ?? localDate2(now);
   const status = buildStatus(projectDir, now);
@@ -22234,7 +22256,7 @@ function buildDigest(projectDir, now = /* @__PURE__ */ new Date(), o = {}) {
     )?.ts;
     awaiting.push({
       weight: 1e6 + (hoursSince(qaAt, now) ?? 0),
-      line: `PR${typeof pr === "number" ? ` #${pr}` : ""} for ${s.id} awaits your approval: QA ${qa ?? "not yet reported"}; preview link not available yet (${waited(qaAt, now)})`
+      line: `PR${typeof pr === "number" ? ` #${pr}` : ""} for ${s.id} awaits your approval: QA ${qa ?? "not yet reported"}; ${previewText(projectDir, pr)} (${waited(qaAt, now)})`
     });
   }
   for (const c of mirrorOf("change_requests").filter((x) => x.properties["Decision"] === "Pending"))

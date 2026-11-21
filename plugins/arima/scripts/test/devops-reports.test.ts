@@ -46,7 +46,7 @@ describe('devops report fixtures (card section 10)', () => {
   });
 
   it('has at least one valid and one invalid fixture for each kind it can be dispatched with', () => {
-    for (const kind of ['env-plan', 'deploy-staging'])
+    for (const kind of ['env-plan', 'deploy-staging', 'preview-diagnose'])
       for (const ok of [true, false])
         expect(
           fixtures.some((f) => f.kind === kind && f.expect.ok === ok),

@@ -1,3 +1,4 @@
+import { previewOf, previewUrl } from './preview.js';
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 import { buildStatus } from './status.js';
@@ -131,6 +132,12 @@ export interface BuildOptions {
   date?: string;
 }
 
+/** The preview link next to a PR (WP-218), or why there is none. */
+function previewText(projectDir: string, pr: unknown): string {
+  const rec = typeof pr === 'number' ? previewOf(projectDir, pr) : undefined;
+  return rec?.ok ? `preview ${previewUrl(rec.port)}` : 'preview link not available yet';
+}
+
 export function buildDigest(
   projectDir: string,
   now: Date = new Date(),
@@ -203,7 +210,7 @@ export function buildDigest(
       )?.ts;
     awaiting.push({
       weight: 1_000_000 + (hoursSince(qaAt, now) ?? 0),
-      line: `PR${typeof pr === 'number' ? ` #${pr}` : ''} for ${s.id} awaits your approval: QA ${qa ?? 'not yet reported'}; preview link not available yet (${waited(qaAt, now)})`,
+      line: `PR${typeof pr === 'number' ? ` #${pr}` : ''} for ${s.id} awaits your approval: QA ${qa ?? 'not yet reported'}; ${previewText(projectDir, pr)} (${waited(qaAt, now)})`,
     });
   }
   for (const c of mirrorOf('change_requests').filter((x) => x.properties['Decision'] === 'Pending'))

@@ -108,8 +108,10 @@ describe('agents/devops.md (spec §5.10, card, ADR-0008)', () => {
     expect([...body.matchAll(/^### Kind (\S+)/gm)].map((m) => m[1])).toEqual([
       'env-plan',
       'deploy-staging',
+      'preview-diagnose',
     ]);
-    for (const k of ['env-plan', 'deploy-staging']) expect(isUnitKind(k)).toBe(true);
+    for (const k of ['env-plan', 'deploy-staging', 'preview-diagnose'])
+      expect(isUnitKind(k)).toBe(true);
   });
 
   it('declares no tool that is not in the role list, and no Notion MCP tool', () => {

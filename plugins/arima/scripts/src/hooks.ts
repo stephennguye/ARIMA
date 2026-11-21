@@ -651,7 +651,7 @@ function guardQaTests(command: string): Guard | undefined {
 
 /** Runs that read and report and change nothing (a deploy-staging diagnosis, a tech-lead review). */
 export const isReadOnlyKind = (ctx: GuardContext): boolean =>
-  (ctx.role === 'devops' && ctx.kind === 'deploy-staging') ||
+  (ctx.role === 'devops' && (ctx.kind === 'deploy-staging' || ctx.kind === 'preview-diagnose')) ||
   (ctx.role === 'tech-lead' && ctx.kind === 'review');
 
 /**
@@ -864,7 +864,7 @@ export function guardTool(
   // write is a proposal in the outbox) and commits nothing (judge J-agent:devops, blocker 2).
   if (
     ctx.role === 'devops' &&
-    ctx.kind === 'deploy-staging' &&
+    (ctx.kind === 'deploy-staging' || ctx.kind === 'preview-diagnose') &&
     WRITE_TOOLS.has(tool) &&
     pathsOf(input).some((p) => !/(^|\/)\.arima\/outbox\/[^/]+\.json$/.test(canon(p)))
   )

@@ -543,6 +543,168 @@ describe('a day, in the order of the ten steps', () => {
   });
 });
 
+describe('previews of stories In Review (WP-218)', () => {
+  const COMPOSE =
+    'services:\n  web:\n    build: ..\n    image: arima-local/$' +
+    '{ARIMA_PROJECT}-web:$' +
+    '{ARIMA_TAG}\n    ports: ["127.0.0.1:$' +
+    '{ARIMA_PORT}:8080"]\n    healthcheck: { test: ["CMD", "true"] }\n    mem_limit: 256m\n';
+
+  /** A fake Docker and HTTP: every preview answers 200 unless bad() says otherwise. */
+  function envFake(bad: () => boolean) {
+    const calls: string[][] = [];
+    const up = { on: false };
+    const exec = async (file: string, args: string[], o?: { cwd?: string }) => {
+      calls.push([file, ...args]);
+      if (file === 'git') {
+        const { realExec } = await import('../src/sandbox.js');
+        return realExec(file, args, o as never);
+      }
+      const ok = (stdout = '') => ({ code: 0, stdout, stderr: '' });
+      if (args[0] === 'compose' && args.includes('ps'))
+        return ok(
+          up.on
+            ? JSON.stringify({ ID: 'a', Service: 'web', State: 'running', Health: 'healthy' }) +
+                '\n'
+            : '',
+        );
+      if (args[0] === 'compose' && args.includes('up')) up.on = true;
+      if (args[0] === 'compose' && args.includes('down')) up.on = false;
+      return ok(args[0] === 'info' ? '27.0.1' : '');
+    };
+    return {
+      calls,
+      envDeps: {
+        exec,
+        fetch: (async () => ({ status: bad() ? 500 : 200 })) as unknown as typeof fetch,
+        sleep: () => Promise.resolve(),
+        portFree: () => Promise.resolve(true),
+        home: tempDir('arima-home-'),
+      },
+    };
+  }
+
+  /** A world whose main has a compose file, the story developed and published, then a green PR. */
+  async function inReview(bad: () => boolean) {
+    const w = await world();
+    mkdirSync(path.join(w.dir, 'infra'), { recursive: true });
+    writeFileSync(path.join(w.dir, 'infra', 'compose.yaml'), COMPOSE);
+    writeFileSync(path.join(w.dir, 'Dockerfile'), 'FROM scratch\n');
+    git(w.dir, 'add', '-A');
+    git(w.dir, 'commit', '-q', '-m', 'chore: compose');
+    git(w.dir, 'push', '-q', 'origin', 'main');
+    writeFileSync(path.join(w.stub, 'developer-develop.txt'), report());
+    writeFileSync(path.join(w.stub, 'developer-develop.commit'), '');
+    await runDispatch(w.opts());
+    await w.pull();
+    const green: GithubFacts = { ...noGithubFacts, prReady: () => Promise.resolve(true) };
+    const f = envFake(bad);
+    const deps = (): DispatchDeps => ({ ...w.deps({ github: green }), envDeps: f.envDeps });
+    return { w, f, deps, green };
+  }
+  const approve = (w: Awaited<ReturnType<typeof world>>): void =>
+    writeFileSync(
+      path.join(w.stub, 'tech-lead-review.txt'),
+      'Reviewed.\n\n' +
+        FENCE +
+        'arima-report\n' +
+        JSON.stringify({
+          schema_version: 1,
+          run_id: '__RUN_ID__',
+          role: 'tech-lead',
+          item: '__ITEM__',
+          status: 'done',
+          summary: 'Looks good.',
+          verdict: { result: 'approve', reasons: ['ok'] },
+        }) +
+        '\n' +
+        FENCE +
+        '\n',
+    );
+  const statuses = (dir: string): unknown[] =>
+    readEvents(dir)
+      .filter((e) => e.type === 'item.status')
+      .map((e) => e.data?.['to']);
+  const previewsOf = async (dir: string) =>
+    (await import('../src/env.js')).readEnvState(dir).previews;
+
+  it('a story that reaches In Review gets a preview that answers its smoke request, and only then may the tech-lead move it to In QA', async () => {
+    const { w, f, deps } = await inReview(() => false);
+    await runDispatch(w.opts({ deps: deps() })); // In Review, preview up
+    expect(Object.values(await previewsOf(w.dir))[0]).toMatchObject({ ok: true });
+    expect(f.calls.some((c) => c.includes('up') && c.includes('compose'))).toBe(true);
+    approve(w);
+    await w.pull();
+    await runDispatch(w.opts({ deps: deps() }));
+    expect(statuses(w.dir)).toContain('In QA');
+    // The next day the digest shows the preview next to the PR that waits for the human.
+    await w.pull();
+    await runDispatch(w.opts({ deps: deps() }));
+    const dir = path.join(w.dir, '.arima', 'digests');
+    const text = readdirSync(dir)
+      .map((n) => readFileSync(path.join(dir, n), 'utf8'))
+      .join('\n');
+    expect(text).toMatch(/preview http:\/\/localhost:41\d\d/);
+    expect(text).not.toContain('preview link not available yet');
+  });
+
+  it('a preview that does not answer keeps the story In Review, plans a preview-diagnose unit for devops and never reaches In QA', async () => {
+    const { w, deps } = await inReview(() => true);
+    writeFileSync(
+      path.join(w.stub, 'devops-preview-diagnose.txt'),
+      'Diagnosed.\n\n' +
+        FENCE +
+        'arima-report\n' +
+        JSON.stringify({
+          schema_version: 1,
+          run_id: '__RUN_ID__',
+          role: 'devops',
+          item: '__ITEM__',
+          status: 'done',
+          summary: 'The health check probes the wrong port.',
+          findings: [
+            {
+              severity: 'major',
+              location: 'infra/compose.yaml:5',
+              claim: 'wrong port',
+              evidence: 'logs say 3000',
+              recommendation: 'probe 3000',
+            },
+          ],
+        }) +
+        '\n' +
+        FENCE +
+        '\n',
+    );
+    const r2 = await runDispatch(w.opts({ deps: deps() })); // In Review, the preview fails, the diagnosis runs
+    expect(Object.values(await previewsOf(w.dir))[0]).toMatchObject({ ok: false });
+    const diag = r2.plan.find((u) => u.kind === 'preview-diagnose');
+    expect(diag).toMatchObject({ role: 'devops' });
+    expect(diag?.why).toContain('did not answer');
+    expect(
+      r2.dispatched.some((x) => x.unit.kind === 'preview-diagnose' && x.result === 'pass'),
+    ).toBe(true);
+    approve(w);
+    await w.pull();
+    await runDispatch(w.opts({ deps: deps() }));
+    expect(statuses(w.dir)).toEqual(['In Progress', 'In Review']);
+  });
+
+  it('a story without any Compose file is not held for a preview (Phase 3 not done)', async () => {
+    const w = await world();
+    writeFileSync(path.join(w.stub, 'developer-develop.txt'), report());
+    writeFileSync(path.join(w.stub, 'developer-develop.commit'), '');
+    await runDispatch(w.opts());
+    await w.pull();
+    const green: GithubFacts = { ...noGithubFacts, prReady: () => Promise.resolve(true) };
+    await runDispatch(w.opts({ deps: w.deps({ github: green }) }));
+    approve(w);
+    await w.pull();
+    await runDispatch(w.opts({ deps: w.deps({ github: green }) }));
+    expect(statuses(w.dir)).toContain('In QA');
+  });
+});
+
 describe('refusals', () => {
   it('kill switch on: exit 12, nothing dispatched, the lock never taken', async () => {
     const w = await world();
