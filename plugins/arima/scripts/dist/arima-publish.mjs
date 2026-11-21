@@ -19757,6 +19757,7 @@ function checkBranch(i) {
     "-c",
     "core.quotePath=false",
     "diff",
+    "--no-renames",
     "--name-only",
     `${base}...${i.branch}`
   ]).split("\n").filter(Boolean);
@@ -19784,6 +19785,7 @@ function checkBranch(i) {
           "-c",
           "core.quotePath=false",
           "diff",
+          "--no-renames",
           "--name-only",
           `${i.testsBase}..${i.branch}`
         ]).split("\n").filter(Boolean);
@@ -19791,7 +19793,24 @@ function checkBranch(i) {
         own = files;
       }
     }
-    const e2e = own.filter((f) => f.toLowerCase().startsWith("tests/e2e/"));
+    const e2e = own.filter(
+      (f) => f.toLowerCase().startsWith("tests/e2e/") || /^playwright\.config\.[a-z]+$/i.test(f)
+    );
+    const scriptsAt = (ref) => {
+      try {
+        return JSON.parse(git(dir, ["show", ref + ":package.json"])).scripts ?? {};
+      } catch {
+        return {};
+      }
+    };
+    const before = scriptsAt(base);
+    const after = scriptsAt(i.branch);
+    for (const k of ["e2e", "test:e2e"])
+      if (JSON.stringify(before[k] ?? null) !== JSON.stringify(after[k] ?? null))
+        refuse(
+          "the developer may not change the e2e script of package.json (QA's runner)",
+          "protected_path"
+        );
     if (e2e.length > 0)
       refuse(
         `the developer may not change tests/e2e/** (QA's): ${e2e.join(", ")}`,

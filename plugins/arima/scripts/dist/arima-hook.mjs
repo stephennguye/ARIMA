@@ -16315,6 +16315,16 @@ function guardTool(tool, input, ctx = {}) {
     (k) => typeof input[k] === "string" && QA_FORBIDDEN_SEGMENT.test(String(input[k]).replace(/["']/g, ""))
   ))
     return { rule: "qa-independence", reason: qaReason };
+  if (ctx.role === "qa" && (tool === "Glob" || tool === "Grep")) {
+    const root = typeof input["path"] === "string" ? canon(input["path"]) : "";
+    const lit = typeof input["pattern"] === "string" && tool === "Glob" ? canon(input["pattern"]) : "";
+    const inRoot = (s) => /(^|\/)(tests|api|design)(\/|$)/.test(s) && !s.split("/").includes("..");
+    if (!(root !== "" ? inRoot(root) : tool === "Glob" && inRoot(lit)))
+      return {
+        rule: "qa-independence",
+        reason: "a QA Glob or Grep names a root under tests/, api/ or design/ (path), never the whole tree"
+      };
+  }
   if (ctx.cwd !== void 0 && ctx.role !== void 0 && NO_STATE_READ.has(ctx.role) && ["Read", "Glob", "Grep"].includes(tool) && ["path", "file_path", "pattern", "glob"].some((k) => {
     const v = input[k];
     return typeof v === "string" && (v.startsWith("~") || v.split(/[\\/]/).includes("..") || /^([A-Za-z]:[\\/]|\/)/.test(v)) && !insideDir(v, ctx.cwd);

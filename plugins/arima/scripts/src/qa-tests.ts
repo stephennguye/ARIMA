@@ -1,5 +1,6 @@
 import { execFileSync } from 'node:child_process';
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { findSecrets } from './lib/secrets.js';
 import { worktreePath } from './worktree.js';
@@ -30,6 +31,13 @@ function isAncestor(cwd: string, a: string, b: string): boolean {
   } catch {
     return false;
   }
+}
+
+/** An empty hooks folder: the host's own commit never runs a hook that test code could have written. */
+function emptyHooksDir(): string {
+  const d = path.join(tmpdir(), 'arima-no-hooks');
+  mkdirSync(d, { recursive: true });
+  return d;
 }
 
 const tipsFile = (projectDir: string): string =>
@@ -86,6 +94,8 @@ export function adoptQaTests(o: {
     }
     git(dir, [
       '-c',
+      `core.hooksPath=${emptyHooksDir()}`,
+      '-c',
       'user.name=ARIMA host',
       '-c',
       'user.email=arima@localhost.invalid',
@@ -94,6 +104,31 @@ export function adoptQaTests(o: {
       '-m',
       `test(${o.item}): end-to-end tests from the acceptance criteria`,
     ]);
+  }
+  // Everything QA committed or changed since the default branch, not only the working tree (a run can commit
+  // through npm): every file under tests/, no secret in the range (judge J-agent:qa, blocker 2).
+  const base =
+    tryGit(dir, ['merge-base', 'HEAD', 'refs/heads/main']) ??
+    tryGit(dir, ['merge-base', 'HEAD', 'origin/main']);
+  if (base !== undefined) {
+    const range = git(dir, [
+      '-c',
+      'core.quotePath=false',
+      'diff',
+      '--no-renames',
+      '--name-only',
+      `${base}..HEAD`,
+    ])
+      .split('\n')
+      .filter(Boolean);
+    const stray = range.filter((f) => !f.startsWith('tests/'));
+    if (stray.length > 0)
+      throw new QaTestsError(`QA committed files outside tests/: ${stray.join(', ')}`);
+    const leakedRange = findSecrets(git(dir, ['diff', `${base}..HEAD`]));
+    if (leakedRange.length > 0)
+      throw new QaTestsError(
+        `QA's commits look like they contain a secret (${leakedRange.join(', ')})`,
+      );
   }
   const sha = git(dir, ['rev-parse', 'HEAD']);
   const have = tryGit(o.projectDir, [

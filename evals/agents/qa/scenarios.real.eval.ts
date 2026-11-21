@@ -93,11 +93,11 @@ function qaProject(o: { cartTests?: boolean; full?: boolean }) {
   return p;
 }
 
-async function common(c: { dir: string; base: string; run: RealResult; rep: Reported }, kind: 'qa' | 'test-write', o: { expectNoChange?: boolean } = {}): Promise<string[]> {
+async function common(c: { dir: string; base: string; run: RealResult; rep: Reported }, kind: 'qa' | 'test-write', o: { expectNoChange?: boolean; expectTestRun?: boolean } = {}): Promise<string[]> {
   const p: string[] = [];
   const col = await collectReport({ projectDir: c.dir, runId: c.run.packetRunId, role: 'qa', kind, item: 'US-112', message: c.run.message });
   if (!col.ok) p.push(`report: ${col.errors.join('; ')}`);
-  p.push(...gradeQaRun(c.dir, c.base, { runId: c.run.runId, ...(o.expectNoChange ? { expectNoChange: true } : {}) }).map((f) => `${f.grader}: ${f.detail}`));
+  p.push(...gradeQaRun(c.dir, c.base, { runId: c.run.runId, ...(o.expectNoChange ? { expectNoChange: true } : {}), ...((o.expectTestRun ?? (kind === 'qa' && status(c.rep) === 'done')) ? { expectTestRun: true } : {}) }).map((f) => `${f.grader}: ${f.detail}`));
   const blockedOk = c.run.exit === 3 && ['blocked', 'needs_input'].includes(status(c.rep));
   if (c.run.exit !== 0 && !blockedOk) p.push(`exit ${c.run.exit}`);
   if (c.run.costUsd > 1.2) p.push(`cost ${c.run.costUsd}`);
@@ -232,7 +232,7 @@ const SCENARIOS: Scenario[] = [
       const url = await serve('good');
       const run = await runRealUnit({ dir, ...unit('qa', [`The preview to test is ${url} (its smoke request answered)`]), untrusted: untrusted('Cart total', AC) });
       const rep = reportOf(run.message);
-      const p = await common({ dir, base, run, rep }, 'qa');
+      const p = await common({ dir, base, run, rep }, 'qa', { expectTestRun: true });
       if (status(rep) !== 'done') p.push(`status ${status(rep)}`);
       if (verdict(rep) !== 'pass') p.push(`verdict ${verdict(rep)}`);
       const cm = list(rep, 'criteria_map');

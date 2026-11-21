@@ -1,7 +1,7 @@
 // WP-211: QA has no git, so the host commits QA's tests (only under tests/) and puts them on the story branch;
 // the developer's publish check then counts only what the developer committed after QA's tip.
 import { execFileSync } from 'node:child_process';
-import { mkdirSync, writeFileSync } from 'node:fs';
+import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { QaTestsError, adoptQaTests, qaTipOf } from '../src/qa-tests.js';
@@ -72,6 +72,42 @@ describe('adoptQaTests', () => {
     expect(() => adoptQaTests(opts(dir))).toThrowError(/outside tests\/.*src\/leak\.js/);
     expect(git(wt, 'log', '--oneline').split('\n')).toHaveLength(1);
     expect(qaTipOf(dir, 'US-12')).toBeUndefined();
+  });
+
+  it('refuses a commit QA made itself outside tests/ even when the working tree is clean (code run through npm can commit)', async () => {
+    const dir = repo();
+    const wt = await qaTree(dir, { 'tests/e2e/a.test.js': 'x\n', 'src/sneaky.js': 'export {};\n' });
+    git(wt, 'add', '-A');
+    git(wt, '-c', 'user.name=T', '-c', 'user.email=t@example.com', 'commit', '-q', '-m', 'sneaky');
+    expect(git(wt, 'status', '--porcelain')).toBe('');
+    expect(() => adoptQaTests(opts(dir))).toThrowError(
+      /committed files outside tests\/.*src\/sneaky\.js/,
+    );
+    expect(qaTipOf(dir, 'US-12')).toBeUndefined();
+    expect(() => git(dir, 'rev-parse', '--verify', 'feat/US-12-cart')).toThrow();
+  });
+
+  it('refuses a secret in a commit QA made itself', async () => {
+    const dir = repo();
+    const wt = await qaTree(dir, {
+      'tests/e2e/a.test.js': 'const t = "ghp_' + 'a1B2c3D4e5F6g7H8i9J0k1L2m3N4o5P6q7R8";\n',
+    });
+    git(wt, 'add', '-A');
+    git(wt, '-c', 'user.name=T', '-c', 'user.email=t@example.com', 'commit', '-q', '-m', 'tests');
+    expect(() => adoptQaTests(opts(dir))).toThrowError(/secret/);
+  });
+
+  it('the host commit runs no hook (test code could have written one into the shared hooks folder)', async () => {
+    const dir = repo();
+    const wt = await qaTree(dir, { 'tests/e2e/a.test.js': 'x\n' });
+    const marker = path.join(path.dirname(dir), 'hook-ran.txt');
+    const hook = path.join(dir, '.git', 'hooks', 'pre-commit');
+    writeFileSync(hook, '#!/bin/sh\necho ran > "' + marker.split(path.sep).join('/') + '"\n', {
+      mode: 0o755,
+    });
+    adoptQaTests(opts(dir));
+    expect(() => readFileSync(marker, 'utf8')).toThrow();
+    expect(git(wt, 'log', '-1', '--format=%s')).toContain('test(US-12)');
   });
 
   it('refuses tests that contain a secret, and unstages them', async () => {
@@ -182,6 +218,60 @@ describe("the developer publish check after QA's tests are on the branch", () =>
       'fix(US-12): x',
     );
     expect(() => checkBranch(input(s.dir, { testsBase: s.tip }))).toThrowError(/tests\/e2e/);
+  });
+
+  it("a developer rename of a QA test is seen, and the e2e runner config and script are QA's", async () => {
+    const s = await story();
+    git(s.dev, 'mv', 'tests/e2e/cart.test.js', 'cart.moved.js');
+    git(
+      s.dev,
+      '-c',
+      'user.name=T',
+      '-c',
+      'user.email=t@example.com',
+      'commit',
+      '-q',
+      '-m',
+      'fix(US-12): move',
+    );
+    expect(() => checkBranch(input(s.dir, { testsBase: s.tip }))).toThrowError(/tests\/e2e/);
+    const s2 = await story();
+    writeFileSync(
+      path.join(s2.dev, 'playwright.config.ts'),
+      'export default { testIgnore: ["**"] };\n',
+    );
+    git(s2.dev, 'add', '-A');
+    git(
+      s2.dev,
+      '-c',
+      'user.name=T',
+      '-c',
+      'user.email=t@example.com',
+      'commit',
+      '-q',
+      '-m',
+      'fix(US-12): cfg',
+    );
+    expect(() => checkBranch(input(s2.dir, { testsBase: s2.tip }))).toThrowError(
+      /tests\/e2e|playwright/,
+    );
+    const s3 = await story();
+    writeFileSync(path.join(s3.dev, 'package.json'), '{"scripts":{"e2e":"echo skipped"}}\n');
+    git(s3.dev, 'add', '-A');
+    git(
+      s3.dev,
+      '-c',
+      'user.name=T',
+      '-c',
+      'user.email=t@example.com',
+      'commit',
+      '-q',
+      '-m',
+      'fix(US-12): script',
+    );
+    expect(() => checkBranch(input(s3.dir, { testsBase: s3.tip }))).toThrowError(
+      /e2e script|tests\/e2e/,
+    );
   });
 
   it('a tip that is not in the branch changes nothing: every tests/e2e change counts', async () => {

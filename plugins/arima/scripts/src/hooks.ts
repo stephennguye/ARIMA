@@ -945,6 +945,21 @@ export function guardTool(
     )
   )
     return { rule: 'qa-independence', reason: qaReason };
+  // Glob and Grep search a root: a QA run names one under tests, api or design (a pattern such as sr[c]/** or
+  // {src,x}/** cannot then reach what is not there), never the whole tree (judge J-agent:qa, major 2).
+  if (ctx.role === 'qa' && (tool === 'Glob' || tool === 'Grep')) {
+    const root = typeof input['path'] === 'string' ? canon(input['path']) : '';
+    const lit =
+      typeof input['pattern'] === 'string' && tool === 'Glob' ? canon(input['pattern']) : '';
+    const inRoot = (s: string): boolean =>
+      /(^|\/)(tests|api|design)(\/|$)/.test(s) && !s.split('/').includes('..');
+    if (!(root !== '' ? inRoot(root) : tool === 'Glob' && inRoot(lit)))
+      return {
+        rule: 'qa-independence',
+        reason:
+          'a QA Glob or Grep names a root under tests/, api/ or design/ (path), never the whole tree',
+      };
+  }
   if (
     ctx.cwd !== undefined &&
     ctx.role !== undefined &&

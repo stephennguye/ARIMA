@@ -132,6 +132,21 @@ switch (mode) {
       g('add', '-A');
       g('commit', '-q', '-m', `feat(${process.env.ARIMA_ITEM}): stub change ${n}`);
     }
+    if (key === 'qa-qa' && !existsSync(`${dir}/${key}.no-run`)) {
+      // A real QA run runs the tests and the audit hook records it; the stub does the same through the real hook.
+      const hook = new URL('../../dist/arima-hook.mjs', import.meta.url).pathname.replace(
+        /^\/([A-Za-z]:)/,
+        '$1',
+      );
+      spawnSync(process.execPath, [hook, 'post-tool-use'], {
+        input: JSON.stringify({
+          tool_name: 'Bash',
+          tool_input: { command: 'npm run e2e' },
+          cwd: process.cwd(),
+        }),
+        env: process.env,
+      });
+    }
     if (existsSync(`${dir}/${key}.tests`)) {
       // QA has no git: it leaves its tests uncommitted for the host to commit.
       mkdirSync(`${process.cwd()}/tests/e2e`, { recursive: true });

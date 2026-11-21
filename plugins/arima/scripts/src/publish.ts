@@ -207,6 +207,7 @@ export function checkBranch(i: PublishInput): { dir: string; sha: string; files:
     '-c',
     'core.quotePath=false',
     'diff',
+    '--no-renames',
     '--name-only',
     `${base}...${i.branch}`,
   ])
@@ -237,6 +238,7 @@ export function checkBranch(i: PublishInput): { dir: string; sha: string; files:
           '-c',
           'core.quotePath=false',
           'diff',
+          '--no-renames',
           '--name-only',
           `${i.testsBase}..${i.branch}`,
         ])
@@ -246,7 +248,31 @@ export function checkBranch(i: PublishInput): { dir: string; sha: string; files:
         own = files; // QA's tip is not in this branch: every tests/e2e change counts against the developer
       }
     }
-    const e2e = own.filter((f) => f.toLowerCase().startsWith('tests/e2e/'));
+    const e2e = own.filter(
+      (f) => f.toLowerCase().startsWith('tests/e2e/') || /^playwright\.config\.[a-z]+$/i.test(f),
+    );
+    // The e2e script of package.json decides whether QA's tests run at all: compare the parsed scripts.
+    const scriptsAt = (ref: string): Record<string, unknown> => {
+      try {
+        return (
+          (
+            JSON.parse(git(dir, ['show', ref + ':package.json'])) as {
+              scripts?: Record<string, unknown>;
+            }
+          ).scripts ?? {}
+        );
+      } catch {
+        return {};
+      }
+    };
+    const before = scriptsAt(base);
+    const after = scriptsAt(i.branch);
+    for (const k of ['e2e', 'test:e2e'])
+      if (JSON.stringify(before[k] ?? null) !== JSON.stringify(after[k] ?? null))
+        refuse(
+          "the developer may not change the e2e script of package.json (QA's runner)",
+          'protected_path',
+        );
     if (e2e.length > 0)
       refuse(
         `the developer may not change tests/e2e/** (QA's): ${e2e.join(', ')}`,

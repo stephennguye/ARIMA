@@ -233,6 +233,27 @@ const fixtures: Fixture[] = [
   },
 ];
 
+fixtures.push(
+  {
+    name: 'INVALID: a pass verdict with an unmet criterion',
+    kind: 'qa',
+    report: base(16, {
+      criteria_map: [{ criterion: 'AC-1: x', status: 'unmet', evidence: ['TC-3'] }],
+      verdict: { result: 'pass', reasons: ['ok'] },
+    }),
+    expect: { ok: false, reason: 'report_invalid', error: 'pass is not allowed' },
+  },
+  {
+    name: 'INVALID: evidence that points at the developer source',
+    kind: 'qa',
+    report: base(17, {
+      criteria_map: met(['src/cart.js:7']),
+      verdict: { result: 'pass', reasons: ['ok'] },
+    }),
+    expect: { ok: false, reason: 'report_invalid', error: 'points at source' },
+  },
+);
+
 const FENCE = '```';
 const wrap = (r: unknown): string =>
   `Done.\n\n${FENCE}arima-report\n${JSON.stringify(r)}\n${FENCE}\n`;

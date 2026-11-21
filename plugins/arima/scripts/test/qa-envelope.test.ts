@@ -71,6 +71,30 @@ describe('the guard in a QA run: the developer is out of sight', () => {
     expect(['qa-independence', 'protected-state']).toContain(guardTool(tool, input, ctx)?.rule);
   });
 
+  it.each([
+    ['Grep', { pattern: 'TODO' }],
+    ['Grep', { pattern: 'x', path: '.' }],
+    ['Grep', { pattern: 'x', glob: 'sr[c]/**' }],
+    ['Glob', { pattern: '**/*.js' }],
+    ['Glob', { pattern: 'sr[c]/**' }],
+    ['Glob', { pattern: '{src,x}/**' }],
+    ['Glob', { pattern: 's?c/**' }],
+    ['Glob', { pattern: '**/*.js', path: '.' }],
+    ['Grep', { pattern: 'x', path: 'tests/../src' }],
+  ])('%s %j names no root under tests, api or design and is blocked', (tool, input) => {
+    expect(guardTool(tool, input, ctx)?.rule).toBe('qa-independence');
+  });
+  it('Glob and Grep with a root under tests, api or design pass', () => {
+    for (const [tool, input] of [
+      ['Grep', { pattern: 'x', path: 'tests' }],
+      ['Grep', { pattern: 'x', path: 'tests/e2e', glob: '*.js' }],
+      ['Glob', { pattern: 'tests/**/*.js' }],
+      ['Glob', { pattern: '**/*.js', path: 'api' }],
+      ['Glob', { pattern: '*', path: '/work/app-wt/qa/US-112-tests/design' }],
+    ] as const)
+      expect(guardTool(tool, input, ctx), JSON.stringify(input)).toBeUndefined();
+  });
+
   it('what QA is meant to read is fine', () => {
     for (const p of [
       'tests/e2e/login.spec.js',

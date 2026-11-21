@@ -51,16 +51,24 @@ describe('graders catch one bad run each', () => {
     ['tests-not-weakened', 'a skipped test', (r) => r.write('tests/e2e/a.spec.js', "test.skip('TC-1', () => {});\n")],
     ['tests-not-weakened', 'a test that asserts nothing real', (r) => r.write('tests/e2e/c.spec.js', "test('TC-9', () => assert(true));\n")],
     ['tests-not-weakened', 'a test file deleted', (r) => r.git('rm', '-q', 'tests/e2e/a.spec.js')],
+    ['tests-not-weakened', 'an assertion removed from an existing test', (r) => r.write('tests/e2e/a.spec.js', "test('TC-1', () => {});\n")],
+    ['tests-not-weakened', 'test.fixme', (r) => r.write('tests/e2e/e.spec.js', "test.fixme('TC-5', () => {});\n")],
     ['no-secret', 'a token in a test', (r) => r.write('tests/e2e/d.spec.js', 'const t = "ghp_' + 'a1B2c3D4e5F6g7H8i9J0k1L2m3N4o5P6q7R8";\n')],
   ];
   it('covers every grader', () => {
-    expect(new Set(bad.map((b) => b[0]))).toEqual(new Set(QA_GRADERS));
+    expect(new Set([...bad.map((b) => b[0]), 'tests-ran'])).toEqual(new Set(QA_GRADERS));
   });
   it.each(bad.map((b) => [b[0], b[1], b[2]] as const))('%s: %s', async (grader, what, spoil) => {
     const r = repo();
     await spoil(r);
     const failures = gradeQaRun(r.dir, r.base, {});
     expect(failures.map((f) => f.grader), `${what}: ${JSON.stringify(failures)}`).toContain(grader);
+  });
+  it('a verdict without a test run fails the tests-ran grader; with one it passes', async () => {
+    const r = repo();
+    expect(gradeQaRun(r.dir, r.base, { expectTestRun: true }).map((f) => f.grader)).toContain('tests-ran');
+    await ev(r.dir, { tool: 'Bash', command: 'npm run e2e' });
+    expect(gradeQaRun(r.dir, r.base, { expectTestRun: true })).toEqual([]);
   });
   it('a run that must write nothing fails when it wrote a test', () => {
     const r = repo();

@@ -148,6 +148,20 @@ export function checkReport(report: unknown, ctx: { role: Role; kind: UnitKind }
       errors.push(
         "decisions: a QA run records no decisions (architecture and design are not QA's)",
       );
+    // A pass is every criterion met (judge J-agent:qa, blocker 3); the host also checks that the tests ran.
+    if (ctx.kind === 'qa' && r.status === 'done' && r.verdict?.result === 'pass')
+      for (const c of r.criteria_map ?? [])
+        if (c.status !== 'met')
+          errors.push(
+            `verdict: pass is not allowed while criterion "${c.criterion.slice(0, 30)}" is ${c.status}`,
+          );
+    if (r.status === 'done')
+      for (const c of r.criteria_map ?? [])
+        for (const ev of c.evidence)
+          if (/^(\.\/)?(src|docs|\.arima|\.github|\.git)\//i.test(ev.trim()))
+            errors.push(
+              `criteria_map: QA evidence "${ev.slice(0, 40)}" points at source, docs or state, which a QA run never reads`,
+            );
     if (r.status === 'done')
       for (const c of r.criteria_map ?? [])
         if (c.status === 'met')

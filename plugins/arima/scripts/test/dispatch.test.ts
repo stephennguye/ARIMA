@@ -728,6 +728,40 @@ describe('previews of stories In Review (WP-218)', () => {
     expect(readEvents(w.dir).filter((e) => e.type === 'decision.made')).toHaveLength(1);
   });
 
+  it('a QA pass whose run never ran the tests is not acted on; one that ran them is (judge J-agent:qa)', async () => {
+    const passReport =
+      'Tested.\n\n' +
+      FENCE +
+      'arima-report\n' +
+      JSON.stringify({
+        schema_version: 1,
+        run_id: '__RUN_ID__',
+        role: 'qa',
+        item: '__ITEM__',
+        status: 'done',
+        summary: 'All passed.',
+        criteria_map: [{ criterion: 'AC-1: total', status: 'met', evidence: ['TC-1'] }],
+        verdict: { result: 'pass', reasons: ['all passed'] },
+      }) +
+      '\n' +
+      FENCE +
+      '\n';
+    const flow = async (ran: boolean) => {
+      const { w, deps } = await inReview(() => false);
+      await runDispatch(w.opts({ deps: deps() })); // In Review, preview up
+      approve(w);
+      await w.pull();
+      await runDispatch(w.opts({ deps: deps() })); // In QA
+      writeFileSync(path.join(w.stub, 'qa-qa.txt'), passReport);
+      if (!ran) writeFileSync(path.join(w.stub, 'qa-qa.no-run'), '');
+      await w.pull();
+      const r = await runDispatch(w.opts({ deps: deps() }));
+      return r.warnings.join('\n');
+    };
+    expect(await flow(false)).toContain('never ran npm run e2e or npm test');
+    expect(await flow(true)).not.toContain('never ran npm run e2e or npm test');
+  });
+
   it('a story without any Compose file is not held for a preview (Phase 3 not done)', async () => {
     const w = await world();
     writeFileSync(path.join(w.stub, 'developer-develop.txt'), report());

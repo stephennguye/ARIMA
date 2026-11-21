@@ -68,7 +68,16 @@ const WORKTREE_KINDS: ReadonlySet<UnitKind> = new Set([
 export const needsWorktree = (kind: UnitKind, role: Role): boolean =>
   WORKTREE_KINDS.has(kind) && !(kind === 'fix' && role === 'devops');
 /** QA sees only these paths (no product source, no developer notes). */
-export const QA_SPARSE = ['tests/', 'api/', 'design/', 'package.json'] as const;
+export const QA_SPARSE = [
+  'tests/',
+  'api/',
+  'design/',
+  'package.json',
+  'package-lock.json',
+  'tsconfig.json',
+  'playwright.config.ts',
+  'playwright.config.js',
+] as const;
 
 /** Kinds whose report carries a verdict that moves the story or is posted to the pull request. */
 export const REVIEW_KINDS: ReadonlySet<UnitKind> = new Set([

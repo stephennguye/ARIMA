@@ -22029,7 +22029,16 @@ var WORKTREE_KINDS = /* @__PURE__ */ new Set([
   "qa"
 ]);
 var needsWorktree = (kind, role) => WORKTREE_KINDS.has(kind) && !(kind === "fix" && role === "devops");
-var QA_SPARSE = ["tests/", "api/", "design/", "package.json"];
+var QA_SPARSE = [
+  "tests/",
+  "api/",
+  "design/",
+  "package.json",
+  "package-lock.json",
+  "tsconfig.json",
+  "playwright.config.ts",
+  "playwright.config.js"
+];
 var REVIEW_KINDS = /* @__PURE__ */ new Set([
   "review",
   "qa",
@@ -23690,6 +23699,21 @@ function checkReport(report, ctx) {
       errors.push(
         "decisions: a QA run records no decisions (architecture and design are not QA's)"
       );
+    if (ctx.kind === "qa" && r.status === "done" && r.verdict?.result === "pass") {
+      for (const c of r.criteria_map ?? [])
+        if (c.status !== "met")
+          errors.push(
+            `verdict: pass is not allowed while criterion "${c.criterion.slice(0, 30)}" is ${c.status}`
+          );
+    }
+    if (r.status === "done") {
+      for (const c of r.criteria_map ?? [])
+        for (const ev of c.evidence)
+          if (/^(\.\/)?(src|docs|\.arima|\.github|\.git)\//i.test(ev.trim()))
+            errors.push(
+              `criteria_map: QA evidence "${ev.slice(0, 40)}" points at source, docs or state, which a QA run never reads`
+            );
+    }
     if (r.status === "done") {
       for (const c of r.criteria_map ?? [])
         if (c.status === "met") {
@@ -24725,6 +24749,7 @@ function checkBranch(i) {
     "-c",
     "core.quotePath=false",
     "diff",
+    "--no-renames",
     "--name-only",
     `${base}...${i.branch}`
   ]).split("\n").filter(Boolean);
@@ -24752,6 +24777,7 @@ function checkBranch(i) {
           "-c",
           "core.quotePath=false",
           "diff",
+          "--no-renames",
           "--name-only",
           `${i.testsBase}..${i.branch}`
         ]).split("\n").filter(Boolean);
@@ -24759,7 +24785,24 @@ function checkBranch(i) {
         own = files;
       }
     }
-    const e2e = own.filter((f) => f.toLowerCase().startsWith("tests/e2e/"));
+    const e2e = own.filter(
+      (f) => f.toLowerCase().startsWith("tests/e2e/") || /^playwright\.config\.[a-z]+$/i.test(f)
+    );
+    const scriptsAt = (ref) => {
+      try {
+        return JSON.parse(git3(dir, ["show", ref + ":package.json"])).scripts ?? {};
+      } catch {
+        return {};
+      }
+    };
+    const before = scriptsAt(base);
+    const after = scriptsAt(i.branch);
+    for (const k of ["e2e", "test:e2e"])
+      if (JSON.stringify(before[k] ?? null) !== JSON.stringify(after[k] ?? null))
+        refuse2(
+          "the developer may not change the e2e script of package.json (QA's runner)",
+          "protected_path"
+        );
     if (e2e.length > 0)
       refuse2(
         `the developer may not change tests/e2e/** (QA's): ${e2e.join(", ")}`,
@@ -27696,6 +27739,7 @@ function reviewContext(o) {
 // plugins/arima/scripts/src/qa-tests.ts
 import { execFileSync as execFileSync7 } from "node:child_process";
 import { existsSync as existsSync28, mkdirSync as mkdirSync21, readFileSync as readFileSync27, writeFileSync as writeFileSync10 } from "node:fs";
+import { tmpdir as tmpdir4 } from "node:os";
 import path37 from "node:path";
 var QaTestsError = class extends Error {
 };
@@ -27714,6 +27758,11 @@ function isAncestor(cwd, a, b) {
   } catch {
     return false;
   }
+}
+function emptyHooksDir() {
+  const d = path37.join(tmpdir4(), "arima-no-hooks");
+  mkdirSync21(d, { recursive: true });
+  return d;
 }
 var tipsFile = (projectDir) => path37.join(projectDir, ".arima", "state", "qa-tips.json");
 function readQaTips(projectDir) {
@@ -27746,6 +27795,8 @@ function adoptQaTests(o) {
     }
     git4(dir, [
       "-c",
+      `core.hooksPath=${emptyHooksDir()}`,
+      "-c",
       "user.name=ARIMA host",
       "-c",
       "user.email=arima@localhost.invalid",
@@ -27754,6 +27805,25 @@ function adoptQaTests(o) {
       "-m",
       `test(${o.item}): end-to-end tests from the acceptance criteria`
     ]);
+  }
+  const base = tryGit(dir, ["merge-base", "HEAD", "refs/heads/main"]) ?? tryGit(dir, ["merge-base", "HEAD", "origin/main"]);
+  if (base !== void 0) {
+    const range = git4(dir, [
+      "-c",
+      "core.quotePath=false",
+      "diff",
+      "--no-renames",
+      "--name-only",
+      `${base}..HEAD`
+    ]).split("\n").filter(Boolean);
+    const stray = range.filter((f) => !f.startsWith("tests/"));
+    if (stray.length > 0)
+      throw new QaTestsError(`QA committed files outside tests/: ${stray.join(", ")}`);
+    const leakedRange = findSecrets(git4(dir, ["diff", `${base}..HEAD`]));
+    if (leakedRange.length > 0)
+      throw new QaTestsError(
+        `QA's commits look like they contain a secret (${leakedRange.join(", ")})`
+      );
   }
   const sha = git4(dir, ["rev-parse", "HEAD"]);
   const have = tryGit(o.projectDir, [
@@ -27767,8 +27837,8 @@ function adoptQaTests(o) {
     return { sha, created: false };
   }
   if (have === void 0) {
-    const base = tryGit(dir, ["merge-base", "HEAD", "refs/heads/main"]);
-    if (changed.length === 0 && base === sha) return void 0;
+    const base2 = tryGit(dir, ["merge-base", "HEAD", "refs/heads/main"]);
+    if (changed.length === 0 && base2 === sha) return void 0;
     git4(o.projectDir, ["branch", o.storyBranch, sha]);
     writeQaTip(o.projectDir, o.item, sha);
     return { sha, created: true };
@@ -28821,8 +28891,16 @@ async function runDispatch(o) {
       }
       if (unit.kind === "qa" && report.status === "done" && report.verdict?.result === "fail")
         await afterQaFail(unit, report);
-      if (unit.kind === "qa" && report.status === "done" && report.verdict?.result === "pass")
-        await afterQaPass(unit);
+      if (unit.kind === "qa" && report.status === "done" && report.verdict?.result === "pass") {
+        const ran = readEvents(o.projectDir).some(
+          (e) => e.run_id === out.runId && e.type === "tool.used" && /^npm\s+(run\s+e2e|test)\b/.test(String(e.data?.["command"] ?? "").trim())
+        );
+        if (ran) await afterQaPass(unit);
+        else
+          res.warnings.push(
+            `QA of ${unit.item} reported pass but its run never ran npm run e2e or npm test: the pass was not acted on`
+          );
+      }
       return base;
     }
     async function comment(unit, report) {

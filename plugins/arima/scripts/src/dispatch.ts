@@ -1146,8 +1146,21 @@ export async function runDispatch(o: DispatchOptions): Promise<DispatchResult> {
       }
       if (unit.kind === 'qa' && report.status === 'done' && report.verdict?.result === 'fail')
         await afterQaFail(unit, report);
-      if (unit.kind === 'qa' && report.status === 'done' && report.verdict?.result === 'pass')
-        await afterQaPass(unit);
+      if (unit.kind === 'qa' && report.status === 'done' && report.verdict?.result === 'pass') {
+        // A pass that never ran the tests (the audit log of this run holds no npm run e2e or npm test) is not
+        // acted on: the test cases would be marked Pass without a run (judge J-agent:qa, blocker 3).
+        const ran = readEvents(o.projectDir).some(
+          (e) =>
+            e.run_id === out.runId &&
+            e.type === 'tool.used' &&
+            /^npm\s+(run\s+e2e|test)\b/.test(String(e.data?.['command'] ?? '').trim()),
+        );
+        if (ran) await afterQaPass(unit);
+        else
+          res.warnings.push(
+            `QA of ${unit.item} reported pass but its run never ran npm run e2e or npm test: the pass was not acted on`,
+          );
+      }
       return base;
     }
 

@@ -91,9 +91,9 @@ Allow-list = `allowedTools('qa')` after WP-211: `Read`, `Glob`, `Grep` scoped to
 
 | Forbidden action | Control | Enforced? |
 | --- | --- | --- |
-| Fix product code | Write limited to `tests/**`; sparse worktree without `src/`; guard path rules | Enforced for file tools; advisory via a script run by `npm run` (R-01) until WP-190 |
+| Fix product code | Write limited to `tests/**`; sparse worktree without `src/`; guard path rules; the host commits QA tests only after checking that every file QA committed or changed since the default branch is under `tests/` and holds no secret (`src/qa-tests.ts`), with hooks off | Enforced for file tools and for what the host takes; **advisory** for code QA's own tests start through `npm run` (R-01): it can run `git`, read the object store, `.arima/` and the home folder, and open the network until the Docker sandbox (WP-190), which also needs its clone re-sparsed to QA_SPARSE (WP-215) |
 | Close its own bug without retest | `Status` refused from outbox and QA has no outbox; engine sets `Bugs.Status` (WP-108) | Enforced |
-| Read developer notes | packet validator, no git/gh, path-scoped Read, sparse worktree (section 3) | Enforced by role list and checkout; envelope test |
+| Read developer notes | packet validator; no git or gh in the role list and the guard refuses any git command; `Read` scoped by rule; Glob and Grep must name a root under tests, api or design; sparse worktree (`QA_SPARSE`) | Enforced for the tools; **advisory** for reads by code started through `npm run` (R-01, the same exposure as above). The earlier wording "enforced by role list and checkout" overstated this |
 | Browse to a non-test host from the page under test | MCP `--allowed-origins`, container network limited to the preview or staging host | Enforced from WP-211 (MCP flag) and WP-190 (network); advisory before WP-190 |
 | Use real data or production | synthetic data rule, no production credential in env (contract 7) | Env enforced; data rule by eval |
 | Edit CI, hooks, `arima.yaml` | deny rules | Enforced |
