@@ -15837,6 +15837,12 @@ var STATE_REF = /(^|[\s:/])arima-state(?![A-Za-z0-9_-])|^--(all|branches|glob|re
 function guardRoleGit(g, vcs) {
   const flags = g.args.filter((a) => a.startsWith("-"));
   const plain = g.args.filter((a) => !a.startsWith("-"));
+  if (g.args.some(
+    (a) => /^:\/|\^\{\//.test(a) || /^--(reflog|walk-reflogs|no-index)\b/.test(a) || a === "-g"
+  ))
+    return vcs(
+      "a role names revisions only by branch, tag or hash: no :/regex, no reflog, no --no-index"
+    );
   if (g.args.some((a) => STATE_REF.test(a)))
     return vcs("a role reads nothing from the ARIMA state branch or from all refs through git");
   switch (g.sub) {
@@ -16120,6 +16126,19 @@ var stateReadReason = (role) => `a ${role} run reads nothing under .arima/: the 
 function guardBash(command, ctx = {}) {
   const c = withoutMessages(command);
   const lc = c.toLowerCase();
+  if (ctx.role !== void 0) {
+    const plain = c.replace(/["'`]/g, "");
+    if (plain !== c) {
+      const hit = guardBash(plain, ctx);
+      if (hit !== void 0) return hit;
+    }
+    for (const s of expandCommands(c))
+      for (const w of s.words)
+        if (w.includes("/") || w.startsWith(".") || w.startsWith("~")) {
+          if (isSecretPath(w) || /(^|\/)\.envrc$/i.test(canon(w)))
+            return { rule: "secret-file", reason: "the command touches a credentials file" };
+        }
+  }
   if (ctx.role !== void 0 && NO_STATE_READ.has(ctx.role) && /\.arima(?![A-Za-z0-9_])/i.test(c))
     return { rule: "protected-state", reason: stateReadReason(ctx.role) };
   if (ctx.role === "tech-lead" && ctx.kind === "review" && WRITE_VERBS.test(c))
@@ -16146,7 +16165,11 @@ function guardBash(command, ctx = {}) {
       "tag",
       "branch",
       "clean",
-      "revert"
+      "revert",
+      "fetch",
+      "gc",
+      "pull",
+      "prune"
     ]);
     for (const s of expandCommands(c)) {
       const h = headOf(s.words);
@@ -16257,6 +16280,11 @@ function guardTool(tool, input, ctx = {}) {
       rule: "no-outbox",
       reason: "a developer run proposes through its report; the engine writes the outbox entries"
     };
+  if (tool === "WebFetch" && (ctx.role === "developer" || ctx.role === "qa" || ctx.role === "tech-lead" && ctx.kind !== "deprecation-check"))
+    return {
+      rule: "no-web",
+      reason: "this run has no web access (a fetch is an exfiltration channel); ask through a question"
+    };
   if (ctx.role === "tech-lead" && ctx.kind === "review" && WRITE_TOOLS.has(tool))
     return {
       rule: "read-only-kind",
@@ -16270,6 +16298,14 @@ function guardTool(tool, input, ctx = {}) {
     return {
       rule: "outside-worktree",
       reason: "a developer run writes only inside its own worktree"
+    };
+  if (ctx.cwd !== void 0 && ctx.role !== void 0 && NO_STATE_READ.has(ctx.role) && ["Read", "Glob", "Grep"].includes(tool) && ["path", "file_path", "pattern", "glob"].some((k) => {
+    const v = input[k];
+    return typeof v === "string" && (v.startsWith("~") || v.split(/[\\/]/).includes("..") || /^([A-Za-z]:[\\/]|\/)/.test(v)) && !insideDir(v, ctx.cwd);
+  }))
+    return {
+      rule: "outside-worktree",
+      reason: "this run reads only inside its own directory (not other worktrees, not the home folder)"
     };
   if (FILE_TOOLS.has(tool)) {
     for (const p of pathsOf(input)) {
@@ -16435,7 +16471,7 @@ async function handleHook(kind2, input, env = process.env) {
     return { exitCode: 0 };
   }
   if (kind2 === "post-tool-use") {
-    const changesState = WRITE_TOOLS.has(tool) || tool === "Bash" && typeof toolInput["command"] === "string" && !isReadOnlyBash(toolInput["command"]);
+    const changesState = WRITE_TOOLS.has(tool) || tool === "WebFetch" || tool === "Bash" && typeof toolInput["command"] === "string" && !isReadOnlyBash(toolInput["command"]);
     if (changesState) await log(projectDir, "tool.used", env, describe(tool, toolInput));
     return { exitCode: 0 };
   }

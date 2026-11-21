@@ -19695,7 +19695,7 @@ function allowedTools(role, scriptsDir, kind) {
         "WebFetch"
       ];
     case "tech-lead": {
-      const base = [...read, ...GIT_READ, "WebFetch"];
+      const base = [...read, ...GIT_READ.filter((t3) => !t3.includes("git fetch"))];
       if (kind === "adr-review")
         return [
           ...base,
@@ -19711,6 +19711,7 @@ function allowedTools(role, scriptsDir, kind) {
           ...bash("git add"),
           ...bash("git commit")
         ];
+      if (kind === "deprecation-check") return [...base, "WebFetch"];
       return base;
     }
     case "developer":
@@ -27397,16 +27398,25 @@ function branchDiff(projectDir, base, branch, cap = DIFF_CAP) {
   const range = `${base}...${branch}`;
   const full = run("diff", "--no-color", "--no-ext-diff", range);
   let changed = 0;
-  for (const l of run("diff", "--numstat", range).split("\n").filter(Boolean)) {
-    const [a, d] = l.split("	");
+  const files = [];
+  for (const l of run("-c", "core.quotePath=false", "diff", "--numstat", range).split("\n").filter(Boolean)) {
+    const [a, d, ...rest] = l.split("	");
+    const binary = a === "-" && d === "-";
     changed += (Number(a) || 0) + (Number(d) || 0);
+    files.push({
+      path: rest.join("	"),
+      added: Number(a) || 0,
+      removed: Number(d) || 0,
+      binary
+    });
   }
-  return full.length > cap ? { text: full.slice(0, cap), truncated: true, changedLines: changed } : { text: full, truncated: false, changedLines: changed };
+  return full.length > cap ? { text: full.slice(0, cap), truncated: true, changedLines: changed, files } : { text: full, truncated: false, changedLines: changed, files };
 }
 var SIZE_LIMIT_LINES = { S: 200, M: 400, L: 800 };
 function reviewContext(o) {
   const untrusted = [];
   const conditions = [];
+  const unapprovable = [];
   const limit = SIZE_LIMIT_LINES[o.size ?? "M"];
   try {
     const d = branchDiff(o.projectDir, o.defaultBranch, o.branch);
@@ -27416,10 +27426,20 @@ function reviewContext(o) {
       text: d.truncated ? `${d.text}
 [diff truncated at ${DIFF_CAP} characters; read the rest with git diff ${o.defaultBranch}...${o.branch} -- <path>]` : d.text === "" ? "(the branch has no changes against the default branch)" : d.text
     });
+    untrusted.push({
+      label: "Changed files (git diff --numstat; binary files are flagged)",
+      source: "git",
+      text: d.files.map((f) => `${f.binary ? "BINARY " : ""}${f.path} +${f.added} -${f.removed}`).join("\n") || "(none)"
+    });
     conditions.push(
-      `The diff changes ${d.changedLines} lines; the size limit of this story is about ${limit}${d.changedLines > limit ? " (over the limit: raise a major sizing finding)" : ""}`
+      `The diff changes ${d.changedLines} lines in ${d.files.length} files; the size limit of this story is about ${limit}${d.changedLines > limit ? " (over the limit: raise a major sizing finding)" : ""}`
     );
+    if (d.text === "") unapprovable.push("the diff is empty");
+    if (d.truncated) unapprovable.push(`the diff is longer than ${DIFF_CAP} characters`);
+    const bin = d.files.filter((f) => f.binary).map((f) => f.path);
+    if (bin.length > 0) unapprovable.push(`binary files cannot be reviewed: ${bin.join(", ")}`);
   } catch (e) {
+    unapprovable.push("the host could not read the diff");
     untrusted.push({
       label: "Pull request diff",
       source: "git",
@@ -27434,6 +27454,7 @@ function reviewContext(o) {
       text: JSON.stringify({ summary: r.summary, criteria_map: r.criteria_map ?? [] }, null, 2)
     });
   } else {
+    unapprovable.push("there is no developer report with a criteria map for this item");
     untrusted.push({
       label: "Developer's report",
       source: "report",
@@ -27447,10 +27468,10 @@ function reviewContext(o) {
       text: JSON.stringify(o.priorFindings, null, 2)
     });
   conditions.push(
-    "CI is green (the item reached In Review because the checks passed)",
+    "The host moved the item to In Review because the checks were green; the packet carries no CI log, and the merge script checks the checks again",
     `Review attempt ${o.attempt}`
   );
-  return { untrusted, conditions };
+  return { untrusted, conditions, approvable: unapprovable.length === 0, unapprovable };
 }
 
 // plugins/arima/scripts/src/runlock.ts
@@ -27736,6 +27757,7 @@ async function runDispatch(o) {
     warnings: [],
     degraded: false
   };
+  const unapprovableReviews = /* @__PURE__ */ new Map();
   const fail = (code2, message) => ({
     ...res,
     exitCode: code2,
@@ -27865,6 +27887,7 @@ async function runDispatch(o) {
         attempt: attemptOf2(unit.item)
       }) : void 0;
       if (review) untrusted.push(...review.untrusted);
+      if (review) unapprovableReviews.set(unit.item, review.unapprovable);
       return {
         run_id: rid,
         max_minutes: cfg.schedule.max_run_minutes,
@@ -28322,8 +28345,15 @@ async function runDispatch(o) {
       if (REVIEW_KINDS.has(unit.kind)) await comment(unit, report);
       if (unit.kind === "develop" && report.status === "done")
         await publishDevelop(unit, report, branch);
-      if (unit.kind === "review" && report.status === "done" && report.verdict)
-        await afterReview(unit, report.verdict.result);
+      if (unit.kind === "review" && report.status === "done" && report.verdict) {
+        const why = unapprovableReviews.get(unit.item) ?? [];
+        const effective = report.verdict.result === "approve" && why.length > 0 ? "changes_requested" : report.verdict.result;
+        if (effective !== report.verdict.result)
+          res.warnings.push(
+            `review of ${unit.item}: the approve was not acted on (${why.join("; ")})`
+          );
+        await afterReview(unit, effective);
+      }
       if (unit.kind === "qa" && report.status === "done" && report.verdict?.result === "fail")
         await afterQaFail(unit, report);
       if (unit.kind === "qa" && report.status === "done" && report.verdict?.result === "pass")

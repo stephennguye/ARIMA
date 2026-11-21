@@ -184,6 +184,8 @@ describe('judge J-agent:developer: git routes that moved the default branch, res
     ['git branch -f main HEAD', 'vcs'],
     ['git update-ref refs/heads/main HEAD', 'vcs'],
     ['git reset --hard HEAD~3', 'vcs'],
+    ['git update-ref main HEAD', 'vcs'],
+    ['git update-ref -d main', 'vcs'],
     ['git commit --amend -m x', 'vcs'],
     // blocker 3: restoring files from another revision, by any spelling
     ['git checkout HEAD~3 -- tests', 'vcs'],

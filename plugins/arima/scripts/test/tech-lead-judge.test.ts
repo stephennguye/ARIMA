@@ -40,6 +40,18 @@ describe('blocker 2: git diff --no-index and quote-split paths', () => {
   });
 });
 
+describe('blocker 2 (continued): quote-split paths in commands that are not git diff --no-index', () => {
+  it.each([
+    "cat .ari''ma/runs/r-1.report.json",
+    "cat .e''nv",
+    "ls .ar'i'ma",
+    "cat ~/'.config'/arima/token",
+    'cat ".env"',
+  ])('%s is blocked', (cmd) => {
+    expect(guardBash(cmd, ctx), cmd).toBeDefined();
+  });
+});
+
 describe('blocker 3: no web access outside a deprecation check', () => {
   it('the role list holds no WebFetch except for deprecation-check, and the guard refuses it', () => {
     for (const kind of [undefined, 'review', 'adr-review', 'conventions', 'rc-freeze'])
@@ -68,6 +80,14 @@ describe('major 1 and 2: other worktrees and ref-moving git', () => {
     ['Read', { file_path: '~/notes.txt' }],
   ])('%s %j is outside the run directory', (tool, input) => {
     expect(guardTool(tool, input, ctx)?.rule).toBe('outside-worktree');
+  });
+  it('a path that merely contains the run directory in the middle is outside it', () => {
+    expect(guardTool('Read', { file_path: '/other/work/app/src/a.js' }, ctx)?.rule).toBe(
+      'outside-worktree',
+    );
+    expect(guardTool('Read', { file_path: '/work/app-wt/x.js' }, ctx)?.rule).toBe(
+      'outside-worktree',
+    );
   });
   it('reading inside the project is fine', () => {
     for (const p of ['src/a.js', '/work/app/src/a.js', './docs/x.md'])

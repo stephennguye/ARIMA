@@ -257,6 +257,8 @@ export async function runDispatch(o: DispatchOptions): Promise<DispatchResult> {
     warnings: [],
     degraded: false,
   };
+  /** Per item: why an approve of the review being run cannot be trusted (empty when it can). */
+  const unapprovableReviews = new Map<string, string[]>();
   const fail = (code: number, message: string): DispatchResult => ({
     ...res,
     exitCode: code,
@@ -680,9 +682,6 @@ export async function runDispatch(o: DispatchOptions): Promise<DispatchResult> {
     function readAttempt(item: string): number {
       return attemptOf(item);
     }
-    /** Per item: why an approve of the review being run cannot be trusted (empty when it can). */
-    const unapprovableReviews = new Map<string, string[]>();
-
     function lastDevelopReport(item: string): AgentReport | undefined {
       return lastReportOf(item, 'develop');
     }

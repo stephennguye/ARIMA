@@ -18759,7 +18759,7 @@ function allowedTools(role, scriptsDir, kind) {
         "WebFetch"
       ];
     case "tech-lead": {
-      const base = [...read, ...GIT_READ, "WebFetch"];
+      const base = [...read, ...GIT_READ.filter((t2) => !t2.includes("git fetch"))];
       if (kind === "adr-review")
         return [
           ...base,
@@ -18775,6 +18775,7 @@ function allowedTools(role, scriptsDir, kind) {
           ...bash("git add"),
           ...bash("git commit")
         ];
+      if (kind === "deprecation-check") return [...base, "WebFetch"];
       return base;
     }
     case "developer":
