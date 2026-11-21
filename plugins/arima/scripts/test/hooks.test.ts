@@ -386,10 +386,11 @@ describe('hooks/hooks.json', () => {
     >;
   };
 
-  it('wraps events in a top-level "hooks" key and covers the five events', () => {
+  it('wraps events in a top-level "hooks" key and covers the six events', () => {
     expect(Object.keys(json.hooks).sort()).toEqual([
       'PermissionDenied',
       'PostToolUse',
+      'PostToolUseFailure',
       'PreToolUse',
       'Stop',
       'SubagentStop',
@@ -409,6 +410,13 @@ describe('hooks/hooks.json', () => {
       }
     }
     expect(existsSync(path.join(PLUGIN_ROOT, 'scripts', 'src', 'bin', 'arima-hook.ts'))).toBe(true);
+  });
+
+  it('audits a failed tool call too (a failing npm run e2e is exactly what a QA run on a broken app produces)', () => {
+    expect(json.hooks['PostToolUseFailure']?.[0]?.matcher).toBe(
+      json.hooks['PostToolUse']?.[0]?.matcher,
+    );
+    expect(JSON.stringify(json.hooks['PostToolUseFailure'])).toContain('post-tool-use');
   });
 
   it('guards every tool before it runs, and audits only state-changing tools after', () => {

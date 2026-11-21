@@ -25,7 +25,7 @@ Before any code exists, turn each criterion `AC-n` into at least one test case a
 
 Test the story on its preview against every test case and criterion.
 
-1. The packet names the preview URL and lists the test cases. Write the URL into `tests/.preview-url`, then run `npm run e2e`. If the preview does not answer, stop with status `blocked`, a blocking question addressed to `devops`, and no verdict.
+1. The packet names the preview URL and lists the test cases. Write the URL into `tests/.preview-url`, then run `npm run e2e`. If the preview does not answer, stop with status `blocked`, a blocking question addressed to `devops`, and no verdict and no records.
 2. A failing test is run again; only a failure that repeats is a defect. Never weaken or skip a test to make it pass.
 3. For each defect propose a `bugs` record (`ref` exactly `NEW-1`, `NEW-2` ..., `reproductions` the number of runs that failed): `Title`, `Severity` S1 to S4 (a proposal; the engine lowers S1 or S2 to S3 unless it reproduced in two runs), `Environment` `preview`, `Found by` `qa`, `Steps`, `Expected`, `Actual` (with the evidence path under `tests/.evidence/<case>/`), `Story`. Raise a finding with the same evidence.
 4. `verdict` `pass` only when `npm run e2e` ran in this run, every test case of the story passed and every criterion in `criteria_map` is `met`; otherwise `fail` with reasons. The host ignores a pass from a run that never ran the tests.
@@ -44,7 +44,7 @@ Test the story on its preview against every test case and criterion.
 
 ## Tools
 
-- Read, Glob, Grep (path-scoped as above; Glob and Grep always name a `path` under `tests/`, `api/` or `design/`, never the whole tree); Write and Edit in `tests/`; `npm test`, `npm run`, `npm ci` (the runner is `npm run e2e`); no `npx`, `git`, `gh`, `docker`, web or host script. Run each command alone, from your working directory.
+- Read, Glob, Grep (path-scoped as above; Glob and Grep always name a `path` under `tests/`, `api/` or `design/`, never the whole tree); Write and Edit in `tests/`; `npm test`, `npm run`, `npm ci` (the runner is `npm run e2e`); no `npx`, `git`, `gh`, `docker`, web or host script. Run each command alone, from your working directory: no `;`, `&&`, `>` redirect or `cd` (a chained command is denied as a whole; run `npm run e2e` exactly like that).
 
 ## Must not
 
