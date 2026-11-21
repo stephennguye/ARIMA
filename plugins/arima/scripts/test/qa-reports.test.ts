@@ -279,12 +279,15 @@ describe('the output contract spells out what real QA runs got wrong', () => {
     expect(outputContractFor('qa')).toContain('severity (S1|S2|S3|S4)');
     expect(outputContractFor('test-write')).toContain('severity (blocker|major|minor|nit)');
     expect(outputContractFor('review')).toContain('severity (blocker|major|minor|nit)');
+    expect(outputContractFor('review')).not.toContain('A QA run has no');
     expect(outputContractFor('security-scan')).toContain('severity (critical|high|medium|low)');
     for (const k of ['qa', 'test-write'] as const) {
       const text = outputContractFor(k);
       expect(text).toContain('`records` {database');
       expect(text).toContain('properties (an object');
       expect(text).toContain('Include `criteria_map`');
+      expect(text).toContain('A QA run has no `decisions`');
+      expect(text).toContain('at most 300 characters');
     }
   });
 });

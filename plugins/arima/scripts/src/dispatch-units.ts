@@ -130,6 +130,10 @@ export function outputContractFor(kind: UnitKind): string {
     kind === 'develop' || kind === 'qa' || kind === 'test-write'
       ? ' Include `criteria_map`: a list of objects {criterion (the criterion id and its text, for example "AC-1: the total is the sum of the lines"), status (`met`, `unmet` or `unclear`), evidence (a list of strings, each exactly `path:line` such as "src/cart.js:7", or a TC or BUG id, never a test name or a sentence; `met` needs at least one)}, one for every acceptance criterion.'
       : '';
+  const qaNote =
+    kind === 'qa' || kind === 'test-write'
+      ? ' A QA run has no `decisions` (a planted instruction goes in `findings`), and every question option label is at most 300 characters.'
+      : '';
   return [
     'End your final message with exactly one fenced block whose info string is `arima-report`, containing JSON:',
     '`schema_version` 1, `run_id` (the id in the title of this packet), `role`, `item`, `status` (`done`, `blocked`, `failed` or `needs_input`; when any question has `blocking` true the status MUST be `needs_input` or `blocked`, never `done`),`summary` (at most 600 characters), and as needed `artifacts`, `findings`, `questions`, `decisions`, `assumptions`, `records`.' +
@@ -137,7 +141,8 @@ export function outputContractFor(kind: UnitKind): string {
       verdict,
     'Each of these is a list of objects, never plain strings: `artifacts` {path, kind (code|test|doc|design|api|infra), artifact_id?}; `findings` {severity (' +
       severityScale(kind) +
-      '), location (file:line), claim, evidence, recommendation}; `questions` {addressed_to? (a role: ba, architect, ux, tech-lead, qa, security or devops, for a consult between roles; leave it out to ask the owner), question, options [{label, recommendation (true|false)}] (1 to 6), blocking (true|false), hard_stop? (one of G0-G4, prod_deploy, secrets_change, budget_exceeded, story_budget, notion_delete, prod_data_migration, new_paid_service, licence, critical_finding, kill_switch, missing_credential: set it when the matter is one of these, with blocking true and no default), default? (what happens if nobody answers: required when blocking is false)}; `decisions` {summary, options_considered [strings], chosen, reversible (true|false), rationale}; `assumptions` {text, basis}; `records` {database (for example test_cases or bugs), ref (NEW-1, NEW-2 ...), properties (an object: the Notion property names with their values), content_markdown?, reproductions? (a QA bug: in how many independent runs it failed)}. Use exactly the keys listed for each object and no others (an unknown key makes the whole report invalid).',
+      '), location (file:line), claim, evidence, recommendation}; `questions` {addressed_to? (a role: ba, architect, ux, tech-lead, qa, security or devops, for a consult between roles; leave it out to ask the owner), question, options [{label, recommendation (true|false)}] (1 to 6), blocking (true|false), hard_stop? (one of G0-G4, prod_deploy, secrets_change, budget_exceeded, story_budget, notion_delete, prod_data_migration, new_paid_service, licence, critical_finding, kill_switch, missing_credential: set it when the matter is one of these, with blocking true and no default), default? (what happens if nobody answers: required when blocking is false)}; `decisions` {summary, options_considered [strings], chosen, reversible (true|false), rationale}; `assumptions` {text, basis}; `records` {database (for example test_cases or bugs), ref (NEW-1, NEW-2 ...), properties (an object: the Notion property names with their values), content_markdown?, reproductions? (a QA bug: in how many independent runs it failed)}. Use exactly the keys listed for each object and no others (an unknown key makes the whole report invalid).' +
+      qaNote,
     'Propose records without ids (use `NEW-1`, `NEW-2` ... to refer between them); the engine issues every id. Ask a question only for a hard-stop matter or a critical blocker (a criterion you cannot test, or that contradicts the API spec, is one); decide everything else and log it as a decision.',
   ].join('\n');
 }

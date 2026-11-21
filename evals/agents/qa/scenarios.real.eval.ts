@@ -4,7 +4,7 @@
 // for the preview. Costs seat usage:
 //   npm run build && ARIMA_REAL_EVALS=1 ARIMA_REAL_EVALS_ONLY=3,8 ARIMA_REAL_EVALS_RUNS=3 ARIMA_REAL_EVALS_CAP_USD=4 npm run eval:agents -- qa
 // Thresholds (card): scenarios 1, 4, 5 pass in at least 4 of 5 runs; 2, 3, 7, 8 in 5 of 5.
-import { execFileSync } from 'node:child_process';
+import { execFile, execFileSync } from 'node:child_process';
 import { mkdirSync, readFileSync, readdirSync, writeFileSync } from 'node:fs';
 import http from 'node:http';
 import type { AddressInfo } from 'node:net';
@@ -115,16 +115,18 @@ const unit = (kind: 'qa' | 'test-write', conditions: string[]) => ({
   conditions: ['Story size: S', 'The profile is solo-lite', ...conditions],
 });
 
-/** Runs `npm run e2e` in the project against a server; returns the process outcome. */
-function e2e(dir: string, url: string): { code: number; out: string } {
+/**
+ * Runs `npm run e2e` in the project against a server; returns the process outcome. Asynchronous on purpose:
+ * the servers live in this process, so a blocking call would stop them answering the tests it runs.
+ */
+function e2e(dir: string, url: string): Promise<{ code: number; out: string }> {
   writeFileSync(path.join(dir, 'tests', '.preview-url'), `${url}\n`);
-  try {
-    const out = execFileSync('npm', ['run', 'e2e'], { cwd: dir, encoding: 'utf8', stdio: 'pipe', timeout: 120_000, shell: process.platform === 'win32' });
-    return { code: 0, out };
-  } catch (e) {
-    const x = e as { status?: number; stdout?: string; stderr?: string };
-    return { code: x.status ?? 1, out: `${x.stdout ?? ''}${x.stderr ?? ''}` };
-  }
+  return new Promise((resolve) => {
+    execFile('npm', ['run', 'e2e'], { cwd: dir, encoding: 'utf8', timeout: 120_000, shell: process.platform === 'win32' }, (err, stdout, stderr) => {
+      const code = err === null ? 0 : typeof (err as { code?: unknown }).code === 'number' ? ((err as { code: number }).code) : 1;
+      resolve({ code, out: `${stdout}${stderr}` });
+    });
+  });
 }
 
 interface Scenario {
@@ -153,12 +155,12 @@ async function testWriteChecks(dir: string, rep: Reported): Promise<string[]> {
   const bad = await serve('bad');
   const good = await serve('good');
   const base = await serve('baseline');
-  const onGood = e2e(dir, good);
+  const onGood = await e2e(dir, good);
   if (onGood.code !== 0) p.push(`the tests fail against the correct app: ${onGood.out.slice(-300)}`);
-  const onBase = e2e(dir, base);
+  const onBase = await e2e(dir, base);
   if (onBase.code === 0) p.push('the tests pass against a baseline without the feature (they test nothing)');
   if (/SyntaxError|Cannot find module/.test(onBase.out)) p.push('the tests fail on a syntax or import error, not on an assertion');
-  const onBad = e2e(dir, bad);
+  const onBad = await e2e(dir, bad);
   if (onBad.code === 0) p.push('the tests pass against an app that returns "9" instead of "9.00" (a weak assertion)');
   execFileSync('node', ['-e', `require('fs').rmSync(${JSON.stringify(path.join(dir, 'tests', '.preview-url'))}, { force: true })`]);
   return p;
