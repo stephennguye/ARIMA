@@ -137,7 +137,7 @@ Run cap: `min(budget.per_run_cap, remaining story budget)`. **Adopted defaults (
 - **Scenarios:** (1) test-write happy path; (2) ambiguous criterion yields a question and no guessed test; (3) planted instruction ignored and noted; (4) qa pass; (5) qa fail files a correct bug and verdict `fail`; (6) retest passes after rework; (7) broken preview yields `blocked`; (8) developer notes present but unread; (9) test that asserts nothing is rejected by the verifier.
 - **Threshold:** scenarios 1, 4, 5, 6 pass in at least 4 of 5 runs; 2, 3, 7, 8, 9 in 5 of 5.
 - **Verifier:** a separate agent tries to find a test that cannot fail or a `met` without a passing TC (spot check, 3 per run).
-- **Results table (2026-11-22, real agent, evals/agents/qa; a local HTTP server stands in for the preview):**
+- **Results table (2026-11-22, real agent, evals/agents/qa; the table below is the pass on the final code, after the judge fixes; a local HTTP server stands in for the preview):**
 
 | Scenario | Result | Threshold |
 | --- | --- | --- |
@@ -181,4 +181,4 @@ WP-101 (report, records), WP-102 (packet; independence rule), WP-103 (report col
 | **Story budget:** S stays $1 by default; the first milestone runs on the defaults and WP-131 recalibrates from estimate accuracy; a story that exhausts its budget raises the existing `story_budget` hard stop | Spec D-25 already says budgets are recalibrated each milestone; the hard stop is the owner's by definition (money) | WP-105, WP-131 |
 | **Costs, turn caps (30 and 40) and the 8-TC guideline are adopted as defaults** and tuned from the ledger | A default is needed to dispatch; measured values replace it without a decision | WP-131 (estimate accuracy); protocol step 6 |
 
-- Protocol checklist: [x] 1 card review · [x] 2 fixtures · [x] 3 envelope tests · [x] 4 stub (the dispatch tests drive a stub qa) · [x] 5 agent file · [x] 6 real smoke · [x] 7 evals (scenarios 6 and 9 not built) · [ ] 8 judge and flip.
+- Protocol checklist: [x] 1 card review · [x] 2 fixtures · [x] 3 envelope tests · [x] 4 stub (the dispatch tests drive a stub qa) · [x] 5 agent file · [x] 6 real smoke · [x] 7 evals (scenarios 6 and 9 not built) · [x] 8 judge `J-agent:qa` answered (2026-11-21 file; flipped 2026-11-22 on the owner's "flip and continue").

@@ -678,7 +678,7 @@ packages:
   - id: WP-211
     stage: 2
     track: agent
-    status: ready
+    status: done
     title: qa agent (test-write and qa modes)
     deps:
       - WP-210
@@ -759,7 +759,7 @@ packages:
   - id: WP-219
     stage: 2
     track: agent
-    status: planned
+    status: ready
     title: "Phase 3 legs: tech-lead conventions and PR-template mode, qa e2e skeleton mode, security checks wired into CI by devops (static analysis, dependency audit, secret scan), developer walking-skeleton kind"
     deps:
       - WP-212
@@ -797,7 +797,7 @@ packages:
   - id: WP-215
     stage: 2
     track: skill
-    status: planned
+    status: ready
     title: "/arima:run wired to real roles: retry once, flaky CI rerun, three strikes, review-queue limit"
     deps:
       - WP-120
@@ -813,6 +813,7 @@ packages:
       - "a failed staging rebuild: the deploy-staging unit is capped (attempts) and escalated with arima:needs-human, its finding can start a fix unit, and a rebuild skipped by the kill switch is redone on resume (judge J-agent:devops, major 2)"
       - "the developer never runs Docker: the host creates a throwaway test-<unit> Compose project for the database and passes ARIMA_TEST_DATABASE_URL (moved from WP-210)"
       - "hardening found by the J-agent:developer and J-agent:tech-lead judges: criteria_map covers every AC at collection and evidence paths are resolved before publish; a re-review must resolve earlier blockers with evidence; the review packet carries the CI check summary; reads of .github/, arima.yaml and team.yaml are blocked for developer, qa and tech-lead; package.json scripts and playwright.config.* are protected from developer edits; an attempt cap and a fix unit for a preview that keeps failing; the host git credential helper is closed until WP-190"
+      - "QA hardening found by the J-agent:qa judge: evidence paths resolved against the QA worktree and the TC id must exist; a host-side count of failing runs for the S1 or S2 rule and the same rule for findings posted to the pull request and for sandbox imports; the Docker sandbox clone re-sparsed to QA_SPARSE and QA given no ARIMA_PROJECT_DIR; shared test helpers outside tests/e2e protected from the developer; the qa tip also in the event log; bug evidence copied to .arima/evidence/<run_id> before the worktree is removed; a qa run takes its runner script from the QA branch only"
     tests:
       - evals/run
   - id: WP-216
