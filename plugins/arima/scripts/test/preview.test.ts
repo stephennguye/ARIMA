@@ -278,3 +278,16 @@ describe('sweepPreviews: a merged, accepted, released or cancelled story keeps n
     expect(previewOf(a.dir, 7)).toBeDefined();
   });
 });
+
+describe('previewHealthy is about one commit', () => {
+  it('a healthy preview of an older commit is not healthy for the branch head', async () => {
+    const a = app();
+    const f = fake();
+    await ensurePreviews(settings(a.dir), [item], deps(f));
+    const head = branchSha(a.dir, 'feat/US-12-x') as string;
+    expect(previewHealthy(a.dir, 7, head)).toBe(true);
+    expect(previewHealthy(a.dir, 7, 'deadbeef'.repeat(5))).toBe(false);
+    expect(previewHealthy(a.dir, 99, head)).toBe(false);
+    expect(previewHealthy(a.dir, 7)).toBe(true);
+  });
+});

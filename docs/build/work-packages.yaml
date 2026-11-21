@@ -741,7 +741,7 @@ packages:
   - id: WP-218
     stage: 2
     track: agent
-    status: ready
+    status: done
     title: "Preview environment per PR (or a QA environment): deploy, URL in the work unit, smoke request; owned by devops"
     deps:
       - WP-213

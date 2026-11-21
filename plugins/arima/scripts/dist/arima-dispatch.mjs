@@ -28438,15 +28438,42 @@ async function runDispatch(o) {
             prItems[e.data["pr"]] = e.item;
         await sweepPreviews(s, prItems, currentStatus2, d.envDeps ?? { env });
         for (const r of await ensurePreviews(s, inReviewWithPr2(), d.envDeps ?? { env }))
-          if (r.result === "failed")
+          if (r.result === "failed") {
+            await askAboutFailedPreview(r.item, r.pr, r.error ?? "");
             res.warnings.push(
               `preview of ${r.item} (PR #${r.pr}) failed: ${r.error ?? ""}`.slice(0, 300)
             );
+          }
       } catch (e) {
         res.warnings.push(
           `previews could not be refreshed: ${e instanceof Error ? e.message.slice(0, 160) : String(e)}`
         );
       }
+    }
+    async function askAboutFailedPreview(item, pr, error) {
+      const sha = branchSha(o.projectDir, branchFor(item, titleOf2(item))) ?? "unknown";
+      const topic = `preview-${pr}@${sha.slice(0, 8)}`;
+      if (Object.values(readQuestions(o.projectDir)).some((q) => q.topic === topic)) return;
+      await raiseQuestions({
+        projectDir: o.projectDir,
+        runId,
+        role: "devops",
+        item,
+        policy: cfg.autonomy.question_policy,
+        now,
+        questions: [
+          {
+            question: `The preview of ${item} (PR #${pr}) did not answer its smoke request (${error.slice(0, 300)}), so the story stays In Review. A devops diagnosis follows.`,
+            options: [
+              { label: "Wait for the developer to fix it", recommendation: true },
+              { label: "I will look at it myself", recommendation: false }
+            ],
+            blocking: false,
+            default: "Wait for the developer to fix it",
+            topic
+          }
+        ]
+      });
     }
     async function removeMergedPreview(pr) {
       const s = envSettings2();
