@@ -54,7 +54,7 @@ import { postReview, publishBranch } from './publish.js';
 import type { GhRunner } from './publish.js';
 import { planDay, storiesFromMirror } from './queue.js';
 import type { PlanLimits, PlannedUnit, StoryFacts } from './queue.js';
-import { expireQuestions, raiseQuestions } from './questions.js';
+import { expireQuestions, raiseQuestions, readQuestions } from './questions.js';
 import type { QuestionPolicy } from './questions.js';
 import type { AgentReport } from './report.js';
 import { releaseRunLock } from './runlock.js';
@@ -737,15 +737,43 @@ export async function runDispatch(o: DispatchOptions): Promise<DispatchResult> {
             prItems[e.data['pr'] as number] = e.item;
         await sweepPreviews(s, prItems, currentStatus, d.envDeps ?? { env });
         for (const r of await ensurePreviews(s, inReviewWithPr(), d.envDeps ?? { env }))
-          if (r.result === 'failed')
+          if (r.result === 'failed') {
+            await askAboutFailedPreview(r.item, r.pr, r.error ?? '');
             res.warnings.push(
               `preview of ${r.item} (PR #${r.pr}) failed: ${r.error ?? ''}`.slice(0, 300),
             );
+          }
       } catch (e) {
         res.warnings.push(
           `previews could not be refreshed: ${e instanceof Error ? e.message.slice(0, 160) : String(e)}`,
         );
       }
+    }
+    /** One non-blocking question per failed preview (and commit): the story stays In Review and a diagnosis follows. */
+    async function askAboutFailedPreview(item: string, pr: number, error: string): Promise<void> {
+      const sha = branchSha(o.projectDir, branchFor(item, titleOf(item))) ?? 'unknown';
+      const topic = `preview-${pr}@${sha.slice(0, 8)}`;
+      if (Object.values(readQuestions(o.projectDir)).some((q) => q.topic === topic)) return;
+      await raiseQuestions({
+        projectDir: o.projectDir,
+        runId,
+        role: 'devops',
+        item,
+        policy: cfg.autonomy.question_policy,
+        now,
+        questions: [
+          {
+            question: `The preview of ${item} (PR #${pr}) did not answer its smoke request (${error.slice(0, 300)}), so the story stays In Review. A devops diagnosis follows.`,
+            options: [
+              { label: 'Wait for the developer to fix it', recommendation: true },
+              { label: 'I will look at it myself', recommendation: false },
+            ],
+            blocking: false,
+            default: 'Wait for the developer to fix it',
+            topic,
+          },
+        ],
+      });
     }
     function failingPreviewItems(): { item: string; pr: number }[] {
       const failed = failedPreviews(o.projectDir);

@@ -688,6 +688,12 @@ describe('previews of stories In Review (WP-218)', () => {
     await w.pull();
     await runDispatch(w.opts({ deps: deps() }));
     expect(statuses(w.dir)).toEqual(['In Progress', 'In Review']);
+    // One assumed answer with a veto box for this failed preview (question policy assume_and_log), not one per day.
+    const asked = readEvents(w.dir).filter(
+      (e) => e.type === 'question.raised' && e.data?.['blocking'] === false,
+    );
+    expect(asked).toHaveLength(1);
+    expect(readEvents(w.dir).filter((e) => e.type === 'decision.made')).toHaveLength(1);
   });
 
   it('a story without any Compose file is not held for a preview (Phase 3 not done)', async () => {

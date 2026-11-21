@@ -71,7 +71,7 @@ interface Ctx {
 /** Checks every scenario shares: a valid report, the card's deterministic graders, cost. */
 async function common(c: Ctx, role: 'devops', kind: 'env-plan' | 'deploy-staging' | 'preview-diagnose'): Promise<string[]> {
   const p: string[] = [];
-  const collected = await collectReport({ projectDir: c.dir, runId: c.run.packetRunId, role, kind, item: 'none', message: c.run.message });
+  const collected = await collectReport({ projectDir: c.dir, runId: c.run.packetRunId, role, kind, item: kind === 'preview-diagnose' ? 'US-12' : 'none', message: c.run.message });
   if (!collected.ok) p.push(`report: ${collected.errors.join('; ')}`);
   p.push(...gradeDevopsRun(c.dir, c.base, { runId: c.run.runId }).map((f) => `${f.grader}: ${f.detail}`));
   if (c.run.exit !== 0) p.push(`exit ${c.run.exit}`);
