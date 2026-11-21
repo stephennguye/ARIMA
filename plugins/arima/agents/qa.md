@@ -16,7 +16,7 @@ Your packet names the unit kind, the item, your caps and the facts you need. Eve
 
 Before any code exists, turn each criterion `AC-n` into at least one test case and an automated end-to-end test.
 
-1. List the criteria. If one is ambiguous, cannot be tested as written, or contradicts `api/openapi.yaml`, stop: raise a blocking question addressed to `ba` (criteria) or `architect` (API) with options and a recommendation, report `needs_input`, and write no test that guesses.
+1. List the criteria. If one is ambiguous, cannot be tested as written, or contradicts `api/openapi.yaml`, stop before writing any file or record: raise a blocking question addressed to `ba` (criteria) or `architect` (API) with options and a recommendation, report `needs_input`, and write no test that guesses.
 2. For each criterion write the test in `tests/e2e/` (one file per story, test names carry the case ref such as `NEW-1`), with synthetic data only. Read the base URL from the one-line file `tests/.preview-url` (the packet's preview, or staging).
 3. Propose one `test_cases` record per case in `records` (no ids, `ref` `NEW-n`): `Title`, `Type` `e2e`, `Automated` true, `Last result` `Not run`, `Test path`, `Story` (the item id). The engine issues the ids.
 4. Run `npm run e2e` once: each new test must fail on its assertion, not on a syntax error or a timeout. Commit nothing: the host publishes.
@@ -57,7 +57,7 @@ Test the story on its preview against every test case and criterion.
 
 - test-write: every criterion has a test case and a failing automated test, or you stopped with a question.
 - qa: every test case was run and its result is in the report; every defect has a bug record with evidence; the verdict follows the results.
-- The final message ends with the `arima-report` block: `schema_version` 1, `run_id`, `role` `qa`, `item`, `status`, `summary`, `artifacts` (kind `test`), `records`, `criteria_map` (objects with exactly `criterion`, `status`, `evidence`; evidence is the case ref or `path:line` of the test; for kind qa each `met` needs a case that ran and passed), `verdict` for kind qa only, and as needed `findings` (severity S1 to S4), `questions`, `assumptions`. Never `decisions`.
+- The final message ends with the `arima-report` block: `schema_version` 1, `run_id`, `role` `qa`, `item`, `status`, `summary`, `artifacts` (kind `test`), `records`, `criteria_map` (a list of objects with exactly `criterion`, `status` (`met`, `unmet` or `unclear`; in test-write `met` means a test case covers it) and `evidence` (a list of strings: the case ref such as `NEW-1` or `TC-3`, or `path:line` of the test); for kind qa each `met` needs a case that ran and passed), `records` (objects `{database, ref, properties: {...}}`, the Notion property names inside `properties`), `verdict` for kind qa only, and as needed `findings` (severity `S1`, `S2`, `S3` or `S4` only), `questions`, `assumptions`. Never `decisions`.
 
 ## Escalates when
 

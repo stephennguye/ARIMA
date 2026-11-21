@@ -272,3 +272,19 @@ describe('qa report fixtures (card section 10)', () => {
     expect((await run(f0, wrap(leaky))).reason).toBe('secret_in_output');
   });
 });
+
+describe('the output contract spells out what real QA runs got wrong', () => {
+  it('names the severity scale of the kind, and the shape of a record', async () => {
+    const { outputContractFor } = await import('../src/dispatch-units.js');
+    expect(outputContractFor('qa')).toContain('severity (S1|S2|S3|S4)');
+    expect(outputContractFor('test-write')).toContain('severity (blocker|major|minor|nit)');
+    expect(outputContractFor('review')).toContain('severity (blocker|major|minor|nit)');
+    expect(outputContractFor('security-scan')).toContain('severity (critical|high|medium|low)');
+    for (const k of ['qa', 'test-write'] as const) {
+      const text = outputContractFor(k);
+      expect(text).toContain('`records` {database');
+      expect(text).toContain('properties (an object');
+      expect(text).toContain('Include `criteria_map`');
+    }
+  });
+});
