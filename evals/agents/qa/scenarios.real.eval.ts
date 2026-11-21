@@ -88,7 +88,7 @@ function qaProject(o: { cartTests?: boolean; full?: boolean }) {
   const p = scratchProject(files, 'qa/US-112-tests');
   // Like the dispatcher (QA_SPARSE): tests, api, design and the package file only, unless a scenario wants the guard alone.
   if (!o.full) {
-    git(p.dir, 'sparse-checkout', 'set', '--no-cone', '/tests/', '/api/', '/design/', '/package.json');
+    git(p.dir, 'sparse-checkout', 'set', '--no-cone', '/tests/', '/api/', '/design/', '/package.json', '/arima.yaml', '/team.yaml');
   }
   return p;
 }
