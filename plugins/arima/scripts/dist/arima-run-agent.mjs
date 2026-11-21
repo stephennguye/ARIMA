@@ -18702,6 +18702,15 @@ var GIT_READ = [
   ...bash("git branch --list"),
   ...bash("git fetch")
 ];
+var QA_READS = [
+  "./tests/**",
+  "./api/**",
+  "./design/**",
+  "./package.json",
+  "./package-lock.json",
+  "./playwright.config.*",
+  "./tsconfig*.json"
+];
 var NPM_TEST = [...bash("npm test"), ...bash("npm run"), ...bash("npm ci")];
 function allowedTools(role, scriptsDir, kind) {
   const read = ["Read", "Glob", "Grep"];
@@ -18793,13 +18802,12 @@ function allowedTools(role, scriptsDir, kind) {
       ];
     case "qa":
       return [
-        ...read,
+        ...QA_READS.map((p) => `Read(${p})`),
+        "Glob",
+        "Grep",
         "Write(./tests/**)",
         "Edit(./tests/**)",
-        OUTBOX,
-        ...NPM_TEST,
-        ...bash("npx playwright"),
-        "mcp__playwright__*"
+        ...NPM_TEST
       ];
     case "security":
       return [...read, OUTBOX, ...GIT_READ, ...bash("npm audit"), "WebFetch"];
@@ -18877,6 +18885,14 @@ function deniedTools(role, kind) {
     "Read(~/.config/arima/**)"
   ];
   if (role !== "devops") out.push("Edit(./.github/**)", "Write(./.github/**)");
+  if (role === "qa")
+    out.push(
+      "Read(./src/**)",
+      "Read(./.arima/**)",
+      "Read(./docs/**)",
+      "Read(./.github/**)",
+      "Read(./.git/**)"
+    );
   if (role === "developer")
     out.push("Edit(./tests/e2e/**)", "Write(./tests/e2e/**)", "MultiEdit(./tests/e2e/**)");
   return out;
@@ -19791,7 +19807,13 @@ var CRITERIA_REQUIRED = [
   ["developer", "develop"],
   ["qa", "qa"]
 ];
-var CRITERIA_OPTIONAL = ["skeleton", "fix", "hotfix", "regression"];
+var CRITERIA_OPTIONAL = [
+  "skeleton",
+  "fix",
+  "hotfix",
+  "regression",
+  "test-write"
+];
 var VERDICT_REQUIRED = {
   review: ["approve", "changes_requested"],
   "adr-review": ["approve", "changes_requested"],
@@ -19831,7 +19853,7 @@ function checkReport(report, ctx) {
     ([role, kind]) => role === ctx.role && kind === ctx.kind
   );
   const mayHaveCriteria = needsCriteria || CRITERIA_OPTIONAL.includes(ctx.kind);
-  if (needsCriteria && (r.criteria_map === void 0 || r.criteria_map.length === 0)) {
+  if (needsCriteria && r.status === "done" && (r.criteria_map === void 0 || r.criteria_map.length === 0)) {
     errors.push(`criteria_map: required for ${ctx.role} ${ctx.kind} units`);
   }
   if (!mayHaveCriteria && r.criteria_map !== void 0) {
@@ -19869,6 +19891,22 @@ function checkReport(report, ctx) {
           errors.push(
             `criteria_map: evidence "${ev.slice(0, 40)}" is not file:line, a test case id or a bug id`
           );
+    }
+  }
+  if (ctx.role === "qa") {
+    if ((r.decisions ?? []).length > 0)
+      errors.push(
+        "decisions: a QA run records no decisions (architecture and design are not QA's)"
+      );
+    if (r.status === "done") {
+      for (const c of r.criteria_map ?? [])
+        if (c.status === "met") {
+          for (const ev of c.evidence)
+            if (!EVIDENCE_SHAPE.test(ev.trim()) && !/^NEW-[0-9]+$/.test(ev.trim()) && !/^tests\/\.evidence\/\S+$/.test(ev.trim()))
+              errors.push(
+                `criteria_map: evidence "${ev.slice(0, 40)}" is not a TC id, path:line or tests/.evidence path`
+              );
+        }
     }
   }
   if (r.status === "needs_input" && (r.questions ?? []).length === 0)

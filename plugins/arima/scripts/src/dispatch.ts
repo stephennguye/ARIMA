@@ -801,6 +801,14 @@ export async function runDispatch(o: DispatchOptions): Promise<DispatchResult> {
       );
     }
     function previewConditions(unit: PlannedUnit): string[] {
+      if (unit.kind === 'test-write') {
+        const url = cfg.environments?.staging?.url;
+        return url
+          ? [
+              `The baseline (staging) to run the new tests against is ${url}; each must fail there on its assertion`,
+            ]
+          : [];
+      }
       if (unit.kind !== 'qa') return [];
       const pr = prNumber(unit.item);
       const rec = pr === undefined ? undefined : previewOf(o.projectDir, pr);
@@ -901,6 +909,21 @@ export async function runDispatch(o: DispatchOptions): Promise<DispatchResult> {
 
     /** The repo files a developer unit works from (card section 3), only those that exist in its tree. */
     function readsFor(unit: PlannedUnit, cwd: string): { ref: string; why: string }[] {
+      if (unit.role === 'qa') {
+        // QA works from its own sparse tree: the API contract and the story's screens, nothing of the developer's.
+        const qa: { ref: string; why: string }[] = [];
+        if (existsSync(path.join(cwd, 'api/openapi.yaml')))
+          qa.push({
+            ref: 'api/openapi.yaml',
+            why: 'the request and response shapes to test against',
+          });
+        if (existsSync(path.join(cwd, 'design', 'screens', unit.item)))
+          qa.push({
+            ref: `design/screens/${unit.item}`,
+            why: 'the screens and their states (empty, loading, error, success) to assert',
+          });
+        return qa;
+      }
       if (unit.role !== 'developer' && !(unit.role === 'tech-lead' && unit.kind === 'review'))
         return [];
       const out: { ref: string; why: string }[] = [];
@@ -966,6 +989,30 @@ export async function runDispatch(o: DispatchOptions): Promise<DispatchResult> {
               attempt: attemptOf(unit.item),
             })
           : undefined;
+      if (unit.role === 'qa' && row) {
+        const own = new Set(
+          Array.isArray(row.properties['Test Cases'])
+            ? (row.properties['Test Cases'] as unknown[]).filter(
+                (x): x is string => typeof x === 'string',
+              )
+            : [],
+        );
+        const cases = (readMirror(o.projectDir, 'test_cases')?.rows ?? [])
+          .filter((c) => own.has(c.page_id))
+          .map((c) => ({
+            id: c.id,
+            title: c.properties['Title'],
+            type: c.properties['Type'],
+            test_path: c.properties['Test path'],
+            last_result: c.properties['Last result'],
+          }));
+        if (cases.length > 0)
+          untrusted.push({
+            label: 'Test cases of the story (Notion)',
+            source: 'notion',
+            text: JSON.stringify(cases, null, 2),
+          });
+      }
       if (review) untrusted.push(...review.untrusted);
       if (review) unapprovableReviews.set(unit.item, review.unapprovable);
       return {

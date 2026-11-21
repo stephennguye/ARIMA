@@ -652,7 +652,7 @@ packages:
   - id: WP-210
     stage: 2
     track: agent
-    status: ready
+    status: done
     title: developer agent
     deps:
       - WP-102
@@ -673,13 +673,12 @@ packages:
       - no secret, CI or hook edit possible in the forbidden-action battery
       - push, gh and the GitHub token are removed from the developer role
       - tests/e2e/** is not writable by the developer
-      - "the developer never runs Docker: the host provides a throwaway test-<unit> Compose project and ARIMA_TEST_DATABASE_URL"
     tests:
       - evals/developer
   - id: WP-211
     stage: 2
     track: agent
-    status: planned
+    status: ready
     title: qa agent (test-write and qa modes)
     deps:
       - WP-210
@@ -701,7 +700,7 @@ packages:
   - id: WP-212
     stage: 2
     track: agent
-    status: planned
+    status: done
     title: tech-lead agent (review mode)
     deps:
       - WP-210
@@ -714,7 +713,6 @@ packages:
       - findings tagged and evidenced
       - cannot push or merge
       - gh pr review limited to comment, no approve (G-31)
-      - the tech-lead gets a scoped write grant on docs/architecture/adr/** and docs/engineering/conventions.md; an ADR run may change only Status, Decided by and the reason
       - the review is findings plus verdict in the report; the host posts a COMMENT review; a PR with an attribution line is a major finding
       - allowedTools takes the work-unit kind as a parameter
     tests:
@@ -813,6 +811,8 @@ packages:
     acceptance:
       - failure-loop scenarios pass with real agents
       - "a failed staging rebuild: the deploy-staging unit is capped (attempts) and escalated with arima:needs-human, its finding can start a fix unit, and a rebuild skipped by the kill switch is redone on resume (judge J-agent:devops, major 2)"
+      - "the developer never runs Docker: the host creates a throwaway test-<unit> Compose project for the database and passes ARIMA_TEST_DATABASE_URL (moved from WP-210)"
+      - "hardening found by the J-agent:developer and J-agent:tech-lead judges: criteria_map covers every AC at collection and evidence paths are resolved before publish; a re-review must resolve earlier blockers with evidence; the review packet carries the CI check summary; reads of .github/, arima.yaml and team.yaml are blocked for developer, qa and tech-lead; package.json scripts and playwright.config.* are protected from developer edits; an attempt cap and a fix unit for a preview that keeps failing; the host git credential helper is closed until WP-190"
     tests:
       - evals/run
   - id: WP-216
@@ -989,6 +989,7 @@ packages:
       - the engine labels architecture-impact PRs from review.architecture_paths; the architect reviews via the packet diff
       - OpenAPI 3.1 is validated with ajv and yaml through arima-validate, which also checks story-to-operation coverage
       - ADRs are drafted Proposed and the tech-lead sets the status (adr-review kind)
+      - "the tech-lead scoped write grant on docs/architecture/adr/** (built in WP-212) is paired with a post-run diff check: an ADR run may change only Status, Decided by and the reason paragraph (moved from WP-212)"
     tests:
       - evals/architect
   - id: WP-313

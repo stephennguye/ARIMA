@@ -19638,6 +19638,15 @@ var GIT_READ = [
   ...bash("git branch --list"),
   ...bash("git fetch")
 ];
+var QA_READS = [
+  "./tests/**",
+  "./api/**",
+  "./design/**",
+  "./package.json",
+  "./package-lock.json",
+  "./playwright.config.*",
+  "./tsconfig*.json"
+];
 var NPM_TEST = [...bash("npm test"), ...bash("npm run"), ...bash("npm ci")];
 function allowedTools(role, scriptsDir, kind) {
   const read = ["Read", "Glob", "Grep"];
@@ -19729,13 +19738,12 @@ function allowedTools(role, scriptsDir, kind) {
       ];
     case "qa":
       return [
-        ...read,
+        ...QA_READS.map((p) => `Read(${p})`),
+        "Glob",
+        "Grep",
         "Write(./tests/**)",
         "Edit(./tests/**)",
-        OUTBOX,
-        ...NPM_TEST,
-        ...bash("npx playwright"),
-        "mcp__playwright__*"
+        ...NPM_TEST
       ];
     case "security":
       return [...read, OUTBOX, ...GIT_READ, ...bash("npm audit"), "WebFetch"];
@@ -19813,6 +19821,14 @@ function deniedTools(role, kind) {
     "Read(~/.config/arima/**)"
   ];
   if (role !== "devops") out.push("Edit(./.github/**)", "Write(./.github/**)");
+  if (role === "qa")
+    out.push(
+      "Read(./src/**)",
+      "Read(./.arima/**)",
+      "Read(./docs/**)",
+      "Read(./.github/**)",
+      "Read(./.git/**)"
+    );
   if (role === "developer")
     out.push("Edit(./tests/e2e/**)", "Write(./tests/e2e/**)", "MultiEdit(./tests/e2e/**)");
   return out;
@@ -23576,7 +23592,13 @@ var CRITERIA_REQUIRED = [
   ["developer", "develop"],
   ["qa", "qa"]
 ];
-var CRITERIA_OPTIONAL = ["skeleton", "fix", "hotfix", "regression"];
+var CRITERIA_OPTIONAL = [
+  "skeleton",
+  "fix",
+  "hotfix",
+  "regression",
+  "test-write"
+];
 var VERDICT_REQUIRED = {
   review: ["approve", "changes_requested"],
   "adr-review": ["approve", "changes_requested"],
@@ -23616,7 +23638,7 @@ function checkReport(report, ctx) {
     ([role, kind]) => role === ctx.role && kind === ctx.kind
   );
   const mayHaveCriteria = needsCriteria || CRITERIA_OPTIONAL.includes(ctx.kind);
-  if (needsCriteria && (r.criteria_map === void 0 || r.criteria_map.length === 0)) {
+  if (needsCriteria && r.status === "done" && (r.criteria_map === void 0 || r.criteria_map.length === 0)) {
     errors.push(`criteria_map: required for ${ctx.role} ${ctx.kind} units`);
   }
   if (!mayHaveCriteria && r.criteria_map !== void 0) {
@@ -23654,6 +23676,22 @@ function checkReport(report, ctx) {
           errors.push(
             `criteria_map: evidence "${ev.slice(0, 40)}" is not file:line, a test case id or a bug id`
           );
+    }
+  }
+  if (ctx.role === "qa") {
+    if ((r.decisions ?? []).length > 0)
+      errors.push(
+        "decisions: a QA run records no decisions (architecture and design are not QA's)"
+      );
+    if (r.status === "done") {
+      for (const c of r.criteria_map ?? [])
+        if (c.status === "met") {
+          for (const ev of c.evidence)
+            if (!EVIDENCE_SHAPE.test(ev.trim()) && !/^NEW-[0-9]+$/.test(ev.trim()) && !/^tests\/\.evidence\/\S+$/.test(ev.trim()))
+              errors.push(
+                `criteria_map: evidence "${ev.slice(0, 40)}" is not a TC id, path:line or tests/.evidence path`
+              );
+        }
     }
   }
   if (r.status === "needs_input" && (r.questions ?? []).length === 0)
@@ -27997,6 +28035,12 @@ async function runDispatch(o) {
         branchSha(o.projectDir, branchFor(item, titleOf2(item)))
       );
     }, previewConditions2 = function(unit) {
+      if (unit.kind === "test-write") {
+        const url2 = cfg.environments?.staging?.url;
+        return url2 ? [
+          `The baseline (staging) to run the new tests against is ${url2}; each must fail there on its assertion`
+        ] : [];
+      }
       if (unit.kind !== "qa") return [];
       const pr = prNumber2(unit.item);
       const rec = pr === void 0 ? void 0 : previewOf(o.projectDir, pr);
@@ -28024,6 +28068,20 @@ async function runDispatch(o) {
       const b = branchFor(item, titleOf2(item));
       return branchExists(o.projectDir, b) ? b : void 0;
     }, readsFor2 = function(unit, cwd) {
+      if (unit.role === "qa") {
+        const qa = [];
+        if (existsSync29(path38.join(cwd, "api/openapi.yaml")))
+          qa.push({
+            ref: "api/openapi.yaml",
+            why: "the request and response shapes to test against"
+          });
+        if (existsSync29(path38.join(cwd, "design", "screens", unit.item)))
+          qa.push({
+            ref: `design/screens/${unit.item}`,
+            why: "the screens and their states (empty, loading, error, success) to assert"
+          });
+        return qa;
+      }
       if (unit.role !== "developer" && !(unit.role === "tech-lead" && unit.kind === "review"))
         return [];
       const out = [];
@@ -28076,6 +28134,26 @@ async function runDispatch(o) {
         priorFindings: lastReportOf2(unit.item, "review")?.findings,
         attempt: attemptOf2(unit.item)
       }) : void 0;
+      if (unit.role === "qa" && row) {
+        const own = new Set(
+          Array.isArray(row.properties["Test Cases"]) ? row.properties["Test Cases"].filter(
+            (x) => typeof x === "string"
+          ) : []
+        );
+        const cases = (readMirror(o.projectDir, "test_cases")?.rows ?? []).filter((c) => own.has(c.page_id)).map((c) => ({
+          id: c.id,
+          title: c.properties["Title"],
+          type: c.properties["Type"],
+          test_path: c.properties["Test path"],
+          last_result: c.properties["Last result"]
+        }));
+        if (cases.length > 0)
+          untrusted.push({
+            label: "Test cases of the story (Notion)",
+            source: "notion",
+            text: JSON.stringify(cases, null, 2)
+          });
+      }
       if (review) untrusted.push(...review.untrusted);
       if (review) unapprovableReviews.set(unit.item, review.unapprovable);
       return {

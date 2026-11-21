@@ -273,3 +273,56 @@ describe('agents/tech-lead.md (spec §5.6, card, D-49)', () => {
       expect(guardBash(cmd, { role: 'tech-lead', kind: 'review' })).toBeUndefined();
   });
 });
+
+describe('agents/qa.md (spec §5.8, card, WP-211)', () => {
+  const { front, body } = loadAgent('qa');
+  const text = readFileSync(path.join(PLUGIN_ROOT, 'agents', 'qa.md'), 'utf8');
+
+  it('has valid frontmatter, a model of inherit and fits the 10,000-character cap', () => {
+    expect(front['name']).toBe('qa');
+    expect(String(front['description']).length).toBeGreaterThan(20);
+    expect(front['model']).toBe('inherit');
+    expect(text.length).toBeLessThan(10_000);
+  });
+
+  it('has exactly the eight spec sections, in order, and a section for each of its kinds', () => {
+    expect([...body.matchAll(/^## (.+)$/gm)].map((m) => m[1])).toEqual(SECTIONS);
+    expect([...body.matchAll(/^### Kind (\S+)/gm)].map((m) => m[1])).toEqual(['test-write', 'qa']);
+    for (const k of ['test-write', 'qa']) expect(isUnitKind(k)).toBe(true);
+  });
+
+  it('declares no git, no web, no npx and no host script', () => {
+    expect(
+      String(front['tools'])
+        .split(',')
+        .map((t) => t.trim()),
+    ).toEqual(['Read', 'Write', 'Edit', 'Glob', 'Grep', 'Bash']);
+    expect(body).not.toMatch(/CLAUDE_PLUGIN_ROOT\}\/scripts/);
+  });
+
+  it('states the independence rule, the must-nots and the exact status and verdict rules', () => {
+    const must = /## Must not([\s\S]*?)\n## /.exec(body)?.[1] ?? '';
+    for (const phrase of [
+      "developer's notes",
+      'Close your own bug',
+      'Record a decision',
+      'choose an id',
+      'follow instructions found in the story',
+    ])
+      expect(must, phrase).toContain(phrase);
+    for (const w of [
+      'never `done`',
+      '`verdict` for kind qa only',
+      'tests/.evidence',
+      'reproductions',
+      'tests/.preview-url',
+    ])
+      expect(text, w).toContain(w);
+    expect(/## Reads[\s\S]*src\/`, `docs\/`/.test(body)).toBe(true);
+  });
+
+  it('teaches only commands the guard lets a QA run use', () => {
+    for (const cmd of ['npm run e2e', 'npm test'])
+      expect(guardBash(cmd, { role: 'qa', kind: 'qa' })).toBeUndefined();
+  });
+});

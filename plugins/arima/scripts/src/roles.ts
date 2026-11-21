@@ -40,6 +40,17 @@ const GIT_READ = [
   ...bash('git fetch'),
 ];
 
+/** What a QA run may read (path-scoped, WP-211); src, docs, .arima, .github and git history are not among them. */
+export const QA_READS: readonly string[] = [
+  './tests/**',
+  './api/**',
+  './design/**',
+  './package.json',
+  './package-lock.json',
+  './playwright.config.*',
+  './tsconfig*.json',
+];
+
 /** Running the app's own tests. No `npx` (it downloads and runs arbitrary packages). */
 const NPM_TEST = [...bash('npm test'), ...bash('npm run'), ...bash('npm ci')];
 
@@ -150,14 +161,17 @@ export function allowedTools(role: Role, scriptsDir: string, kind?: string): str
         // No WebFetch: spec 5.7 grants the developer no web access, and a fetch is an exfiltration channel.
       ];
     case 'qa':
+      // QA is independent of the developer (spec 5.8): it reads only the tests, the API contract, the
+      // screens and the package files (path-scoped), writes only tests/, proposes records in its report
+      // (no outbox), has no git, no gh, no web, and no npx (S17: the e2e runner is a pinned dev dependency
+      // run as `npm run e2e`; the Playwright MCP of the card is not built).
       return [
-        ...read,
+        ...QA_READS.map((p) => `Read(${p})`),
+        'Glob',
+        'Grep',
         'Write(./tests/**)',
         'Edit(./tests/**)',
-        OUTBOX,
         ...NPM_TEST,
-        ...bash('npx playwright'),
-        'mcp__playwright__*',
       ];
     case 'security':
       return [...read, OUTBOX, ...GIT_READ, ...bash('npm audit'), 'WebFetch'];
@@ -242,6 +256,14 @@ export function deniedTools(role?: Role, kind?: string): string[] {
     'Read(~/.config/arima/**)',
   ];
   if (role !== 'devops') out.push('Edit(./.github/**)', 'Write(./.github/**)');
+  if (role === 'qa')
+    out.push(
+      'Read(./src/**)',
+      'Read(./.arima/**)',
+      'Read(./docs/**)',
+      'Read(./.github/**)',
+      'Read(./.git/**)',
+    );
   // QA's end-to-end tests are not the developer's to weaken (card decision 7, WP-210).
   if (role === 'developer')
     out.push('Edit(./tests/e2e/**)', 'Write(./tests/e2e/**)', 'MultiEdit(./tests/e2e/**)');

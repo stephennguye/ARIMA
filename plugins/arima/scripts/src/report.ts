@@ -27,7 +27,13 @@ const CRITERIA_REQUIRED: readonly [Role, UnitKind][] = [
   ['qa', 'qa'],
 ];
 /** Where it is allowed but not required. `skeleton` has no acceptance criteria and is exempt. */
-const CRITERIA_OPTIONAL: readonly UnitKind[] = ['skeleton', 'fix', 'hotfix', 'regression'];
+const CRITERIA_OPTIONAL: readonly UnitKind[] = [
+  'skeleton',
+  'fix',
+  'hotfix',
+  'regression',
+  'test-write',
+];
 
 /** Kinds that must end in a verdict, and the results each may use. */
 const VERDICT_REQUIRED: Partial<Record<UnitKind, readonly string[]>> = {
@@ -86,7 +92,11 @@ export function checkReport(report: unknown, ctx: { role: Role; kind: UnitKind }
     ([role, kind]) => role === ctx.role && kind === ctx.kind,
   );
   const mayHaveCriteria = needsCriteria || CRITERIA_OPTIONAL.includes(ctx.kind);
-  if (needsCriteria && (r.criteria_map === undefined || r.criteria_map.length === 0)) {
+  if (
+    needsCriteria &&
+    r.status === 'done' &&
+    (r.criteria_map === undefined || r.criteria_map.length === 0)
+  ) {
     errors.push(`criteria_map: required for ${ctx.role} ${ctx.kind} units`);
   }
   if (!mayHaveCriteria && r.criteria_map !== undefined) {
@@ -130,6 +140,26 @@ export function checkReport(report: unknown, ctx: { role: Role; kind: UnitKind }
             `criteria_map: evidence "${ev.slice(0, 40)}" is not file:line, a test case id or a bug id`,
           );
     }
+  }
+  // QA proves, it does not decide (card 5): no decisions, and a criterion is met only with the id of a test
+  // case that ran, a path:line, or an evidence file under tests/.evidence.
+  if (ctx.role === 'qa') {
+    if ((r.decisions ?? []).length > 0)
+      errors.push(
+        "decisions: a QA run records no decisions (architecture and design are not QA's)",
+      );
+    if (r.status === 'done')
+      for (const c of r.criteria_map ?? [])
+        if (c.status === 'met')
+          for (const ev of c.evidence)
+            if (
+              !EVIDENCE_SHAPE.test(ev.trim()) &&
+              !/^NEW-[0-9]+$/.test(ev.trim()) &&
+              !/^tests\/\.evidence\/\S+$/.test(ev.trim())
+            )
+              errors.push(
+                `criteria_map: evidence "${ev.slice(0, 40)}" is not a TC id, path:line or tests/.evidence path`,
+              );
   }
   if (r.status === 'needs_input' && (r.questions ?? []).length === 0)
     errors.push('status: needs_input needs at least one question');

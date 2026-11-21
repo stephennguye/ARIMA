@@ -663,9 +663,26 @@ const NO_STATE_READ: ReadonlySet<string> = new Set(['developer', 'qa', 'tech-lea
 const stateReadReason = (role: string): string =>
   `a ${role} run reads nothing under .arima/: the run packet carries every input it needs`;
 
+/**
+ * QA independence (spec 5.8, WP-211): product source, the docs, ARIMA state, CI and git history hold the
+ * developer's reasoning, so a QA run names none of them in a file tool or a command.
+ */
+const QA_FORBIDDEN_SEGMENT = /(^|[\s\\/="':])(src|docs|\.arima|\.github|\.git)([\s\\/"';]|$)/i;
+const qaReason =
+  'a QA run reads only tests/, api/, design/ and the package files: never src, docs, .arima, .github or git history';
+
 export function guardBash(command: string, ctx: GuardContext = {}): Guard | undefined {
   const c = withoutMessages(command);
   const lc = c.toLowerCase();
+  if (ctx.role === 'qa' && QA_FORBIDDEN_SEGMENT.test(c.replace(/["']/g, '')))
+    return { rule: 'qa-independence', reason: qaReason };
+  if (ctx.role === 'qa')
+    for (const s of expandCommands(command))
+      if (headOf(s.words)?.head === 'git')
+        return {
+          rule: 'qa-independence',
+          reason: 'a QA run has no git: commit messages and history are the developer notes',
+        };
   if (ctx.role !== undefined) {
     // Quote-splitting (.e''nv) hides a path from a text match, so the same checks run on the dequoted
     // command and on every word as a path (judge J-agent:tech-lead, blocker 2).
@@ -918,6 +935,16 @@ export function guardTool(
       rule: 'outside-worktree',
       reason: 'a developer run writes only inside its own worktree',
     };
+  if (
+    ctx.role === 'qa' &&
+    FILE_TOOLS.has(tool) &&
+    ['path', 'file_path', 'glob', 'pattern'].some(
+      (k) =>
+        typeof input[k] === 'string' &&
+        QA_FORBIDDEN_SEGMENT.test(String(input[k]).replace(/["']/g, '')),
+    )
+  )
+    return { rule: 'qa-independence', reason: qaReason };
   if (
     ctx.cwd !== undefined &&
     ctx.role !== undefined &&

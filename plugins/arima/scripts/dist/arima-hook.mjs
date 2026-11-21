@@ -16123,9 +16123,21 @@ function guardQaTests(command) {
 var isReadOnlyKind = (ctx) => ctx.role === "devops" && (ctx.kind === "deploy-staging" || ctx.kind === "preview-diagnose") || ctx.role === "tech-lead" && ctx.kind === "review";
 var NO_STATE_READ = /* @__PURE__ */ new Set(["developer", "qa", "tech-lead"]);
 var stateReadReason = (role) => `a ${role} run reads nothing under .arima/: the run packet carries every input it needs`;
+var QA_FORBIDDEN_SEGMENT = /(^|[\s\\/="':])(src|docs|\.arima|\.github|\.git)([\s\\/"';]|$)/i;
+var qaReason = "a QA run reads only tests/, api/, design/ and the package files: never src, docs, .arima, .github or git history";
 function guardBash(command, ctx = {}) {
   const c = withoutMessages(command);
   const lc = c.toLowerCase();
+  if (ctx.role === "qa" && QA_FORBIDDEN_SEGMENT.test(c.replace(/["']/g, "")))
+    return { rule: "qa-independence", reason: qaReason };
+  if (ctx.role === "qa") {
+    for (const s of expandCommands(command))
+      if (headOf(s.words)?.head === "git")
+        return {
+          rule: "qa-independence",
+          reason: "a QA run has no git: commit messages and history are the developer notes"
+        };
+  }
   if (ctx.role !== void 0) {
     const plain = c.replace(/["'`]/g, "");
     if (plain !== c) {
@@ -16299,6 +16311,10 @@ function guardTool(tool, input, ctx = {}) {
       rule: "outside-worktree",
       reason: "a developer run writes only inside its own worktree"
     };
+  if (ctx.role === "qa" && FILE_TOOLS.has(tool) && ["path", "file_path", "glob", "pattern"].some(
+    (k) => typeof input[k] === "string" && QA_FORBIDDEN_SEGMENT.test(String(input[k]).replace(/["']/g, ""))
+  ))
+    return { rule: "qa-independence", reason: qaReason };
   if (ctx.cwd !== void 0 && ctx.role !== void 0 && NO_STATE_READ.has(ctx.role) && ["Read", "Glob", "Grep"].includes(tool) && ["path", "file_path", "pattern", "glob"].some((k) => {
     const v = input[k];
     return typeof v === "string" && (v.startsWith("~") || v.split(/[\\/]/).includes("..") || /^([A-Za-z]:[\\/]|\/)/.test(v)) && !insideDir(v, ctx.cwd);
