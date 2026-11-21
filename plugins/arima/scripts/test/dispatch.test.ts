@@ -411,6 +411,48 @@ describe('a day, in the order of the ten steps', () => {
     expect(r.exitCode).toBeLessThanOrEqual(4);
   });
 
+  it('an approve is not acted on when the diff holds a binary file the reviewer could not read (judge J-agent:tech-lead, major 3)', async () => {
+    const w = await world();
+    writeFileSync(path.join(w.stub, 'developer-develop.txt'), report());
+    writeFileSync(path.join(w.stub, 'developer-develop.commit'), '');
+    await runDispatch(w.opts());
+    await w.pull();
+    const green: GithubFacts = { ...noGithubFacts, prReady: () => Promise.resolve(true) };
+    await runDispatch(w.opts({ deps: w.deps({ github: green }) }));
+    // A file with NUL bytes lands on the story branch: git shows it as binary and counts no lines.
+    const branch = `feat/${w.story}-cart-summary`;
+    // The story branch is checked out in its own worktree: commit there.
+    const listing = git(w.dir, 'worktree', 'list', '--porcelain').split('\n\n');
+    const block = listing.find((x) => x.includes(`refs/heads/${branch}`)) ?? '';
+    const wt = /^worktree (.+)$/m.exec(block)?.[1] as string;
+    writeFileSync(path.join(wt, 'blob.js'), 'a\0b\0c\n');
+    git(wt, 'add', '-A');
+    git(
+      wt,
+      '-c',
+      'user.name=T',
+      '-c',
+      'user.email=t@example.com',
+      'commit',
+      '-q',
+      '-m',
+      `feat(${w.story}): blob`,
+    );
+    await w.pull();
+    writeFileSync(
+      path.join(w.stub, 'tech-lead-review.txt'),
+      `Reviewed.\n\n${FENCE}arima-report\n${JSON.stringify({ schema_version: 1, run_id: '__RUN_ID__', role: 'tech-lead', item: '__ITEM__', status: 'done', summary: 'Looks good.', verdict: { result: 'approve', reasons: ['ok'] } })}\n${FENCE}\n`,
+    );
+    const r = await runDispatch(w.opts({ deps: w.deps({ github: green }) }));
+    expect(r.warnings.join('\n')).toContain('the approve was not acted on');
+    expect(r.warnings.join('\n')).toContain('binary files');
+    expect(
+      readEvents(w.dir)
+        .filter((e) => e.type === 'item.status')
+        .map((e) => e.data?.['to']),
+    ).not.toContain('In QA');
+  });
+
   it('retries once on an invalid report (a fresh unit, two ledger rows); a second failure blocks the item with a question', async () => {
     const w = await world();
     writeFileSync(path.join(w.stub, 'developer-develop.1.txt'), 'no report at all');
@@ -431,6 +473,23 @@ describe('a day, in the order of the ten steps', () => {
     expect(r2.dispatched[0]).toMatchObject({ blocked: true });
     expect(readLedger(w2.dir).filter((x) => x.role === 'developer')).toHaveLength(2);
     expect(readEvents(w2.dir).some((e) => e.type === 'question.raised')).toBe(true);
+  });
+
+  it('a criterion met without evidence is rejected (evidence_missing), retried once, and a developer that repeats it blocks the story (WP-210)', async () => {
+    const w = await world();
+    writeFileSync(
+      path.join(w.stub, 'developer-develop.txt'),
+      report({ criteria_map: [{ criterion: 'AC-1', status: 'met', evidence: [] }] }),
+    );
+    writeFileSync(path.join(w.stub, 'developer-develop.commit'), '');
+    const r = await runDispatch(w.opts());
+    expect(r.dispatched[0]).toMatchObject({ blocked: true });
+    const rows = readLedger(w.dir).filter((x) => x.role === 'developer');
+    expect(rows.map((x) => [x.result, x.reason])).toEqual([
+      ['fail', 'evidence_missing'],
+      ['fail', 'evidence_missing'],
+    ]);
+    expect(readEvents(w.dir).some((e) => e.type === 'report.rejected')).toBe(true);
   });
 
   it('a usage-limit stop ends the dispatch for the day (exit 75), later units are not started, steps 8 to 10 still run', async () => {

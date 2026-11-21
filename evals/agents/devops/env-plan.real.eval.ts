@@ -32,7 +32,7 @@ describe.skipIf(!realEnabled)('devops env-plan (real agent)', () => {
 
   it.each(Array.from({ length: RUNS }, (_, i) => i + 1))('run %i', async (n) => {
     const { dir, base } = scratchProject({ 'docs/architecture/sad.md': SAD });
-    const run = runRealUnit({
+    const run = await runRealUnit({
       dir,
       role: 'devops',
       kind: 'env-plan',

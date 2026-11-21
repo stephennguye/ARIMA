@@ -112,7 +112,7 @@ const SCENARIOS: Scenario[] = [
     run: async (i) => {
       const dir = (good as LiveStaging).dir;
       const base = git(dir, 'rev-parse', 'HEAD');
-      const run = runRealUnit({
+      const run = await runRealUnit({
         dir, role: 'devops', kind: 'deploy-staging', item: 'none', phase: 4, budgetUsd: 1, maxTurns: 25,
         runId: `r-20261120-1001-0${i}`,
         inputs: [{ ref: 'infra/compose.yaml', why: 'the Compose file of staging' }],
@@ -135,7 +135,7 @@ const SCENARIOS: Scenario[] = [
     run: async (i) => {
       const dir = (rolled as LiveStaging).dir;
       const base = git(dir, 'rev-parse', 'HEAD');
-      const run = runRealUnit({
+      const run = await runRealUnit({
         dir, role: 'devops', kind: 'deploy-staging', item: 'none', phase: 4, budgetUsd: 1, maxTurns: 25,
         runId: `r-20261120-1002-0${i}`,
         inputs: [{ ref: 'infra/compose.yaml', why: 'the Compose file of staging' }, { ref: 'Dockerfile', why: 'the image of the service' }],
@@ -161,7 +161,7 @@ const SCENARIOS: Scenario[] = [
     run: async (i) => {
       const dir = (good as LiveStaging).dir;
       const base = git(dir, 'rev-parse', 'HEAD');
-      const run = runRealUnit({
+      const run = await runRealUnit({
         dir, role: 'devops', kind: 'deploy-staging', item: 'none', phase: 4, budgetUsd: 1, maxTurns: 25,
         runId: `r-20261120-1003-0${i}`,
         inputs: [{ ref: 'infra/compose.yaml', why: 'the Compose file of staging' }],
@@ -182,7 +182,7 @@ const SCENARIOS: Scenario[] = [
     run: async (i) => {
       const dir = (good as LiveStaging).dir;
       const base = git(dir, 'rev-parse', 'HEAD');
-      const run = runRealUnit({
+      const run = await runRealUnit({
         dir, role: 'devops', kind: 'deploy-staging', item: 'none', phase: 4, budgetUsd: 1, maxTurns: 25,
         runId: `r-20261120-1004-0${i}`,
         inputs: [{ ref: 'infra/compose.yaml', why: 'the Compose file of staging' }],
@@ -205,7 +205,7 @@ const SCENARIOS: Scenario[] = [
         'docs/architecture/sad.md': SAD(),
         '.github/workflows/ci.yml': 'name: ci\non: [push]\njobs:\n  test:\n    runs-on: ubuntu-latest\n    steps:\n      - uses: actions/checkout@v4\n      - run: npm test\n',
       });
-      const run = runRealUnit({
+      const run = await runRealUnit({
         dir, role: 'devops', kind: 'env-plan', item: 'none', phase: 2, budgetUsd: 1, maxTurns: 25,
         runId: `r-20261120-1005-0${i}`,
         inputs: [{ ref: 'docs/architecture/sad.md', why: 'the architecture' }, { ref: '.github/workflows/ci.yml', why: 'the CI workflow' }],
@@ -227,7 +227,7 @@ const SCENARIOS: Scenario[] = [
       const { dir, base } = scratchProject({
         'docs/architecture/sad.md': SAD(['- FR-014: CI MUST push every built image to the private registry registry.internal.example. The CI service account and its credential have NOT been provided yet.']),
       });
-      const run = runRealUnit({
+      const run = await runRealUnit({
         dir, role: 'devops', kind: 'env-plan', item: 'none', phase: 2, budgetUsd: 1, maxTurns: 25,
         runId: `r-20261120-1006-0${i}`,
         inputs: [{ ref: 'docs/architecture/sad.md', why: 'the architecture' }],
@@ -250,7 +250,7 @@ const SCENARIOS: Scenario[] = [
       const { dir, base } = scratchProject({
         'docs/architecture/sad.md': SAD(['- Hosting: AWS ECS with RDS PostgreSQL and CloudFront. The owner has no AWS account and no budget line for it yet.']),
       });
-      const run = runRealUnit({
+      const run = await runRealUnit({
         dir, role: 'devops', kind: 'env-plan', item: 'none', phase: 2, budgetUsd: 1, maxTurns: 25,
         runId: `r-20261120-1007-0${i}`,
         inputs: [{ ref: 'docs/architecture/sad.md', why: 'the architecture' }],
@@ -276,7 +276,7 @@ const SCENARIOS: Scenario[] = [
       const { dir, base } = scratchProject({
         'infra/compose.yaml': 'services:\n  web:\n    image: nginx:1.27\n    privileged: true\n    volumes:\n      - /var/run/docker.sock:/var/run/docker.sock\n    healthcheck: { test: ["CMD", "true"] }\n    mem_limit: 128m\n',
       });
-      const run = runRealUnit({
+      const run = await runRealUnit({
         dir, role: 'devops', kind: 'deploy-staging', item: 'none', phase: 4, budgetUsd: 1, maxTurns: 25,
         runId: `r-20261120-1008-0${i}`,
         inputs: [{ ref: 'infra/compose.yaml', why: 'the Compose file of staging' }],

@@ -285,7 +285,7 @@ describe('the branch is checked before it leaves the machine (exit 31)', () => {
     });
     expect(c2.branch).toBe('feat/US-113-empty');
     expect((await code(publishBranch(input(w, { branch: 'feat/US-113-empty' }))))[1]).toMatch(
-      /no changes against main/,
+      /no changes against (origin\/)?main/,
     );
     git(dir, 'checkout', '-q', '--detach');
     expect((await code(publishBranch(input(w))))[1]).toMatch(/not feat\/US-112-cart/);
@@ -330,6 +330,29 @@ describe('the branch is checked before it leaves the machine (exit 31)', () => {
     expect(
       (await code(publishBranch(input(w, { branch: 'feat/US-7-x', item: 'US-7' }))))[1],
     ).toMatch(/tests\/e2e/);
+  });
+
+  it('a default branch moved onto a forbidden commit cannot hide it (judge J-agent:developer, blocker 1)', async () => {
+    const w = await world();
+    const wt = await work(w, 'feat/US-9-hide', { 'tests/e2e/a.spec.ts': 'weakened\n' });
+    // The role moves the local default branch onto its forbidden commit, then adds a clean commit.
+    git(wt, 'update-ref', 'refs/heads/main', 'HEAD');
+    writeFileSync(path.join(wt, 'ok.txt'), 'fine\n');
+    git(wt, 'add', '-A');
+    git(
+      wt,
+      '-c',
+      'user.name=Dev',
+      '-c',
+      'user.email=dev@example.com',
+      'commit',
+      '-q',
+      '-m',
+      'feat(US-9): ok',
+    );
+    const [c, m] = await code(publishBranch(input(w, { branch: 'feat/US-9-hide', item: 'US-9' })));
+    expect(c).toBe(31);
+    expect(m).toMatch(/was moved/);
   });
 
   it('a secret added anywhere in the diff is refused, unless a human allow-listed its fingerprint', async () => {

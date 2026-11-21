@@ -19639,7 +19639,7 @@ var GIT_READ = [
   ...bash("git fetch")
 ];
 var NPM_TEST = [...bash("npm test"), ...bash("npm run"), ...bash("npm ci")];
-function allowedTools(role, scriptsDir) {
+function allowedTools(role, scriptsDir, kind) {
   const read = ["Read", "Glob", "Grep"];
   const nodeScript = (name, rest = "") => [
     ...bash(`node ${scriptsDir}/${name}.mjs${rest}`),
@@ -19694,8 +19694,26 @@ function allowedTools(role, scriptsDir) {
         OUTBOX,
         "WebFetch"
       ];
-    case "tech-lead":
-      return [...read, OUTBOX, ...GIT_READ, ...NPM_TEST, "WebFetch"];
+    case "tech-lead": {
+      const base = [...read, ...GIT_READ.filter((t3) => !t3.includes("git fetch"))];
+      if (kind === "adr-review")
+        return [
+          ...base,
+          "Edit(./docs/architecture/adr/**)",
+          ...bash("git add"),
+          ...bash("git commit")
+        ];
+      if (kind === "conventions")
+        return [
+          ...base,
+          "Write(./docs/engineering/**)",
+          "Edit(./docs/engineering/**)",
+          ...bash("git add"),
+          ...bash("git commit")
+        ];
+      if (kind === "deprecation-check") return [...base, "WebFetch"];
+      return base;
+    }
     case "developer":
       return [
         ...read,
@@ -19706,8 +19724,8 @@ function allowedTools(role, scriptsDir) {
         ...bash("git commit"),
         ...bash("git switch"),
         ...bash("git checkout"),
-        ...NPM_TEST,
-        "WebFetch"
+        ...NPM_TEST
+        // No WebFetch: spec 5.7 grants the developer no web access, and a fetch is an exfiltration channel.
       ];
     case "qa":
       return [
@@ -19755,7 +19773,8 @@ function allowedTools(role, scriptsDir) {
       ];
   }
 }
-function deniedTools(role) {
+function deniedTools(role, kind) {
+  void kind;
   const out = [
     "mcp__*notion*",
     "Read(./.env)",
@@ -19794,6 +19813,8 @@ function deniedTools(role) {
     "Read(~/.config/arima/**)"
   ];
   if (role !== "devops") out.push("Edit(./.github/**)", "Write(./.github/**)");
+  if (role === "developer")
+    out.push("Edit(./tests/e2e/**)", "Write(./tests/e2e/**)", "MultiEdit(./tests/e2e/**)");
   return out;
 }
 var githubTokenScope = () => "none";
@@ -21936,7 +21957,7 @@ function stagingFailing(projectDir) {
 }
 
 // plugins/arima/scripts/src/dispatch.ts
-import { execFileSync as execFileSync5 } from "node:child_process";
+import { execFileSync as execFileSync6 } from "node:child_process";
 import { createHash as createHash3 } from "node:crypto";
 import { existsSync as existsSync29, readFileSync as readFileSync28 } from "node:fs";
 import path38 from "node:path";
@@ -21999,7 +22020,7 @@ var REVIEW_KINDS = /* @__PURE__ */ new Set([
   "security-scan"
 ]);
 var TASKS = {
-  develop: "Implement exactly this one item on the branch in your worktree, to the Definition of Done. Write the code and its unit tests, commit with Conventional Commits using the item id as scope, and map every acceptance criterion to code and a test in `criteria_map` with evidence. Do not push and do not open a pull request: the host does that after you finish.",
+  develop: "Implement exactly this one item on the branch in your worktree, to the Definition of Done. First restate the acceptance criteria as AC-1..n; if one is ambiguous, untestable or contradicts the API spec, stop and ask (a question addressed to the ba or the architect) instead of guessing, and write no code. Otherwise write the code and its unit tests (tests first where there is logic), run the build, lint and tests, commit with Conventional Commits using the item id as scope, and map every acceptance criterion to code and a test in `criteria_map` with evidence. Never edit tests/e2e (QA owns it). Do not push and do not open a pull request: the host does that after you finish.",
   hotfix: "Fix this incident with the smallest safe change on the branch in your worktree, with a test that reproduces it. Commit with the item id as scope. The host pushes and opens the pull request.",
   fix: "Repair the broken build on the branch in your worktree with the smallest safe change. Commit with a conventional message that carries a task or run id.",
   "test-write": "Write the test cases and end-to-end tests for this story from its acceptance criteria, in `tests/` of your worktree, before any development. Propose each test case as a record in `records` (database `test_cases`); the engine issues the ids.",
@@ -22022,12 +22043,12 @@ ${extra}` : ""}`;
 }
 function outputContractFor(kind) {
   const verdict = REVIEW_KINDS.has(kind) ? " Include `verdict` (`result` and `reasons`)." : "";
-  const criteria = kind === "develop" || kind === "qa" ? " Include `criteria_map` (every criterion with `met`, `unmet` or `unclear` and evidence as `file:line` or a test case id; `met` needs evidence)." : "";
+  const criteria = kind === "develop" || kind === "qa" ? ' Include `criteria_map`: a list of objects {criterion (the criterion id and its text, for example "AC-1: the total is the sum of the lines"), status (`met`, `unmet` or `unclear`), evidence (a list of strings, each exactly `path:line` such as "src/cart.js:7", or a TC or BUG id, never a test name or a sentence; `met` needs at least one)}, one for every acceptance criterion.' : "";
   return [
     "End your final message with exactly one fenced block whose info string is `arima-report`, containing JSON:",
     "`schema_version` 1, `run_id` (the id in the title of this packet), `role`, `item`, `status` (`done`, `blocked`, `failed` or `needs_input`; when any question has `blocking` true the status MUST be `needs_input` or `blocked`, never `done`),`summary` (at most 600 characters), and as needed `artifacts`, `findings`, `questions`, `decisions`, `assumptions`, `records`." + criteria + verdict,
-    "Each of these is a list of objects, never plain strings: `artifacts` {path, kind (code|test|doc|design|api|infra), artifact_id?}; `findings` {severity (blocker|major|minor|nit), location (file:line), claim, evidence, recommendation}; `questions` {question, options [{label, recommendation (true|false)}] (1 to 6), blocking (true|false), hard_stop? (one of G0-G4, prod_deploy, secrets_change, budget_exceeded, story_budget, notion_delete, prod_data_migration, new_paid_service, licence, critical_finding, kill_switch, missing_credential: set it when the matter is one of these, with blocking true and no default), default? (what happens if nobody answers: required when blocking is false)}; `decisions` {summary, options_considered [strings], chosen, reversible (true|false), rationale}; `assumptions` {text, basis}. Use exactly the keys listed for each object and no others (an unknown key makes the whole report invalid).",
-    "Propose records without ids (use `NEW-1`, `NEW-2` ... to refer between them); the engine issues every id. Ask a question only for a hard-stop matter or a critical blocker; decide everything else and log it as a decision."
+    "Each of these is a list of objects, never plain strings: `artifacts` {path, kind (code|test|doc|design|api|infra), artifact_id?}; `findings` {severity (blocker|major|minor|nit), location (file:line), claim, evidence, recommendation}; `questions` {addressed_to? (a role: ba, architect, ux, tech-lead, qa, security or devops, for a consult between roles; leave it out to ask the owner), question, options [{label, recommendation (true|false)}] (1 to 6), blocking (true|false), hard_stop? (one of G0-G4, prod_deploy, secrets_change, budget_exceeded, story_budget, notion_delete, prod_data_migration, new_paid_service, licence, critical_finding, kill_switch, missing_credential: set it when the matter is one of these, with blocking true and no default), default? (what happens if nobody answers: required when blocking is false)}; `decisions` {summary, options_considered [strings], chosen, reversible (true|false), rationale}; `assumptions` {text, basis}. Use exactly the keys listed for each object and no others (an unknown key makes the whole report invalid).",
+    "Propose records without ids (use `NEW-1`, `NEW-2` ... to refer between them); the engine issues every id. Ask a question only for a hard-stop matter or a critical blocker (a criterion you cannot test, or that contradicts the API spec, is one); decide everything else and log it as a decision."
   ].join("\n");
 }
 
@@ -23573,6 +23594,7 @@ var VERDICT_OPTIONAL = {
   "preview-diagnose": ["pass", "fail"],
   "uat-script": ["pass", "fail"]
 };
+var EVIDENCE_SHAPE = /^((?:[\w.@/-]+\/)?[\w.@-]+\.[A-Za-z0-9]+:\d+(?:-\d+)?|(?:TC|BUG)-\d+)$/;
 function checkReport(report, ctx) {
   const errors = [];
   let evidenceMissing = false;
@@ -23618,6 +23640,30 @@ function checkReport(report, ctx) {
         `findings.${i}.severity: "${f["severity"]}" does not fit ${ctx.role} ${ctx.kind} units`
       );
     }
+  }
+  if (ctx.role === "developer" && ctx.kind === "develop" && r.status === "done") {
+    for (const c of r.criteria_map ?? []) {
+      if (c.status !== "met")
+        errors.push(
+          `criteria_map: "${c.criterion.slice(0, 40)}" is ${c.status}, so the status cannot be done`
+        );
+      for (const ev of c.evidence)
+        if (!EVIDENCE_SHAPE.test(ev.trim()))
+          errors.push(
+            `criteria_map: evidence "${ev.slice(0, 40)}" is not file:line, a test case id or a bug id`
+          );
+    }
+  }
+  if (r.status === "needs_input" && (r.questions ?? []).length === 0)
+    errors.push("status: needs_input needs at least one question");
+  if (ctx.kind === "review" && r.verdict !== void 0) {
+    const stops = (r.findings ?? []).some(
+      (f) => f["severity"] === "blocker" || f["severity"] === "major"
+    );
+    if (r.verdict.result === "approve" && stops)
+      errors.push("verdict: approve is not allowed while a blocker or major finding stands");
+    if (r.verdict.result === "changes_requested" && !stops)
+      errors.push("verdict: changes_requested needs at least one blocker or major finding");
   }
   const questions = r.questions ?? [];
   const blockingOpen = questions.some((q) => q.blocking);
@@ -23889,9 +23935,9 @@ function buildClaudeArgs(o, agentName, scriptsGlob, pluginDir = pluginRoot()) {
     "--permission-mode",
     "dontAsk",
     "--allowedTools",
-    allowedTools(o.role, scriptsGlob).join(","),
+    allowedTools(o.role, scriptsGlob, o.kind).join(","),
     "--disallowedTools",
-    deniedTools(o.role).join(",")
+    deniedTools(o.role, o.kind).join(",")
   ];
   args.push("--plugin-dir", pluginDir);
   if (o.config.isolateUserSettings !== false) args.push(...ISOLATION_FLAGS);
@@ -23965,6 +24011,13 @@ function exitFor(result) {
     default:
       return EXIT.failed;
   }
+}
+function summariseDenials(denials) {
+  if (!Array.isArray(denials) || denials.length === 0) return void 0;
+  return denials.slice(0, 10).map((d) => ({
+    tool: String(d.tool_name ?? "?"),
+    input: JSON.stringify(d.tool_input ?? {}).slice(0, 300)
+  }));
 }
 function writeRunReport(projectDir, runId, body) {
   const dir = path26.join(projectDir, ".arima", "runs");
@@ -24225,6 +24278,7 @@ async function runAgent(o) {
     result_text: parsed?.result,
     errors: parsed?.errors,
     terminal_reason: parsed?.terminal_reason,
+    permission_denials: summariseDenials(parsed?.permission_denials),
     reason: row.reason,
     report_errors: collected?.ok === false ? collected.errors : void 0,
     stderr_tail: spawned.stderr.slice(-2e3)
@@ -24605,8 +24659,29 @@ function checkBranch(i) {
   if (head !== i.branch) refuse2(`the worktree is on "${head}", not ${i.branch}`);
   if (git3(dir, ["status", "--porcelain"]) !== "")
     refuse2("the worktree has uncommitted changes: agents commit; this script does not");
-  const files = git3(dir, ["diff", "--name-only", `${i.defaultBranch}...${i.branch}`]).split("\n").filter(Boolean);
-  if (files.length === 0) refuse2(`${i.branch} has no changes against ${i.defaultBranch}`);
+  const remoteRef = `origin/${i.defaultBranch}`;
+  const hasRemote = (() => {
+    try {
+      git3(dir, ["rev-parse", "--verify", "--quiet", `refs/remotes/${remoteRef}`]);
+      return true;
+    } catch {
+      return false;
+    }
+  })();
+  if (hasRemote && git3(dir, ["rev-list", "--count", `${remoteRef}..${i.defaultBranch}`]) !== "0")
+    refuse2(
+      `the local ${i.defaultBranch} has commits that ${remoteRef} does not: it was moved, so the branch cannot be checked against it`,
+      "guard_blocked"
+    );
+  const base = hasRemote ? remoteRef : i.defaultBranch;
+  const files = git3(dir, [
+    "-c",
+    "core.quotePath=false",
+    "diff",
+    "--name-only",
+    `${base}...${i.branch}`
+  ]).split("\n").filter(Boolean);
+  if (files.length === 0) refuse2(`${i.branch} has no changes against ${base}`);
   const bad = files.filter((f) => isProtectedConfigPath(f, i.role) || isProtectedStatePath(f));
   if (bad.length > 0)
     refuse2(
@@ -24622,14 +24697,14 @@ function checkBranch(i) {
       );
   }
   if (i.role === "developer") {
-    const e2e = files.filter((f) => f.startsWith("tests/e2e/"));
+    const e2e = files.filter((f) => f.toLowerCase().startsWith("tests/e2e/"));
     if (e2e.length > 0)
       refuse2(
         `the developer may not change tests/e2e/** (QA's): ${e2e.join(", ")}`,
         "protected_path"
       );
   }
-  const diff = git3(dir, ["diff", `${i.defaultBranch}...${i.branch}`]).slice(0, MAX_DIFF);
+  const diff = git3(dir, ["diff", `${base}...${i.branch}`]).slice(0, MAX_DIFF);
   const added = diff.split("\n").filter((l) => l.startsWith("+") && !l.startsWith("+++")).join("\n");
   const leaked = findSecrets(added, loadSecretAllowlist(i.projectDir));
   if (leaked.length > 0)
@@ -24637,7 +24712,7 @@ function checkBranch(i) {
       `the branch adds something that looks like a secret (${leaked.join(", ")})`,
       "secret_in_output"
     );
-  const messages = git3(dir, ["log", `${i.defaultBranch}..${i.branch}`, "--format=%B"]);
+  const messages = git3(dir, ["log", `${base}..${i.branch}`, "--format=%B"]);
   const attr = findAttribution(messages);
   if (attr.length > 0)
     refuse2(
@@ -26950,6 +27025,17 @@ async function sendNotifications(o) {
 // plugins/arima/scripts/src/notion/proposals.ts
 var PLACEHOLDER2 = /\bNEW-(\d+)\b/g;
 var isPlaceholder = (v) => typeof v === "string" && /^NEW-\d+$/.test(v);
+function bugSeverityRule(role, database, properties2, reproductions) {
+  const sev = properties2["Severity"];
+  if (role !== "qa" || database !== "bugs" || sev !== "S1" && sev !== "S2") return properties2;
+  if (typeof reproductions === "number" && reproductions >= 2) return properties2;
+  const actual = typeof properties2["Actual"] === "string" ? `${properties2["Actual"]} ` : "";
+  return {
+    ...properties2,
+    Severity: "S3",
+    Actual: `${actual}[severity lowered from ${sev} to S3 by the engine: not reproduced in two runs (spec 7.12); the PO may change it]`
+  };
+}
 function fromReport(r, role, today) {
   const out = [];
   const item = r.item === "none" ? void 0 : r.item;
@@ -26972,7 +27058,12 @@ function fromReport(r, role, today) {
     out.push({
       database,
       ...typeof rec["ref"] === "string" ? { ref: rec["ref"] } : {},
-      properties: { ...rec["properties"] },
+      properties: bugSeverityRule(
+        role,
+        database,
+        { ...rec["properties"] },
+        rec["reproductions"]
+      ),
       ...typeof rec["content_markdown"] === "string" ? { content_markdown: rec["content_markdown"] } : {}
     });
   }
@@ -27294,6 +27385,95 @@ function validatePacket(text3) {
   return { ok: errors.length === 0, errors };
 }
 
+// plugins/arima/scripts/src/review-context.ts
+import { execFileSync as execFileSync5 } from "node:child_process";
+var DIFF_CAP = 22e3;
+function branchDiff(projectDir, base, branch, cap = DIFF_CAP) {
+  const run = (...a) => execFileSync5("git", a, {
+    cwd: projectDir,
+    encoding: "utf8",
+    maxBuffer: 32 * 1024 * 1024,
+    stdio: ["ignore", "pipe", "pipe"]
+  });
+  const range = `${base}...${branch}`;
+  const full = run("diff", "--no-color", "--no-ext-diff", range);
+  let changed = 0;
+  const files = [];
+  for (const l of run("-c", "core.quotePath=false", "diff", "--numstat", range).split("\n").filter(Boolean)) {
+    const [a, d, ...rest] = l.split("	");
+    const binary = a === "-" && d === "-";
+    changed += (Number(a) || 0) + (Number(d) || 0);
+    files.push({
+      path: rest.join("	"),
+      added: Number(a) || 0,
+      removed: Number(d) || 0,
+      binary
+    });
+  }
+  return full.length > cap ? { text: full.slice(0, cap), truncated: true, changedLines: changed, files } : { text: full, truncated: false, changedLines: changed, files };
+}
+var SIZE_LIMIT_LINES = { S: 200, M: 400, L: 800 };
+function reviewContext(o) {
+  const untrusted = [];
+  const conditions = [];
+  const unapprovable = [];
+  const limit = SIZE_LIMIT_LINES[o.size ?? "M"];
+  try {
+    const d = branchDiff(o.projectDir, o.defaultBranch, o.branch);
+    untrusted.push({
+      label: `Pull request diff (git diff ${o.defaultBranch}...${o.branch})`,
+      source: "git",
+      text: d.truncated ? `${d.text}
+[diff truncated at ${DIFF_CAP} characters; read the rest with git diff ${o.defaultBranch}...${o.branch} -- <path>]` : d.text === "" ? "(the branch has no changes against the default branch)" : d.text
+    });
+    untrusted.push({
+      label: "Changed files (git diff --numstat; binary files are flagged)",
+      source: "git",
+      text: d.files.map((f) => `${f.binary ? "BINARY " : ""}${f.path} +${f.added} -${f.removed}`).join("\n") || "(none)"
+    });
+    conditions.push(
+      `The diff changes ${d.changedLines} lines in ${d.files.length} files; the size limit of this story is about ${limit}${d.changedLines > limit ? " (over the limit: raise a major sizing finding)" : ""}`
+    );
+    if (d.text === "") unapprovable.push("the diff is empty");
+    if (d.truncated) unapprovable.push(`the diff is longer than ${DIFF_CAP} characters`);
+    const bin = d.files.filter((f) => f.binary).map((f) => f.path);
+    if (bin.length > 0) unapprovable.push(`binary files cannot be reviewed: ${bin.join(", ")}`);
+  } catch (e) {
+    unapprovable.push("the host could not read the diff");
+    untrusted.push({
+      label: "Pull request diff",
+      source: "git",
+      text: `(the host could not read the diff: ${e instanceof Error ? e.message.slice(0, 200) : String(e)}. Say so and give verdict changes_requested with a blocker finding)`
+    });
+  }
+  if (o.developerReport !== void 0) {
+    const r = o.developerReport;
+    untrusted.push({
+      label: "Developer's report (criteria map and summary, the author's claims to check)",
+      source: "report",
+      text: JSON.stringify({ summary: r.summary, criteria_map: r.criteria_map ?? [] }, null, 2)
+    });
+  } else {
+    unapprovable.push("there is no developer report with a criteria map for this item");
+    untrusted.push({
+      label: "Developer's report",
+      source: "report",
+      text: "(no developer report with a criteria map exists for this item: that is a blocker finding)"
+    });
+  }
+  if (o.priorFindings !== void 0 && o.priorFindings.length > 0)
+    untrusted.push({
+      label: `Findings of the previous review (attempt ${o.attempt - 1})`,
+      source: "report",
+      text: JSON.stringify(o.priorFindings, null, 2)
+    });
+  conditions.push(
+    "The host moved the item to In Review because the checks were green; the packet carries no CI log, and the merge script checks the checks again",
+    `Review attempt ${o.attempt}`
+  );
+  return { untrusted, conditions, approvable: unapprovable.length === 0, unapprovable };
+}
+
 // plugins/arima/scripts/src/runlock.ts
 import { existsSync as existsSync28, mkdirSync as mkdirSync21, readFileSync as readFileSync27, rmSync as rmSync6, writeFileSync as writeFileSync10 } from "node:fs";
 import { hostname } from "node:os";
@@ -27577,6 +27757,7 @@ async function runDispatch(o) {
     warnings: [],
     degraded: false
   };
+  const unapprovableReviews = /* @__PURE__ */ new Map();
   const fail = (code2, message) => ({
     ...res,
     exitCode: code2,
@@ -27640,9 +27821,9 @@ async function runDispatch(o) {
     }, readAttempt2 = function(item) {
       return attemptOf2(item);
     }, lastDevelopReport2 = function(item) {
-      const e = readEvents(o.projectDir).filter(
-        (x) => x.type === "report.accepted" && x.item === item && x.data?.["kind"] === "develop"
-      ).at(-1);
+      return lastReportOf2(item, "develop");
+    }, lastReportOf2 = function(item, kind) {
+      const e = readEvents(o.projectDir).filter((x) => x.type === "report.accepted" && x.item === item && x.data?.["kind"] === kind).at(-1);
       if (e?.run_id === void 0) return void 0;
       try {
         return JSON.parse(
@@ -27659,6 +27840,21 @@ async function runDispatch(o) {
     }, storyBranchOf2 = function(item) {
       const b = branchFor(item, titleOf2(item));
       return branchExists(o.projectDir, b) ? b : void 0;
+    }, readsFor2 = function(unit, cwd) {
+      if (unit.role !== "developer" && !(unit.role === "tech-lead" && unit.kind === "review"))
+        return [];
+      const out = [];
+      const add2 = (ref, why) => {
+        if (existsSync29(path38.join(cwd, ref))) out.push({ ref, why });
+      };
+      add2(
+        "api/openapi.yaml",
+        "the API contract to implement; a criterion that contradicts it is a question"
+      );
+      add2("docs/engineering/conventions.md", "coding conventions");
+      add2("docs/architecture/adr", "architecture decisions that constrain the design");
+      add2(`design/screens/${unit.item}`, "the screens and their states for this UI story");
+      return out;
     }, packetFor2 = function(unit, rid, size, cap, budgetUsd, cwd, branch) {
       const row = findRow(readMirror(o.projectDir, "stories"), unit.item);
       const profileName = cfg.profile;
@@ -27680,6 +27876,18 @@ async function runDispatch(o) {
           source: "arima-env",
           text: `ref ${failed.ref}; previous version restored: ${failed.restored}; ${failed.error}`
         });
+      const inputs = readsFor2(unit, cwd);
+      const review = unit.kind === "review" && unit.item !== "none" ? reviewContext({
+        projectDir: o.projectDir,
+        defaultBranch: cfg.github.default_branch,
+        branch,
+        size,
+        developerReport: lastDevelopReport2(unit.item),
+        priorFindings: lastReportOf2(unit.item, "review")?.findings,
+        attempt: attemptOf2(unit.item)
+      }) : void 0;
+      if (review) untrusted.push(...review.untrusted);
+      if (review) unapprovableReviews.set(unit.item, review.unapprovable);
       return {
         run_id: rid,
         max_minutes: cfg.schedule.max_run_minutes,
@@ -27694,14 +27902,15 @@ async function runDispatch(o) {
           max_turns: cap,
           ...unit.reworkReason ? { rework_reason: unit.reworkReason } : {},
           ...cwd !== o.projectDir ? { worktree: cwd, branch } : {},
-          inputs: [],
+          inputs: inputs.map((i) => i.ref),
           profile: profileName
         },
-        inputs: [],
+        inputs,
         conditions: [
           `Story size: ${size ?? "unknown"}`,
           `The profile is ${cfg.profile}`,
           ...unit.reworkReason ? [`This is rework: ${unit.reworkReason}`] : [],
+          ...review ? review.conditions : [],
           ...overrideConditions(o.projectDir, unit.role)
         ],
         task: taskFor(unit),
@@ -27713,7 +27922,7 @@ async function runDispatch(o) {
       const e = readEvents(o.projectDir).filter((x) => x.type === "pr.published" && x.item === item).at(-1);
       return typeof e?.data?.["pr"] === "number" ? e.data["pr"] : void 0;
     };
-    var mirrorStatusOf = mirrorStatusOf2, attemptOf = attemptOf2, readAttempt = readAttempt2, lastDevelopReport = lastDevelopReport2, titleOf = titleOf2, storyBranchOf = storyBranchOf2, packetFor = packetFor2, prNumber = prNumber2;
+    var mirrorStatusOf = mirrorStatusOf2, attemptOf = attemptOf2, readAttempt = readAttempt2, lastDevelopReport = lastDevelopReport2, lastReportOf = lastReportOf2, titleOf = titleOf2, storyBranchOf = storyBranchOf2, readsFor = readsFor2, packetFor = packetFor2, prNumber = prNumber2;
     const setup = d.setupCheck?.() ?? {
       green: true,
       detail: "arima-setup is not built yet; the Phase 3 checklist was not checked"
@@ -28136,8 +28345,15 @@ async function runDispatch(o) {
       if (REVIEW_KINDS.has(unit.kind)) await comment(unit, report);
       if (unit.kind === "develop" && report.status === "done")
         await publishDevelop(unit, report, branch);
-      if (unit.kind === "review" && report.status === "done" && report.verdict)
-        await afterReview(unit, report.verdict.result);
+      if (unit.kind === "review" && report.status === "done" && report.verdict) {
+        const why = unapprovableReviews.get(unit.item) ?? [];
+        const effective = report.verdict.result === "approve" && why.length > 0 ? "changes_requested" : report.verdict.result;
+        if (effective !== report.verdict.result)
+          res.warnings.push(
+            `review of ${unit.item}: the approve was not acted on (${why.join("; ")})`
+          );
+        await afterReview(unit, effective);
+      }
       if (unit.kind === "qa" && report.status === "done" && report.verdict?.result === "fail")
         await afterQaFail(unit, report);
       if (unit.kind === "qa" && report.status === "done" && report.verdict?.result === "pass")
@@ -28430,7 +28646,7 @@ function branchExists(projectDir, branch) {
 }
 function gitHasBranch(projectDir, branch) {
   try {
-    execFileSync5("git", ["show-ref", "--verify", "--quiet", `refs/heads/${branch}`], {
+    execFileSync6("git", ["show-ref", "--verify", "--quiet", `refs/heads/${branch}`], {
       cwd: projectDir,
       stdio: "ignore"
     });

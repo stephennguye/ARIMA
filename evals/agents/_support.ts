@@ -4,9 +4,11 @@
 //   ARIMA_REAL_EVALS_RUNS   runs per scenario (default 1; the card thresholds assume 5)
 //   ARIMA_REAL_EVALS_CAP_USD   total estimated cost allowed for one test file (default 3)
 import { execFileSync } from 'node:child_process';
-import { copyFileSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, writeFileSync } from 'node:fs';
+import { copyFileSync, mkdirSync, mkdtempSync, readFileSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
+import { validateProject } from '../../plugins/arima/scripts/src/config.js';
+import { agentConfigFrom, runAgent } from '../../plugins/arima/scripts/src/run-agent.js';
 import { needsWorktree, outputContractFor, taskFor } from '../../plugins/arima/scripts/src/dispatch-units.js';
 import type { UnitKind } from '../../plugins/arima/scripts/src/kinds.js';
 import type { Role } from '../../plugins/arima/scripts/src/ledger.js';
@@ -77,58 +79,59 @@ export interface RealResult {
   runId: string;
   /** The final message of the run (an `arima-report` block is at its end). */
   message: string;
+  /** Tool calls the permission rules refused, as the run record keeps them (empty when none). */
+  denials: { tool: string; input: string }[];
 }
 
-/** Renders the same packet the dispatcher would, runs one real role through the built `arima-run-agent`, returns its final message. */
-export function runRealUnit(u: RealUnit): RealResult {
+/**
+ * Runs one real role the way the dispatcher does: `runAgent` with `buildPrompt`, so the packet carries
+ * the run id the engine issues and `ARIMA_KIND` reaches the guard and the report is checked in the run.
+ */
+export async function runRealUnit(u: RealUnit): Promise<RealResult> {
   if (!realEnabled) throw new Error('real-agent evals need ARIMA_REAL_EVALS=1');
   if (spent >= CAP) throw new Error(`the real-eval cost cap (${CAP} USD) is reached; raise ARIMA_REAL_EVALS_CAP_USD on purpose`);
-  const packetRunId = u.runId ?? 'r-20261120-0900-01';
-  const text = renderPacket({
-    run_id: packetRunId,
-    max_minutes: 15,
-    unit: {
-      unit_id: `${packetRunId}-u1`,
-      role: u.role,
-      item: u.item,
-      kind: u.kind,
-      phase: u.phase,
-      attempt: 1,
-      budget_usd: u.budgetUsd,
-      max_turns: u.maxTurns,
-      // Like the dispatcher: a unit that runs in the owner's tree (no worktree kind) carries neither.
-      ...(needsWorktree(u.kind, u.role)
-        ? { worktree: u.dir, branch: git(u.dir, 'rev-parse', '--abbrev-ref', 'HEAD') }
-        : {}),
-      inputs: u.inputs.map((i) => i.ref),
-      profile: 'solo-lite',
-    },
-    inputs: u.inputs,
-    conditions: u.conditions ?? ['The profile is solo-lite'],
-    task: u.task ?? taskFor({ kind: u.kind, role: u.role, item: u.item, why: 'real-agent eval' }),
-    output_contract: outputContractFor(u.kind),
-    web: { hosts: [], local_origins: [] },
-    untrusted: u.untrusted ?? [],
+  const validated = validateProject(u.dir);
+  if (!validated.ok || validated.arima === undefined) throw new Error('the scratch project config is invalid');
+  const branch = needsWorktree(u.kind, u.role) ? git(u.dir, 'rev-parse', '--abbrev-ref', 'HEAD') : '';
+  const outcome = await runAgent({
+    projectDir: u.dir,
+    role: u.role,
+    item: u.item,
+    budgetUsd: u.budgetUsd,
+    maxTurns: u.maxTurns,
+    promptFile: '',
+    phase: u.phase,
+    cwd: u.dir,
+    kind: u.kind,
+    config: agentConfigFrom(validated.arima, u.role),
+    killSwitch: { notion: null },
+    buildPrompt: (rid) =>
+      renderPacket({
+        run_id: rid,
+        max_minutes: 15,
+        unit: {
+          unit_id: `${rid}-u1`,
+          role: u.role,
+          item: u.item,
+          kind: u.kind,
+          phase: u.phase,
+          attempt: 1,
+          budget_usd: u.budgetUsd,
+          max_turns: u.maxTurns,
+          // Like the dispatcher: a unit that runs in the owner's tree (no worktree kind) carries neither.
+          ...(branch !== '' ? { worktree: u.dir, branch } : {}),
+          inputs: u.inputs.map((i) => i.ref),
+          profile: 'solo-lite',
+        },
+        inputs: u.inputs,
+        conditions: u.conditions ?? ['The profile is solo-lite'],
+        task: u.task ?? taskFor({ kind: u.kind, role: u.role, item: u.item, why: 'real-agent eval' }),
+        output_contract: outputContractFor(u.kind),
+        web: { hosts: [], local_origins: [] },
+        untrusted: u.untrusted ?? [],
+      }),
   });
-  const promptFile = path.join(path.dirname(u.dir), `packet-${Math.random().toString(16).slice(2)}.md`);
-  writeFileSync(promptFile, text);
-  const cli = path.join(ROOT, 'plugins/arima/scripts/dist/arima-run-agent.mjs');
-  let exit = 0;
-  try {
-    execFileSync(
-      process.execPath,
-      [cli, '--role', u.role, '--item', u.item, '--budget', String(u.budgetUsd), '--max-turns', String(u.maxTurns), '--phase', String(u.phase), '--prompt-file', promptFile, '--cwd', u.dir, '--project', u.dir],
-      { stdio: 'pipe', timeout: 20 * 60_000 },
-    );
-  } catch (e) {
-    exit = typeof (e as { status?: number }).status === 'number' ? (e as { status: number }).status : 1;
-  }
-  const runsDir = path.join(u.dir, '.arima', 'runs');
-  const last = readdirSync(runsDir).filter((f) => f.endsWith('.json')).sort().at(-1);
-  const rec = JSON.parse(readFileSync(path.join(runsDir, last as string), 'utf8')) as { result_text?: string };
-  const ledger = readFileSync(path.join(u.dir, '.arima', 'ledger.jsonl'), 'utf8').trim().split('\n').map((l) => JSON.parse(l) as { cost_usd: number; run_id: string });
-  const costUsd = ledger.at(-1)?.cost_usd ?? 0;
-  const runId = ledger.at(-1)?.run_id ?? '';
-  spent += costUsd;
-  return { exit, costUsd, packetRunId, runId, message: rec.result_text ?? '' };
+  const rec = JSON.parse(readFileSync(path.join(u.dir, '.arima', 'runs', `${outcome.runId}.json`), 'utf8')) as { result_text?: string; permission_denials?: { tool: string; input: string }[] };
+  spent += outcome.costUsd;
+  return { exit: outcome.exitCode, costUsd: outcome.costUsd, packetRunId: outcome.runId, runId: outcome.runId, message: rec.result_text ?? '', denials: rec.permission_denials ?? [] };
 }

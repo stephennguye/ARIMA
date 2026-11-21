@@ -15,6 +15,28 @@ interface Proposal {
   content_markdown?: string;
 }
 
+/**
+ * Severity of a QA bug is a proposal (spec 7.7). S1 and S2 stop a release, so the engine accepts them
+ * only for a failure that reproduced in two runs (spec 7.12, `reproductions` at least 2 on the record);
+ * otherwise it lowers the proposal to S3 and says so in `Actual`, where the PO can see and change it.
+ */
+export function bugSeverityRule(
+  role: Role,
+  database: DbKey,
+  properties: Record<string, unknown>,
+  reproductions: unknown,
+): Record<string, unknown> {
+  const sev = properties['Severity'];
+  if (role !== 'qa' || database !== 'bugs' || (sev !== 'S1' && sev !== 'S2')) return properties;
+  if (typeof reproductions === 'number' && reproductions >= 2) return properties;
+  const actual = typeof properties['Actual'] === 'string' ? `${properties['Actual']} ` : '';
+  return {
+    ...properties,
+    Severity: 'S3',
+    Actual: `${actual}[severity lowered from ${sev} to S3 by the engine: not reproduced in two runs (spec 7.12); the PO may change it]`,
+  };
+}
+
 function fromReport(r: AgentReport, role: Role, today: string): Proposal[] {
   const out: Proposal[] = [];
   const item = r.item === 'none' ? undefined : r.item;
@@ -39,7 +61,12 @@ function fromReport(r: AgentReport, role: Role, today: string): Proposal[] {
     out.push({
       database,
       ...(typeof rec['ref'] === 'string' ? { ref: rec['ref'] } : {}),
-      properties: { ...(rec['properties'] as Record<string, unknown>) },
+      properties: bugSeverityRule(
+        role,
+        database,
+        { ...(rec['properties'] as Record<string, unknown>) },
+        rec['reproductions'],
+      ),
       ...(typeof rec['content_markdown'] === 'string'
         ? { content_markdown: rec['content_markdown'] }
         : {}),

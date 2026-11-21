@@ -325,12 +325,16 @@ describe('guard: file tools and paths', () => {
     expect(blocked('Write', { file_path: p, content: 'x' }), p).toBe('protected-state');
   });
 
-  it('but may write its own outbox proposals', () => {
+  it('but a role with an outbox may write its own proposals (the developer proposes through its report)', () => {
+    const QA = { role: 'qa', defaultBranch: 'main' };
     expect(
-      blocked('Write', { file_path: '.arima/outbox/e-1.json', content: '{}' }),
+      blocked('Write', { file_path: '.arima/outbox/e-1.json', content: '{}' }, QA),
     ).toBeUndefined();
-    expect(blocked('Write', { file_path: '.arima/outbox/sub/e-1.json', content: '{}' })).toBe(
+    expect(blocked('Write', { file_path: '.arima/outbox/sub/e-1.json', content: '{}' }, QA)).toBe(
       'protected-state',
+    );
+    expect(blocked('Write', { file_path: '.arima/outbox/e-1.json', content: '{}' })).toBe(
+      'no-outbox',
     );
   });
 

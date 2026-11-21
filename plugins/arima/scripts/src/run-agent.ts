@@ -326,9 +326,9 @@ export function buildClaudeArgs(
     '--permission-mode',
     'dontAsk',
     '--allowedTools',
-    allowedTools(o.role, scriptsGlob).join(','),
+    allowedTools(o.role, scriptsGlob, o.kind).join(','),
     '--disallowedTools',
-    deniedTools(o.role).join(','),
+    deniedTools(o.role, o.kind).join(','),
   ];
   // Load this plugin explicitly, so the guard hooks and the arima:<role> agents are active in the
   // run even if the plugin is not installed for this user (development, CI, another machine).
@@ -431,6 +431,17 @@ function exitFor(result: RunResult): number {
     default:
       return EXIT.failed;
   }
+}
+
+/** A short, secret-scanned form of the refused tool calls, so a run that "could not use the shell" says which call. */
+export function summariseDenials(
+  denials: ClaudeResult['permission_denials'],
+): { tool: string; input: string }[] | undefined {
+  if (!Array.isArray(denials) || denials.length === 0) return undefined;
+  return denials.slice(0, 10).map((d) => ({
+    tool: String(d.tool_name ?? '?'),
+    input: JSON.stringify(d.tool_input ?? {}).slice(0, 300),
+  }));
 }
 
 function writeRunReport(projectDir: string, runId: string, body: Record<string, unknown>): void {
@@ -730,6 +741,7 @@ export async function runAgent(o: RunAgentOptions): Promise<RunAgentOutcome> {
     result_text: parsed?.result,
     errors: parsed?.errors,
     terminal_reason: parsed?.terminal_reason,
+    permission_denials: summariseDenials(parsed?.permission_denials),
     reason: row.reason,
     report_errors: collected?.ok === false ? collected.errors : undefined,
     stderr_tail: spawned.stderr.slice(-2000),

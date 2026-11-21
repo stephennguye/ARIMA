@@ -31,6 +31,7 @@ import type { NotionPort } from './notion/port.js';
 import { pushOutbox } from './notion/outbox.js';
 import { stagingFailing } from './env.js';
 import { renderPacket } from './packet.js';
+import { reviewContext } from './review-context.js';
 import type { PacketInput } from './packet.js';
 import { PREFLIGHT_EXIT, runPreflight } from './preflight.js';
 import { loadProfile } from './profiles.js';
@@ -256,6 +257,8 @@ export async function runDispatch(o: DispatchOptions): Promise<DispatchResult> {
     warnings: [],
     degraded: false,
   };
+  /** Per item: why an approve of the review being run cannot be trusted (empty when it can). */
+  const unapprovableReviews = new Map<string, string[]>();
   const fail = (code: number, message: string): DispatchResult => ({
     ...res,
     exitCode: code,
@@ -680,10 +683,11 @@ export async function runDispatch(o: DispatchOptions): Promise<DispatchResult> {
       return attemptOf(item);
     }
     function lastDevelopReport(item: string): AgentReport | undefined {
+      return lastReportOf(item, 'develop');
+    }
+    function lastReportOf(item: string, kind: string): AgentReport | undefined {
       const e = readEvents(o.projectDir)
-        .filter(
-          (x) => x.type === 'report.accepted' && x.item === item && x.data?.['kind'] === 'develop',
-        )
+        .filter((x) => x.type === 'report.accepted' && x.item === item && x.data?.['kind'] === kind)
         .at(-1);
       if (e?.run_id === undefined) return undefined;
       try {
@@ -762,6 +766,24 @@ export async function runDispatch(o: DispatchOptions): Promise<DispatchResult> {
       return branchExists(o.projectDir, b) ? b : undefined;
     }
 
+    /** The repo files a developer unit works from (card section 3), only those that exist in its tree. */
+    function readsFor(unit: PlannedUnit, cwd: string): { ref: string; why: string }[] {
+      if (unit.role !== 'developer' && !(unit.role === 'tech-lead' && unit.kind === 'review'))
+        return [];
+      const out: { ref: string; why: string }[] = [];
+      const add = (ref: string, why: string): void => {
+        if (existsSync(path.join(cwd, ref))) out.push({ ref, why });
+      };
+      add(
+        'api/openapi.yaml',
+        'the API contract to implement; a criterion that contradicts it is a question',
+      );
+      add('docs/engineering/conventions.md', 'coding conventions');
+      add('docs/architecture/adr', 'architecture decisions that constrain the design');
+      add(`design/screens/${unit.item}`, 'the screens and their states for this UI story');
+      return out;
+    }
+
     function packetFor(
       unit: PlannedUnit,
       rid: string,
@@ -791,6 +813,21 @@ export async function runDispatch(o: DispatchOptions): Promise<DispatchResult> {
           source: 'arima-env',
           text: `ref ${failed.ref}; previous version restored: ${failed.restored}; ${failed.error}`,
         });
+      const inputs = readsFor(unit, cwd);
+      const review =
+        unit.kind === 'review' && unit.item !== 'none'
+          ? reviewContext({
+              projectDir: o.projectDir,
+              defaultBranch: cfg.github.default_branch,
+              branch,
+              size,
+              developerReport: lastDevelopReport(unit.item),
+              priorFindings: lastReportOf(unit.item, 'review')?.findings,
+              attempt: attemptOf(unit.item),
+            })
+          : undefined;
+      if (review) untrusted.push(...review.untrusted);
+      if (review) unapprovableReviews.set(unit.item, review.unapprovable);
       return {
         run_id: rid,
         max_minutes: cfg.schedule.max_run_minutes,
@@ -805,14 +842,15 @@ export async function runDispatch(o: DispatchOptions): Promise<DispatchResult> {
           max_turns: cap,
           ...(unit.reworkReason ? { rework_reason: unit.reworkReason } : {}),
           ...(cwd !== o.projectDir ? { worktree: cwd, branch } : {}),
-          inputs: [],
+          inputs: inputs.map((i) => i.ref),
           profile: profileName,
         },
-        inputs: [],
+        inputs,
         conditions: [
           `Story size: ${size ?? 'unknown'}`,
           `The profile is ${cfg.profile}`,
           ...(unit.reworkReason ? [`This is rework: ${unit.reworkReason}`] : []),
+          ...(review ? review.conditions : []),
           ...overrideConditions(o.projectDir, unit.role),
         ],
         task: taskFor(unit),
@@ -902,8 +940,20 @@ export async function runDispatch(o: DispatchOptions): Promise<DispatchResult> {
 
       if (unit.kind === 'develop' && report.status === 'done')
         await publishDevelop(unit, report, branch);
-      if (unit.kind === 'review' && report.status === 'done' && report.verdict)
-        await afterReview(unit, report.verdict.result);
+      if (unit.kind === 'review' && report.status === 'done' && report.verdict) {
+        // An approve is not acted on when the reviewer could not have seen the whole change: the host
+        // treats it as changes_requested so the author fixes what blocked the review (judge major 3).
+        const why = unapprovableReviews.get(unit.item) ?? [];
+        const effective =
+          report.verdict.result === 'approve' && why.length > 0
+            ? 'changes_requested'
+            : report.verdict.result;
+        if (effective !== report.verdict.result)
+          res.warnings.push(
+            `review of ${unit.item}: the approve was not acted on (${why.join('; ')})`,
+          );
+        await afterReview(unit, effective);
+      }
       if (unit.kind === 'qa' && report.status === 'done' && report.verdict?.result === 'fail')
         await afterQaFail(unit, report);
       if (unit.kind === 'qa' && report.status === 'done' && report.verdict?.result === 'pass')
