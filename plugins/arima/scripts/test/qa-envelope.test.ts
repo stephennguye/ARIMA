@@ -140,3 +140,21 @@ describe('the guard in a QA run: the developer is out of sight', () => {
     expect(guardTool('Read', { file_path: 'docs/x.md' }, { role: 'architect' })).toBeUndefined();
   });
 });
+
+describe('the QA tree holds what the role and the agent file promise', () => {
+  it('QA_SPARSE has the test, API, design and package files npm ci and the runner need', async () => {
+    const { QA_SPARSE } = await import('../src/dispatch-units.js');
+    for (const p of [
+      'tests/',
+      'api/',
+      'design/',
+      'package.json',
+      'package-lock.json',
+      'tsconfig.json',
+    ])
+      expect(QA_SPARSE, p).toContain(p);
+    expect([...QA_SPARSE].some((p) => p.startsWith('playwright.config'))).toBe(true);
+    for (const p of QA_SPARSE)
+      expect(p, 'QA never gets product source or docs').not.toMatch(/^(src|docs|\.arima|\.github)/);
+  });
+});
