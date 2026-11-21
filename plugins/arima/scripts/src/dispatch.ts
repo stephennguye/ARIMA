@@ -44,6 +44,7 @@ import {
 } from './preview.js';
 import { renderPacket } from './packet.js';
 import { reviewContext } from './review-context.js';
+import { QaTestsError, adoptQaTests, qaTipOf } from './qa-tests.js';
 import type { PacketInput } from './packet.js';
 import { PREFLIGHT_EXIT, runPreflight } from './preflight.js';
 import { loadProfile } from './profiles.js';
@@ -1126,6 +1127,7 @@ export async function runDispatch(o: DispatchOptions): Promise<DispatchResult> {
       // Verdicts and findings go to the pull request as comments (the host holds the token).
       if (REVIEW_KINDS.has(unit.kind)) await comment(unit, report);
 
+      if (unit.kind === 'test-write' && report.status === 'done') adoptTests(unit);
       if (unit.kind === 'develop' && report.status === 'done')
         await publishDevelop(unit, report, branch);
       if (unit.kind === 'review' && report.status === 'done' && report.verdict) {
@@ -1178,6 +1180,23 @@ export async function runDispatch(o: DispatchOptions): Promise<DispatchResult> {
       }
     }
 
+    /** QA's tests go onto the story branch, so the developer starts with the tests that judge the work. */
+    function adoptTests(unit: PlannedUnit): void {
+      try {
+        adoptQaTests({
+          projectDir: o.projectDir,
+          item: unit.item,
+          qaBranch: `qa/${unit.item}-tests`,
+          storyBranch: branchFor(unit.item, titleOf(unit.item)),
+        });
+      } catch (e) {
+        res.warnings.push(
+          `the tests of ${unit.item} were not put on the story branch: ${e instanceof Error ? e.message.slice(0, 200) : String(e)}`,
+        );
+        if (!(e instanceof QaTestsError)) throw e;
+      }
+    }
+
     async function publishDevelop(
       unit: PlannedUnit,
       report: AgentReport,
@@ -1206,6 +1225,9 @@ export async function runDispatch(o: DispatchOptions): Promise<DispatchResult> {
           branch,
           item: unit.item,
           role: unit.role as Role,
+          ...(qaTipOf(o.projectDir, unit.item)
+            ? { testsBase: qaTipOf(o.projectDir, unit.item) as string }
+            : {}),
           title: titleOf(unit.item) || unit.item,
           body,
           repo: cfg.github.repo,

@@ -118,6 +118,7 @@ switch (mode) {
     const counter = `${dir}/.count-${key}`;
     const n = (existsSync(counter) ? Number(rf(counter, 'utf8')) : 0) + 1;
     wf(counter, String(n));
+    wf(`${dir}/${key}.prompt.${n}`, stdin);
     if (existsSync(`${dir}/${key}.commit`)) {
       mkdirSync(`${process.cwd()}/src`, { recursive: true });
       wf(
@@ -130,6 +131,14 @@ switch (mode) {
         });
       g('add', '-A');
       g('commit', '-q', '-m', `feat(${process.env.ARIMA_ITEM}): stub change ${n}`);
+    }
+    if (existsSync(`${dir}/${key}.tests`)) {
+      // QA has no git: it leaves its tests uncommitted for the host to commit.
+      mkdirSync(`${process.cwd()}/tests/e2e`, { recursive: true });
+      wf(
+        `${process.cwd()}/tests/e2e/${process.env.ARIMA_ITEM}.test.js`,
+        'assert.equal(1, 1);' + String.fromCharCode(10),
+      );
     }
     if (existsSync(`${dir}/${key}.usage`)) {
       console.log(

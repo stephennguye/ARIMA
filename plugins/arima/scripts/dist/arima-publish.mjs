@@ -19776,7 +19776,22 @@ function checkBranch(i) {
       );
   }
   if (i.role === "developer") {
-    const e2e = files.filter((f) => f.toLowerCase().startsWith("tests/e2e/"));
+    let own = files;
+    if (i.testsBase !== void 0) {
+      try {
+        git(dir, ["merge-base", "--is-ancestor", i.testsBase, i.branch]);
+        own = git(dir, [
+          "-c",
+          "core.quotePath=false",
+          "diff",
+          "--name-only",
+          `${i.testsBase}..${i.branch}`
+        ]).split("\n").filter(Boolean);
+      } catch {
+        own = files;
+      }
+    }
+    const e2e = own.filter((f) => f.toLowerCase().startsWith("tests/e2e/"));
     if (e2e.length > 0)
       refuse(
         `the developer may not change tests/e2e/** (QA's): ${e2e.join(", ")}`,

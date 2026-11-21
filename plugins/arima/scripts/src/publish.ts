@@ -78,6 +78,11 @@ function git(cwd: string, args: string[], env?: NodeJS.ProcessEnv): string {
 }
 
 export interface PublishInput {
+  /**
+   * The commit QA's tests were adopted at (the story branch carried them from the start): the developer's
+   * tests/e2e rule looks only at what was committed after it.
+   */
+  testsBase?: string;
   projectDir: string;
   /** The engine run publishing (needs a `run.start` event: the PR link goes through the outbox). */
   runId: string;
@@ -224,7 +229,24 @@ export function checkBranch(i: PublishInput): { dir: string; sha: string; files:
       );
   }
   if (i.role === 'developer') {
-    const e2e = files.filter((f) => f.toLowerCase().startsWith('tests/e2e/'));
+    let own = files;
+    if (i.testsBase !== undefined) {
+      try {
+        git(dir, ['merge-base', '--is-ancestor', i.testsBase, i.branch]);
+        own = git(dir, [
+          '-c',
+          'core.quotePath=false',
+          'diff',
+          '--name-only',
+          `${i.testsBase}..${i.branch}`,
+        ])
+          .split('\n')
+          .filter(Boolean);
+      } catch {
+        own = files; // QA's tip is not in this branch: every tests/e2e change counts against the developer
+      }
+    }
+    const e2e = own.filter((f) => f.toLowerCase().startsWith('tests/e2e/'));
     if (e2e.length > 0)
       refuse(
         `the developer may not change tests/e2e/** (QA's): ${e2e.join(', ')}`,

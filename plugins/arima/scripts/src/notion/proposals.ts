@@ -3,6 +3,7 @@ import type { AgentReport } from '../report.js';
 import { enqueue } from './outbox.js';
 import type { OutboxEntry } from './outbox.js';
 import { ID_PREFIX_BY_DB, allocateId, titleProperty } from './allocations.js';
+import { dbByKey } from './schema.js';
 import type { DbKey } from './schema.js';
 
 const PLACEHOLDER = /\bNEW-(\d+)\b/g;
@@ -37,6 +38,30 @@ export function bugSeverityRule(
   };
 }
 
+/**
+ * A relation property takes an array of ARIMA ids; an agent naturally writes the one id (`Story: "US-12"`).
+ * One id becomes a one-element array (found by the live check against real Notion, WP-211).
+ */
+export function normaliseRelations(
+  database: DbKey,
+  properties: Record<string, unknown>,
+): Record<string, unknown> {
+  let relations: Set<string>;
+  try {
+    relations = new Set(
+      dbByKey(database)
+        .props.filter((p) => p.type === 'relation')
+        .map((p) => p.name),
+    );
+  } catch {
+    return properties;
+  }
+  const out = { ...properties };
+  for (const [k, v] of Object.entries(out))
+    if (relations.has(k) && typeof v === 'string') out[k] = [v];
+  return out;
+}
+
 function fromReport(r: AgentReport, role: Role, today: string): Proposal[] {
   const out: Proposal[] = [];
   const item = r.item === 'none' ? undefined : r.item;
@@ -61,11 +86,14 @@ function fromReport(r: AgentReport, role: Role, today: string): Proposal[] {
     out.push({
       database,
       ...(typeof rec['ref'] === 'string' ? { ref: rec['ref'] } : {}),
-      properties: bugSeverityRule(
-        role,
+      properties: normaliseRelations(
         database,
-        { ...(rec['properties'] as Record<string, unknown>) },
-        rec['reproductions'],
+        bugSeverityRule(
+          role,
+          database,
+          { ...(rec['properties'] as Record<string, unknown>) },
+          rec['reproductions'],
+        ),
       ),
       ...(typeof rec['content_markdown'] === 'string'
         ? { content_markdown: rec['content_markdown'] }

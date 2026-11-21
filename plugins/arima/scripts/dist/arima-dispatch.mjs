@@ -3264,8 +3264,8 @@ var require_utils = __commonJS({
       }
       return ind;
     }
-    function removeDotSegments(path40) {
-      let input = path40;
+    function removeDotSegments(path41) {
+      let input = path41;
       const output = [];
       let nextSlash = -1;
       let len = 0;
@@ -3339,11 +3339,11 @@ var require_utils = __commonJS({
       }
       return output.join("");
     }
-    function removeDotSegmentsRelative(path40) {
-      if (path40 === "" || path40[0] === "/") {
-        return removeDotSegments(path40);
+    function removeDotSegmentsRelative(path41) {
+      if (path41 === "" || path41[0] === "/") {
+        return removeDotSegments(path41);
       }
-      const segments = path40.split("/");
+      const segments = path41.split("/");
       const last = segments.length - 1;
       const output = [];
       let trailingDirectory = false;
@@ -3706,8 +3706,8 @@ var require_schemes = __commonJS({
       }
       if (wsComponent.resourceName) {
         const queryIndex = wsComponent.resourceName.indexOf("?");
-        const path40 = queryIndex === -1 ? wsComponent.resourceName : wsComponent.resourceName.slice(0, queryIndex);
-        wsComponent.path = path40 && path40 !== "/" ? path40 : void 0;
+        const path41 = queryIndex === -1 ? wsComponent.resourceName : wsComponent.resourceName.slice(0, queryIndex);
+        wsComponent.path = path41 && path41 !== "/" ? path41 : void 0;
         wsComponent.query = queryIndex === -1 ? void 0 : wsComponent.resourceName.slice(queryIndex + 1);
         wsComponent.resourceName = void 0;
       }
@@ -8158,17 +8158,17 @@ var require_visit = __commonJS({
     visit.BREAK = BREAK;
     visit.SKIP = SKIP;
     visit.REMOVE = REMOVE;
-    function visit_(key, node, visitor, path40) {
-      const ctrl = callVisitor(key, node, visitor, path40);
+    function visit_(key, node, visitor, path41) {
+      const ctrl = callVisitor(key, node, visitor, path41);
       if (identity.isNode(ctrl) || identity.isPair(ctrl)) {
-        replaceNode(key, path40, ctrl);
-        return visit_(key, ctrl, visitor, path40);
+        replaceNode(key, path41, ctrl);
+        return visit_(key, ctrl, visitor, path41);
       }
       if (typeof ctrl !== "symbol") {
         if (identity.isCollection(node)) {
-          path40 = Object.freeze(path40.concat(node));
+          path41 = Object.freeze(path41.concat(node));
           for (let i = 0; i < node.items.length; ++i) {
-            const ci = visit_(i, node.items[i], visitor, path40);
+            const ci = visit_(i, node.items[i], visitor, path41);
             if (typeof ci === "number")
               i = ci - 1;
             else if (ci === BREAK)
@@ -8179,13 +8179,13 @@ var require_visit = __commonJS({
             }
           }
         } else if (identity.isPair(node)) {
-          path40 = Object.freeze(path40.concat(node));
-          const ck = visit_("key", node.key, visitor, path40);
+          path41 = Object.freeze(path41.concat(node));
+          const ck = visit_("key", node.key, visitor, path41);
           if (ck === BREAK)
             return BREAK;
           else if (ck === REMOVE)
             node.key = null;
-          const cv = visit_("value", node.value, visitor, path40);
+          const cv = visit_("value", node.value, visitor, path41);
           if (cv === BREAK)
             return BREAK;
           else if (cv === REMOVE)
@@ -8206,17 +8206,17 @@ var require_visit = __commonJS({
     visitAsync.BREAK = BREAK;
     visitAsync.SKIP = SKIP;
     visitAsync.REMOVE = REMOVE;
-    async function visitAsync_(key, node, visitor, path40) {
-      const ctrl = await callVisitor(key, node, visitor, path40);
+    async function visitAsync_(key, node, visitor, path41) {
+      const ctrl = await callVisitor(key, node, visitor, path41);
       if (identity.isNode(ctrl) || identity.isPair(ctrl)) {
-        replaceNode(key, path40, ctrl);
-        return visitAsync_(key, ctrl, visitor, path40);
+        replaceNode(key, path41, ctrl);
+        return visitAsync_(key, ctrl, visitor, path41);
       }
       if (typeof ctrl !== "symbol") {
         if (identity.isCollection(node)) {
-          path40 = Object.freeze(path40.concat(node));
+          path41 = Object.freeze(path41.concat(node));
           for (let i = 0; i < node.items.length; ++i) {
-            const ci = await visitAsync_(i, node.items[i], visitor, path40);
+            const ci = await visitAsync_(i, node.items[i], visitor, path41);
             if (typeof ci === "number")
               i = ci - 1;
             else if (ci === BREAK)
@@ -8227,13 +8227,13 @@ var require_visit = __commonJS({
             }
           }
         } else if (identity.isPair(node)) {
-          path40 = Object.freeze(path40.concat(node));
-          const ck = await visitAsync_("key", node.key, visitor, path40);
+          path41 = Object.freeze(path41.concat(node));
+          const ck = await visitAsync_("key", node.key, visitor, path41);
           if (ck === BREAK)
             return BREAK;
           else if (ck === REMOVE)
             node.key = null;
-          const cv = await visitAsync_("value", node.value, visitor, path40);
+          const cv = await visitAsync_("value", node.value, visitor, path41);
           if (cv === BREAK)
             return BREAK;
           else if (cv === REMOVE)
@@ -8260,23 +8260,23 @@ var require_visit = __commonJS({
       }
       return visitor;
     }
-    function callVisitor(key, node, visitor, path40) {
+    function callVisitor(key, node, visitor, path41) {
       if (typeof visitor === "function")
-        return visitor(key, node, path40);
+        return visitor(key, node, path41);
       if (identity.isMap(node))
-        return visitor.Map?.(key, node, path40);
+        return visitor.Map?.(key, node, path41);
       if (identity.isSeq(node))
-        return visitor.Seq?.(key, node, path40);
+        return visitor.Seq?.(key, node, path41);
       if (identity.isPair(node))
-        return visitor.Pair?.(key, node, path40);
+        return visitor.Pair?.(key, node, path41);
       if (identity.isScalar(node))
-        return visitor.Scalar?.(key, node, path40);
+        return visitor.Scalar?.(key, node, path41);
       if (identity.isAlias(node))
-        return visitor.Alias?.(key, node, path40);
+        return visitor.Alias?.(key, node, path41);
       return void 0;
     }
-    function replaceNode(key, path40, node) {
-      const parent = path40[path40.length - 1];
+    function replaceNode(key, path41, node) {
+      const parent = path41[path41.length - 1];
       if (identity.isCollection(parent)) {
         parent.items[key] = node;
       } else if (identity.isPair(parent)) {
@@ -8888,10 +8888,10 @@ var require_Collection = __commonJS({
     var createNode = require_createNode();
     var identity = require_identity();
     var Node = require_Node();
-    function collectionFromPath(schema, path40, value) {
+    function collectionFromPath(schema, path41, value) {
       let v = value;
-      for (let i = path40.length - 1; i >= 0; --i) {
-        const k = path40[i];
+      for (let i = path41.length - 1; i >= 0; --i) {
+        const k = path41[i];
         if (typeof k === "number" && Number.isInteger(k) && k >= 0) {
           const a = [];
           a[k] = v;
@@ -8910,7 +8910,7 @@ var require_Collection = __commonJS({
         sourceObjects: /* @__PURE__ */ new Map()
       });
     }
-    var isEmptyPath = (path40) => path40 == null || typeof path40 === "object" && !!path40[Symbol.iterator]().next().done;
+    var isEmptyPath = (path41) => path41 == null || typeof path41 === "object" && !!path41[Symbol.iterator]().next().done;
     var Collection = class extends Node.NodeBase {
       constructor(type, schema) {
         super(type);
@@ -8940,11 +8940,11 @@ var require_Collection = __commonJS({
        * be a Pair instance or a `{ key, value }` object, which may not have a key
        * that already exists in the map.
        */
-      addIn(path40, value) {
-        if (isEmptyPath(path40))
+      addIn(path41, value) {
+        if (isEmptyPath(path41))
           this.add(value);
         else {
-          const [key, ...rest] = path40;
+          const [key, ...rest] = path41;
           const node = this.get(key, true);
           if (identity.isCollection(node))
             node.addIn(rest, value);
@@ -8958,8 +8958,8 @@ var require_Collection = __commonJS({
        * Removes a value from the collection.
        * @returns `true` if the item was found and removed.
        */
-      deleteIn(path40) {
-        const [key, ...rest] = path40;
+      deleteIn(path41) {
+        const [key, ...rest] = path41;
         if (rest.length === 0)
           return this.delete(key);
         const node = this.get(key, true);
@@ -8973,8 +8973,8 @@ var require_Collection = __commonJS({
        * scalar values from their surrounding node; to disable set `keepScalar` to
        * `true` (collections are always returned intact).
        */
-      getIn(path40, keepScalar) {
-        const [key, ...rest] = path40;
+      getIn(path41, keepScalar) {
+        const [key, ...rest] = path41;
         const node = this.get(key, true);
         if (rest.length === 0)
           return !keepScalar && identity.isScalar(node) ? node.value : node;
@@ -8992,8 +8992,8 @@ var require_Collection = __commonJS({
       /**
        * Checks if the collection includes a value with the key `key`.
        */
-      hasIn(path40) {
-        const [key, ...rest] = path40;
+      hasIn(path41) {
+        const [key, ...rest] = path41;
         if (rest.length === 0)
           return this.has(key);
         const node = this.get(key, true);
@@ -9003,8 +9003,8 @@ var require_Collection = __commonJS({
        * Sets a value in this collection. For `!!set`, `value` needs to be a
        * boolean to add/remove the item from the set.
        */
-      setIn(path40, value) {
-        const [key, ...rest] = path40;
+      setIn(path41, value) {
+        const [key, ...rest] = path41;
         if (rest.length === 0) {
           this.set(key, value);
         } else {
@@ -11519,9 +11519,9 @@ var require_Document = __commonJS({
           this.contents.add(value);
       }
       /** Adds a value to the document. */
-      addIn(path40, value) {
+      addIn(path41, value) {
         if (assertCollection(this.contents))
-          this.contents.addIn(path40, value);
+          this.contents.addIn(path41, value);
       }
       /**
        * Create a new `Alias` node, ensuring that the target `node` has the required anchor.
@@ -11596,14 +11596,14 @@ var require_Document = __commonJS({
        * Removes a value from the document.
        * @returns `true` if the item was found and removed.
        */
-      deleteIn(path40) {
-        if (Collection.isEmptyPath(path40)) {
+      deleteIn(path41) {
+        if (Collection.isEmptyPath(path41)) {
           if (this.contents == null)
             return false;
           this.contents = null;
           return true;
         }
-        return assertCollection(this.contents) ? this.contents.deleteIn(path40) : false;
+        return assertCollection(this.contents) ? this.contents.deleteIn(path41) : false;
       }
       /**
        * Returns item at `key`, or `undefined` if not found. By default unwraps
@@ -11618,10 +11618,10 @@ var require_Document = __commonJS({
        * scalar values from their surrounding node; to disable set `keepScalar` to
        * `true` (collections are always returned intact).
        */
-      getIn(path40, keepScalar) {
-        if (Collection.isEmptyPath(path40))
+      getIn(path41, keepScalar) {
+        if (Collection.isEmptyPath(path41))
           return !keepScalar && identity.isScalar(this.contents) ? this.contents.value : this.contents;
-        return identity.isCollection(this.contents) ? this.contents.getIn(path40, keepScalar) : void 0;
+        return identity.isCollection(this.contents) ? this.contents.getIn(path41, keepScalar) : void 0;
       }
       /**
        * Checks if the document includes a value with the key `key`.
@@ -11632,10 +11632,10 @@ var require_Document = __commonJS({
       /**
        * Checks if the document includes a value at `path`.
        */
-      hasIn(path40) {
-        if (Collection.isEmptyPath(path40))
+      hasIn(path41) {
+        if (Collection.isEmptyPath(path41))
           return this.contents !== void 0;
-        return identity.isCollection(this.contents) ? this.contents.hasIn(path40) : false;
+        return identity.isCollection(this.contents) ? this.contents.hasIn(path41) : false;
       }
       /**
        * Sets a value in this document. For `!!set`, `value` needs to be a
@@ -11652,13 +11652,13 @@ var require_Document = __commonJS({
        * Sets a value in this document. For `!!set`, `value` needs to be a
        * boolean to add/remove the item from the set.
        */
-      setIn(path40, value) {
-        if (Collection.isEmptyPath(path40)) {
+      setIn(path41, value) {
+        if (Collection.isEmptyPath(path41)) {
           this.contents = value;
         } else if (this.contents == null) {
-          this.contents = Collection.collectionFromPath(this.schema, Array.from(path40), value);
+          this.contents = Collection.collectionFromPath(this.schema, Array.from(path41), value);
         } else if (assertCollection(this.contents)) {
-          this.contents.setIn(path40, value);
+          this.contents.setIn(path41, value);
         }
       }
       /**
@@ -13619,9 +13619,9 @@ var require_cst_visit = __commonJS({
     visit.BREAK = BREAK;
     visit.SKIP = SKIP;
     visit.REMOVE = REMOVE;
-    visit.itemAtPath = (cst, path40) => {
+    visit.itemAtPath = (cst, path41) => {
       let item = cst;
-      for (const [field, index] of path40) {
+      for (const [field, index] of path41) {
         const tok = item?.[field];
         if (tok && "items" in tok) {
           item = tok.items[index];
@@ -13630,23 +13630,23 @@ var require_cst_visit = __commonJS({
       }
       return item;
     };
-    visit.parentCollection = (cst, path40) => {
-      const parent = visit.itemAtPath(cst, path40.slice(0, -1));
-      const field = path40[path40.length - 1][0];
+    visit.parentCollection = (cst, path41) => {
+      const parent = visit.itemAtPath(cst, path41.slice(0, -1));
+      const field = path41[path41.length - 1][0];
       const coll = parent?.[field];
       if (coll && "items" in coll)
         return coll;
       throw new Error("Parent collection not found");
     };
-    function _visit(path40, item, visitor) {
-      let ctrl = visitor(item, path40);
+    function _visit(path41, item, visitor) {
+      let ctrl = visitor(item, path41);
       if (typeof ctrl === "symbol")
         return ctrl;
       for (const field of ["key", "value"]) {
         const token = item[field];
         if (token && "items" in token) {
           for (let i = 0; i < token.items.length; ++i) {
-            const ci = _visit(Object.freeze(path40.concat([[field, i]])), token.items[i], visitor);
+            const ci = _visit(Object.freeze(path41.concat([[field, i]])), token.items[i], visitor);
             if (typeof ci === "number")
               i = ci - 1;
             else if (ci === BREAK)
@@ -13657,10 +13657,10 @@ var require_cst_visit = __commonJS({
             }
           }
           if (typeof ctrl === "function" && field === "key")
-            ctrl = ctrl(item, path40);
+            ctrl = ctrl(item, path41);
         }
       }
-      return typeof ctrl === "function" ? ctrl(item, path40) : ctrl;
+      return typeof ctrl === "function" ? ctrl(item, path41) : ctrl;
     }
     exports.visit = visit;
   }
@@ -16713,19 +16713,19 @@ var require_errors3 = __commonJS({
       }
     };
     exports.BrowserTokenNotAllowedError = BrowserTokenNotAllowedError;
-    function validateRequestPath(path40) {
-      if (path40.includes("..")) {
-        throw new InvalidPathParameterError(`Request path "${path40}" contains path traversal sequence ".."`);
+    function validateRequestPath(path41) {
+      if (path41.includes("..")) {
+        throw new InvalidPathParameterError(`Request path "${path41}" contains path traversal sequence ".."`);
       }
-      if (/%2e/i.test(path40)) {
+      if (/%2e/i.test(path41)) {
         let decoded;
         try {
-          decoded = decodeURIComponent(path40);
+          decoded = decodeURIComponent(path41);
         } catch {
           return;
         }
         if (decoded.includes("..")) {
-          throw new InvalidPathParameterError(`Request path "${path40}" contains encoded path traversal sequence`);
+          throw new InvalidPathParameterError(`Request path "${path41}" contains encoded path traversal sequence`);
         }
       }
     }
@@ -17409,17 +17409,17 @@ var require_Client = __commonJS({
        * Sends a request.
        */
       async request(args) {
-        const { path: path40, method, query, body, formDataParams, auth } = args;
-        (0, errors_1.validateRequestPath)(path40);
-        this.log(logging_1.LogLevel.INFO, "request start", { method, path: path40 });
-        const url2 = this.buildRequestUrl(path40, query);
+        const { path: path41, method, query, body, formDataParams, auth } = args;
+        (0, errors_1.validateRequestPath)(path41);
+        this.log(logging_1.LogLevel.INFO, "request start", { method, path: path41 });
+        const url2 = this.buildRequestUrl(path41, query);
         const bodyAsJsonString = this.serializeBody(body);
         const headers = this.buildRequestHeaders(args.headers, auth, bodyAsJsonString);
         const formData = this.buildFormData(formDataParams, headers);
         return this.executeWithRetry({
           url: url2,
           method,
-          path: path40,
+          path: path41,
           headers,
           body: bodyAsJsonString !== null && bodyAsJsonString !== void 0 ? bodyAsJsonString : formData
         }, (request) => this.executeSingleRequest(request));
@@ -17429,20 +17429,20 @@ var require_Client = __commonJS({
        */
       async *streamRequest(args, parseEvent) {
         var _a;
-        const { path: path40, method, query, body, auth } = args;
-        (0, errors_1.validateRequestPath)(path40);
-        this.log(logging_1.LogLevel.INFO, "stream request start", { method, path: path40 });
-        const url2 = this.buildRequestUrl(path40, query);
+        const { path: path41, method, query, body, auth } = args;
+        (0, errors_1.validateRequestPath)(path41);
+        this.log(logging_1.LogLevel.INFO, "stream request start", { method, path: path41 });
+        const url2 = this.buildRequestUrl(path41, query);
         const bodyAsJsonString = this.serializeBody(body);
         const headers = this.buildRequestHeaders(args.headers, auth, bodyAsJsonString);
         const response = await this.executeWithRetry({
           url: url2,
           method,
-          path: path40,
+          path: path41,
           headers,
           body: bodyAsJsonString
         }, (request) => this.executeSingleStreamRequest(request));
-        this.log(logging_1.LogLevel.INFO, "stream request opened", { method, path: path40 });
+        this.log(logging_1.LogLevel.INFO, "stream request opened", { method, path: path41 });
         if (response.body === void 0 || response.body === null) {
           for (const frame of takeSseFrames({
             content: await response.text(),
@@ -17494,8 +17494,8 @@ var require_Client = __commonJS({
       /**
        * Builds the full URL with query parameters.
        */
-      buildRequestUrl(path40, query) {
-        const url2 = new URL(`${__classPrivateFieldGet(this, _Client_prefixUrl, "f")}${path40}`);
+      buildRequestUrl(path41, query) {
+        const url2 = new URL(`${__classPrivateFieldGet(this, _Client_prefixUrl, "f")}${path41}`);
         if (query) {
           for (const [key, value] of Object.entries(query)) {
             if (value !== void 0 && value !== null) {
@@ -17582,14 +17582,14 @@ var require_Client = __commonJS({
        * Executes the request with retry logic.
        */
       async executeWithRetry(args, execute) {
-        const { url: url2, method, path: path40, headers, body } = args;
+        const { url: url2, method, path: path41, headers, body } = args;
         let attempt = 0;
         while (true) {
           try {
             return await execute({
               url: url2,
               method,
-              path: path40,
+              path: path41,
               headers,
               body
             });
@@ -17602,7 +17602,7 @@ var require_Client = __commonJS({
               const delayMs = this.calculateRetryDelay(error, attempt);
               this.log(logging_1.LogLevel.INFO, "retrying request", {
                 method,
-                path: path40,
+                path: path41,
                 attempt: attempt + 1,
                 delayMs
               });
@@ -17618,7 +17618,7 @@ var require_Client = __commonJS({
        * Executes a single HTTP request (no retry).
        */
       async executeSingleRequest(args) {
-        const { url: url2, method, path: path40, headers, body } = args;
+        const { url: url2, method, path: path41, headers, body } = args;
         const response = await errors_1.RequestTimeoutError.rejectAfterTimeout(__classPrivateFieldGet(this, _Client_fetch, "f").call(this, url2.toString(), {
           method: method.toUpperCase(),
           headers,
@@ -17632,7 +17632,7 @@ var require_Client = __commonJS({
         const responseJson = JSON.parse(responseText);
         this.log(logging_1.LogLevel.INFO, "request success", {
           method,
-          path: path40,
+          path: path41,
           ...this.extractRequestId(responseJson)
         });
         return responseJson;
@@ -18298,7 +18298,7 @@ var require_src = __commonJS({
 });
 
 // plugins/arima/scripts/src/cli/dispatch-cli.ts
-import path39 from "node:path";
+import path40 from "node:path";
 import { parseArgs } from "node:util";
 
 // plugins/arima/scripts/src/config.ts
@@ -21615,12 +21615,12 @@ function findSymlink(dir) {
 }
 async function snapshot(c, ref) {
   const { exec } = c.deps;
-  const git4 = (args, env) => exec("git", args, {
+  const git5 = (args, env) => exec("git", args, {
     cwd: c.s.projectDir,
     timeoutMs: 12e4,
     ...env ? { env: { ...dockerEnv(c.env), ...env } } : {}
   });
-  const r = await git4(["rev-parse", "--verify", "--quiet", `${ref}^{commit}`]);
+  const r = await git5(["rev-parse", "--verify", "--quiet", `${ref}^{commit}`]);
   if (r.code !== 0)
     throw new EnvError(`cannot resolve ref "${ref}" in ${c.s.projectDir}`, ENV_EXIT.failed);
   const sha = r.stdout.trim();
@@ -21630,8 +21630,8 @@ async function snapshot(c, ref) {
   mkdirSync9(out);
   const withIndex = { GIT_INDEX_FILE: index };
   const dispose = () => rmSync3(dir, { recursive: true, force: true });
-  const a = await git4(["read-tree", sha], withIndex);
-  const b = a.code === 0 ? await git4(["checkout-index", "-a", `--prefix=${out}${path16.sep}`], withIndex) : a;
+  const a = await git5(["read-tree", sha], withIndex);
+  const b = a.code === 0 ? await git5(["checkout-index", "-a", `--prefix=${out}${path16.sep}`], withIndex) : a;
   if (b.code !== 0) {
     dispose();
     throw new EnvError(`cannot export ${ref}: ${tail(b.stderr, 300)}`, ENV_EXIT.failed);
@@ -21974,10 +21974,10 @@ function stagingFailing(projectDir) {
 }
 
 // plugins/arima/scripts/src/dispatch.ts
-import { execFileSync as execFileSync7 } from "node:child_process";
+import { execFileSync as execFileSync8 } from "node:child_process";
 import { createHash as createHash3 } from "node:crypto";
-import { existsSync as existsSync29, readFileSync as readFileSync28 } from "node:fs";
-import path38 from "node:path";
+import { existsSync as existsSync30, readFileSync as readFileSync29 } from "node:fs";
+import path39 from "node:path";
 
 // plugins/arima/scripts/src/dispatch-units.ts
 var flat = (n) => ({ S: n, M: n, L: n });
@@ -24743,7 +24743,22 @@ function checkBranch(i) {
       );
   }
   if (i.role === "developer") {
-    const e2e = files.filter((f) => f.toLowerCase().startsWith("tests/e2e/"));
+    let own = files;
+    if (i.testsBase !== void 0) {
+      try {
+        git3(dir, ["merge-base", "--is-ancestor", i.testsBase, i.branch]);
+        own = git3(dir, [
+          "-c",
+          "core.quotePath=false",
+          "diff",
+          "--name-only",
+          `${i.testsBase}..${i.branch}`
+        ]).split("\n").filter(Boolean);
+      } catch {
+        own = files;
+      }
+    }
+    const e2e = own.filter((f) => f.toLowerCase().startsWith("tests/e2e/"));
     if (e2e.length > 0)
       refuse2(
         `the developer may not change tests/e2e/** (QA's): ${e2e.join(", ")}`,
@@ -27222,6 +27237,20 @@ function bugSeverityRule(role, database, properties2, reproductions) {
     Actual: `${actual}[severity lowered from ${sev} to S3 by the engine: not reproduced in two runs (spec 7.12); the PO may change it]`
   };
 }
+function normaliseRelations(database, properties2) {
+  let relations;
+  try {
+    relations = new Set(
+      dbByKey(database).props.filter((p) => p.type === "relation").map((p) => p.name)
+    );
+  } catch {
+    return properties2;
+  }
+  const out = { ...properties2 };
+  for (const [k, v] of Object.entries(out))
+    if (relations.has(k) && typeof v === "string") out[k] = [v];
+  return out;
+}
 function fromReport(r, role, today) {
   const out = [];
   const item = r.item === "none" ? void 0 : r.item;
@@ -27244,11 +27273,14 @@ function fromReport(r, role, today) {
     out.push({
       database,
       ...typeof rec["ref"] === "string" ? { ref: rec["ref"] } : {},
-      properties: bugSeverityRule(
-        role,
+      properties: normaliseRelations(
         database,
-        { ...rec["properties"] },
-        rec["reproductions"]
+        bugSeverityRule(
+          role,
+          database,
+          { ...rec["properties"] },
+          rec["reproductions"]
+        )
       ),
       ...typeof rec["content_markdown"] === "string" ? { content_markdown: rec["content_markdown"] } : {}
     });
@@ -27660,12 +27692,101 @@ function reviewContext(o) {
   return { untrusted, conditions, approvable: unapprovable.length === 0, unapprovable };
 }
 
-// plugins/arima/scripts/src/runlock.ts
-import { existsSync as existsSync28, mkdirSync as mkdirSync21, readFileSync as readFileSync27, rmSync as rmSync6, writeFileSync as writeFileSync10 } from "node:fs";
-import { hostname } from "node:os";
+// plugins/arima/scripts/src/qa-tests.ts
+import { execFileSync as execFileSync7 } from "node:child_process";
+import { existsSync as existsSync28, mkdirSync as mkdirSync21, readFileSync as readFileSync27, writeFileSync as writeFileSync10 } from "node:fs";
 import path37 from "node:path";
+var QaTestsError = class extends Error {
+};
+var git4 = (cwd, args) => execFileSync7("git", args, { cwd, encoding: "utf8", stdio: ["ignore", "pipe", "pipe"] }).trimEnd();
+var tryGit = (cwd, args) => {
+  try {
+    return git4(cwd, args);
+  } catch {
+    return void 0;
+  }
+};
+function isAncestor(cwd, a, b) {
+  try {
+    execFileSync7("git", ["merge-base", "--is-ancestor", a, b], { cwd, stdio: "ignore" });
+    return true;
+  } catch {
+    return false;
+  }
+}
+var tipsFile = (projectDir) => path37.join(projectDir, ".arima", "state", "qa-tips.json");
+function readQaTips(projectDir) {
+  try {
+    return JSON.parse(readFileSync27(tipsFile(projectDir), "utf8"));
+  } catch {
+    return {};
+  }
+}
+var qaTipOf = (projectDir, item) => readQaTips(projectDir)[item];
+function writeQaTip(projectDir, item, sha) {
+  const f = tipsFile(projectDir);
+  mkdirSync21(path37.dirname(f), { recursive: true });
+  writeFileSync10(f, `${JSON.stringify({ ...readQaTips(projectDir), [item]: sha }, null, 2)}
+`);
+}
+function adoptQaTests(o) {
+  const dir = worktreePath(o.projectDir, o.qaBranch);
+  if (!existsSync28(dir)) throw new QaTestsError(`there is no QA worktree for ${o.qaBranch}`);
+  const changed = git4(dir, ["-c", "core.quotePath=false", "status", "--porcelain", "-uall"]).split("\n").filter(Boolean).map((l) => l.slice(3).trim().replace(/^"|"$/g, ""));
+  const outside = changed.filter((f) => !f.startsWith("tests/"));
+  if (outside.length > 0)
+    throw new QaTestsError(`QA changed files outside tests/: ${outside.join(", ")}`);
+  if (changed.length > 0) {
+    git4(dir, ["add", "--", "tests"]);
+    const leaked = findSecrets(git4(dir, ["diff", "--cached"]));
+    if (leaked.length > 0) {
+      git4(dir, ["reset", "-q"]);
+      throw new QaTestsError(`QA's tests look like they contain a secret (${leaked.join(", ")})`);
+    }
+    git4(dir, [
+      "-c",
+      "user.name=ARIMA host",
+      "-c",
+      "user.email=arima@localhost.invalid",
+      "commit",
+      "-q",
+      "-m",
+      `test(${o.item}): end-to-end tests from the acceptance criteria`
+    ]);
+  }
+  const sha = git4(dir, ["rev-parse", "HEAD"]);
+  const have = tryGit(o.projectDir, [
+    "rev-parse",
+    "--verify",
+    "--quiet",
+    `refs/heads/${o.storyBranch}`
+  ]);
+  if (have === sha) {
+    writeQaTip(o.projectDir, o.item, sha);
+    return { sha, created: false };
+  }
+  if (have === void 0) {
+    const base = tryGit(dir, ["merge-base", "HEAD", "refs/heads/main"]);
+    if (changed.length === 0 && base === sha) return void 0;
+    git4(o.projectDir, ["branch", o.storyBranch, sha]);
+    writeQaTip(o.projectDir, o.item, sha);
+    return { sha, created: true };
+  }
+  if (!isAncestor(o.projectDir, have, sha))
+    throw new QaTestsError(
+      `${o.storyBranch} has work that is not in QA's branch; not a fast-forward`
+    );
+  git4(o.projectDir, ["branch", "-f", o.storyBranch, sha]);
+  writeQaTip(o.projectDir, o.item, sha);
+  return { sha, created: false };
+}
+
+// plugins/arima/scripts/src/runlock.ts
+import { existsSync as existsSync29, mkdirSync as mkdirSync22, readFileSync as readFileSync28, rmSync as rmSync6, writeFileSync as writeFileSync11 } from "node:fs";
+import { hostname } from "node:os";
+import path38 from "node:path";
 function runLockFile(projectDir) {
-  return path37.join(projectDir, ".arima", "run.lock");
+  return path38.join(projectDir, ".arima", "run.lock");
 }
 function alive2(pid) {
   try {
@@ -27677,10 +27798,10 @@ function alive2(pid) {
 }
 function lockStatus(projectDir, staleAfterMs, now = Date.now()) {
   const file = runLockFile(projectDir);
-  if (!existsSync28(file)) return { held: false, stale: false };
+  if (!existsSync29(file)) return { held: false, stale: false };
   let lock;
   try {
-    lock = JSON.parse(readFileSync27(file, "utf8"));
+    lock = JSON.parse(readFileSync28(file, "utf8"));
   } catch {
     return { held: false, stale: true };
   }
@@ -27692,7 +27813,7 @@ function lockStatus(projectDir, staleAfterMs, now = Date.now()) {
 }
 function acquireRunLock(projectDir, runId, staleAfterMs) {
   const file = runLockFile(projectDir);
-  mkdirSync21(path37.dirname(file), { recursive: true });
+  mkdirSync22(path38.dirname(file), { recursive: true });
   const body = {
     pid: process.pid,
     run_id: runId,
@@ -27701,7 +27822,7 @@ function acquireRunLock(projectDir, runId, staleAfterMs) {
   };
   for (let attempt = 0; attempt < 2; attempt++) {
     try {
-      writeFileSync10(file, `${JSON.stringify(body)}
+      writeFileSync11(file, `${JSON.stringify(body)}
 `, { flag: "wx" });
       return true;
     } catch (e) {
@@ -27715,9 +27836,9 @@ function acquireRunLock(projectDir, runId, staleAfterMs) {
 }
 function releaseRunLock(projectDir, runId) {
   const file = runLockFile(projectDir);
-  if (!existsSync28(file)) return false;
+  if (!existsSync29(file)) return false;
   try {
-    const lock = JSON.parse(readFileSync27(file, "utf8"));
+    const lock = JSON.parse(readFileSync28(file, "utf8"));
     if (lock.run_id !== runId) return false;
   } catch {
   }
@@ -27953,7 +28074,7 @@ async function runDispatch(o) {
   if (!cfgResult.ok || cfgResult.arima === void 0 || cfgResult.team === void 0)
     return fail(
       DISPATCH_EXIT.config,
-      cfgResult.errors.map((e) => `${path38.basename(e.file)}:${e.line}: ${e.message}`).join("\n")
+      cfgResult.errors.map((e) => `${path39.basename(e.file)}:${e.line}: ${e.message}`).join("\n")
     );
   const cfg = cfgResult.arima;
   const team = cfgResult.team;
@@ -28060,8 +28181,8 @@ async function runDispatch(o) {
       if (e?.run_id === void 0) return void 0;
       try {
         return JSON.parse(
-          readFileSync28(
-            path38.join(o.projectDir, ".arima", "runs", `${e.run_id}.report.json`),
+          readFileSync29(
+            path39.join(o.projectDir, ".arima", "runs", `${e.run_id}.report.json`),
             "utf8"
           )
         );
@@ -28076,12 +28197,12 @@ async function runDispatch(o) {
     }, readsFor2 = function(unit, cwd) {
       if (unit.role === "qa") {
         const qa = [];
-        if (existsSync29(path38.join(cwd, "api/openapi.yaml")))
+        if (existsSync30(path39.join(cwd, "api/openapi.yaml")))
           qa.push({
             ref: "api/openapi.yaml",
             why: "the request and response shapes to test against"
           });
-        if (existsSync29(path38.join(cwd, "design", "screens", unit.item)))
+        if (existsSync30(path39.join(cwd, "design", "screens", unit.item)))
           qa.push({
             ref: `design/screens/${unit.item}`,
             why: "the screens and their states (empty, loading, error, success) to assert"
@@ -28092,7 +28213,7 @@ async function runDispatch(o) {
         return [];
       const out = [];
       const add2 = (ref, why) => {
-        if (existsSync29(path38.join(cwd, ref))) out.push({ ref, why });
+        if (existsSync30(path39.join(cwd, ref))) out.push({ ref, why });
       };
       add2(
         "api/openapi.yaml",
@@ -28196,8 +28317,22 @@ async function runDispatch(o) {
     }, prNumber2 = function(item) {
       const e = readEvents(o.projectDir).filter((x) => x.type === "pr.published" && x.item === item).at(-1);
       return typeof e?.data?.["pr"] === "number" ? e.data["pr"] : void 0;
+    }, adoptTests2 = function(unit) {
+      try {
+        adoptQaTests({
+          projectDir: o.projectDir,
+          item: unit.item,
+          qaBranch: `qa/${unit.item}-tests`,
+          storyBranch: branchFor(unit.item, titleOf2(unit.item))
+        });
+      } catch (e) {
+        res.warnings.push(
+          `the tests of ${unit.item} were not put on the story branch: ${e instanceof Error ? e.message.slice(0, 200) : String(e)}`
+        );
+        if (!(e instanceof QaTestsError)) throw e;
+      }
     };
-    var mirrorStatusOf = mirrorStatusOf2, attemptOf = attemptOf2, readAttempt = readAttempt2, envSettings = envSettings2, currentStatus = currentStatus2, inReviewWithPr = inReviewWithPr2, failingPreviewItems = failingPreviewItems2, previewFailureOf = previewFailureOf2, previewIsReady = previewIsReady2, previewConditions = previewConditions2, lastDevelopReport = lastDevelopReport2, lastReportOf = lastReportOf2, titleOf = titleOf2, storyBranchOf = storyBranchOf2, readsFor = readsFor2, packetFor = packetFor2, prNumber = prNumber2;
+    var mirrorStatusOf = mirrorStatusOf2, attemptOf = attemptOf2, readAttempt = readAttempt2, envSettings = envSettings2, currentStatus = currentStatus2, inReviewWithPr = inReviewWithPr2, failingPreviewItems = failingPreviewItems2, previewFailureOf = previewFailureOf2, previewIsReady = previewIsReady2, previewConditions = previewConditions2, lastDevelopReport = lastDevelopReport2, lastReportOf = lastReportOf2, titleOf = titleOf2, storyBranchOf = storyBranchOf2, readsFor = readsFor2, packetFor = packetFor2, prNumber = prNumber2, adoptTests = adoptTests2;
     const setup = d.setupCheck?.() ?? {
       green: true,
       detail: "arima-setup is not built yet; the Phase 3 checklist was not checked"
@@ -28671,6 +28806,7 @@ async function runDispatch(o) {
           now
         });
       if (REVIEW_KINDS.has(unit.kind)) await comment(unit, report);
+      if (unit.kind === "test-write" && report.status === "done") adoptTests2(unit);
       if (unit.kind === "develop" && report.status === "done")
         await publishDevelop(unit, report, branch);
       if (unit.kind === "review" && report.status === "done" && report.verdict) {
@@ -28711,7 +28847,7 @@ async function runDispatch(o) {
     }
     async function publishDevelop(unit, report, branch) {
       const criteria = report.criteria_map ?? [];
-      const ui = existsSync29(path38.join(o.projectDir, "design", "screens", unit.item));
+      const ui = existsSync30(path39.join(o.projectDir, "design", "screens", unit.item));
       const body = renderPrBody({
         items: [unit.item],
         summary: report.summary,
@@ -28733,6 +28869,7 @@ async function runDispatch(o) {
           branch,
           item: unit.item,
           role: unit.role,
+          ...qaTipOf(o.projectDir, unit.item) ? { testsBase: qaTipOf(o.projectDir, unit.item) } : {},
           title: titleOf2(unit.item) || unit.item,
           body,
           repo: cfg.github.repo,
@@ -28889,7 +29026,7 @@ async function runDispatch(o) {
       try {
         const model = buildDigest(o.projectDir, now);
         const pub = await publishDigest({ projectDir: o.projectDir, runId, model, now });
-        digestNote = `${model.health}; ${path38.relative(o.projectDir, pub.file)}`;
+        digestNote = `${model.health}; ${path39.relative(o.projectDir, pub.file)}`;
         if (model.health === "red") red = { date: model.date, reasons: model.healthReasons };
       } catch (e) {
         res.warnings.push(
@@ -28971,11 +29108,11 @@ async function runDispatch(o) {
   }
 }
 function branchExists(projectDir, branch) {
-  return existsSync29(worktreePath(projectDir, branch)) ? true : gitHasBranch(projectDir, branch);
+  return existsSync30(worktreePath(projectDir, branch)) ? true : gitHasBranch(projectDir, branch);
 }
 function gitHasBranch(projectDir, branch) {
   try {
-    execFileSync7("git", ["show-ref", "--verify", "--quiet", `refs/heads/${branch}`], {
+    execFileSync8("git", ["show-ref", "--verify", "--quiet", `refs/heads/${branch}`], {
       cwd: projectDir,
       stdio: "ignore"
     });
@@ -29073,7 +29210,7 @@ ${DISPATCH_USAGE}
 `);
     return DISPATCH_EXIT.usage;
   }
-  const projectDir = path39.resolve(io.cwd, v.project ?? ".");
+  const projectDir = path40.resolve(io.cwd, v.project ?? ".");
   const env = deps.env ?? process.env;
   let wired = deps;
   if (deps.wired !== true) {

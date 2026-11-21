@@ -79,3 +79,24 @@ describe('the report schema carries `reproductions` on a record, and nothing els
     expect((await run(report({ severity_note: 'x' }))).ok).toBe(false);
   });
 });
+
+describe('normaliseRelations (found by the live check against real Notion)', () => {
+  it('turns one id into a one-element array for a relation property, and leaves everything else alone', async () => {
+    const { normaliseRelations } = await import('../src/notion/proposals.js');
+    expect(normaliseRelations('bugs', { Title: 'NEW-1', Story: 'US-12' })).toEqual({
+      Title: 'NEW-1',
+      Story: ['US-12'],
+    });
+    expect(normaliseRelations('bugs', { Story: ['US-12', 'US-13'] })).toEqual({
+      Story: ['US-12', 'US-13'],
+    });
+    expect(
+      normaliseRelations('test_cases', { Story: 'US-12', 'Test path': 'tests/e2e/a.js' }),
+    ).toEqual({
+      Story: ['US-12'],
+      'Test path': 'tests/e2e/a.js',
+    });
+    // Not a relation: a text value is not wrapped.
+    expect(normaliseRelations('bugs', { Steps: 'open it' })).toEqual({ Steps: 'open it' });
+  });
+});

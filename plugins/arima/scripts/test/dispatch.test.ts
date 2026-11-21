@@ -51,7 +51,7 @@ interface World {
 }
 
 async function world(
-  o: { mode?: string; storyStatus?: string; stories?: number } = {},
+  o: { mode?: string; storyStatus?: string; stories?: number; noTestCases?: boolean } = {},
 ): Promise<World> {
   const parent = tempDir('arima-dispatch-');
   const dir = path.join(parent, 'app');
@@ -122,7 +122,7 @@ async function world(
     Status: o.storyStatus ?? 'Ready',
     Complexity: 'M',
     'Acceptance criteria': 'Given a cart When I open it Then I see the total',
-    'Test Cases': [tc],
+    ...(o.noTestCases ? {} : { 'Test Cases': [tc] }),
     Attempt: 1,
   });
   for (let i = 1; i < (o.stories ?? 1); i++) {
@@ -646,6 +646,38 @@ describe('previews of stories In Review (WP-218)', () => {
       .join('\n');
     expect(text).toMatch(/preview http:\/\/localhost:41\d\d/);
     expect(text).not.toContain('preview link not available yet');
+    // QA's packet names the preview to test and carries the story's test cases (as data), never the developer's notes.
+    writeFileSync(
+      path.join(w.stub, 'qa-qa.txt'),
+      'Tested.\n\n' +
+        FENCE +
+        'arima-report\n' +
+        JSON.stringify({
+          schema_version: 1,
+          run_id: '__RUN_ID__',
+          role: 'qa',
+          item: '__ITEM__',
+          status: 'blocked',
+          summary: 'stub',
+          questions: [
+            {
+              addressed_to: 'devops',
+              question: 'x',
+              options: [{ label: 'y', recommendation: true }],
+              blocking: true,
+            },
+          ],
+        }) +
+        '\n' +
+        FENCE +
+        '\n',
+    );
+    await w.pull();
+    await runDispatch(w.opts({ deps: deps() }));
+    const qaPrompt = readFileSync(path.join(w.stub, 'qa-qa.prompt.1'), 'utf8');
+    expect(qaPrompt).toMatch(/The preview to test is http:\/\/localhost:41\d\d/);
+    expect(qaPrompt).toContain('Test cases of the story (Notion)');
+    expect(qaPrompt).not.toContain('.arima/runs');
   });
 
   it('a preview that does not answer keeps the story In Review, plans a preview-diagnose unit for devops and never reaches In QA', async () => {
@@ -708,6 +740,39 @@ describe('previews of stories In Review (WP-218)', () => {
     await w.pull();
     await runDispatch(w.opts({ deps: w.deps({ github: green }) }));
     expect(statuses(w.dir)).toContain('In QA');
+  });
+});
+
+describe('QA tests reach the story branch (WP-211)', () => {
+  it("after a test-write run the host commits QA's tests and the story branch carries them", async () => {
+    const w = await world({ noTestCases: true });
+    writeFileSync(
+      path.join(w.stub, 'qa-test-write.txt'),
+      'Written.\n\n' +
+        FENCE +
+        'arima-report\n' +
+        JSON.stringify({
+          schema_version: 1,
+          run_id: '__RUN_ID__',
+          role: 'qa',
+          item: '__ITEM__',
+          status: 'done',
+          summary: 'Tests written.',
+        }) +
+        '\n' +
+        FENCE +
+        '\n',
+    );
+    writeFileSync(path.join(w.stub, 'qa-test-write.tests'), '');
+    const r = await runDispatch(w.opts());
+    expect(r.dispatched.some((x) => x.unit.kind === 'test-write' && x.result === 'pass')).toBe(
+      true,
+    );
+    const branch = `feat/${w.story}-cart-summary`;
+    expect(git(w.dir, 'show', `${branch}:tests/e2e/${w.story}.test.js`)).toContain('assert');
+    const { qaTipOf } = await import('../src/qa-tests.js');
+    expect(qaTipOf(w.dir, w.story)).toBe(git(w.dir, 'rev-parse', branch));
+    expect(r.warnings.join('\n')).not.toContain('were not put on the story branch');
   });
 });
 
