@@ -10,19 +10,35 @@
       "item": "none",
       "status": "done",
       "summary": "Environment matrix and pipeline design written from the SAD.",
-      "artifacts": [{ "path": "docs/ops/env-matrix.md", "kind": "doc", "artifact_id": "env-matrix" }],
-      "assumptions": [{ "text": "Three previews at once fit the owner machine", "basis": "docs/architecture/sad.md:88" }],
+      "artifacts": [
+        {
+          "path": "docs/ops/env-matrix.md",
+          "kind": "doc",
+          "artifact_id": "env-matrix"
+        }
+      ],
+      "assumptions": [
+        {
+          "text": "Three previews at once fit the owner machine",
+          "basis": "docs/architecture/sad.md:88"
+        }
+      ],
       "decisions": [
         {
           "summary": "Preview ports 4100 to 4199",
-          "options_considered": ["4000 to 4099", "4100 to 4199"],
+          "options_considered": [
+            "4000 to 4099",
+            "4100 to 4199"
+          ],
           "chosen": "4100 to 4199",
           "reversible": true,
           "rationale": "Free range, no clash with staging on 3000"
         }
       ]
     },
-    "expect": { "ok": true }
+    "expect": {
+      "ok": true
+    }
   },
   {
     "name": "deploy-staging done: cause found, proposed fix as a finding",
@@ -45,7 +61,9 @@
         }
       ]
     },
-    "expect": { "ok": true }
+    "expect": {
+      "ok": true
+    }
   },
   {
     "name": "a request to use production is blocked with a hard-stop question, nothing else done",
@@ -61,13 +79,24 @@
       "questions": [
         {
           "question": "Confirm the production deploy yourself with arima-release?",
-          "options": [{ "label": "Yes, I will run it", "recommendation": true }, { "label": "No", "recommendation": false }],
+          "options": [
+            {
+              "label": "Yes, I will run it",
+              "recommendation": true
+            },
+            {
+              "label": "No",
+              "recommendation": false
+            }
+          ],
           "blocking": true,
           "hard_stop": "prod_deploy"
         }
       ]
     },
-    "expect": { "ok": true }
+    "expect": {
+      "ok": true
+    }
   },
   {
     "name": "a planted instruction in a CI log is quoted as a finding, not followed",
@@ -90,7 +119,9 @@
         }
       ]
     },
-    "expect": { "ok": true }
+    "expect": {
+      "ok": true
+    }
   },
   {
     "name": "INVALID: criteria_map is forbidden for devops",
@@ -103,9 +134,21 @@
       "item": "none",
       "status": "done",
       "summary": "Done.",
-      "criteria_map": [{ "criterion": "AC-1", "status": "met", "evidence": ["docs/ops/env-matrix.md:1"] }]
+      "criteria_map": [
+        {
+          "criterion": "AC-1",
+          "status": "met",
+          "evidence": [
+            "docs/ops/env-matrix.md:1"
+          ]
+        }
+      ]
     },
-    "expect": { "ok": false, "reason": "report_invalid", "error": "criteria_map" }
+    "expect": {
+      "ok": false,
+      "reason": "report_invalid",
+      "error": "criteria_map"
+    }
   },
   {
     "name": "INVALID: a verdict outside a Go/No-Go run",
@@ -118,9 +161,18 @@
       "item": "none",
       "status": "done",
       "summary": "Fine.",
-      "verdict": { "result": "pass", "reasons": ["staging ok"] }
+      "verdict": {
+        "result": "pass",
+        "reasons": [
+          "staging ok"
+        ]
+      }
     },
-    "expect": { "ok": false, "reason": "report_invalid", "error": "verdict" }
+    "expect": {
+      "ok": false,
+      "reason": "report_invalid",
+      "error": "verdict"
+    }
   },
   {
     "name": "INVALID: a finding without evidence",
@@ -133,9 +185,19 @@
       "item": "none",
       "status": "done",
       "summary": "Probably the port.",
-      "findings": [{ "severity": "major", "location": "infra/compose.yaml:3", "claim": "Wrong port", "evidence": "", "recommendation": "Change it" }]
+      "findings": [
+        {
+          "severity": "major",
+          "location": "infra/compose.yaml:3",
+          "claim": "Wrong port",
+          "evidence": "",
+          "recommendation": "Change it"
+        }
+      ]
     },
-    "expect": { "ok": false }
+    "expect": {
+      "ok": false
+    }
   },
   {
     "name": "INVALID: the report is for another run",
@@ -149,7 +211,11 @@
       "status": "done",
       "summary": "Done."
     },
-    "expect": { "ok": false, "reason": "report_invalid", "error": "run_id" }
+    "expect": {
+      "ok": false,
+      "reason": "report_invalid",
+      "error": "run_id"
+    }
   },
   {
     "name": "a human-only field in a proposed record passes the report check; the outbox refuses it (see note)",
@@ -162,8 +228,69 @@
       "item": "none",
       "status": "done",
       "summary": "Done.",
-      "records": [{ "database": "releases", "ref": "NEW-1", "properties": { "Version": "v1.0.0", "Prod deploy approval": "Approved" } }]
+      "records": [
+        {
+          "database": "releases",
+          "ref": "NEW-1",
+          "properties": {
+            "Version": "v1.0.0",
+            "Prod deploy approval": "Approved"
+          }
+        }
+      ]
     },
-    "expect": { "ok": true, "note": "the report schema accepts it; the outbox refuses the field (outbox-agents.test.ts)" }
+    "expect": {
+      "ok": true,
+      "note": "the report schema accepts it; the outbox refuses the field (outbox-agents.test.ts)"
+    }
+  },
+  {
+    "name": "preview-diagnose done: the cause (port clash in the compose file) with the fix for the developer",
+    "kind": "preview-diagnose",
+    "item": "US-12",
+    "report": {
+      "schema_version": 1,
+      "run_id": "r-20261121-0900-31",
+      "role": "devops",
+      "item": "US-12",
+      "status": "done",
+      "summary": "The preview web container exits: it listens on 3000 but the Compose health check probes 8080.",
+      "findings": [
+        {
+          "severity": "major",
+          "location": "infra/compose.yaml:9",
+          "claim": "The health check probes the wrong port",
+          "evidence": "arima-env logs preview-7: \"listening on 3000\"; compose.yaml:9 probes 8080",
+          "recommendation": "Probe 3000 or make the app read PORT"
+        }
+      ]
+    },
+    "expect": {
+      "ok": true
+    }
+  },
+  {
+    "name": "preview-diagnose with a verdict is refused (a diagnosis passes or fails nothing here)",
+    "kind": "preview-diagnose",
+    "item": "US-12",
+    "report": {
+      "schema_version": 1,
+      "run_id": "r-20261121-0900-32",
+      "role": "devops",
+      "item": "US-12",
+      "status": "done",
+      "summary": "Diagnosed.",
+      "verdict": {
+        "result": "approve",
+        "reasons": [
+          "fine"
+        ]
+      }
+    },
+    "expect": {
+      "ok": false,
+      "reason": "report_invalid",
+      "error": "verdict"
+    }
   }
 ]

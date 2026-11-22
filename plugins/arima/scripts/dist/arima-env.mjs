@@ -20178,7 +20178,8 @@ async function upEnv(s, name, o = {}) {
       port,
       ref: snap.sha,
       deployed_at: c.deps.now().toISOString(),
-      ok: failure === void 0
+      ok: failure === void 0,
+      ...failure !== void 0 ? { error: failure.slice(0, 600) } : {}
     };
     if (failure === void 0 && smoke !== void 0) {
       const st2 = readEnvState(s.projectDir);

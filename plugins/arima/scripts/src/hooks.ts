@@ -31,6 +31,8 @@ export interface Guard {
  * resuming the kill switch or editing arima.yaml. Agents are held to the stricter rules.
  */
 export interface GuardContext {
+  /** The directory the run works in (from the hook input), for the worktree confinement. */
+  cwd?: string | undefined;
   role?: string | undefined;
   defaultBranch?: string | undefined;
   /** The unit kind (from ARIMA_KIND), when the run was started with one. */
@@ -282,6 +284,83 @@ function gitCommand(h: {
 const DANGEROUS_GIT_KEY =
   /^(core\.(hookspath|sshcommand|fsmonitor|editor|pager|askpass)|alias\.|credential\.|url\..*insteadof|remote\..*\.(url|pushurl|push)|safe\.)/i;
 
+/** The state branch and every spelling that reads all refs: ARIMA state is not a role's to browse. */
+const STATE_REF =
+  /(^|[\s:/])arima-state(?![A-Za-z0-9_-])|^--(all|branches|glob|remotes|tags|exclude|alternate-refs)\b|^refs\//i;
+
+/**
+ * Git rules for any agent role (judge J-agent:developer, blockers 1 to 3): a role may commit on the
+ * branch it was given and nothing else. It may not move, force or create a branch (a moved default
+ * branch would hide a forbidden commit from the publish check), restore files from another revision,
+ * rewrite history, read the state branch through git, or fetch from an address.
+ */
+function guardRoleGit(
+  g: { sub: string; args: string[] },
+  vcs: (reason: string) => Guard,
+): Guard | undefined {
+  const flags = g.args.filter((a) => a.startsWith('-'));
+  const plain = g.args.filter((a) => !a.startsWith('-'));
+  // Revision syntax that searches every ref by commit message (":/regex", "^{/regex"), the reflog, and
+  // --no-index (which reads any file on disk) are refused: a review reads the branch, nothing else.
+  if (
+    g.args.some(
+      (a) => /^:\/|\^\{\//.test(a) || /^--(reflog|walk-reflogs|no-index)\b/.test(a) || a === '-g',
+    )
+  )
+    return vcs(
+      'a role names revisions only by branch, tag or hash: no :/regex, no reflog, no --no-index',
+    );
+  if (g.args.some((a) => STATE_REF.test(a)))
+    return vcs('a role reads nothing from the ARIMA state branch or from all refs through git');
+  switch (g.sub) {
+    case 'checkout':
+    case 'switch':
+      // A new branch is fine when it is named like ARIMA's own scheme (it starts at HEAD and moves nothing).
+      if (flags.length === 1 && (flags[0] === '-b' || flags[0] === '-c') && plain.length === 1)
+        return AGENT_BRANCH.test(plain[0] ?? '')
+          ? undefined
+          : vcs('a new branch is named feat/..., fix/..., hotfix/..., chore/... or docs/...');
+      if (g.args.includes('--') || plain.includes('.') || flags.length > 0 || plain.length !== 1)
+        return vcs(
+          'a role may only switch to an existing branch by name (no flags, no paths, no new or forced branch, no restoring files from another revision)',
+        );
+      if (['main', 'master', 'trunk'].includes(plain[0] ?? ''))
+        return vcs('a role never switches to the default branch');
+      return undefined;
+    case 'branch':
+      return g.args.some((a) => a === '--list' || a === '-l' || a === '--show-current')
+        ? undefined
+        : vcs('a role does not create, move, rename or delete branches');
+    case 'update-ref':
+    case 'reset':
+    case 'restore':
+    case 'rm':
+    case 'mv':
+    case 'stash':
+    case 'merge':
+    case 'rebase':
+    case 'cherry-pick':
+    case 'revert':
+    case 'apply':
+    case 'am':
+    case 'tag':
+    case 'clean':
+    case 'worktree':
+    case 'symbolic-ref':
+      return vcs(`git ${g.sub} changes refs or files outside a plain commit and is not a role's`);
+    case 'commit':
+      return flags.some((a) => /^--am/.test(a))
+        ? vcs('a role does not rewrite history (--amend)')
+        : undefined;
+    case 'fetch':
+      return plain.length > 1 || plain.some((a) => !/^[A-Za-z0-9_.-]+$/.test(a))
+        ? vcs('a role may only fetch a named remote, never an address')
+        : undefined;
+    default:
+      return undefined;
+  }
+}
+
 /** Rules for one git command. */
 function guardGit(
   g: { sub: string; args: string[]; globalC: string[] },
@@ -294,7 +373,13 @@ function guardGit(
       'overriding git settings on the command line (hooks, aliases, credentials, remotes) is not allowed',
     );
   }
-  if (g.args.includes('--no-verify')) return vcs('skipping git hooks (--no-verify) is not allowed');
+  // Git accepts any unambiguous prefix of a long option, so every prefix of --no-verify is refused.
+  if (g.args.some((a) => /^--no-v/.test(a)))
+    return vcs('skipping git hooks (--no-verify, or a shortened form) is not allowed');
+  if (ctx.role !== undefined) {
+    const hit = guardRoleGit(g, vcs);
+    if (hit !== undefined) return hit;
+  }
   if (g.args.some((a) => a === '--output' || a.startsWith('--output='))) {
     return vcs('git options that write to an arbitrary file (--output) are not allowed');
   }
@@ -536,10 +621,91 @@ function guardContainers(command: string): Guard | undefined {
   return undefined;
 }
 
+/** Is `p` (absolute, or relative to `dir`) inside `dir`? Case-insensitive, `..` resolved. */
+export function insideDir(p: string, dir: string): boolean {
+  const root = canon(dir);
+  if (p.startsWith('~')) return false;
+  const absolute = path.isAbsolute(p) || /^[A-Za-z]:[\\/]/.test(p) || p.startsWith('/');
+  const abs = canon(absolute ? p : path.join(dir, p));
+  return abs === root || abs.startsWith(root.endsWith('/') ? root : `${root}/`);
+}
+
+/** QA's end-to-end tests: nobody who is judged by them edits them. */
+export const isQaTestPath = (p: string): boolean => /(^|\/)tests\/e2e(\/|$)/.test(canon(p));
+
+/** A developer command that would change, add, move, delete or restore a file under tests/e2e/. */
+function guardQaTests(command: string): Guard | undefined {
+  const GIT_CHANGES = new Set(['add', 'rm', 'mv', 'restore', 'checkout', 'apply', 'stash', 'am']);
+  const mentions = (c: string): boolean => /tests[/\\]+e2e/i.test(c);
+  const reason =
+    'tests/e2e belongs to QA; a wrong end-to-end test is a finding addressed to QA, never an edit (card decision 7)';
+  if (mentions(command) && WRITE_VERBS.test(command)) return { rule: 'protected-tests', reason };
+  for (const s of expandCommands(command)) {
+    const h = headOf(s.words);
+    if (h === undefined || !mentions(s.words.join(' '))) continue;
+    const git = gitCommand(h);
+    if (git !== undefined && GIT_CHANGES.has(git.sub)) return { rule: 'protected-tests', reason };
+  }
+  return undefined;
+}
+
+/** Runs that read and report and change nothing (a deploy-staging diagnosis, a tech-lead review). */
+export const isReadOnlyKind = (ctx: GuardContext): boolean =>
+  (ctx.role === 'devops' && (ctx.kind === 'deploy-staging' || ctx.kind === 'preview-diagnose')) ||
+  (ctx.role === 'tech-lead' && ctx.kind === 'review');
+
+/**
+ * Roles that never read ARIMA's own state: the packet carries what they need, and for QA the run
+ * reports, transcripts and notes of the developer are exactly what independence forbids it to see
+ * (spec 5.8); a review reads the diff, not the author's reasoning.
+ */
+const NO_STATE_READ: ReadonlySet<string> = new Set(['developer', 'qa', 'tech-lead']);
+const stateReadReason = (role: string): string =>
+  `a ${role} run reads nothing under .arima/: the run packet carries every input it needs`;
+
+/**
+ * QA independence (spec 5.8, WP-211): product source, the docs, ARIMA state, CI and git history hold the
+ * developer's reasoning, so a QA run names none of them in a file tool or a command.
+ */
+const QA_FORBIDDEN_SEGMENT = /(^|[\s\\/="':])(src|docs|\.arima|\.github|\.git)([\s\\/"';]|$)/i;
+const qaReason =
+  'a QA run reads only tests/, api/, design/ and the package files: never src, docs, .arima, .github or git history';
+
 export function guardBash(command: string, ctx: GuardContext = {}): Guard | undefined {
   const c = withoutMessages(command);
   const lc = c.toLowerCase();
-  if (ctx.role === 'devops' && ctx.kind === 'deploy-staging') {
+  if (ctx.role === 'qa' && QA_FORBIDDEN_SEGMENT.test(c.replace(/["']/g, '')))
+    return { rule: 'qa-independence', reason: qaReason };
+  if (ctx.role === 'qa')
+    for (const s of expandCommands(command))
+      if (headOf(s.words)?.head === 'git')
+        return {
+          rule: 'qa-independence',
+          reason: 'a QA run has no git: commit messages and history are the developer notes',
+        };
+  if (ctx.role !== undefined) {
+    // Quote-splitting (.e''nv) hides a path from a text match, so the same checks run on the dequoted
+    // command and on every word as a path (judge J-agent:tech-lead, blocker 2).
+    const plain = c.replace(/["'`]/g, '');
+    if (plain !== c) {
+      const hit = guardBash(plain, ctx);
+      if (hit !== undefined) return hit;
+    }
+    for (const s of expandCommands(c))
+      for (const w of s.words)
+        if (w.includes('/') || w.startsWith('.') || w.startsWith('~')) {
+          if (isSecretPath(w) || /(^|\/)\.envrc$/i.test(canon(w)))
+            return { rule: 'secret-file', reason: 'the command touches a credentials file' };
+        }
+  }
+  if (ctx.role !== undefined && NO_STATE_READ.has(ctx.role) && /\.arima(?![A-Za-z0-9_])/i.test(c))
+    return { rule: 'protected-state', reason: stateReadReason(ctx.role) };
+  if (ctx.role === 'tech-lead' && ctx.kind === 'review' && WRITE_VERBS.test(c))
+    return {
+      rule: 'read-only-kind',
+      reason: 'a review changes no file; its verdict and findings are in the report',
+    };
+  if (isReadOnlyKind(ctx)) {
     // Read-only kind (judge J-agent:devops, blocker 2): no git command that changes the tree or a ref.
     const WRITING = new Set([
       'add',
@@ -560,6 +726,10 @@ export function guardBash(command: string, ctx: GuardContext = {}): Guard | unde
       'branch',
       'clean',
       'revert',
+      'fetch',
+      'gc',
+      'pull',
+      'prune',
     ]);
     for (const s of expandCommands(c)) {
       const h = headOf(s.words);
@@ -567,7 +737,7 @@ export function guardBash(command: string, ctx: GuardContext = {}): Guard | unde
         return {
           rule: 'read-only-kind',
           reason:
-            'a deploy-staging run changes no file and makes no commit; put the proposed fix in findings',
+            'this kind of run changes no file and makes no commit; put the proposed change in findings',
         };
     }
   }
@@ -666,6 +836,10 @@ export function guardBash(command: string, ctx: GuardContext = {}): Guard | unde
         'only a human may let the outbox write Status fields; agents propose, the state machine decides',
     };
   }
+  if (ctx.role === 'developer') {
+    const hit = guardQaTests(command);
+    if (hit !== undefined) return hit;
+  }
   if (ctx.role !== undefined) {
     const hit = guardContainers(command);
     if (hit !== undefined) return hit;
@@ -707,13 +881,103 @@ export function guardTool(
   // write is a proposal in the outbox) and commits nothing (judge J-agent:devops, blocker 2).
   if (
     ctx.role === 'devops' &&
-    ctx.kind === 'deploy-staging' &&
+    (ctx.kind === 'deploy-staging' || ctx.kind === 'preview-diagnose') &&
     WRITE_TOOLS.has(tool) &&
     pathsOf(input).some((p) => !/(^|\/)\.arima\/outbox\/[^/]+\.json$/.test(canon(p)))
   )
     return {
       rule: 'read-only-kind',
       reason: 'a deploy-staging run edits no file; put the proposed fix in findings',
+    };
+  // The developer proposes through its report (questions, findings, assumptions); the engine enqueues
+  // them with ids and role binding. It has no outbox write (card decision 1), here as a second layer.
+  if (
+    ctx.role === 'developer' &&
+    WRITE_TOOLS.has(tool) &&
+    pathsOf(input).some((p) => /(^|\/)\.arima\/outbox(\/|$)/.test(canon(p)))
+  )
+    return {
+      rule: 'no-outbox',
+      reason: 'a developer run proposes through its report; the engine writes the outbox entries',
+    };
+  if (
+    tool === 'WebFetch' &&
+    (ctx.role === 'developer' ||
+      ctx.role === 'qa' ||
+      (ctx.role === 'tech-lead' && ctx.kind !== 'deprecation-check'))
+  )
+    return {
+      rule: 'no-web',
+      reason:
+        'this run has no web access (a fetch is an exfiltration channel); ask through a question',
+    };
+  if (ctx.role === 'tech-lead' && ctx.kind === 'review' && WRITE_TOOLS.has(tool))
+    return {
+      rule: 'read-only-kind',
+      reason: 'a review edits no file; its verdict and findings are in the report',
+    };
+  if (
+    ctx.role !== undefined &&
+    NO_STATE_READ.has(ctx.role) &&
+    ['Read', 'Glob', 'Grep'].includes(tool) &&
+    ['path', 'file_path', 'glob', 'pattern'].some(
+      (k) => typeof input[k] === 'string' && /(^|\/)\.arima(\/|$)/.test(canon(input[k] as string)),
+    )
+  )
+    return { rule: 'protected-state', reason: stateReadReason(ctx.role) };
+  if (
+    ctx.role === 'developer' &&
+    ctx.cwd !== undefined &&
+    WRITE_TOOLS.has(tool) &&
+    pathsOf(input).some((p) => !insideDir(p, ctx.cwd as string))
+  )
+    return {
+      rule: 'outside-worktree',
+      reason: 'a developer run writes only inside its own worktree',
+    };
+  if (
+    ctx.role === 'qa' &&
+    FILE_TOOLS.has(tool) &&
+    ['path', 'file_path', 'glob', 'pattern'].some(
+      (k) =>
+        typeof input[k] === 'string' &&
+        QA_FORBIDDEN_SEGMENT.test(String(input[k]).replace(/["']/g, '')),
+    )
+  )
+    return { rule: 'qa-independence', reason: qaReason };
+  // Glob and Grep search a root: a QA run names one under tests, api or design (a pattern such as sr[c]/** or
+  // {src,x}/** cannot then reach what is not there), never the whole tree (judge J-agent:qa, major 2).
+  if (ctx.role === 'qa' && (tool === 'Glob' || tool === 'Grep')) {
+    const root = typeof input['path'] === 'string' ? canon(input['path']) : '';
+    const lit =
+      typeof input['pattern'] === 'string' && tool === 'Glob' ? canon(input['pattern']) : '';
+    const inRoot = (s: string): boolean =>
+      /(^|\/)(tests|api|design)(\/|$)/.test(s) && !s.split('/').includes('..');
+    if (!(root !== '' ? inRoot(root) : tool === 'Glob' && inRoot(lit)))
+      return {
+        rule: 'qa-independence',
+        reason:
+          'a QA Glob or Grep names a root under tests/, api/ or design/ (path), never the whole tree',
+      };
+  }
+  if (
+    ctx.cwd !== undefined &&
+    ctx.role !== undefined &&
+    NO_STATE_READ.has(ctx.role) &&
+    ['Read', 'Glob', 'Grep'].includes(tool) &&
+    ['path', 'file_path', 'pattern', 'glob'].some((k) => {
+      const v = input[k];
+      return (
+        typeof v === 'string' &&
+        (v.startsWith('~') || v.split(/[\\/]/).includes('..') || /^([A-Za-z]:[\\/]|\/)/.test(v)) &&
+        !insideDir(v, ctx.cwd as string)
+      );
+    })
+  )
+    return {
+      rule: 'outside-worktree',
+      reason:
+        'this run reads only inside its own directory (not other worktrees, not the home folder)',
     };
   if (FILE_TOOLS.has(tool)) {
     for (const p of pathsOf(input)) {
@@ -727,6 +991,12 @@ export function guardTool(
         return {
           rule: 'protected-state',
           reason: `${canon(p)} is written only by ARIMA scripts; propose Notion changes through .arima/outbox/ instead`,
+        };
+      }
+      if (WRITE_TOOLS.has(tool) && ctx.role === 'developer' && isQaTestPath(p)) {
+        return {
+          rule: 'protected-tests',
+          reason: `${canon(p)} belongs to QA; a wrong end-to-end test is a finding addressed to QA, never an edit (card decision 7)`,
         };
       }
       if (WRITE_TOOLS.has(tool) && ctx.role !== undefined && isProtectedConfigPath(p, ctx.role)) {
@@ -882,6 +1152,7 @@ export async function handleHook(
         };
       }
       const ctx: GuardContext = {
+        cwd: input.cwd,
         role: env['ARIMA_ROLE'],
         kind: env['ARIMA_KIND'],
         defaultBranch: defaultBranchOf(projectDir),
@@ -918,6 +1189,7 @@ export async function handleHook(
   if (kind === 'post-tool-use') {
     const changesState =
       WRITE_TOOLS.has(tool) ||
+      tool === 'WebFetch' ||
       (tool === 'Bash' &&
         typeof toolInput['command'] === 'string' &&
         !isReadOnlyBash(toolInput['command']));

@@ -2,6 +2,7 @@
 // written to STUB_RECORD so tests can assert on flags, env and prompt. No network, no cost.
 import { spawn } from 'node:child_process';
 import { readFileSync, writeFileSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
 
 const mode = process.env.STUB_MODE ?? 'success';
 const chunks = [];
@@ -118,6 +119,7 @@ switch (mode) {
     const counter = `${dir}/.count-${key}`;
     const n = (existsSync(counter) ? Number(rf(counter, 'utf8')) : 0) + 1;
     wf(counter, String(n));
+    wf(`${dir}/${key}.prompt.${n}`, stdin);
     if (existsSync(`${dir}/${key}.commit`)) {
       mkdirSync(`${process.cwd()}/src`, { recursive: true });
       wf(
@@ -130,6 +132,26 @@ switch (mode) {
         });
       g('add', '-A');
       g('commit', '-q', '-m', `feat(${process.env.ARIMA_ITEM}): stub change ${n}`);
+    }
+    if (key === 'qa-qa' && !existsSync(`${dir}/${key}.no-run`)) {
+      // A real QA run runs the tests and the audit hook records it; the stub does the same through the real hook.
+      const hook = fileURLToPath(new globalThis.URL('../../dist/arima-hook.mjs', import.meta.url));
+      spawnSync(process.execPath, [hook, 'post-tool-use'], {
+        input: JSON.stringify({
+          tool_name: 'Bash',
+          tool_input: { command: 'npm run e2e' },
+          cwd: process.cwd(),
+        }),
+        env: process.env,
+      });
+    }
+    if (existsSync(`${dir}/${key}.tests`)) {
+      // QA has no git: it leaves its tests uncommitted for the host to commit.
+      mkdirSync(`${process.cwd()}/tests/e2e`, { recursive: true });
+      wf(
+        `${process.cwd()}/tests/e2e/${process.env.ARIMA_ITEM}.test.js`,
+        'assert.equal(1, 1);' + String.fromCharCode(10),
+      );
     }
     if (existsSync(`${dir}/${key}.usage`)) {
       console.log(

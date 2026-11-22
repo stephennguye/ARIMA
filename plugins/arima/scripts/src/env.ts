@@ -135,6 +135,8 @@ export interface EnvRecord {
   ref: string;
   deployed_at: string;
   ok: boolean;
+  /** Why a failed deploy failed (smoke or compose), for the diagnosis unit; absent when ok. */
+  error?: string;
 }
 export interface EnvState {
   schema_version: 1;
@@ -747,6 +749,7 @@ export async function upEnv(
       ref: snap.sha,
       deployed_at: c.deps.now().toISOString(),
       ok: failure === undefined,
+      ...(failure !== undefined ? { error: failure.slice(0, 600) } : {}),
     };
     if (failure === undefined && smoke !== undefined) {
       const st = readEnvState(s.projectDir);

@@ -19738,8 +19738,30 @@ function checkBranch(i) {
   if (head !== i.branch) refuse(`the worktree is on "${head}", not ${i.branch}`);
   if (git(dir, ["status", "--porcelain"]) !== "")
     refuse("the worktree has uncommitted changes: agents commit; this script does not");
-  const files = git(dir, ["diff", "--name-only", `${i.defaultBranch}...${i.branch}`]).split("\n").filter(Boolean);
-  if (files.length === 0) refuse(`${i.branch} has no changes against ${i.defaultBranch}`);
+  const remoteRef = `origin/${i.defaultBranch}`;
+  const hasRemote = (() => {
+    try {
+      git(dir, ["rev-parse", "--verify", "--quiet", `refs/remotes/${remoteRef}`]);
+      return true;
+    } catch {
+      return false;
+    }
+  })();
+  if (hasRemote && git(dir, ["rev-list", "--count", `${remoteRef}..${i.defaultBranch}`]) !== "0")
+    refuse(
+      `the local ${i.defaultBranch} has commits that ${remoteRef} does not: it was moved, so the branch cannot be checked against it`,
+      "guard_blocked"
+    );
+  const base = hasRemote ? remoteRef : i.defaultBranch;
+  const files = git(dir, [
+    "-c",
+    "core.quotePath=false",
+    "diff",
+    "--no-renames",
+    "--name-only",
+    `${base}...${i.branch}`
+  ]).split("\n").filter(Boolean);
+  if (files.length === 0) refuse(`${i.branch} has no changes against ${base}`);
   const bad = files.filter((f) => isProtectedConfigPath(f, i.role) || isProtectedStatePath(f));
   if (bad.length > 0)
     refuse(
@@ -19755,14 +19777,47 @@ function checkBranch(i) {
       );
   }
   if (i.role === "developer") {
-    const e2e = files.filter((f) => f.startsWith("tests/e2e/"));
+    let own = files;
+    if (i.testsBase !== void 0) {
+      try {
+        git(dir, ["merge-base", "--is-ancestor", i.testsBase, i.branch]);
+        own = git(dir, [
+          "-c",
+          "core.quotePath=false",
+          "diff",
+          "--no-renames",
+          "--name-only",
+          `${i.testsBase}..${i.branch}`
+        ]).split("\n").filter(Boolean);
+      } catch {
+        own = files;
+      }
+    }
+    const e2e = own.filter(
+      (f) => f.toLowerCase().startsWith("tests/e2e/") || /^playwright\.config\.[a-z]+$/i.test(f)
+    );
+    const scriptsAt = (ref) => {
+      try {
+        return JSON.parse(git(dir, ["show", ref + ":package.json"])).scripts ?? {};
+      } catch {
+        return {};
+      }
+    };
+    const before = scriptsAt(base);
+    const after = scriptsAt(i.branch);
+    for (const k of ["e2e", "test:e2e"])
+      if (JSON.stringify(before[k] ?? null) !== JSON.stringify(after[k] ?? null))
+        refuse(
+          "the developer may not change the e2e script of package.json (QA's runner)",
+          "protected_path"
+        );
     if (e2e.length > 0)
       refuse(
         `the developer may not change tests/e2e/** (QA's): ${e2e.join(", ")}`,
         "protected_path"
       );
   }
-  const diff = git(dir, ["diff", `${i.defaultBranch}...${i.branch}`]).slice(0, MAX_DIFF);
+  const diff = git(dir, ["diff", `${base}...${i.branch}`]).slice(0, MAX_DIFF);
   const added = diff.split("\n").filter((l) => l.startsWith("+") && !l.startsWith("+++")).join("\n");
   const leaked = findSecrets(added, loadSecretAllowlist(i.projectDir));
   if (leaked.length > 0)
@@ -19770,7 +19825,7 @@ function checkBranch(i) {
       `the branch adds something that looks like a secret (${leaked.join(", ")})`,
       "secret_in_output"
     );
-  const messages = git(dir, ["log", `${i.defaultBranch}..${i.branch}`, "--format=%B"]);
+  const messages = git(dir, ["log", `${base}..${i.branch}`, "--format=%B"]);
   const attr = findAttribution(messages);
   if (attr.length > 0)
     refuse(

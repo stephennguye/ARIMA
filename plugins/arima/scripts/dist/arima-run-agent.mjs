@@ -18702,8 +18702,17 @@ var GIT_READ = [
   ...bash("git branch --list"),
   ...bash("git fetch")
 ];
+var QA_READS = [
+  "./tests/**",
+  "./api/**",
+  "./design/**",
+  "./package.json",
+  "./package-lock.json",
+  "./playwright.config.*",
+  "./tsconfig*.json"
+];
 var NPM_TEST = [...bash("npm test"), ...bash("npm run"), ...bash("npm ci")];
-function allowedTools(role, scriptsDir) {
+function allowedTools(role, scriptsDir, kind) {
   const read = ["Read", "Glob", "Grep"];
   const nodeScript = (name, rest = "") => [
     ...bash(`node ${scriptsDir}/${name}.mjs${rest}`),
@@ -18758,8 +18767,26 @@ function allowedTools(role, scriptsDir) {
         OUTBOX,
         "WebFetch"
       ];
-    case "tech-lead":
-      return [...read, OUTBOX, ...GIT_READ, ...NPM_TEST, "WebFetch"];
+    case "tech-lead": {
+      const base = [...read, ...GIT_READ.filter((t2) => !t2.includes("git fetch"))];
+      if (kind === "adr-review")
+        return [
+          ...base,
+          "Edit(./docs/architecture/adr/**)",
+          ...bash("git add"),
+          ...bash("git commit")
+        ];
+      if (kind === "conventions")
+        return [
+          ...base,
+          "Write(./docs/engineering/**)",
+          "Edit(./docs/engineering/**)",
+          ...bash("git add"),
+          ...bash("git commit")
+        ];
+      if (kind === "deprecation-check") return [...base, "WebFetch"];
+      return base;
+    }
     case "developer":
       return [
         ...read,
@@ -18770,18 +18797,17 @@ function allowedTools(role, scriptsDir) {
         ...bash("git commit"),
         ...bash("git switch"),
         ...bash("git checkout"),
-        ...NPM_TEST,
-        "WebFetch"
+        ...NPM_TEST
+        // No WebFetch: spec 5.7 grants the developer no web access, and a fetch is an exfiltration channel.
       ];
     case "qa":
       return [
-        ...read,
+        ...QA_READS.map((p) => `Read(${p})`),
+        "Glob",
+        "Grep",
         "Write(./tests/**)",
         "Edit(./tests/**)",
-        OUTBOX,
-        ...NPM_TEST,
-        ...bash("npx playwright"),
-        "mcp__playwright__*"
+        ...NPM_TEST
       ];
     case "security":
       return [...read, OUTBOX, ...GIT_READ, ...bash("npm audit"), "WebFetch"];
@@ -18819,7 +18845,8 @@ function allowedTools(role, scriptsDir) {
       ];
   }
 }
-function deniedTools(role) {
+function deniedTools(role, kind) {
+  void kind;
   const out = [
     "mcp__*notion*",
     "Read(./.env)",
@@ -18858,6 +18885,16 @@ function deniedTools(role) {
     "Read(~/.config/arima/**)"
   ];
   if (role !== "devops") out.push("Edit(./.github/**)", "Write(./.github/**)");
+  if (role === "qa")
+    out.push(
+      "Read(./src/**)",
+      "Read(./.arima/**)",
+      "Read(./docs/**)",
+      "Read(./.github/**)",
+      "Read(./.git/**)"
+    );
+  if (role === "developer")
+    out.push("Edit(./tests/e2e/**)", "Write(./tests/e2e/**)", "MultiEdit(./tests/e2e/**)");
   return out;
 }
 var githubTokenScope = () => "none";
@@ -19770,7 +19807,13 @@ var CRITERIA_REQUIRED = [
   ["developer", "develop"],
   ["qa", "qa"]
 ];
-var CRITERIA_OPTIONAL = ["skeleton", "fix", "hotfix", "regression"];
+var CRITERIA_OPTIONAL = [
+  "skeleton",
+  "fix",
+  "hotfix",
+  "regression",
+  "test-write"
+];
 var VERDICT_REQUIRED = {
   review: ["approve", "changes_requested"],
   "adr-review": ["approve", "changes_requested"],
@@ -19790,6 +19833,7 @@ var VERDICT_OPTIONAL = {
   "preview-diagnose": ["pass", "fail"],
   "uat-script": ["pass", "fail"]
 };
+var EVIDENCE_SHAPE = /^((?:[\w.@/-]+\/)?[\w.@-]+\.[A-Za-z0-9]+:\d+(?:-\d+)?|(?:TC|BUG)-\d+)$/;
 function checkReport(report, ctx) {
   const errors = [];
   let evidenceMissing = false;
@@ -19809,7 +19853,7 @@ function checkReport(report, ctx) {
     ([role, kind]) => role === ctx.role && kind === ctx.kind
   );
   const mayHaveCriteria = needsCriteria || CRITERIA_OPTIONAL.includes(ctx.kind);
-  if (needsCriteria && (r.criteria_map === void 0 || r.criteria_map.length === 0)) {
+  if (needsCriteria && r.status === "done" && (r.criteria_map === void 0 || r.criteria_map.length === 0)) {
     errors.push(`criteria_map: required for ${ctx.role} ${ctx.kind} units`);
   }
   if (!mayHaveCriteria && r.criteria_map !== void 0) {
@@ -19835,6 +19879,61 @@ function checkReport(report, ctx) {
         `findings.${i}.severity: "${f["severity"]}" does not fit ${ctx.role} ${ctx.kind} units`
       );
     }
+  }
+  if (ctx.role === "developer" && ctx.kind === "develop" && r.status === "done") {
+    for (const c of r.criteria_map ?? []) {
+      if (c.status !== "met")
+        errors.push(
+          `criteria_map: "${c.criterion.slice(0, 40)}" is ${c.status}, so the status cannot be done`
+        );
+      for (const ev of c.evidence)
+        if (!EVIDENCE_SHAPE.test(ev.trim()))
+          errors.push(
+            `criteria_map: evidence "${ev.slice(0, 40)}" is not file:line, a test case id or a bug id`
+          );
+    }
+  }
+  if (ctx.role === "qa") {
+    if ((r.decisions ?? []).length > 0)
+      errors.push(
+        "decisions: a QA run records no decisions (architecture and design are not QA's)"
+      );
+    if (ctx.kind === "qa" && r.status === "done" && r.verdict?.result === "pass") {
+      for (const c of r.criteria_map ?? [])
+        if (c.status !== "met")
+          errors.push(
+            `verdict: pass is not allowed while criterion "${c.criterion.slice(0, 30)}" is ${c.status}`
+          );
+    }
+    if (r.status === "done") {
+      for (const c of r.criteria_map ?? [])
+        for (const ev of c.evidence)
+          if (/^(\.\/)?(src|docs|\.arima|\.github|\.git)\//i.test(ev.trim()))
+            errors.push(
+              `criteria_map: QA evidence "${ev.slice(0, 40)}" points at source, docs or state, which a QA run never reads`
+            );
+    }
+    if (r.status === "done") {
+      for (const c of r.criteria_map ?? [])
+        if (c.status === "met") {
+          for (const ev of c.evidence)
+            if (!EVIDENCE_SHAPE.test(ev.trim()) && !/^NEW-[0-9]+$/.test(ev.trim()) && !/^tests\/\.evidence\/\S+$/.test(ev.trim()))
+              errors.push(
+                `criteria_map: evidence "${ev.slice(0, 40)}" is not a TC id, path:line or tests/.evidence path`
+              );
+        }
+    }
+  }
+  if (r.status === "needs_input" && (r.questions ?? []).length === 0)
+    errors.push("status: needs_input needs at least one question");
+  if (ctx.kind === "review" && r.verdict !== void 0) {
+    const stops = (r.findings ?? []).some(
+      (f) => f["severity"] === "blocker" || f["severity"] === "major"
+    );
+    if (r.verdict.result === "approve" && stops)
+      errors.push("verdict: approve is not allowed while a blocker or major finding stands");
+    if (r.verdict.result === "changes_requested" && !stops)
+      errors.push("verdict: changes_requested needs at least one blocker or major finding");
   }
   const questions = r.questions ?? [];
   const blockingOpen = questions.some((q) => q.blocking);
@@ -20937,9 +21036,9 @@ function buildClaudeArgs(o, agentName, scriptsGlob, pluginDir = pluginRoot()) {
     "--permission-mode",
     "dontAsk",
     "--allowedTools",
-    allowedTools(o.role, scriptsGlob).join(","),
+    allowedTools(o.role, scriptsGlob, o.kind).join(","),
     "--disallowedTools",
-    deniedTools(o.role).join(",")
+    deniedTools(o.role, o.kind).join(",")
   ];
   args.push("--plugin-dir", pluginDir);
   if (o.config.isolateUserSettings !== false) args.push(...ISOLATION_FLAGS);
@@ -21013,6 +21112,13 @@ function exitFor(result) {
     default:
       return EXIT.failed;
   }
+}
+function summariseDenials(denials) {
+  if (!Array.isArray(denials) || denials.length === 0) return void 0;
+  return denials.slice(0, 10).map((d) => ({
+    tool: String(d.tool_name ?? "?"),
+    input: JSON.stringify(d.tool_input ?? {}).slice(0, 300)
+  }));
 }
 function writeRunReport(projectDir, runId, body) {
   const dir = path17.join(projectDir, ".arima", "runs");
@@ -21273,6 +21379,7 @@ async function runAgent(o) {
     result_text: parsed?.result,
     errors: parsed?.errors,
     terminal_reason: parsed?.terminal_reason,
+    permission_denials: summariseDenials(parsed?.permission_denials),
     reason: row.reason,
     report_errors: collected?.ok === false ? collected.errors : void 0,
     stderr_tail: spawned.stderr.slice(-2e3)

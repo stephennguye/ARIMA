@@ -51,7 +51,7 @@ interface World {
 }
 
 async function world(
-  o: { mode?: string; storyStatus?: string; stories?: number } = {},
+  o: { mode?: string; storyStatus?: string; stories?: number; noTestCases?: boolean } = {},
 ): Promise<World> {
   const parent = tempDir('arima-dispatch-');
   const dir = path.join(parent, 'app');
@@ -122,7 +122,7 @@ async function world(
     Status: o.storyStatus ?? 'Ready',
     Complexity: 'M',
     'Acceptance criteria': 'Given a cart When I open it Then I see the total',
-    'Test Cases': [tc],
+    ...(o.noTestCases ? {} : { 'Test Cases': [tc] }),
     Attempt: 1,
   });
   for (let i = 1; i < (o.stories ?? 1); i++) {
@@ -411,6 +411,48 @@ describe('a day, in the order of the ten steps', () => {
     expect(r.exitCode).toBeLessThanOrEqual(4);
   });
 
+  it('an approve is not acted on when the diff holds a binary file the reviewer could not read (judge J-agent:tech-lead, major 3)', async () => {
+    const w = await world();
+    writeFileSync(path.join(w.stub, 'developer-develop.txt'), report());
+    writeFileSync(path.join(w.stub, 'developer-develop.commit'), '');
+    await runDispatch(w.opts());
+    await w.pull();
+    const green: GithubFacts = { ...noGithubFacts, prReady: () => Promise.resolve(true) };
+    await runDispatch(w.opts({ deps: w.deps({ github: green }) }));
+    // A file with NUL bytes lands on the story branch: git shows it as binary and counts no lines.
+    const branch = `feat/${w.story}-cart-summary`;
+    // The story branch is checked out in its own worktree: commit there.
+    const listing = git(w.dir, 'worktree', 'list', '--porcelain').split('\n\n');
+    const block = listing.find((x) => x.includes(`refs/heads/${branch}`)) ?? '';
+    const wt = /^worktree (.+)$/m.exec(block)?.[1] as string;
+    writeFileSync(path.join(wt, 'blob.js'), 'a\0b\0c\n');
+    git(wt, 'add', '-A');
+    git(
+      wt,
+      '-c',
+      'user.name=T',
+      '-c',
+      'user.email=t@example.com',
+      'commit',
+      '-q',
+      '-m',
+      `feat(${w.story}): blob`,
+    );
+    await w.pull();
+    writeFileSync(
+      path.join(w.stub, 'tech-lead-review.txt'),
+      `Reviewed.\n\n${FENCE}arima-report\n${JSON.stringify({ schema_version: 1, run_id: '__RUN_ID__', role: 'tech-lead', item: '__ITEM__', status: 'done', summary: 'Looks good.', verdict: { result: 'approve', reasons: ['ok'] } })}\n${FENCE}\n`,
+    );
+    const r = await runDispatch(w.opts({ deps: w.deps({ github: green }) }));
+    expect(r.warnings.join('\n')).toContain('the approve was not acted on');
+    expect(r.warnings.join('\n')).toContain('binary files');
+    expect(
+      readEvents(w.dir)
+        .filter((e) => e.type === 'item.status')
+        .map((e) => e.data?.['to']),
+    ).not.toContain('In QA');
+  });
+
   it('retries once on an invalid report (a fresh unit, two ledger rows); a second failure blocks the item with a question', async () => {
     const w = await world();
     writeFileSync(path.join(w.stub, 'developer-develop.1.txt'), 'no report at all');
@@ -431,6 +473,23 @@ describe('a day, in the order of the ten steps', () => {
     expect(r2.dispatched[0]).toMatchObject({ blocked: true });
     expect(readLedger(w2.dir).filter((x) => x.role === 'developer')).toHaveLength(2);
     expect(readEvents(w2.dir).some((e) => e.type === 'question.raised')).toBe(true);
+  });
+
+  it('a criterion met without evidence is rejected (evidence_missing), retried once, and a developer that repeats it blocks the story (WP-210)', async () => {
+    const w = await world();
+    writeFileSync(
+      path.join(w.stub, 'developer-develop.txt'),
+      report({ criteria_map: [{ criterion: 'AC-1', status: 'met', evidence: [] }] }),
+    );
+    writeFileSync(path.join(w.stub, 'developer-develop.commit'), '');
+    const r = await runDispatch(w.opts());
+    expect(r.dispatched[0]).toMatchObject({ blocked: true });
+    const rows = readLedger(w.dir).filter((x) => x.role === 'developer');
+    expect(rows.map((x) => [x.result, x.reason])).toEqual([
+      ['fail', 'evidence_missing'],
+      ['fail', 'evidence_missing'],
+    ]);
+    expect(readEvents(w.dir).some((e) => e.type === 'report.rejected')).toBe(true);
   });
 
   it('a usage-limit stop ends the dispatch for the day (exit 75), later units are not started, steps 8 to 10 still run', async () => {
@@ -481,6 +540,273 @@ describe('a day, in the order of the ten steps', () => {
     const r = await runDispatch(w.opts());
     expect(r.plan).toEqual([]); // the planner already skips a story without budget
     expect(r.skipped.map((s) => s.reason)).toContain('story budget used up');
+  });
+});
+
+describe('previews of stories In Review (WP-218)', () => {
+  const COMPOSE =
+    'services:\n  web:\n    build: ..\n    image: arima-local/$' +
+    '{ARIMA_PROJECT}-web:$' +
+    '{ARIMA_TAG}\n    ports: ["127.0.0.1:$' +
+    '{ARIMA_PORT}:8080"]\n    healthcheck: { test: ["CMD", "true"] }\n    mem_limit: 256m\n';
+
+  /** A fake Docker and HTTP: every preview answers 200 unless bad() says otherwise. */
+  function envFake(bad: () => boolean) {
+    const calls: string[][] = [];
+    const up = { on: false };
+    const exec = async (file: string, args: string[], o?: { cwd?: string }) => {
+      calls.push([file, ...args]);
+      if (file === 'git') {
+        const { realExec } = await import('../src/sandbox.js');
+        return realExec(file, args, o as never);
+      }
+      const ok = (stdout = '') => ({ code: 0, stdout, stderr: '' });
+      if (args[0] === 'compose' && args.includes('ps'))
+        return ok(
+          up.on
+            ? JSON.stringify({ ID: 'a', Service: 'web', State: 'running', Health: 'healthy' }) +
+                '\n'
+            : '',
+        );
+      if (args[0] === 'compose' && args.includes('up')) up.on = true;
+      if (args[0] === 'compose' && args.includes('down')) up.on = false;
+      return ok(args[0] === 'info' ? '27.0.1' : '');
+    };
+    return {
+      calls,
+      envDeps: {
+        exec,
+        fetch: (async () => ({ status: bad() ? 500 : 200 })) as unknown as typeof fetch,
+        sleep: () => Promise.resolve(),
+        portFree: () => Promise.resolve(true),
+        home: tempDir('arima-home-'),
+      },
+    };
+  }
+
+  /** A world whose main has a compose file, the story developed and published, then a green PR. */
+  async function inReview(bad: () => boolean) {
+    const w = await world();
+    mkdirSync(path.join(w.dir, 'infra'), { recursive: true });
+    writeFileSync(path.join(w.dir, 'infra', 'compose.yaml'), COMPOSE);
+    writeFileSync(path.join(w.dir, 'Dockerfile'), 'FROM scratch\n');
+    git(w.dir, 'add', '-A');
+    git(w.dir, 'commit', '-q', '-m', 'chore: compose');
+    git(w.dir, 'push', '-q', 'origin', 'main');
+    writeFileSync(path.join(w.stub, 'developer-develop.txt'), report());
+    writeFileSync(path.join(w.stub, 'developer-develop.commit'), '');
+    await runDispatch(w.opts());
+    await w.pull();
+    const green: GithubFacts = { ...noGithubFacts, prReady: () => Promise.resolve(true) };
+    const f = envFake(bad);
+    const deps = (): DispatchDeps => ({ ...w.deps({ github: green }), envDeps: f.envDeps });
+    return { w, f, deps, green };
+  }
+  const approve = (w: Awaited<ReturnType<typeof world>>): void =>
+    writeFileSync(
+      path.join(w.stub, 'tech-lead-review.txt'),
+      'Reviewed.\n\n' +
+        FENCE +
+        'arima-report\n' +
+        JSON.stringify({
+          schema_version: 1,
+          run_id: '__RUN_ID__',
+          role: 'tech-lead',
+          item: '__ITEM__',
+          status: 'done',
+          summary: 'Looks good.',
+          verdict: { result: 'approve', reasons: ['ok'] },
+        }) +
+        '\n' +
+        FENCE +
+        '\n',
+    );
+  const statuses = (dir: string): unknown[] =>
+    readEvents(dir)
+      .filter((e) => e.type === 'item.status')
+      .map((e) => e.data?.['to']);
+  const previewsOf = async (dir: string) =>
+    (await import('../src/env.js')).readEnvState(dir).previews;
+
+  it('a story that reaches In Review gets a preview that answers its smoke request, and only then may the tech-lead move it to In QA', async () => {
+    const { w, f, deps } = await inReview(() => false);
+    await runDispatch(w.opts({ deps: deps() })); // In Review, preview up
+    expect(Object.values(await previewsOf(w.dir))[0]).toMatchObject({ ok: true });
+    expect(f.calls.some((c) => c.includes('up') && c.includes('compose'))).toBe(true);
+    approve(w);
+    await w.pull();
+    await runDispatch(w.opts({ deps: deps() }));
+    expect(statuses(w.dir)).toContain('In QA');
+    // The next day the digest shows the preview next to the PR that waits for the human.
+    await w.pull();
+    await runDispatch(w.opts({ deps: deps() }));
+    const dir = path.join(w.dir, '.arima', 'digests');
+    const text = readdirSync(dir)
+      .map((n) => readFileSync(path.join(dir, n), 'utf8'))
+      .join('\n');
+    expect(text).toMatch(/preview http:\/\/localhost:41\d\d/);
+    expect(text).not.toContain('preview link not available yet');
+    // QA's packet names the preview to test and carries the story's test cases (as data), never the developer's notes.
+    writeFileSync(
+      path.join(w.stub, 'qa-qa.txt'),
+      'Tested.\n\n' +
+        FENCE +
+        'arima-report\n' +
+        JSON.stringify({
+          schema_version: 1,
+          run_id: '__RUN_ID__',
+          role: 'qa',
+          item: '__ITEM__',
+          status: 'blocked',
+          summary: 'stub',
+          questions: [
+            {
+              addressed_to: 'devops',
+              question: 'x',
+              options: [{ label: 'y', recommendation: true }],
+              blocking: true,
+            },
+          ],
+        }) +
+        '\n' +
+        FENCE +
+        '\n',
+    );
+    await w.pull();
+    await runDispatch(w.opts({ deps: deps() }));
+    const qaPrompt = readFileSync(path.join(w.stub, 'qa-qa.prompt.1'), 'utf8');
+    expect(qaPrompt).toMatch(/The preview to test is http:\/\/localhost:41\d\d/);
+    expect(qaPrompt).toContain('Test cases of the story (Notion)');
+    expect(qaPrompt).not.toContain('.arima/runs');
+  });
+
+  it('a preview that does not answer keeps the story In Review, plans a preview-diagnose unit for devops and never reaches In QA', async () => {
+    const { w, deps } = await inReview(() => true);
+    writeFileSync(
+      path.join(w.stub, 'devops-preview-diagnose.txt'),
+      'Diagnosed.\n\n' +
+        FENCE +
+        'arima-report\n' +
+        JSON.stringify({
+          schema_version: 1,
+          run_id: '__RUN_ID__',
+          role: 'devops',
+          item: '__ITEM__',
+          status: 'done',
+          summary: 'The health check probes the wrong port.',
+          findings: [
+            {
+              severity: 'major',
+              location: 'infra/compose.yaml:5',
+              claim: 'wrong port',
+              evidence: 'logs say 3000',
+              recommendation: 'probe 3000',
+            },
+          ],
+        }) +
+        '\n' +
+        FENCE +
+        '\n',
+    );
+    const r2 = await runDispatch(w.opts({ deps: deps() })); // In Review, the preview fails, the diagnosis runs
+    expect(Object.values(await previewsOf(w.dir))[0]).toMatchObject({ ok: false });
+    const diag = r2.plan.find((u) => u.kind === 'preview-diagnose');
+    expect(diag).toMatchObject({ role: 'devops' });
+    expect(diag?.why).toContain('did not answer');
+    expect(
+      r2.dispatched.some((x) => x.unit.kind === 'preview-diagnose' && x.result === 'pass'),
+    ).toBe(true);
+    approve(w);
+    await w.pull();
+    await runDispatch(w.opts({ deps: deps() }));
+    expect(statuses(w.dir)).toEqual(['In Progress', 'In Review']);
+    // One assumed answer with a veto box for this failed preview (question policy assume_and_log), not one per day.
+    const asked = readEvents(w.dir).filter(
+      (e) => e.type === 'question.raised' && e.data?.['blocking'] === false,
+    );
+    expect(asked).toHaveLength(1);
+    expect(readEvents(w.dir).filter((e) => e.type === 'decision.made')).toHaveLength(1);
+  });
+
+  it('a QA pass whose run never ran the tests is not acted on; one that ran them is (judge J-agent:qa)', async () => {
+    const passReport =
+      'Tested.\n\n' +
+      FENCE +
+      'arima-report\n' +
+      JSON.stringify({
+        schema_version: 1,
+        run_id: '__RUN_ID__',
+        role: 'qa',
+        item: '__ITEM__',
+        status: 'done',
+        summary: 'All passed.',
+        criteria_map: [{ criterion: 'AC-1: total', status: 'met', evidence: ['TC-1'] }],
+        verdict: { result: 'pass', reasons: ['all passed'] },
+      }) +
+      '\n' +
+      FENCE +
+      '\n';
+    const flow = async (ran: boolean) => {
+      const { w, deps } = await inReview(() => false);
+      await runDispatch(w.opts({ deps: deps() })); // In Review, preview up
+      approve(w);
+      await w.pull();
+      await runDispatch(w.opts({ deps: deps() })); // In QA
+      writeFileSync(path.join(w.stub, 'qa-qa.txt'), passReport);
+      if (!ran) writeFileSync(path.join(w.stub, 'qa-qa.no-run'), '');
+      await w.pull();
+      const r = await runDispatch(w.opts({ deps: deps() }));
+      return r.warnings.join('\n');
+    };
+    expect(await flow(false)).toContain('never ran npm run e2e or npm test');
+    expect(await flow(true)).not.toContain('never ran npm run e2e or npm test');
+  });
+
+  it('a story without any Compose file is not held for a preview (Phase 3 not done)', async () => {
+    const w = await world();
+    writeFileSync(path.join(w.stub, 'developer-develop.txt'), report());
+    writeFileSync(path.join(w.stub, 'developer-develop.commit'), '');
+    await runDispatch(w.opts());
+    await w.pull();
+    const green: GithubFacts = { ...noGithubFacts, prReady: () => Promise.resolve(true) };
+    await runDispatch(w.opts({ deps: w.deps({ github: green }) }));
+    approve(w);
+    await w.pull();
+    await runDispatch(w.opts({ deps: w.deps({ github: green }) }));
+    expect(statuses(w.dir)).toContain('In QA');
+  });
+});
+
+describe('QA tests reach the story branch (WP-211)', () => {
+  it("after a test-write run the host commits QA's tests and the story branch carries them", async () => {
+    const w = await world({ noTestCases: true });
+    writeFileSync(
+      path.join(w.stub, 'qa-test-write.txt'),
+      'Written.\n\n' +
+        FENCE +
+        'arima-report\n' +
+        JSON.stringify({
+          schema_version: 1,
+          run_id: '__RUN_ID__',
+          role: 'qa',
+          item: '__ITEM__',
+          status: 'done',
+          summary: 'Tests written.',
+        }) +
+        '\n' +
+        FENCE +
+        '\n',
+    );
+    writeFileSync(path.join(w.stub, 'qa-test-write.tests'), '');
+    const r = await runDispatch(w.opts());
+    expect(r.dispatched.some((x) => x.unit.kind === 'test-write' && x.result === 'pass')).toBe(
+      true,
+    );
+    const branch = `feat/${w.story}-cart-summary`;
+    expect(git(w.dir, 'show', `${branch}:tests/e2e/${w.story}.test.js`)).toContain('assert');
+    const { qaTipOf } = await import('../src/qa-tests.js');
+    expect(qaTipOf(w.dir, w.story)).toBe(git(w.dir, 'rev-parse', branch));
+    expect(r.warnings.join('\n')).not.toContain('were not put on the story branch');
   });
 });
 

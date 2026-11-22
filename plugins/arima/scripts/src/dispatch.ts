@@ -29,8 +29,22 @@ import { enqueueReportRecords } from './notion/proposals.js';
 import { findRow, pullMirror, readMirror, readNotionMap } from './notion/mirror.js';
 import type { NotionPort } from './notion/port.js';
 import { pushOutbox } from './notion/outbox.js';
-import { stagingFailing } from './env.js';
+import { settingsFrom, stagingFailing } from './env.js';
+import type { EnvDeps, EnvSettings } from './env.js';
+import {
+  branchSha,
+  ensurePreviews,
+  failedPreviews,
+  previewHealthy,
+  previewOf,
+  previewUrl,
+  previewsPossible,
+  removePreview,
+  sweepPreviews,
+} from './preview.js';
 import { renderPacket } from './packet.js';
+import { reviewContext } from './review-context.js';
+import { QaTestsError, adoptQaTests, qaTipOf } from './qa-tests.js';
 import type { PacketInput } from './packet.js';
 import { PREFLIGHT_EXIT, runPreflight } from './preflight.js';
 import { loadProfile } from './profiles.js';
@@ -41,7 +55,7 @@ import { postReview, publishBranch } from './publish.js';
 import type { GhRunner } from './publish.js';
 import { planDay, storiesFromMirror } from './queue.js';
 import type { PlanLimits, PlannedUnit, StoryFacts } from './queue.js';
-import { expireQuestions, raiseQuestions } from './questions.js';
+import { expireQuestions, raiseQuestions, readQuestions } from './questions.js';
 import type { QuestionPolicy } from './questions.js';
 import type { AgentReport } from './report.js';
 import { releaseRunLock } from './runlock.js';
@@ -121,8 +135,10 @@ export interface DispatchDeps {
   setupCheck?: () => { green: boolean; detail: string };
   /** After a merge: rebuild staging (arima-env, WP-213). */
   afterMerge?: (info: { item: string; sha: string }) => Promise<void>;
-  /** Whether a story's preview is up (WP-218). */
+  /** Whether a story's preview is up (WP-218). Defaults to the recorded smoke result of its preview. */
   previewReady?: (item: string) => boolean;
+  /** Dependencies of the arima-env calls (previews): a stub exec in tests. */
+  envDeps?: EnvDeps;
   skipState?: boolean;
   /** Overrides the push URL of publish (tests). */
   remoteUrl?: string;
@@ -256,6 +272,8 @@ export async function runDispatch(o: DispatchOptions): Promise<DispatchResult> {
     warnings: [],
     degraded: false,
   };
+  /** Per item: why an approve of the review being run cannot be trusted (empty when it can). */
+  const unapprovableReviews = new Map<string, string[]>();
   const fail = (code: number, message: string): DispatchResult => ({
     ...res,
     exitCode: code,
@@ -408,6 +426,7 @@ export async function runDispatch(o: DispatchOptions): Promise<DispatchResult> {
 
     if (!dry && !res.degraded) {
       await advanceByFacts();
+      await refreshPreviews();
       // WP-217: approved lessons become overrides; a milestone whose stories are all accepted gets its review
       // (a veto row per story), and an open one closes after its window. Then what is not held is accepted.
       try {
@@ -454,6 +473,7 @@ export async function runDispatch(o: DispatchOptions): Promise<DispatchResult> {
         stories,
         ciRedOnMain: await gh.ciRedOnMain(),
         stagingSmokeFailing: stagingFailing(o.projectDir) !== undefined,
+        previewsFailing: failingPreviewItems(),
       },
       limits,
     );
@@ -679,11 +699,137 @@ export async function runDispatch(o: DispatchOptions): Promise<DispatchResult> {
     function readAttempt(item: string): number {
       return attemptOf(item);
     }
+    function envSettings(): EnvSettings | undefined {
+      try {
+        return settingsFrom(o.projectDir, cfgResult.arima);
+      } catch {
+        return undefined;
+      }
+    }
+    /** The status the engine last decided for a story (the mirror lags until the next push and pull), else the mirror's. */
+    function currentStatus(item: string): string | undefined {
+      const last = readEvents(o.projectDir)
+        .filter((e) => e.type === 'item.status' && e.item === item)
+        .at(-1);
+      return typeof last?.data?.['to'] === 'string' ? last.data['to'] : mirrorStatusOf(item);
+    }
+    function inReviewWithPr(): { item: string; pr: number; branch: string }[] {
+      const out: { item: string; pr: number; branch: string }[] = [];
+      for (const r of readMirror(o.projectDir, 'stories')?.rows ?? []) {
+        if (currentStatus(r.id) !== 'In Review') continue;
+        const pr = prNumber(r.id);
+        if (pr !== undefined) out.push({ item: r.id, pr, branch: branchFor(r.id, titleOf(r.id)) });
+      }
+      return out;
+    }
+    /** Step 3b: a story In Review gets a preview that answers its smoke request (WP-218); a failure is recorded, not thrown. */
+    async function refreshPreviews(): Promise<void> {
+      const s = envSettings();
+      if (s === undefined) return;
+      try {
+        // A merged, accepted, released or cancelled story keeps no preview.
+        const prItems: Record<number, string> = {};
+        for (const e of readEvents(o.projectDir))
+          if (
+            e.type === 'pr.published' &&
+            e.item !== undefined &&
+            typeof e.data?.['pr'] === 'number'
+          )
+            prItems[e.data['pr'] as number] = e.item;
+        await sweepPreviews(s, prItems, currentStatus, d.envDeps ?? { env });
+        for (const r of await ensurePreviews(s, inReviewWithPr(), d.envDeps ?? { env }))
+          if (r.result === 'failed') {
+            await askAboutFailedPreview(r.item, r.pr, r.error ?? '');
+            res.warnings.push(
+              `preview of ${r.item} (PR #${r.pr}) failed: ${r.error ?? ''}`.slice(0, 300),
+            );
+          }
+      } catch (e) {
+        res.warnings.push(
+          `previews could not be refreshed: ${e instanceof Error ? e.message.slice(0, 160) : String(e)}`,
+        );
+      }
+    }
+    /** One non-blocking question per failed preview (and commit): the story stays In Review and a diagnosis follows. */
+    async function askAboutFailedPreview(item: string, pr: number, error: string): Promise<void> {
+      const sha = branchSha(o.projectDir, branchFor(item, titleOf(item))) ?? 'unknown';
+      const topic = `preview-${pr}@${sha.slice(0, 8)}`;
+      if (Object.values(readQuestions(o.projectDir)).some((q) => q.topic === topic)) return;
+      await raiseQuestions({
+        projectDir: o.projectDir,
+        runId,
+        role: 'devops',
+        item,
+        policy: cfg.autonomy.question_policy,
+        now,
+        questions: [
+          {
+            question: `The preview of ${item} (PR #${pr}) did not answer its smoke request (${error.slice(0, 300)}), so the story stays In Review. A devops diagnosis follows.`,
+            options: [
+              { label: 'Wait for the developer to fix it', recommendation: true },
+              { label: 'I will look at it myself', recommendation: false },
+            ],
+            blocking: false,
+            default: 'Wait for the developer to fix it',
+            topic,
+          },
+        ],
+      });
+    }
+    function failingPreviewItems(): { item: string; pr: number }[] {
+      const failed = failedPreviews(o.projectDir);
+      return inReviewWithPr()
+        .filter((x) => failed.some((f) => f.pr === x.pr))
+        .map((x) => ({ item: x.item, pr: x.pr }));
+    }
+    function previewFailureOf(
+      item: string,
+    ): { pr: number; ref: string; error: string } | undefined {
+      const pr = prNumber(item);
+      return failedPreviews(o.projectDir).find((f) => f.pr === pr);
+    }
+    /** The In Review to In QA guard: with a Compose file the preview must have answered its smoke request at the branch head. */
+    function previewIsReady(item: string): boolean {
+      if (d.previewReady) return d.previewReady(item);
+      const s = envSettings();
+      if (s === undefined || !previewsPossible(s)) return true;
+      const pr = prNumber(item);
+      if (pr === undefined) return false;
+      return previewHealthy(
+        o.projectDir,
+        pr,
+        branchSha(o.projectDir, branchFor(item, titleOf(item))),
+      );
+    }
+    function previewConditions(unit: PlannedUnit): string[] {
+      if (unit.kind === 'test-write') {
+        const url = cfg.environments?.staging?.url;
+        return url
+          ? [
+              `The baseline (staging) to run the new tests against is ${url}; each must fail there on its assertion`,
+            ]
+          : [];
+      }
+      if (unit.kind !== 'qa') return [];
+      const pr = prNumber(unit.item);
+      const rec = pr === undefined ? undefined : previewOf(o.projectDir, pr);
+      return rec?.ok
+        ? [
+            `The preview to test is ${previewUrl(rec.port)} (its smoke request answered at ${rec.deployed_at})`,
+          ]
+        : [];
+    }
+    async function removeMergedPreview(pr: number): Promise<void> {
+      const s = envSettings();
+      if (s !== undefined) await removePreview(s, pr, d.envDeps ?? { env });
+    }
+
     function lastDevelopReport(item: string): AgentReport | undefined {
+      return lastReportOf(item, 'develop');
+    }
+    function lastReportOf(item: string, kind: string): AgentReport | undefined {
       const e = readEvents(o.projectDir)
-        .filter(
-          (x) => x.type === 'report.accepted' && x.item === item && x.data?.['kind'] === 'develop',
-        )
+        .filter((x) => x.type === 'report.accepted' && x.item === item && x.data?.['kind'] === kind)
         .at(-1);
       if (e?.run_id === undefined) return undefined;
       try {
@@ -762,6 +908,39 @@ export async function runDispatch(o: DispatchOptions): Promise<DispatchResult> {
       return branchExists(o.projectDir, b) ? b : undefined;
     }
 
+    /** The repo files a developer unit works from (card section 3), only those that exist in its tree. */
+    function readsFor(unit: PlannedUnit, cwd: string): { ref: string; why: string }[] {
+      if (unit.role === 'qa') {
+        // QA works from its own sparse tree: the API contract and the story's screens, nothing of the developer's.
+        const qa: { ref: string; why: string }[] = [];
+        if (existsSync(path.join(cwd, 'api/openapi.yaml')))
+          qa.push({
+            ref: 'api/openapi.yaml',
+            why: 'the request and response shapes to test against',
+          });
+        if (existsSync(path.join(cwd, 'design', 'screens', unit.item)))
+          qa.push({
+            ref: `design/screens/${unit.item}`,
+            why: 'the screens and their states (empty, loading, error, success) to assert',
+          });
+        return qa;
+      }
+      if (unit.role !== 'developer' && !(unit.role === 'tech-lead' && unit.kind === 'review'))
+        return [];
+      const out: { ref: string; why: string }[] = [];
+      const add = (ref: string, why: string): void => {
+        if (existsSync(path.join(cwd, ref))) out.push({ ref, why });
+      };
+      add(
+        'api/openapi.yaml',
+        'the API contract to implement; a criterion that contradicts it is a question',
+      );
+      add('docs/engineering/conventions.md', 'coding conventions');
+      add('docs/architecture/adr', 'architecture decisions that constrain the design');
+      add(`design/screens/${unit.item}`, 'the screens and their states for this UI story');
+      return out;
+    }
+
     function packetFor(
       unit: PlannedUnit,
       rid: string,
@@ -785,12 +964,58 @@ export async function runDispatch(o: DispatchOptions): Promise<DispatchResult> {
           untrusted.push({ label: 'Acceptance criteria (Notion)', source: 'notion', text: ac });
       }
       const failed = unit.kind === 'deploy-staging' ? stagingFailing(o.projectDir) : undefined;
+      const pv = unit.kind === 'preview-diagnose' ? previewFailureOf(unit.item) : undefined;
+      if (pv)
+        untrusted.push({
+          label: 'Preview deploy result (script output)',
+          source: 'arima-env',
+          text: `preview-${pv.pr}; ref ${pv.ref}; ${pv.error}`,
+        });
       if (failed)
         untrusted.push({
           label: 'Staging deploy result (script output)',
           source: 'arima-env',
           text: `ref ${failed.ref}; previous version restored: ${failed.restored}; ${failed.error}`,
         });
+      const inputs = readsFor(unit, cwd);
+      const review =
+        unit.kind === 'review' && unit.item !== 'none'
+          ? reviewContext({
+              projectDir: o.projectDir,
+              defaultBranch: cfg.github.default_branch,
+              branch,
+              size,
+              developerReport: lastDevelopReport(unit.item),
+              priorFindings: lastReportOf(unit.item, 'review')?.findings,
+              attempt: attemptOf(unit.item),
+            })
+          : undefined;
+      if (unit.role === 'qa' && row) {
+        const own = new Set(
+          Array.isArray(row.properties['Test Cases'])
+            ? (row.properties['Test Cases'] as unknown[]).filter(
+                (x): x is string => typeof x === 'string',
+              )
+            : [],
+        );
+        const cases = (readMirror(o.projectDir, 'test_cases')?.rows ?? [])
+          .filter((c) => own.has(c.page_id))
+          .map((c) => ({
+            id: c.id,
+            title: c.properties['Title'],
+            type: c.properties['Type'],
+            test_path: c.properties['Test path'],
+            last_result: c.properties['Last result'],
+          }));
+        if (cases.length > 0)
+          untrusted.push({
+            label: 'Test cases of the story (Notion)',
+            source: 'notion',
+            text: JSON.stringify(cases, null, 2),
+          });
+      }
+      if (review) untrusted.push(...review.untrusted);
+      if (review) unapprovableReviews.set(unit.item, review.unapprovable);
       return {
         run_id: rid,
         max_minutes: cfg.schedule.max_run_minutes,
@@ -805,14 +1030,16 @@ export async function runDispatch(o: DispatchOptions): Promise<DispatchResult> {
           max_turns: cap,
           ...(unit.reworkReason ? { rework_reason: unit.reworkReason } : {}),
           ...(cwd !== o.projectDir ? { worktree: cwd, branch } : {}),
-          inputs: [],
+          inputs: inputs.map((i) => i.ref),
           profile: profileName,
         },
-        inputs: [],
+        inputs,
         conditions: [
           `Story size: ${size ?? 'unknown'}`,
           `The profile is ${cfg.profile}`,
           ...(unit.reworkReason ? [`This is rework: ${unit.reworkReason}`] : []),
+          ...(review ? review.conditions : []),
+          ...previewConditions(unit),
           ...overrideConditions(o.projectDir, unit.role),
         ],
         task: taskFor(unit),
@@ -900,14 +1127,40 @@ export async function runDispatch(o: DispatchOptions): Promise<DispatchResult> {
       // Verdicts and findings go to the pull request as comments (the host holds the token).
       if (REVIEW_KINDS.has(unit.kind)) await comment(unit, report);
 
+      if (unit.kind === 'test-write' && report.status === 'done') adoptTests(unit);
       if (unit.kind === 'develop' && report.status === 'done')
         await publishDevelop(unit, report, branch);
-      if (unit.kind === 'review' && report.status === 'done' && report.verdict)
-        await afterReview(unit, report.verdict.result);
+      if (unit.kind === 'review' && report.status === 'done' && report.verdict) {
+        // An approve is not acted on when the reviewer could not have seen the whole change: the host
+        // treats it as changes_requested so the author fixes what blocked the review (judge major 3).
+        const why = unapprovableReviews.get(unit.item) ?? [];
+        const effective =
+          report.verdict.result === 'approve' && why.length > 0
+            ? 'changes_requested'
+            : report.verdict.result;
+        if (effective !== report.verdict.result)
+          res.warnings.push(
+            `review of ${unit.item}: the approve was not acted on (${why.join('; ')})`,
+          );
+        await afterReview(unit, effective);
+      }
       if (unit.kind === 'qa' && report.status === 'done' && report.verdict?.result === 'fail')
         await afterQaFail(unit, report);
-      if (unit.kind === 'qa' && report.status === 'done' && report.verdict?.result === 'pass')
-        await afterQaPass(unit);
+      if (unit.kind === 'qa' && report.status === 'done' && report.verdict?.result === 'pass') {
+        // A pass that never ran the tests (the audit log of this run holds no npm run e2e or npm test) is not
+        // acted on: the test cases would be marked Pass without a run (judge J-agent:qa, blocker 3).
+        const ran = readEvents(o.projectDir).some(
+          (e) =>
+            e.run_id === out.runId &&
+            e.type === 'tool.used' &&
+            /^npm\s+(run\s+e2e|test)\b/.test(String(e.data?.['command'] ?? '').trim()),
+        );
+        if (ran) await afterQaPass(unit);
+        else
+          res.warnings.push(
+            `QA of ${unit.item} reported pass but its run never ran npm run e2e or npm test: the pass was not acted on`,
+          );
+      }
       return base;
     }
 
@@ -940,6 +1193,23 @@ export async function runDispatch(o: DispatchOptions): Promise<DispatchResult> {
       }
     }
 
+    /** QA's tests go onto the story branch, so the developer starts with the tests that judge the work. */
+    function adoptTests(unit: PlannedUnit): void {
+      try {
+        adoptQaTests({
+          projectDir: o.projectDir,
+          item: unit.item,
+          qaBranch: `qa/${unit.item}-tests`,
+          storyBranch: branchFor(unit.item, titleOf(unit.item)),
+        });
+      } catch (e) {
+        res.warnings.push(
+          `the tests of ${unit.item} were not put on the story branch: ${e instanceof Error ? e.message.slice(0, 200) : String(e)}`,
+        );
+        if (!(e instanceof QaTestsError)) throw e;
+      }
+    }
+
     async function publishDevelop(
       unit: PlannedUnit,
       report: AgentReport,
@@ -968,6 +1238,9 @@ export async function runDispatch(o: DispatchOptions): Promise<DispatchResult> {
           branch,
           item: unit.item,
           role: unit.role as Role,
+          ...(qaTipOf(o.projectDir, unit.item)
+            ? { testsBase: qaTipOf(o.projectDir, unit.item) as string }
+            : {}),
           title: titleOf(unit.item) || unit.item,
           body,
           repo: cfg.github.repo,
@@ -1044,7 +1317,7 @@ export async function runDispatch(o: DispatchOptions): Promise<DispatchResult> {
           facts: {
             guards: {
               review_approved: true,
-              preview_deployed: d.previewReady?.(unit.item) ?? true,
+              preview_deployed: previewIsReady(unit.item),
             },
             budget_available: budget,
           },
@@ -1107,6 +1380,7 @@ export async function runDispatch(o: DispatchOptions): Promise<DispatchResult> {
           });
           merges.push(s.id);
           await d.afterMerge?.({ item: s.id, sha: m.sha });
+          await removeMergedPreview(pr);
         } catch (e) {
           log(
             `merge of ${s.id} not done: ${e instanceof Error ? e.message.slice(0, 120) : String(e)}`,

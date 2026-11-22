@@ -40,6 +40,17 @@ const GIT_READ = [
   ...bash('git fetch'),
 ];
 
+/** What a QA run may read (path-scoped, WP-211); src, docs, .arima, .github and git history are not among them. */
+export const QA_READS: readonly string[] = [
+  './tests/**',
+  './api/**',
+  './design/**',
+  './package.json',
+  './package-lock.json',
+  './playwright.config.*',
+  './tsconfig*.json',
+];
+
 /** Running the app's own tests. No `npx` (it downloads and runs arbitrary packages). */
 const NPM_TEST = [...bash('npm test'), ...bash('npm run'), ...bash('npm ci')];
 
@@ -53,7 +64,7 @@ const NPM_TEST = [...bash('npm test'), ...bash('npm run'), ...bash('npm ci')];
  * Merging and pushing to the default branch are not here on purpose: they belong to one merge
  * script (v0.2, step 1.7) and the guard hook blocks them for every agent.
  */
-export function allowedTools(role: Role, scriptsDir: string): string[] {
+export function allowedTools(role: Role, scriptsDir: string, kind?: string): string[] {
   const read = ['Read', 'Glob', 'Grep'];
   // The agent files quote the path (`node "${CLAUDE_PLUGIN_ROOT}/..."`), which a rule matches only if it
   // is spelled the same way, so both spellings are granted (found by the devops real-agent evals).
@@ -110,8 +121,32 @@ export function allowedTools(role: Role, scriptsDir: string): string[] {
         OUTBOX,
         'WebFetch',
       ];
-    case 'tech-lead':
-      return [...read, OUTBOX, ...GIT_READ, ...NPM_TEST, 'WebFetch'];
+    case 'tech-lead': {
+      // A review reads a diff and writes nothing: the verdict and findings are in its report and the
+      // host posts them (D-49). No outbox (proposals travel in the report) and no `npm`: a review does
+      // not run the author's code, CI does (WP-212, judge rule "no role runs code from another role").
+      // No `git fetch` (it moves refs and prints the tip of the state branch) and no WebFetch (an exfiltration
+      // channel; only deprecation-check reads public end-of-life pages).
+      const base = [...read, ...GIT_READ.filter((t) => !t.includes('git fetch'))];
+      // Scoped grants for the kinds that edit a document (WP-212 acceptance; their agent sections are WP-312 and WP-219).
+      if (kind === 'adr-review')
+        return [
+          ...base,
+          'Edit(./docs/architecture/adr/**)',
+          ...bash('git add'),
+          ...bash('git commit'),
+        ];
+      if (kind === 'conventions')
+        return [
+          ...base,
+          'Write(./docs/engineering/**)',
+          'Edit(./docs/engineering/**)',
+          ...bash('git add'),
+          ...bash('git commit'),
+        ];
+      if (kind === 'deprecation-check') return [...base, 'WebFetch'];
+      return base;
+    }
     case 'developer':
       return [
         ...read,
@@ -123,17 +158,20 @@ export function allowedTools(role: Role, scriptsDir: string): string[] {
         ...bash('git switch'),
         ...bash('git checkout'),
         ...NPM_TEST,
-        'WebFetch',
+        // No WebFetch: spec 5.7 grants the developer no web access, and a fetch is an exfiltration channel.
       ];
     case 'qa':
+      // QA is independent of the developer (spec 5.8): it reads only the tests, the API contract, the
+      // screens and the package files (path-scoped), writes only tests/, proposes records in its report
+      // (no outbox), has no git, no gh, no web, and no npx (S17: the e2e runner is a pinned dev dependency
+      // run as `npm run e2e`; the Playwright MCP of the card is not built).
       return [
-        ...read,
+        ...QA_READS.map((p) => `Read(${p})`),
+        'Glob',
+        'Grep',
         'Write(./tests/**)',
         'Edit(./tests/**)',
-        OUTBOX,
         ...NPM_TEST,
-        ...bash('npx playwright'),
-        'mcp__playwright__*',
       ];
     case 'security':
       return [...read, OUTBOX, ...GIT_READ, ...bash('npm audit'), 'WebFetch'];
@@ -178,7 +216,8 @@ export function allowedTools(role: Role, scriptsDir: string): string[] {
  * the hooks do, and none of the GitHub commands that merge, publish or change settings. The guard
  * hook repeats these as a second layer because rule matching is only as good as its patterns.
  */
-export function deniedTools(role?: Role): string[] {
+export function deniedTools(role?: Role, kind?: string): string[] {
+  void kind;
   const out = [
     'mcp__*notion*',
     'Read(./.env)',
@@ -217,6 +256,17 @@ export function deniedTools(role?: Role): string[] {
     'Read(~/.config/arima/**)',
   ];
   if (role !== 'devops') out.push('Edit(./.github/**)', 'Write(./.github/**)');
+  if (role === 'qa')
+    out.push(
+      'Read(./src/**)',
+      'Read(./.arima/**)',
+      'Read(./docs/**)',
+      'Read(./.github/**)',
+      'Read(./.git/**)',
+    );
+  // QA's end-to-end tests are not the developer's to weaken (card decision 7, WP-210).
+  if (role === 'developer')
+    out.push('Edit(./tests/e2e/**)', 'Write(./tests/e2e/**)', 'MultiEdit(./tests/e2e/**)');
   return out;
 }
 

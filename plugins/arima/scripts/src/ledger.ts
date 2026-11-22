@@ -68,6 +68,8 @@ export interface ClaudeResult {
   errors?: string[];
   /** completed | max_turns | budget_exhausted | ... (seen in claude 2.1.326). */
   terminal_reason?: string;
+  /** Tool calls the permission rules refused (tool name and input); the run record keeps a short form. */
+  permission_denials?: { tool_name?: string; tool_input?: Record<string, unknown> }[];
   usage?: {
     input_tokens?: number;
     output_tokens?: number;

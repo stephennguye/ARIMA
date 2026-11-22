@@ -23,6 +23,11 @@ describe('output contract for a devops run', () => {
     expect(text).toContain('Use exactly the keys listed for each object and no others');
   });
 
+  it('says the summary limit twice over: 600 characters, detail in findings', () => {
+    expect(text).toContain('at most 600 characters, counted');
+    expect(text).toContain('the detail goes in `findings`');
+  });
+
   it('the deploy-staging task is verify and diagnose', () => {
     expect(
       taskFor({ kind: 'deploy-staging', role: 'devops', item: 'none', why: 'x' } as never),

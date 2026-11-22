@@ -291,13 +291,12 @@ describe('role allow-list x guard matrix', () => {
     expect(roleAllows('developer', 'rm -rf /')).toBe(false);
   });
 
-  it('no role has an unrestricted npx; only qa may run playwright through it', () => {
-    for (const role of ROLES) {
-      const npx = allowedTools(role, '/p').filter((t) => t.includes('npx'));
-      expect(npx, role).toEqual(
-        role === 'qa' ? ['Bash(npx playwright)', 'Bash(npx playwright *)'] : [],
-      );
-    }
+  it('no role has npx at all (S17: QA runs the pinned runner as npm run e2e)', () => {
+    for (const role of ROLES)
+      expect(
+        allowedTools(role, '/p').filter((t) => t.includes('npx')),
+        role,
+      ).toEqual([]);
   });
 });
 
@@ -325,12 +324,16 @@ describe('guard: file tools and paths', () => {
     expect(blocked('Write', { file_path: p, content: 'x' }), p).toBe('protected-state');
   });
 
-  it('but may write its own outbox proposals', () => {
+  it('but a role with an outbox may write its own proposals (the developer proposes through its report)', () => {
+    const QA = { role: 'ba', defaultBranch: 'main' };
     expect(
-      blocked('Write', { file_path: '.arima/outbox/e-1.json', content: '{}' }),
+      blocked('Write', { file_path: '.arima/outbox/e-1.json', content: '{}' }, QA),
     ).toBeUndefined();
-    expect(blocked('Write', { file_path: '.arima/outbox/sub/e-1.json', content: '{}' })).toBe(
+    expect(blocked('Write', { file_path: '.arima/outbox/sub/e-1.json', content: '{}' }, QA)).toBe(
       'protected-state',
+    );
+    expect(blocked('Write', { file_path: '.arima/outbox/e-1.json', content: '{}' })).toBe(
+      'no-outbox',
     );
   });
 

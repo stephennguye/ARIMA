@@ -15833,6 +15833,57 @@ function gitCommand(h) {
   return sub === void 0 ? void 0 : { sub, args: w.slice(i + 1), globalC };
 }
 var DANGEROUS_GIT_KEY = /^(core\.(hookspath|sshcommand|fsmonitor|editor|pager|askpass)|alias\.|credential\.|url\..*insteadof|remote\..*\.(url|pushurl|push)|safe\.)/i;
+var STATE_REF = /(^|[\s:/])arima-state(?![A-Za-z0-9_-])|^--(all|branches|glob|remotes|tags|exclude|alternate-refs)\b|^refs\//i;
+function guardRoleGit(g, vcs) {
+  const flags = g.args.filter((a) => a.startsWith("-"));
+  const plain = g.args.filter((a) => !a.startsWith("-"));
+  if (g.args.some(
+    (a) => /^:\/|\^\{\//.test(a) || /^--(reflog|walk-reflogs|no-index)\b/.test(a) || a === "-g"
+  ))
+    return vcs(
+      "a role names revisions only by branch, tag or hash: no :/regex, no reflog, no --no-index"
+    );
+  if (g.args.some((a) => STATE_REF.test(a)))
+    return vcs("a role reads nothing from the ARIMA state branch or from all refs through git");
+  switch (g.sub) {
+    case "checkout":
+    case "switch":
+      if (flags.length === 1 && (flags[0] === "-b" || flags[0] === "-c") && plain.length === 1)
+        return AGENT_BRANCH.test(plain[0] ?? "") ? void 0 : vcs("a new branch is named feat/..., fix/..., hotfix/..., chore/... or docs/...");
+      if (g.args.includes("--") || plain.includes(".") || flags.length > 0 || plain.length !== 1)
+        return vcs(
+          "a role may only switch to an existing branch by name (no flags, no paths, no new or forced branch, no restoring files from another revision)"
+        );
+      if (["main", "master", "trunk"].includes(plain[0] ?? ""))
+        return vcs("a role never switches to the default branch");
+      return void 0;
+    case "branch":
+      return g.args.some((a) => a === "--list" || a === "-l" || a === "--show-current") ? void 0 : vcs("a role does not create, move, rename or delete branches");
+    case "update-ref":
+    case "reset":
+    case "restore":
+    case "rm":
+    case "mv":
+    case "stash":
+    case "merge":
+    case "rebase":
+    case "cherry-pick":
+    case "revert":
+    case "apply":
+    case "am":
+    case "tag":
+    case "clean":
+    case "worktree":
+    case "symbolic-ref":
+      return vcs(`git ${g.sub} changes refs or files outside a plain commit and is not a role's`);
+    case "commit":
+      return flags.some((a) => /^--am/.test(a)) ? vcs("a role does not rewrite history (--amend)") : void 0;
+    case "fetch":
+      return plain.length > 1 || plain.some((a) => !/^[A-Za-z0-9_.-]+$/.test(a)) ? vcs("a role may only fetch a named remote, never an address") : void 0;
+    default:
+      return void 0;
+  }
+}
 function guardGit(g, dynamic, ctx) {
   const vcs = (reason) => ({ rule: "vcs", reason });
   if (g.globalC.some((kv) => DANGEROUS_GIT_KEY.test(kv.split("=")[0] ?? ""))) {
@@ -15840,7 +15891,12 @@ function guardGit(g, dynamic, ctx) {
       "overriding git settings on the command line (hooks, aliases, credentials, remotes) is not allowed"
     );
   }
-  if (g.args.includes("--no-verify")) return vcs("skipping git hooks (--no-verify) is not allowed");
+  if (g.args.some((a) => /^--no-v/.test(a)))
+    return vcs("skipping git hooks (--no-verify, or a shortened form) is not allowed");
+  if (ctx.role !== void 0) {
+    const hit = guardRoleGit(g, vcs);
+    if (hit !== void 0) return hit;
+  }
   if (g.args.some((a) => a === "--output" || a.startsWith("--output="))) {
     return vcs("git options that write to an arbitrary file (--output) are not allowed");
   }
@@ -16043,10 +16099,66 @@ function guardContainers(command) {
   }
   return void 0;
 }
+function insideDir(p, dir) {
+  const root = canon(dir);
+  if (p.startsWith("~")) return false;
+  const absolute = path5.isAbsolute(p) || /^[A-Za-z]:[\\/]/.test(p) || p.startsWith("/");
+  const abs = canon(absolute ? p : path5.join(dir, p));
+  return abs === root || abs.startsWith(root.endsWith("/") ? root : `${root}/`);
+}
+var isQaTestPath = (p) => /(^|\/)tests\/e2e(\/|$)/.test(canon(p));
+function guardQaTests(command) {
+  const GIT_CHANGES = /* @__PURE__ */ new Set(["add", "rm", "mv", "restore", "checkout", "apply", "stash", "am"]);
+  const mentions = (c) => /tests[/\\]+e2e/i.test(c);
+  const reason = "tests/e2e belongs to QA; a wrong end-to-end test is a finding addressed to QA, never an edit (card decision 7)";
+  if (mentions(command) && WRITE_VERBS.test(command)) return { rule: "protected-tests", reason };
+  for (const s of expandCommands(command)) {
+    const h = headOf(s.words);
+    if (h === void 0 || !mentions(s.words.join(" "))) continue;
+    const git = gitCommand(h);
+    if (git !== void 0 && GIT_CHANGES.has(git.sub)) return { rule: "protected-tests", reason };
+  }
+  return void 0;
+}
+var isReadOnlyKind = (ctx) => ctx.role === "devops" && (ctx.kind === "deploy-staging" || ctx.kind === "preview-diagnose") || ctx.role === "tech-lead" && ctx.kind === "review";
+var NO_STATE_READ = /* @__PURE__ */ new Set(["developer", "qa", "tech-lead"]);
+var stateReadReason = (role) => `a ${role} run reads nothing under .arima/: the run packet carries every input it needs`;
+var QA_FORBIDDEN_SEGMENT = /(^|[\s\\/="':])(src|docs|\.arima|\.github|\.git)([\s\\/"';]|$)/i;
+var qaReason = "a QA run reads only tests/, api/, design/ and the package files: never src, docs, .arima, .github or git history";
 function guardBash(command, ctx = {}) {
   const c = withoutMessages(command);
   const lc = c.toLowerCase();
-  if (ctx.role === "devops" && ctx.kind === "deploy-staging") {
+  if (ctx.role === "qa" && QA_FORBIDDEN_SEGMENT.test(c.replace(/["']/g, "")))
+    return { rule: "qa-independence", reason: qaReason };
+  if (ctx.role === "qa") {
+    for (const s of expandCommands(command))
+      if (headOf(s.words)?.head === "git")
+        return {
+          rule: "qa-independence",
+          reason: "a QA run has no git: commit messages and history are the developer notes"
+        };
+  }
+  if (ctx.role !== void 0) {
+    const plain = c.replace(/["'`]/g, "");
+    if (plain !== c) {
+      const hit = guardBash(plain, ctx);
+      if (hit !== void 0) return hit;
+    }
+    for (const s of expandCommands(c))
+      for (const w of s.words)
+        if (w.includes("/") || w.startsWith(".") || w.startsWith("~")) {
+          if (isSecretPath(w) || /(^|\/)\.envrc$/i.test(canon(w)))
+            return { rule: "secret-file", reason: "the command touches a credentials file" };
+        }
+  }
+  if (ctx.role !== void 0 && NO_STATE_READ.has(ctx.role) && /\.arima(?![A-Za-z0-9_])/i.test(c))
+    return { rule: "protected-state", reason: stateReadReason(ctx.role) };
+  if (ctx.role === "tech-lead" && ctx.kind === "review" && WRITE_VERBS.test(c))
+    return {
+      rule: "read-only-kind",
+      reason: "a review changes no file; its verdict and findings are in the report"
+    };
+  if (isReadOnlyKind(ctx)) {
     const WRITING = /* @__PURE__ */ new Set([
       "add",
       "commit",
@@ -16065,14 +16177,18 @@ function guardBash(command, ctx = {}) {
       "tag",
       "branch",
       "clean",
-      "revert"
+      "revert",
+      "fetch",
+      "gc",
+      "pull",
+      "prune"
     ]);
     for (const s of expandCommands(c)) {
       const h = headOf(s.words);
       if (h?.head === "git" && WRITING.has(h.rest.find((a) => !a.startsWith("-")) ?? ""))
         return {
           rule: "read-only-kind",
-          reason: "a deploy-staging run changes no file and makes no commit; put the proposed fix in findings"
+          reason: "this kind of run changes no file and makes no commit; put the proposed change in findings"
         };
     }
   }
@@ -16132,6 +16248,10 @@ function guardBash(command, ctx = {}) {
       reason: "only a human may let the outbox write Status fields; agents propose, the state machine decides"
     };
   }
+  if (ctx.role === "developer") {
+    const hit = guardQaTests(command);
+    if (hit !== void 0) return hit;
+  }
   if (ctx.role !== void 0) {
     const hit = guardContainers(command);
     if (hit !== void 0) return hit;
@@ -16162,10 +16282,56 @@ function guardTool(tool, input, ctx = {}) {
         };
     }
   }
-  if (ctx.role === "devops" && ctx.kind === "deploy-staging" && WRITE_TOOLS.has(tool) && pathsOf(input).some((p) => !/(^|\/)\.arima\/outbox\/[^/]+\.json$/.test(canon(p))))
+  if (ctx.role === "devops" && (ctx.kind === "deploy-staging" || ctx.kind === "preview-diagnose") && WRITE_TOOLS.has(tool) && pathsOf(input).some((p) => !/(^|\/)\.arima\/outbox\/[^/]+\.json$/.test(canon(p))))
     return {
       rule: "read-only-kind",
       reason: "a deploy-staging run edits no file; put the proposed fix in findings"
+    };
+  if (ctx.role === "developer" && WRITE_TOOLS.has(tool) && pathsOf(input).some((p) => /(^|\/)\.arima\/outbox(\/|$)/.test(canon(p))))
+    return {
+      rule: "no-outbox",
+      reason: "a developer run proposes through its report; the engine writes the outbox entries"
+    };
+  if (tool === "WebFetch" && (ctx.role === "developer" || ctx.role === "qa" || ctx.role === "tech-lead" && ctx.kind !== "deprecation-check"))
+    return {
+      rule: "no-web",
+      reason: "this run has no web access (a fetch is an exfiltration channel); ask through a question"
+    };
+  if (ctx.role === "tech-lead" && ctx.kind === "review" && WRITE_TOOLS.has(tool))
+    return {
+      rule: "read-only-kind",
+      reason: "a review edits no file; its verdict and findings are in the report"
+    };
+  if (ctx.role !== void 0 && NO_STATE_READ.has(ctx.role) && ["Read", "Glob", "Grep"].includes(tool) && ["path", "file_path", "glob", "pattern"].some(
+    (k) => typeof input[k] === "string" && /(^|\/)\.arima(\/|$)/.test(canon(input[k]))
+  ))
+    return { rule: "protected-state", reason: stateReadReason(ctx.role) };
+  if (ctx.role === "developer" && ctx.cwd !== void 0 && WRITE_TOOLS.has(tool) && pathsOf(input).some((p) => !insideDir(p, ctx.cwd)))
+    return {
+      rule: "outside-worktree",
+      reason: "a developer run writes only inside its own worktree"
+    };
+  if (ctx.role === "qa" && FILE_TOOLS.has(tool) && ["path", "file_path", "glob", "pattern"].some(
+    (k) => typeof input[k] === "string" && QA_FORBIDDEN_SEGMENT.test(String(input[k]).replace(/["']/g, ""))
+  ))
+    return { rule: "qa-independence", reason: qaReason };
+  if (ctx.role === "qa" && (tool === "Glob" || tool === "Grep")) {
+    const root = typeof input["path"] === "string" ? canon(input["path"]) : "";
+    const lit = typeof input["pattern"] === "string" && tool === "Glob" ? canon(input["pattern"]) : "";
+    const inRoot = (s) => /(^|\/)(tests|api|design)(\/|$)/.test(s) && !s.split("/").includes("..");
+    if (!(root !== "" ? inRoot(root) : tool === "Glob" && inRoot(lit)))
+      return {
+        rule: "qa-independence",
+        reason: "a QA Glob or Grep names a root under tests/, api/ or design/ (path), never the whole tree"
+      };
+  }
+  if (ctx.cwd !== void 0 && ctx.role !== void 0 && NO_STATE_READ.has(ctx.role) && ["Read", "Glob", "Grep"].includes(tool) && ["path", "file_path", "pattern", "glob"].some((k) => {
+    const v = input[k];
+    return typeof v === "string" && (v.startsWith("~") || v.split(/[\\/]/).includes("..") || /^([A-Za-z]:[\\/]|\/)/.test(v)) && !insideDir(v, ctx.cwd);
+  }))
+    return {
+      rule: "outside-worktree",
+      reason: "this run reads only inside its own directory (not other worktrees, not the home folder)"
     };
   if (FILE_TOOLS.has(tool)) {
     for (const p of pathsOf(input)) {
@@ -16179,6 +16345,12 @@ function guardTool(tool, input, ctx = {}) {
         return {
           rule: "protected-state",
           reason: `${canon(p)} is written only by ARIMA scripts; propose Notion changes through .arima/outbox/ instead`
+        };
+      }
+      if (WRITE_TOOLS.has(tool) && ctx.role === "developer" && isQaTestPath(p)) {
+        return {
+          rule: "protected-tests",
+          reason: `${canon(p)} belongs to QA; a wrong end-to-end test is a finding addressed to QA, never an edit (card decision 7)`
         };
       }
       if (WRITE_TOOLS.has(tool) && ctx.role !== void 0 && isProtectedConfigPath(p, ctx.role)) {
@@ -16293,6 +16465,7 @@ async function handleHook(kind2, input, env = process.env) {
         };
       }
       const ctx = {
+        cwd: input.cwd,
         role: env["ARIMA_ROLE"],
         kind: env["ARIMA_KIND"],
         defaultBranch: defaultBranchOf(projectDir)
@@ -16324,7 +16497,7 @@ async function handleHook(kind2, input, env = process.env) {
     return { exitCode: 0 };
   }
   if (kind2 === "post-tool-use") {
-    const changesState = WRITE_TOOLS.has(tool) || tool === "Bash" && typeof toolInput["command"] === "string" && !isReadOnlyBash(toolInput["command"]);
+    const changesState = WRITE_TOOLS.has(tool) || tool === "WebFetch" || tool === "Bash" && typeof toolInput["command"] === "string" && !isReadOnlyBash(toolInput["command"]);
     if (changesState) await log(projectDir, "tool.used", env, describe(tool, toolInput));
     return { exitCode: 0 };
   }

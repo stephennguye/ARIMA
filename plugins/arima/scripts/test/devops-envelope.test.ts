@@ -201,6 +201,38 @@ describe('the guard in a devops run: forbidden actions are blocked (card section
   });
 });
 
+describe('a preview-diagnose run is read-only like deploy-staging, and may only read a preview (WP-218)', () => {
+  const pd = { role: 'devops', kind: 'preview-diagnose', defaultBranch: 'main' };
+  it.each([
+    ['Write', { file_path: 'infra/compose.yaml', content: 'x' }],
+    ['Edit', { file_path: 'Dockerfile', old_string: 'a', new_string: 'b' }],
+  ])('%s is blocked', (tool, input) => {
+    expect(guardTool(tool, input, pd)?.rule).toBe('read-only-kind');
+  });
+  it.each(['git add -A', 'git commit -m x', 'git checkout -- .', 'git reset --hard'])(
+    '%s is blocked',
+    (cmd) => {
+      expect(guardBash(cmd, pd)?.rule).toBe('read-only-kind');
+    },
+  );
+  it.each([
+    ['node /p/scripts/dist/arima-env.mjs up preview-7', 'host-script'],
+    ['node /p/scripts/dist/arima-env.mjs down preview-7', 'host-script'],
+    ['node /p/scripts/dist/arima-env.mjs logs production', 'production-barrier'],
+  ])('%s is blocked (%s)', (cmd, rule) => {
+    expect(guardBash(cmd, pd)?.rule).toBe(rule);
+  });
+  it('status, logs and smoke of a preview pass, and the role list grants exactly those for preview-*', () => {
+    for (const cmd of [
+      'node /p/scripts/dist/arima-env.mjs status preview-7',
+      'node /p/scripts/dist/arima-env.mjs logs preview-7 --tail 100',
+      'node /p/scripts/dist/arima-env.mjs smoke preview-7',
+    ])
+      expect(guardBash(cmd, pd), cmd).toBeUndefined();
+    expect(allowed.some((t) => t.includes('arima-env.mjs" logs preview-*'))).toBe(true);
+  });
+});
+
 describe('a deploy-staging run is read-only (judge J-agent:devops, blocker 2)', () => {
   const ro = { role: 'devops', kind: 'deploy-staging', defaultBranch: 'main' };
   it.each([

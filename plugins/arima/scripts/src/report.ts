@@ -27,7 +27,13 @@ const CRITERIA_REQUIRED: readonly [Role, UnitKind][] = [
   ['qa', 'qa'],
 ];
 /** Where it is allowed but not required. `skeleton` has no acceptance criteria and is exempt. */
-const CRITERIA_OPTIONAL: readonly UnitKind[] = ['skeleton', 'fix', 'hotfix', 'regression'];
+const CRITERIA_OPTIONAL: readonly UnitKind[] = [
+  'skeleton',
+  'fix',
+  'hotfix',
+  'regression',
+  'test-write',
+];
 
 /** Kinds that must end in a verdict, and the results each may use. */
 const VERDICT_REQUIRED: Partial<Record<UnitKind, readonly string[]>> = {
@@ -63,6 +69,8 @@ export interface ReportCheck {
  * Checks a parsed report against the schema and the kind-dependent rules of 03-contracts 3.3.
  * `kind` is the unit's kind; the report itself does not name it.
  */
+const EVIDENCE_SHAPE = /^((?:[\w.@/-]+\/)?[\w.@-]+\.[A-Za-z0-9]+:\d+(?:-\d+)?|(?:TC|BUG)-\d+)$/;
+
 export function checkReport(report: unknown, ctx: { role: Role; kind: UnitKind }): ReportCheck {
   const errors: string[] = [];
   let evidenceMissing = false;
@@ -84,7 +92,11 @@ export function checkReport(report: unknown, ctx: { role: Role; kind: UnitKind }
     ([role, kind]) => role === ctx.role && kind === ctx.kind,
   );
   const mayHaveCriteria = needsCriteria || CRITERIA_OPTIONAL.includes(ctx.kind);
-  if (needsCriteria && (r.criteria_map === undefined || r.criteria_map.length === 0)) {
+  if (
+    needsCriteria &&
+    r.status === 'done' &&
+    (r.criteria_map === undefined || r.criteria_map.length === 0)
+  ) {
     errors.push(`criteria_map: required for ${ctx.role} ${ctx.kind} units`);
   }
   if (!mayHaveCriteria && r.criteria_map !== undefined) {
@@ -112,6 +124,70 @@ export function checkReport(report: unknown, ctx: { role: Role; kind: UnitKind }
         `findings.${i}.severity: "${f['severity']}" does not fit ${ctx.role} ${ctx.kind} units`,
       );
     }
+  }
+
+  // A developer that reports done has met every criterion, with evidence that names something (a
+  // file:line, a test case or a bug id); the file and line are resolved when the work is published.
+  if (ctx.role === 'developer' && ctx.kind === 'develop' && r.status === 'done') {
+    for (const c of r.criteria_map ?? []) {
+      if (c.status !== 'met')
+        errors.push(
+          `criteria_map: "${c.criterion.slice(0, 40)}" is ${c.status}, so the status cannot be done`,
+        );
+      for (const ev of c.evidence)
+        if (!EVIDENCE_SHAPE.test(ev.trim()))
+          errors.push(
+            `criteria_map: evidence "${ev.slice(0, 40)}" is not file:line, a test case id or a bug id`,
+          );
+    }
+  }
+  // QA proves, it does not decide (card 5): no decisions, and a criterion is met only with the id of a test
+  // case that ran, a path:line, or an evidence file under tests/.evidence.
+  if (ctx.role === 'qa') {
+    if ((r.decisions ?? []).length > 0)
+      errors.push(
+        "decisions: a QA run records no decisions (architecture and design are not QA's)",
+      );
+    // A pass is every criterion met (judge J-agent:qa, blocker 3); the host also checks that the tests ran.
+    if (ctx.kind === 'qa' && r.status === 'done' && r.verdict?.result === 'pass')
+      for (const c of r.criteria_map ?? [])
+        if (c.status !== 'met')
+          errors.push(
+            `verdict: pass is not allowed while criterion "${c.criterion.slice(0, 30)}" is ${c.status}`,
+          );
+    if (r.status === 'done')
+      for (const c of r.criteria_map ?? [])
+        for (const ev of c.evidence)
+          if (/^(\.\/)?(src|docs|\.arima|\.github|\.git)\//i.test(ev.trim()))
+            errors.push(
+              `criteria_map: QA evidence "${ev.slice(0, 40)}" points at source, docs or state, which a QA run never reads`,
+            );
+    if (r.status === 'done')
+      for (const c of r.criteria_map ?? [])
+        if (c.status === 'met')
+          for (const ev of c.evidence)
+            if (
+              !EVIDENCE_SHAPE.test(ev.trim()) &&
+              !/^NEW-[0-9]+$/.test(ev.trim()) &&
+              !/^tests\/\.evidence\/\S+$/.test(ev.trim())
+            )
+              errors.push(
+                `criteria_map: evidence "${ev.slice(0, 40)}" is not a TC id, path:line or tests/.evidence path`,
+              );
+  }
+  if (r.status === 'needs_input' && (r.questions ?? []).length === 0)
+    errors.push('status: needs_input needs at least one question');
+
+  // A review's verdict must agree with its own findings: nothing is approved with a blocker or a major
+  // finding standing, and a change request names what blocks (tech-lead card, section 4 step 8).
+  if (ctx.kind === 'review' && r.verdict !== undefined) {
+    const stops = (r.findings ?? []).some(
+      (f) => f['severity'] === 'blocker' || f['severity'] === 'major',
+    );
+    if (r.verdict.result === 'approve' && stops)
+      errors.push('verdict: approve is not allowed while a blocker or major finding stands');
+    if (r.verdict.result === 'changes_requested' && !stops)
+      errors.push('verdict: changes_requested needs at least one blocker or major finding');
   }
 
   const questions = r.questions ?? [];

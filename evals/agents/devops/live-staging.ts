@@ -40,15 +40,40 @@ const envCli = (dir: string, args: string[]): number => {
   }
 };
 
-export function liveStaging(kind: 'good' | 'rolledback'): LiveStaging {
-  const key = kind === 'good' ? 'EVG' : 'EVR';
-  const port = kind === 'good' ? 3411 : 3412;
+export function liveStaging(kind: 'good' | 'rolledback' | 'badpreview'): LiveStaging {
+  const key = kind === 'good' ? 'EVG' : kind === 'rolledback' ? 'EVR' : 'EVP';
+  const port = kind === 'good' ? 3411 : kind === 'rolledback' ? 3412 : 3413;
   const { dir } = scratchProject(
     { Dockerfile: dockerfile('200 OK'), 'infra/compose.yaml': COMPOSE },
     'chore/eval',
     { key, stagingPort: port },
   );
   git(dir, 'checkout', '-q', 'main');
+  if (kind === 'badpreview') {
+    // The story branch carries an app that answers 500: its preview fails the smoke test and is left running.
+    git(dir, 'checkout', '-q', '-b', 'feat/US-12-x');
+    execFileSync('node', ['-e', `require('fs').writeFileSync(${JSON.stringify(path.join(dir, 'Dockerfile'))}, process.argv[1])`, dockerfile('500 Err')]);
+    git(dir, 'commit', '-qam', 'feat(US-12): the page');
+    git(dir, 'checkout', '-q', 'main');
+    const code = envCli(dir, ['up', 'preview-7', '--ref', 'feat/US-12-x', '--timeout', '8']);
+    if (code !== 71) throw new Error(`the bad preview should have failed its smoke test (exit 71), got ${code}`);
+    git(dir, 'checkout', '-q', 'chore/eval');
+    return {
+      dir,
+      key,
+      port,
+      dispose: () => {
+        envCli(dir, ['down', 'preview-7']);
+        const project = key.toLowerCase();
+        for (const i of execFileSync('docker', ['images', '--format', '{{.Repository}}:{{.Tag}}'], { encoding: 'utf8' }).split(/\r?\n/).filter((x) => x.startsWith(`arima-local/${project}`)))
+          try {
+            execFileSync('docker', ['rmi', '-f', i], { stdio: 'pipe' });
+          } catch {
+            /* gone */
+          }
+      },
+    };
+  }
   if (envCli(dir, ['up', 'staging']) !== 0) throw new Error(`the fixture staging (${kind}) did not come up`);
   if (kind === 'rolledback') {
     execFileSync('node', ['-e', `require('fs').writeFileSync(${JSON.stringify(path.join(dir, 'Dockerfile'))}, process.argv[1])`, dockerfile('500 Err')]);

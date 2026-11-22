@@ -77,7 +77,12 @@
           "database": { "type": "string", "minLength": 1 },
           "ref": { "type": "string", "pattern": "^NEW-[0-9]+$" },
           "properties": { "type": "object" },
-          "content_markdown": { "type": "string" }
+          "content_markdown": { "type": "string" },
+          "reproductions": {
+            "type": "integer",
+            "minimum": 1,
+            "description": "For a QA bug record: in how many independent runs the failure reproduced. S1 and S2 need 2, otherwise the engine lowers the severity to S3 (spec 7.12)"
+          }
         }
       }
     }

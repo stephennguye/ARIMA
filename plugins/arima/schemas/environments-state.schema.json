@@ -37,7 +37,8 @@
         "port": { "type": "integer", "minimum": 1, "maximum": 65535 },
         "ref": { "type": "string", "minLength": 1 },
         "deployed_at": { "type": "string", "format": "date-time" },
-        "ok": { "type": "boolean" }
+        "ok": { "type": "boolean" },
+        "error": { "type": "string", "maxLength": 600 }
       }
     }
   }
