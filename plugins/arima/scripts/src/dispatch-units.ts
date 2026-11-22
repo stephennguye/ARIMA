@@ -145,7 +145,7 @@ export function outputContractFor(kind: UnitKind): string {
       : '';
   return [
     'End your final message with exactly one fenced block whose info string is `arima-report`, containing JSON:',
-    '`schema_version` 1, `run_id` (the id in the title of this packet), `role`, `item`, `status` (`done`, `blocked`, `failed` or `needs_input`; when any question has `blocking` true the status MUST be `needs_input` or `blocked`, never `done`),`summary` (at most 600 characters), and as needed `artifacts`, `findings`, `questions`, `decisions`, `assumptions`, `records`.' +
+    '`schema_version` 1, `run_id` (the id in the title of this packet), `role`, `item`, `status` (`done`, `blocked`, `failed` or `needs_input`; when any question has `blocking` true the status MUST be `needs_input` or `blocked`, never `done`),`summary` (at most 600 characters, counted: two or three sentences; the detail goes in `findings`, never in the summary), and as needed `artifacts`, `findings`, `questions`, `decisions`, `assumptions`, `records`.' +
       criteria +
       verdict,
     'Each of these is a list of objects, never plain strings: `artifacts` {path, kind (code|test|doc|design|api|infra), artifact_id?}; `findings` {severity (' +
